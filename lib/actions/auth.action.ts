@@ -58,8 +58,8 @@ export async function signIn(params: SignInParams) {
             };
         }
         await setSessionCookie(idToken);
-    } catch (e) {
-        console.log(e);
+    } catch (error: any) {
+        console.log(error);
 
         return {
             success: false,

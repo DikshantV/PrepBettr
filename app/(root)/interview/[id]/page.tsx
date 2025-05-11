@@ -1,5 +1,5 @@
 import React from 'react'
-import {getInterviewById} from "@/lib/actions/general.action";
+import {getFeedbackByInterviewId, getInterviewById} from "@/lib/actions/general.action";
 import {redirect} from "next/navigation";
 import {getRandomInterviewCover} from "@/lib/utils";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
@@ -7,11 +7,15 @@ import {getCurrentUser} from "@/lib/actions/auth.action";
 import Image from "next/image";
 import Agent from "@/components/Agent";
 
-const Page = async ( {params}: RouteParams ) => {
+const InterviewDetails = async ( {params}: RouteParams ) => {
     const { id } = await params;
     const user = await getCurrentUser();
     const interview = await getInterviewById(id);
     if(!interview) redirect('/')
+    const feedback = await getFeedbackByInterviewId({
+        interviewId: id,
+        userId: user?.id!,
+    });
 
     return (
         <>
@@ -29,14 +33,15 @@ const Page = async ( {params}: RouteParams ) => {
             </div>
             
             <Agent
-                userName={user?.name}
-                type={user?.id}
+                userName={user?.name || ''}
+                userId={user?.id}
                 interviewId={id}
                 type="interview"
                 questions={interview.questions}
+                feedbackId={feedback?.id}
                 />
 
         </>
-    )
-}
-export default Page
+    );
+};
+export default InterviewDetails;
