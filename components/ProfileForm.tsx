@@ -53,54 +53,61 @@ export default function ProfileForm({ user }: { user: any }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 rounded-lg shadow">
-      <div className="flex flex-col items-center gap-4">
-        <Image
-          src={profilePic}
-          alt="Profile Picture"
-          width={96}
-          height={96}
-          className="rounded-full object-cover border"
-        />
-        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-          Change Picture
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleProfilePicChange}
-        />
-      </div>
-      <div>
-        <Label htmlFor="name">Name</Label>
-        <Input
-          id="name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" value={email} disabled className="mt-1 bg-gray-100" />
-      </div>
-      <div>
-        <Label htmlFor="password">New Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="New Password"
-          className="mt-1"
-        />
-      </div>
-      <div className="flex justify-center gap-4 mt-6">
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
-        </Button>
+    <form onSubmit={handleSubmit} className="card-border max-w-[420px] mx-auto mt-8">
+      <div className="flex flex-col gap-6 card py-14 px-10">
+        <div className="flex flex-row gap-2 justify-center">
+          <Image src="/logo.svg" alt="logo" height={32} width={38} />
+          <h2 className="text-primary-100">PrepBettr</h2>
+        </div>
+        <h3 className="text-center">Update your profile details</h3>
+        <div className="flex flex-col items-center gap-4">
+          <Image
+            src={profilePic}
+            alt="Profile Picture"
+            width={96}
+            height={96}
+            className="rounded-full object-cover border"
+          />
+          <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+            Change Picture
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleProfilePicChange}
+          />
+        </div>
+        <div>
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" value={email} disabled className="mt-1 bg-gray-100" />
+        </div>
+        <div>
+          <Label htmlFor="password">New Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="New Password"
+            className="mt-1"
+          />
+        </div>
+        <div className="flex justify-center gap-4 mt-6">
+          <Button type="submit" disabled={loading} className="btn">
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </div>
     </form>
   );
