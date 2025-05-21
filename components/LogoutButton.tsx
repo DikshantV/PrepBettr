@@ -12,7 +12,7 @@ export default function LogoutButton() {
   };
 
   return (
-    <Button variant="destructive" onClick={handleLogout} className="ml-2">
+    <Button onClick={handleLogout} className="btn btn-destructive ml-2">
       Logout
     </Button>
   );
