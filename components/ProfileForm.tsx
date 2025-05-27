@@ -10,7 +10,7 @@ export default function ProfileForm({ user }: { user: any }) {
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
   const [password, setPassword] = useState("");
-  const [profilePic, setProfilePic] = useState(user?.image || "/user-avatar.png");
+  const [profilePic, setProfilePic] = useState(user?.image || "/user-avatar.svg");
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

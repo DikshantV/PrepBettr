@@ -24,7 +24,7 @@ export default function Navbar() {
         <Link href="/profile" className="focus:outline-none">
           <div className="w-10 h-10 rounded-full overflow-hidden border border-primary-100 flex items-center justify-center bg-gray-100">
             <Image
-              src={user?.image || "/user-avatar.png"}
+              src={user?.image || "/user-avatar.svg"}
               alt="Profile"
               width={40}
               height={40}
