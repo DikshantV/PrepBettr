@@ -165,27 +165,15 @@ const Agent = ({
 
                 {/* User Profile Card */}
                 <div className="card-border">
-                    <div className="card-content flex flex-col items-center">
-                        <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                            <svg 
-                                className="w-16 h-16 text-gray-500" 
-                                aria-hidden="true" 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                width="24" 
-                                height="24" 
-                                fill="none" 
-                                viewBox="0 0 24 24"
-                            >
-                                <path 
-                                    stroke="currentColor" 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth="2" 
-                                    d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0a8.949 8.949 0 0 0 4.951-1.488A3.987 3.987 0 0 0 13 16h-2a3.987 3.987 0 0 0-3.951 3.512A8.948 8.948 0 0 0 12 21Zm3-11a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                />
-                            </svg>
-                        </div>
-                        <h3 className="mt-4">{userName}</h3>
+                    <div className="card-content">
+                        <Image
+                            src="/user-avatar.png"
+                            alt="profile-image"
+                            width={539}
+                            height={539}
+                            className="rounded-full object-cover size-[120px]"
+                        />
+                        <h3>{userName}</h3>
                     </div>
                 </div>
             </div>
