@@ -37,12 +37,13 @@ export async function signUp(params: SignUpParams) {
                 message: "User already exists. Please sign in.",
             };
 
-        // save user to db
+        // save user to db with default profile image
         await db.collection("users").doc(uid).set({
             name,
             email,
-            // profileURL,
-            // resumeURL,
+            image: '/default-avatar.svg', // Set default profile image
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         });
 
         return {
@@ -97,6 +98,28 @@ export async function signOut() {
 }
 
 // Get current user from session cookie
+// Helper function to convert Firestore timestamps to plain objects
+const convertTimestamps = (data: any): any => {
+    if (data === null || typeof data !== 'object') return data;
+    
+    // Handle Firestore Timestamp
+    if (data.toDate && typeof data.toDate === 'function') {
+        return data.toDate().toISOString();
+    }
+    
+    // Handle arrays
+    if (Array.isArray(data)) {
+        return data.map(convertTimestamps);
+    }
+    
+    // Handle objects
+    const result: Record<string, any> = {};
+    for (const key in data) {
+        result[key] = convertTimestamps(data[key]);
+    }
+    return result;
+};
+
 export async function getCurrentUser(): Promise<User | null> {
     const cookieStore = await cookies();
 
@@ -113,8 +136,12 @@ export async function getCurrentUser(): Promise<User | null> {
             .get();
         if (!userRecord.exists) return null;
 
+        // Convert Firestore timestamps to plain objects
+        const userData = userRecord.data();
+        const serializedData = convertTimestamps(userData);
+
         return {
-            ...userRecord.data(),
+            ...serializedData,
             id: userRecord.id,
         } as User;
     } catch (error) {

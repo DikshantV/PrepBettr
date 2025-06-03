@@ -1,23 +1,34 @@
-import {getFirestore} from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
     apiKey: "AIzaSyAsTYUzEURUz1LaQWSwreqc7fnoN-WS0S8",
     authDomain: "prepbettr.firebaseapp.com",
     projectId: "prepbettr",
-    storageBucket: "prepbettr.firebasestorage.app",
+    storageBucket: "prepbettr.firebasestorage.app", // Make sure this is correct
     messagingSenderId: "660242808945",
     appId: "1:660242808945:web:4edbaac82ed140f4d05bd0",
     measurementId: "G-LF6KN9F2HY"
 };
 
 // Initialize Firebase
-const app = !getApps.length ? initializeApp(firebaseConfig) :getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Initialize Firebase services
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// Only initialize Analytics in the browser
+let analytics;
+if (typeof window !== 'undefined') {
+    isSupported().then(yes => {
+        if (yes) analytics = getAnalytics(app);
+    });
+}
+
+export { auth, db, storage, analytics };
