@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 
 import { signIn, signUp } from "@/lib/actions/auth.action";
 import FormField from "./FormField";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -100,12 +101,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
     return (
         <div className="card-border lg:min-w-[566px]">
             <div className="flex flex-col gap-6 card py-14 px-10">
-                <div className="flex flex-row gap-2 justify-center">
-                    <Image src="/logo.svg" alt="logo" height={32} width={38} />
-                    <h2 className="text-primary-100">PrepBettr</h2>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-row gap-2 justify-center">
+                        <Image src="/logo.svg" alt="logo" height={32} width={38} />
+                        <h2 className="text-primary-100">PrepBettr</h2>
+                    </div>
                 </div>
 
-                <h3>Practice job interviews with AI</h3>
+                <h3 className="text-center">Practice job interviews with AI</h3>
 
                 <Form {...form}>
                     <form
@@ -138,11 +141,24 @@ const AuthForm = ({ type }: { type: FormType }) => {
                             type="password"
                         />
 
-                        <Button className="btn" type="submit">
+                        <Button className="btn w-full" type="submit">
                             {isSignIn ? "Sign In" : "Create an Account"}
                         </Button>
                     </form>
                 </Form>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with
+                        </span>
+                    </div>
+                </div>
+
+                <GoogleSignInButton />
 
                 <p className="text-center">
                     {isSignIn ? "No account yet?" : "Have an account already?"}

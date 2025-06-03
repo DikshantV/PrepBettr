@@ -13,13 +13,28 @@ import {
 async function Home() {
     const user = await getCurrentUser();
 
-    const [userInterviews, allInterview] = await Promise.all([
-        getInterviewsByUserId(user?.id!),
-        getLatestInterviews({ userId: user?.id! }),
+    if (!user) {
+        return (
+            <>
+                <section className="card-cta">
+                    <div className="flex flex-col gap-6 max-w-lg">
+                        <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                        <p className="text-lg">
+                            Please sign in to access your interviews
+                        </p>
+                    </div>
+                </section>
+            </>
+        );
+    }
+
+    const [userInterviews, allInterviews] = await Promise.all([
+        getInterviewsByUserId(user.id),
+        getLatestInterviews({ userId: user.id }),
     ]);
 
-    const hasPastInterviews = userInterviews?.length! > 0;
-    const hasUpcomingInterviews = allInterview?.length! > 0;
+    const hasPastInterviews = userInterviews.length > 0;
+    const hasUpcomingInterviews = allInterviews && allInterviews.length > 0;
 
     return (
         <>
@@ -48,8 +63,14 @@ async function Home() {
                 <h2>Your Interviews</h2>
 
                 <div className="interviews-section">
-                    {hasPastInterviews ? (
-                        userInterviews?.map((interview) => (
+                    {!user ? (
+                        <p className="text-center py-8">
+                            <Link href="/sign-in" className="text-primary hover:underline">
+                                Sign in
+                            </Link> to view your past interviews
+                        </p>
+                    ) : hasPastInterviews ? (
+                        userInterviews.map((interview) => (
                             <InterviewCard
                                 key={interview.id}
                                 userId={user?.id}
@@ -70,8 +91,14 @@ async function Home() {
                 <h2>Take Interviews</h2>
 
                 <div className="interviews-section">
-                    {hasUpcomingInterviews ? (
-                        allInterview?.map((interview) => (
+                    {!user ? (
+                        <p className="text-center py-8">
+                            <Link href="/sign-in" className="text-primary hover:underline">
+                                Sign in
+                            </Link> to view all interviews
+                        </p>
+                    ) : hasUpcomingInterviews ? (
+                        allInterviews.map((interview) => (
                             <InterviewCard
                                 key={interview.id}
                                 userId={user?.id}

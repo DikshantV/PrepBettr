@@ -1,7 +1,7 @@
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Your web app's Firebase configuration
@@ -31,4 +31,6 @@ if (typeof window !== 'undefined') {
     });
 }
 
-export { auth, db, storage, analytics };
+const googleProvider = new GoogleAuthProvider();
+
+export { auth, db, storage, analytics, googleProvider };

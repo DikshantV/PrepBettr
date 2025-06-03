@@ -2,6 +2,9 @@
 
 import { auth, db } from "@/firebase/admin";
 import { cookies } from "next/headers";
+import {FirebaseError} from "@firebase/util";
+import { Timestamp } from "@firebase/firestore";
+
 
 // Session duration (1 week)
 const SESSION_DURATION = 60 * 60 * 24 * 7;
@@ -10,7 +13,7 @@ const SESSION_DURATION = 60 * 60 * 24 * 7;
 export async function setSessionCookie(idToken: string) {
     const cookieStore = await cookies();
 
-    // Create session cookie
+    // Create a session cookie
     const sessionCookie = await auth.createSessionCookie(idToken, {
         expiresIn: SESSION_DURATION * 1000, // milliseconds
     });
@@ -29,7 +32,7 @@ export async function signUp(params: SignUpParams) {
     const { uid, name, email } = params;
 
     try {
-        // check if user exists in db
+        // check if a user exists in db
         const userRecord = await db.collection("users").doc(uid).get();
         if (userRecord.exists)
             return {
@@ -37,7 +40,7 @@ export async function signUp(params: SignUpParams) {
                 message: "User already exists. Please sign in.",
             };
 
-        // save user to db with default profile image
+        // save user to db with the default profile image
         await db.collection("users").doc(uid).set({
             name,
             email,
@@ -50,11 +53,11 @@ export async function signUp(params: SignUpParams) {
             success: true,
             message: "Account created successfully. Please sign in.",
         };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating user:", error);
 
         // Handle Firebase specific errors
-        if (error.code === "auth/email-already-exists") {
+        if (error instanceof FirebaseError && error.code === "auth/email-already-exists") {
             return {
                 success: false,
                 message: "This email is already in use",
@@ -80,7 +83,7 @@ export async function signIn(params: SignInParams) {
             };
 
         await setSessionCookie(idToken);
-    } catch (error: any) {
+    } catch {
         console.log("");
 
         return {
@@ -90,7 +93,7 @@ export async function signIn(params: SignInParams) {
     }
 }
 
-// Sign out user by clearing the session cookie
+// Sign out a user by clearing the session cookie
 export async function signOut() {
     const cookieStore = await cookies();
 
@@ -99,60 +102,107 @@ export async function signOut() {
 
 // Get current user from session cookie
 // Helper function to convert Firestore timestamps to plain objects
-const convertTimestamps = (data: any): any => {
+const convertTimestamps = (data: Record<string, unknown> | null | unknown[] | Timestamp): Record<string, unknown> | null | unknown[] | string => {
     if (data === null || typeof data !== 'object') return data;
     
     // Handle Firestore Timestamp
-    if (data.toDate && typeof data.toDate === 'function') {
+    if (data instanceof Timestamp) {
         return data.toDate().toISOString();
     }
     
     // Handle arrays
     if (Array.isArray(data)) {
-        return data.map(convertTimestamps);
+        return data.map(item => convertTimestamps(item as Record<string, unknown> | null));
     }
     
     // Handle objects
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     for (const key in data) {
-        result[key] = convertTimestamps(data[key]);
+        result[key] = convertTimestamps(data[key] as Record<string, unknown> | Timestamp | unknown[] | null);
     }
     return result;
 };
 
 export async function getCurrentUser(): Promise<User | null> {
-    const cookieStore = await cookies();
-
-    const sessionCookie = cookieStore.get("session")?.value;
-    if (!sessionCookie) return null;
-
     try {
-        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get("session")?.value;
+        
+        // If no session cookie, the user is not authenticated
+        if (!sessionCookie) {
+            console.log('No session cookie found');
+            return null;
+        }
 
-        // get user info from db
-        const userRecord = await db
-            .collection("users")
-            .doc(decodedClaims.uid)
-            .get();
-        if (!userRecord.exists) return null;
+        try {
+            // Verify the session cookie
+            const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
 
-        // Convert Firestore timestamps to plain objects
-        const userData = userRecord.data();
-        const serializedData = convertTimestamps(userData);
+            // Get user info from db
+            const userRecord = await db
+                .collection("users")
+                .doc(decodedClaims.uid)
+                .get();
+                
+            if (!userRecord.exists) {
+                // Don't log this to the client console
+                if (typeof window === 'undefined') {
+                    console.log('User not found in database:', decodedClaims.uid);
+                }
+                return null;
+            }
 
-        return {
-            ...serializedData,
-            id: userRecord.id,
-        } as User;
+            // Convert Firestore timestamps to plain objects
+            const userData = userRecord.data();
+            if (!userData) {
+                return null;
+            }
+            const serializedData = convertTimestamps(userData);
+
+            // Ensure we have a valid object before spreading
+            if (serializedData && typeof serializedData === 'object' && !Array.isArray(serializedData)) {
+                return {
+                    ...serializedData,
+                    id: userRecord.id,
+                } as User;
+            }
+            
+            // If not a valid object, return the id only
+            return {
+                id: userRecord.id,
+            } as User;
+        } catch (error: unknown) {
+            // Only log server-side to avoid client console errors
+            if (typeof window === 'undefined') {
+                console.log('Session verification status:', error instanceof Error ? error.message : 'invalid-session');
+            }
+            
+            // Clear the invalid session cookie
+            if (error instanceof Error && error.message.includes('auth/session-cookie-revoked') || 
+                error instanceof Error && error.message.includes('auth/session-cookie-expired') ||
+                error instanceof Error && error.message.includes('auth/argument-error')) {
+                try {
+                    const cookieStore = await cookies();
+                    cookieStore.delete('session');
+                    if (typeof window === 'undefined') {
+                        console.log('Cleared invalid session cookie');
+                    }
+                } catch (cookieError) {
+                    if (typeof window === 'undefined') {
+                        console.error('Error clearing session cookie:', cookieError);
+                    }
+                }
+            }
+            
+            return null;
+        }
     } catch (error) {
-        console.log(error);
-
-        // Invalid or expired session
+        console.error('Unexpected error in getCurrentUser:', error);
         return null;
     }
 }
 
-// Check if user is authenticated
+// Check if the user is authenticated
 export async function isAuthenticated() {
     const user = await getCurrentUser();
     return !!user;

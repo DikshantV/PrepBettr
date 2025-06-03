@@ -13,7 +13,7 @@ export default function PdfUploadButton() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is PDF
+    // Check if a file is PDF
     if (file.type !== 'application/pdf') {
       toast.error('Invalid file type', {
         description: 'Please upload a PDF file'

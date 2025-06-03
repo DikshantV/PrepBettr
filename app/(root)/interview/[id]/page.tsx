@@ -1,62 +1,114 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
-
-import Agent from "@/components/Agent";
-import { getRandomInterviewCover } from "@/lib/utils";
-
-import {
-    getFeedbackByInterviewId,
-    getInterviewById,
-} from "@/lib/actions/general.action";
 import { getCurrentUser } from "@/lib/actions/auth.action";
-import DisplayTechIcons from "@/components/DisplayTechIcons";
+import InterviewClient from "./InterviewClient";
 
-const InterviewDetails = async ({ params }: RouteParams) => {
+export interface InterviewData {
+    interview: {
+        id: string;
+        role: string;
+        type: string;
+        questions: {
+            id: string;
+            content: string;
+            type: string;
+            difficulty: string;
+            techStack: string[];
+            answer?: string;
+            feedback?: string;
+        }[];
+        techstack: string[];
+        createdAt: string;
+    };
+    feedback: {
+        id: string;
+        overall: string;
+        strengths: string[];
+        areasForImprovement: string[];
+    } | null;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
+async function getInterviewData(id: string) {
+    try {
+        // In a real app, you would fetch this data
+        // const response = await fetch(`/api/interview/${id}`);
+        // const result = await response.json();
+        
+        // Mock data for now
+        const mockData = {
+            interview: {
+                id,
+                role: 'Developer',
+                type: 'Technical',
+                questions: [
+                    {
+                        id: '1',
+                        content: 'Explain the concept of React hooks',
+                        type: 'technical',
+                        difficulty: 'medium',
+                        techStack: ['React', 'JavaScript']
+                    },
+                    {
+                        id: '2',
+                        content: 'What is the virtual DOM?',
+                        type: 'technical',
+                        difficulty: 'easy',
+                        techStack: ['React', 'JavaScript']
+                    }
+                ],
+                techstack: ['JavaScript', 'React', 'Node.js'],
+                createdAt: new Date().toISOString(),
+            },
+            feedback: null,
+        };
+        
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
+            throw new Error('User not authenticated');
+        }
+        
+        return {
+            ...mockData,
+            user: {
+                id: currentUser.id,
+                name: currentUser.name || 'User',
+                email: currentUser.email || ''
+            }
+        };
+    } catch (error) {
+        console.error('Error fetching interview data:', error);
+        throw error;
+    }
+}
+
+interface PageProps {
+    params: { id: string };
+    searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+const InterviewDetails = async ({ params }: PageProps) => {
+    // Get the id from params
     const { id } = await params;
+    let data;
+    
+    try {
+        data = await getInterviewData(id);
+    } catch (error) {
+        console.error('Error:', error);
+        redirect('/sign-in');
+    }
+    
+    if (!data) {
+        return null; // Redirecting to home or sign-in
+    }
+    
+    const { interview, feedback, user } = data;
 
-    const user = await getCurrentUser();
-
-    const interview = await getInterviewById(id);
-    if (!interview) redirect("/");
-
-    const feedback = await getFeedbackByInterviewId({
-        interviewId: id,
-        userId: user?.id!,
-    });
-
-    return (
-        <>
-            <div className="flex flex-row gap-4 justify-between">
-                <div className="flex flex-row gap-4 items-center max-sm:flex-col">
-                    <div className="flex flex-row gap-4 items-center">
-                        <Image
-                            src={getRandomInterviewCover()}
-                            alt="cover-image"
-                            width={40}
-                            height={40}
-                            className="rounded-full object-cover size-[40px]"
-                        />
-                        <h3 className="capitalize">{interview.role} Interview</h3>
-                    </div>
-
-                    <DisplayTechIcons techStack={interview.techstack} />
-                </div>
-
-                <p className="bg-dark-200 px-4 py-2 rounded-lg h-fit">
-                    {interview.type}
-                </p>
-            </div>
-
-            <Agent
-                userName={user?.name!}
-                userId={user?.id}
-                interviewId={id}
-                type="interview"
-                questions={interview.questions}
-                feedbackId={feedback?.id}
-            />
-        </>
-    );
+    return <InterviewClient interview={interview} feedback={feedback} user={user} />;
 };
 
 export default InterviewDetails;
