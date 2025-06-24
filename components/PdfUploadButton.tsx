@@ -1,11 +1,23 @@
 "use client";
 
 import { useState, useRef, ChangeEvent } from 'react';
-import { storage } from '@/firebase/client';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';
 
-export default function PdfUploadButton() {
+interface PdfUploadButtonProps {
+  onQuestionsGenerated?: (result: {
+    questions: string[];
+    fileUrl: string;
+    docId: string;
+  }) => void;
+  onUploadStart?: () => void;
+  onUploadEnd?: () => void;
+}
+
+export default function PdfUploadButton({ 
+  onQuestionsGenerated, 
+  onUploadStart, 
+  onUploadEnd 
+}: PdfUploadButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,24 +35,44 @@ export default function PdfUploadButton() {
 
     try {
       setIsUploading(true);
+      onUploadStart?.();
       
-      // Create a reference to the file in Firebase Storage
-      const storageRef = ref(storage, `resumes/${Date.now()}_${file.name}`);
+      const formData = new FormData();
+      formData.append('file', file);
       
-      // Upload the file
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
       
-      toast.success('File uploaded successfully!');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to process PDF');
+      }
       
-      // Here you can add logic to save the downloadURL to your database
-      console.log('File available at', downloadURL);
+      const data = await response.json();
+      
+      if (data.questions && data.questions.length > 0) {
+        toast.success('Document processed successfully!');
+        onQuestionsGenerated?.({
+          questions: data.questions,
+          fileUrl: data.fileUrl,
+          docId: data.docId
+        });
+      } else {
+        toast.warning('No questions were generated', {
+          description: 'The PDF might not contain enough content or the content might not be suitable for question generation.'
+        });
+      }
       
     } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error('Failed to upload file. Please try again.');
+      console.error('Error processing PDF:', error);
+      toast.error('Failed to process PDF', {
+        description: error instanceof Error ? error.message : 'An unknown error occurred'
+      });
     } finally {
       setIsUploading(false);
+      onUploadEnd?.();
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -54,28 +86,28 @@ export default function PdfUploadButton() {
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={isUploading}
-        className="p-2 rounded-full border border-gray-300 dark:border-gray-700 shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        aria-label={isUploading ? 'Uploading...' : 'Upload PDF'}
+        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+          isUploading 
+            ? 'bg-gray-400' 
+            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+        }`}
+        aria-label={isUploading ? 'Processing...' : 'Upload PDF'}
       >
         {isUploading ? (
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing...
+          </>
         ) : (
-          <svg
-            className="w-6 h-6 text-gray-800 dark:text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" x2="12" y1="3" y2="15" />
-          </svg>
+          <>
+            <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload Resume/CV
+          </>
         )}
       </button>
       <input
@@ -85,6 +117,7 @@ export default function PdfUploadButton() {
         className="hidden"
         onChange={handleFileChange}
         disabled={isUploading}
+        aria-label="Upload PDF"
       />
     </div>
   );
