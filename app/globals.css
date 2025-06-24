@@ -158,7 +158,69 @@
   }
 }
 
+/* Reset blockquote and quote container styles */
+blockquote, .quote-container {
+  quotes: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quote-container::before,
+.quote-container::after,
+.scroller__inner {
+  list-style: none !important;
+}
+
+.scroller__inner li {
+  list-style: none !important;
+  background-image: none !important;
+}
+
+.scroller__inner li::before,
+.scroller__inner li::after {
+  content: none !important;
+}
+
 @layer components {
+  /* Infinite Moving Cards */
+  .scroller {
+    --animation-duration: 900s; /* 15 minutes */
+    --animation-direction: forwards;
+    overflow: hidden;
+  }
+
+  .scroller[data-animated="true"] {
+    overflow: hidden;
+  }
+
+  .scroller[data-animated="true"] .scroller__inner {
+    width: max-content;
+    flex-wrap: nowrap;
+    animation: scroll var(--animation-duration, 120s) var(--animation-direction, forwards) linear infinite;
+  }
+
+  .scroller[data-direction="right"] {
+    --animation-direction: reverse;
+  }
+
+  .scroller[data-direction="left"] {
+    --animation-direction: forwards;
+  }
+
+  .scroller[data-speed="fast"] {
+    --animation-duration: 600s; /* 10 minutes */
+  }
+
+  .scroller[data-speed="slow"] {
+    --animation-duration: 1800s; /* 30 minutes */
+  }
+
+  @keyframes scroll {
+    to {
+      transform: translate(calc(-20% - 0.2rem));
+    }
+  }
+
   .btn-call {
     @apply inline-block px-7 py-3 font-bold text-sm leading-5 text-white transition-colors duration-150 bg-success-100 border border-transparent rounded-full shadow-sm focus:outline-none focus:shadow-2xl active:bg-success-200 hover:bg-success-200 min-w-28 cursor-pointer items-center justify-center overflow-visible;
 
