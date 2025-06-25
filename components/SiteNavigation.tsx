@@ -7,22 +7,22 @@ export function SiteNavigation() {
   const navItems = [
     {
       name: 'Home',
-      link: '/',
+      link: '/marketing',
       icon: <Home className="h-5 w-5" />,
     },
     {
       name: 'Features',
-      link: '#features',
+      link: '/marketing#features',
       icon: <BarChart className="h-5 w-5" />,
     },
     {
       name: 'Testimonials',
-      link: '#testimonials',
+      link: '/marketing#testimonials',
       icon: <MessageSquare className="h-5 w-5" />,
     },
     {
       name: 'Pricing',
-      link: '#pricing',
+      link: '/marketing#pricing',
       icon: <DollarSign className="h-5 w-5" />,
     }
   ];
