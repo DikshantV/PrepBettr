@@ -12,7 +12,7 @@ export function TestimonialsSection() {
 
   if (!isMounted) {
     return (
-      <section id="testimonials" className="py-20 bg-white dark:bg-black">
+      <section id="testimonials" className="relative z-10 py-20 bg-white dark:bg-black">
         <div className="container mx-auto px-4">
           <div className="text-center py-12 px-4">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">

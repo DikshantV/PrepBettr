@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Spotlight } from '@/components/ui/spotlight';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { FeaturesSection } from '@/components/ui/features-section';
+import { MacbookScroll } from '@/components/ui/macbook-scroll';
 
 const SiteNavigation = dynamic(
   () => import('@/components/SiteNavigation').then((mod) => mod.SiteNavigation),
@@ -32,7 +33,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
-                  href="/signup" 
+                  href="/sign-up" 
                   className="relative inline-flex h-12 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
                 >
                   <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
@@ -54,8 +55,28 @@ export default function HomePage() {
         {/* Features Section */}
         <FeaturesSection />
 
+        {/* Macbook Scroll Demo */}
+        <div className="relative z-0 py-12">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-12">
+              Experience the Future of Interview Prep
+            </h2>
+            <p className="text-xl text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
+              Our AI-powered platform provides real-time feedback and personalized coaching to help you ace your next interview.
+            </p>
+            <div className="relative w-full overflow-visible" style={{ minHeight: '500px' }}>
+              <MacbookScroll 
+                src="/demo-screenshot.png" 
+                showGradient={false}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Testimonials Section */}
-        <TestimonialsSection />
+        <div className="relative z-10">
+          <TestimonialsSection />
+        </div>
 
         {/* Pricing Section */}
         <section id="pricing" className="relative isolate bg-white px-6 py-18 sm:py-18 lg:px-8 dark:bg-black">
@@ -100,7 +121,7 @@ export default function HomePage() {
                   Analytics & weekly updates
                 </li>
               </ul>
-              <a href="#" aria-describedby="tier-hobby" className="mt-8 block rounded-md px-3.5 py-2.5 text-center text-sm font-semibold text-indigo-600 ring-1 ring-indigo-200 ring-inset hover:ring-indigo-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:mt-10 dark:text-indigo-400 dark:ring-indigo-700 dark:hover:ring-indigo-600">Get started today</a>
+              <Link href="/sign-up" className="mt-8 block rounded-md px-3.5 py-2.5 text-center text-sm font-semibold text-indigo-600 ring-1 ring-indigo-200 ring-inset hover:ring-indigo-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:mt-10 dark:text-indigo-400 dark:ring-indigo-700 dark:hover:ring-indigo-600">Get started today</Link>
             </div>
             <div className="relative rounded-3xl bg-gray-900 p-8 shadow-2xl ring-1 ring-gray-900/10 dark:bg-gray-800 sm:p-10">
               <h3 id="tier-enterprise" className="text-base/7 font-semibold text-indigo-400">Enterprise</h3>
@@ -147,7 +168,7 @@ export default function HomePage() {
                   Collaborative interview resources
                 </li>
               </ul>
-              <a href="#" aria-describedby="tier-enterprise" className="mt-8 block rounded-md bg-indigo-500 px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 sm:mt-10">Get started today</a>
+              <Link href="/contact" aria-describedby="tier-enterprise" className="mt-8 block rounded-md bg-indigo-500 px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 sm:mt-10">Contact Sales</Link>
             </div>
           </div>
         </section>
@@ -170,7 +191,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="/signin" 
+                href="/sign-up" 
                 className="relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
               >
                 <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
