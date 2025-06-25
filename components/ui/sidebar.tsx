@@ -10,6 +10,12 @@ interface Links {
     icon: React.JSX.Element | React.ReactNode;
 }
 
+interface SidebarLinkProps {
+    link: Links;
+    className?: string;
+    onClick?: () => void;
+}
+
 interface SidebarContextProps {
     open: boolean;
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -79,28 +85,35 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
 };
 
 export const DesktopSidebar = ({
-                                   className,
-                                   children,
-                                   ...props
-                               }: React.ComponentProps<typeof motion.div>) => {
+    className,
+    children,
+    ...props
+}: React.ComponentProps<typeof motion.div>) => {
     const { open, setOpen, animate } = useSidebar();
     return (
-        <>
-            <motion.div
-                className={cn(
-                    "h-full px-4 py-4 hidden  md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0",
-                    className
-                )}
-                animate={{
-                    width: animate ? (open ? "300px" : "60px") : "300px",
+        <motion.div
+            className={cn(
+                "h-full hidden md:flex flex-col bg-neutral-100 dark:bg-neutral-800 rounded-r-3xl overflow-hidden",
+                className
+            )}
+            animate={{
+                width: animate ? (open ? "300px" : "64px") : "300px",
+            }}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+            {...props}
+        >
+            <motion.div 
+                className={cn("flex-1", open ? 'px-4' : 'px-0')}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
                 }}
-                onMouseEnter={() => setOpen(true)}
-                onMouseLeave={() => setOpen(false)}
-                {...props}
             >
                 {children}
             </motion.div>
-        </>
+        </motion.div>
     );
 };
 
@@ -155,31 +168,38 @@ export const MobileSidebar = ({
 };
 
 export const SidebarLink = ({
-                                link,
-                                className,
-                                ...props
-                            }: {
-    link: Links;
-    className?: string;
-}) => {
+    link,
+    className,
+    onClick,
+    ...props
+}: SidebarLinkProps) => {
     const { open, animate } = useSidebar();
     return (
         <a
             href={link.href}
             className={cn(
-                "flex items-center justify-start gap-2  group/sidebar py-2",
+                "flex items-center w-full py-2.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors",
+                !open ? 'justify-center px-0' : 'px-4',
                 className
             )}
+            onClick={onClick}
             {...props}
         >
-            {link.icon}
-
+            <div className="flex items-center justify-center w-8 h-8">
+                {React.cloneElement(link.icon as React.ReactElement<{ className?: string }>, {
+                    className: 'h-5 w-5'
+                })}
+            </div>
             <motion.span
                 animate={{
                     display: animate ? (open ? "inline-block" : "none") : "inline-block",
                     opacity: animate ? (open ? 1 : 0) : 1,
+                    width: open ? 'auto' : 0,
                 }}
-                className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+                className="text-sm whitespace-nowrap overflow-hidden"
+                style={{
+                    marginLeft: open ? '0.75rem' : 0
+                }}
             >
                 {link.label}
             </motion.span>
