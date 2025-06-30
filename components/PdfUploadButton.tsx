@@ -1,10 +1,27 @@
 "use client";
 
 import { useState, useCallback, useRef } from 'react';
-import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { UploadCloud, FileText, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Uploady, { 
+  useItemProgressListener, 
+  useItemErrorListener, 
+  useItemFinalizeListener,
+  useItemStartListener,
+  useItemAbortListener
+} from '@rpldy/uploady';
+import { asUploadButton } from '@rpldy/upload-button';
+
+type UploadResponse = {
+  success: boolean;
+  data?: {
+    questions?: string[];
+    fileUrl?: string;
+    docId?: string;
+  };
+  error?: string;
+}
 
 interface PdfUploadButtonProps {
   onQuestionsGenerated?: (result: {
@@ -16,83 +33,70 @@ interface PdfUploadButtonProps {
   onUploadEnd?: () => void;
 }
 
-export default function PdfUploadButton({ 
+const PdfUploadButton = ({ 
   onQuestionsGenerated, 
   onUploadStart, 
   onUploadEnd 
-}: PdfUploadButtonProps) {
-  const [isUploading, setIsUploading] = useState(false);
+}: PdfUploadButtonProps) => {
   const [file, setFile] = useState<File | null>(null);
-  const [, setIsDragging] = useState(false);
-  const dropzoneRef = useRef<HTMLDivElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const uploaderRef = useRef<HTMLButtonElement>(null);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const pdfFile = acceptedFiles[0];
-    if (!pdfFile) return;
-
-    // Check if file is PDF
-    if (pdfFile.type !== 'application/pdf') {
-      toast.error('Invalid file type', {
-        description: 'Please upload a PDF file'
-      });
-      return;
-    }
-
-    setFile(pdfFile);
-    await handleFileUpload(pdfFile);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf']
-    },
-    maxFiles: 1,
-    multiple: false,
-    onDragEnter: () => setIsDragging(true),
-    onDragLeave: () => setIsDragging(false),
-    onDropAccepted: () => setIsDragging(false),
-    onDropRejected: () => {
-      setIsDragging(false);
-      toast.error('Invalid file', {
-        description: 'Please upload a valid PDF file'
-      });
-    },
+  // Handle upload start
+  useItemStartListener((item) => {
+    setFile(item.file as File);
+    setIsUploading(true);
+    onUploadStart?.();
   });
 
-  const handleFileUpload = async (fileToUpload: File) => {
+  // Handle upload progress
+  useItemProgressListener((item) => {
+    setUploadProgress(item.completed);
+  });
+
+  // Handle upload errors
+  useItemErrorListener((item) => {
+    setIsUploading(false);
+    const error = item.uploadResponse?.data?.error || 'Failed to upload file';
+    toast.error('Upload failed', {
+      description: typeof error === 'string' ? error : 'An unknown error occurred'
+    });
+    setFile(null);
+    setUploadProgress(0);
+    onUploadEnd?.();
+  });
+
+  // Handle upload abort
+  useItemAbortListener(() => {
+    setIsUploading(false);
+    setFile(null);
+    setUploadProgress(0);
+    onUploadEnd?.();
+  });
+
+  // Handle successful upload
+  useItemFinalizeListener(async (item) => {
     try {
-      setIsUploading(true);
-      onUploadStart?.();
+      const response = item.uploadResponse?.data as UploadResponse;
       
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      
-      const response = await fetch('/api/upload-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to process PDF');
-      }
-      
-      const data = await response.json();
-      
-      if (data.questions && data.questions.length > 0) {
-        toast.success('Document processed successfully!');
-        onQuestionsGenerated?.({
-          questions: data.questions,
-          fileUrl: data.fileUrl,
-          docId: data.docId
-        });
+      if (response?.success) {
+        const questions = response.data?.questions;
+        if (questions?.length) {
+          toast.success('Document processed successfully!');
+          onQuestionsGenerated?.({
+            questions,
+            fileUrl: response.data?.fileUrl || '',
+            docId: response.data?.docId || ''
+          });
+        } else {
+          toast.warning('No questions were generated', {
+            description: 'The PDF might not contain enough content or the content might not be suitable for question generation.'
+          });
+        }
       } else {
-        toast.warning('No questions were generated', {
-          description: 'The PDF might not contain enough content or the content might not be suitable for question generation.'
-        });
+        throw new Error(response?.error || 'Failed to process PDF');
       }
-      
     } catch (error) {
       console.error('Error processing PDF:', error);
       toast.error('Failed to process PDF', {
@@ -102,35 +106,46 @@ export default function PdfUploadButton({
       setIsUploading(false);
       onUploadEnd?.();
     }
-  };
+  });
 
-  const removeFile = () => {
+  const removeFile = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     setFile(null);
-  };
+    setUploadProgress(0);
+    setIsUploading(false);
+    
+    // If you want to abort the current upload when removing the file
+    interface WindowWithUploader extends Window {
+      RPyldyUploader?: {
+        abortAll: () => void;
+      };
+    }
+    const uploader = (window as WindowWithUploader).RPyldyUploader;
+    if (uploader) {
+      uploader.abortAll();
+    }
+  }, []);
 
-  return (
+  // Custom button component for Uploady
+  const CustomUploadButton = asUploadButton(({ onClick, isUploading: isUploadingProp }: { onClick: () => void, isUploading: boolean }) => (
     <div className="relative">
-      <div 
-        {...getRootProps()} 
-        ref={dropzoneRef}
-        className="flex items-center"
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={isUploading || isUploadingProp}
+        className={`p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm ${
+          isUploading || isUploadingProp ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''
+        }`}
+        aria-label="Upload resume/CV"
+        title="Upload resume/CV (PDF)"
+        ref={uploaderRef}
       >
-        <input {...getInputProps()} />
-        <button
-          type="button"
-          className={`p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm ${
-            isDragActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''
-          }`}
-          aria-label="Upload resume/CV"
-          title="Upload resume/CV (PDF)"
-        >
-          {isUploading ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <UploadCloud className="w-6 h-6" />
-          )}
-        </button>
-      </div>
+        {isUploading || isUploadingProp ? (
+          <Loader2 className="w-6 h-6 animate-spin" />
+        ) : (
+          <UploadCloud className="w-6 h-6" />
+        )}
+      </button>
 
       <AnimatePresence>
         {file && (
@@ -154,10 +169,7 @@ export default function PdfUploadButton({
                   ) : (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile();
-                      }}
+                      onClick={removeFile}
                       className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1"
                       aria-label="Remove file"
                     >
@@ -168,9 +180,8 @@ export default function PdfUploadButton({
               </div>
               <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
                 <div 
-                  className={`h-1.5 rounded-full ${
-                    isUploading ? 'bg-indigo-500 w-3/4' : 'bg-green-500 w-full'
-                  }`}
+                  className="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
                 />
               </div>
             </div>
@@ -178,5 +189,61 @@ export default function PdfUploadButton({
         )}
       </AnimatePresence>
     </div>
+  ));
+
+  return <CustomUploadButton />;
+};
+
+// Main component with Uploady provider
+export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
+  return (
+    <Uploady
+      destination={{ 
+        url: '/api/upload-pdf',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      }}
+      accept="application/pdf"
+      multiple={false}
+      autoUpload={true}
+      inputFieldName="file"
+      fileFilter={(file: File | string) => {
+        // Additional client-side validation
+        if (typeof file === 'string') {
+          return false;
+        }
+        const isValid = file.type === 'application/pdf';
+        if (!isValid) {
+          toast.error('Invalid file type', {
+            description: 'Please upload a PDF file'
+          });
+        }
+        return isValid;
+      }}
+      formatServerResponse={(_response: string | UploadResponse) => {
+        try {
+          const response = typeof _response === 'string' ? JSON.parse(_response) : _response;
+          return {
+            success: response.success !== false,
+            data: response.data || response,
+            error: response.error
+          };
+        } catch (e) {
+          console.error('Error parsing server response:', e);
+          return {
+            success: false,
+            error: 'Invalid server response format',
+            data: {}
+          };
+        }
+      }}
+      maxGroupSize={1}
+      clearPendingOnAdd={true}
+      forceJsonResponse={true}
+    >
+      <PdfUploadButton {...props} />
+    </Uploady>
   );
 }
