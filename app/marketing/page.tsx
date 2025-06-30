@@ -280,17 +280,17 @@ export default function HomePage() {
                 {
                   title: 'Company',
                   links: [
-                    { name: 'About Us', href: '#' },
-                    { name: 'Careers', href: '#' },
+                    { name: 'About Us', href: '/marketing/about' },
+                    { name: 'Careers', href: '/marketing/careers' },
                     { name: 'Contact', href: 'mailto:contact@prepbettr.com' },
                   ]
                 },
                 {
                   title: 'Legal',
                   links: [
-                    { name: 'Privacy Policy', href: '#' },
-                    { name: 'Terms of Service', href: '#' },
-                    { name: 'Cookie Policy', href: '#' },
+                    { name: 'Privacy Policy', href: '/marketing/privacy' },
+                    { name: 'Terms of Service', href: '/marketing/terms' },
+                    { name: 'Cookie Policy', href: '/marketing/cookies' },
                   ]
                 }
               ].map((column, index) => (

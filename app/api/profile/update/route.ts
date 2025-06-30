@@ -6,12 +6,29 @@ interface UpdateProfileRequest {
   name: string;
   password?: string;
   profilePic: string | null;
+  about?: string;
+  phone?: string;
+  workplace?: string;
+  skills?: string[];
+  experience?: string;
+  dateOfBirth?: string;
   idToken: string;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, password, profilePic, idToken } = await req.json() as UpdateProfileRequest;
+    const { 
+      name, 
+      password, 
+      profilePic, 
+      idToken, 
+      about, 
+      phone, 
+      workplace, 
+      skills, 
+      experience, 
+      dateOfBirth 
+    } = await req.json() as UpdateProfileRequest;
     
     if (!idToken) {
       return NextResponse.json(
@@ -48,7 +65,7 @@ export async function POST(req: NextRequest) {
         // Basic URL validation
         new URL(profilePic);
         authUpdate.photoURL = profilePic;
-      } catch (e) {
+      } catch {
         console.warn('Invalid URL for profile picture, setting to null');
         authUpdate.photoURL = null;
       }
@@ -73,12 +90,26 @@ export async function POST(req: NextRequest) {
     // Prepare Firestore update
     const firestoreUpdate: {
       name: string;
+      about?: string;
+      phone?: string;
+      workplace?: string;
+      skills?: string[];
+      experience?: string;
+      dateOfBirth?: string;
       image?: string | null | FieldValue;
-      updatedAt?: FieldValue;
+      updatedAt: FieldValue;
     } = { 
-      name,
+      name: name.trim(),
       updatedAt: FieldValue.serverTimestamp()
     };
+
+    // Add optional fields if they exist
+    if (about !== undefined) firestoreUpdate.about = about;
+    if (phone !== undefined) firestoreUpdate.phone = phone;
+    if (workplace !== undefined) firestoreUpdate.workplace = workplace;
+    if (skills !== undefined) firestoreUpdate.skills = skills;
+    if (experience !== undefined) firestoreUpdate.experience = experience;
+    if (dateOfBirth !== undefined) firestoreUpdate.dateOfBirth = dateOfBirth;
 
     // Handle profile picture for Firestore
     if (!profilePic || profilePic === '/default-avatar.svg' || profilePic.endsWith('default-avatar.svg')) {
@@ -88,7 +119,7 @@ export async function POST(req: NextRequest) {
         // Basic URL validation
         new URL(profilePic);
         firestoreUpdate.image = profilePic;
-      } catch (e) {
+      } catch {
         console.warn('Invalid profile picture URL, setting to default');
         firestoreUpdate.image = FieldValue.delete();
       }
@@ -113,18 +144,31 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('Error updating profile:', error);
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to update profile';
-    const errorCode = error instanceof Error 
-      ? error.name 
-      : 'unknown_error';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('auth/weak-password')) {
+        return NextResponse.json(
+          { error: 'Password should be at least 6 characters' },
+          { status: 400 }
+        );
+      } else if (error.message.includes('auth/email-already-exists')) {
+        return NextResponse.json(
+          { error: 'Email already in use' },
+          { status: 400 }
+        );
+      } else if (error.message.includes('auth/invalid-id-token')) {
+        return NextResponse.json(
+          { error: 'Invalid or expired session. Please sign in again.' },
+          { status: 401 }
+        );
+      }
+    }
     
     return NextResponse.json(
       { 
-        error: errorMessage,
-        code: errorCode
-      }, 
+        error: 'Failed to update profile. Please try again.',
+        code: 'update_failed'
+      },
       { status: 500 }
     );
   }

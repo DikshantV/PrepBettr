@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
+import { UploadCloud, FileText, Loader2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PdfUploadButtonProps {
   onQuestionsGenerated?: (result: {
@@ -19,26 +22,51 @@ export default function PdfUploadButton({
   onUploadEnd 
 }: PdfUploadButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [, setIsDragging] = useState(false);
+  const dropzoneRef = useRef<HTMLDivElement>(null);
 
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const pdfFile = acceptedFiles[0];
+    if (!pdfFile) return;
 
-    // Check if a file is PDF
-    if (file.type !== 'application/pdf') {
+    // Check if file is PDF
+    if (pdfFile.type !== 'application/pdf') {
       toast.error('Invalid file type', {
         description: 'Please upload a PDF file'
       });
       return;
     }
 
+    setFile(pdfFile);
+    await handleFileUpload(pdfFile);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxFiles: 1,
+    multiple: false,
+    onDragEnter: () => setIsDragging(true),
+    onDragLeave: () => setIsDragging(false),
+    onDropAccepted: () => setIsDragging(false),
+    onDropRejected: () => {
+      setIsDragging(false);
+      toast.error('Invalid file', {
+        description: 'Please upload a valid PDF file'
+      });
+    },
+  });
+
+  const handleFileUpload = async (fileToUpload: File) => {
     try {
       setIsUploading(true);
       onUploadStart?.();
       
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
@@ -73,52 +101,82 @@ export default function PdfUploadButton({
     } finally {
       setIsUploading(false);
       onUploadEnd?.();
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
+  };
+
+  const removeFile = () => {
+    setFile(null);
   };
 
   return (
     <div className="relative">
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
-        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-          isUploading 
-            ? 'bg-gray-400' 
-            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-        }`}
-        aria-label={isUploading ? 'Processing...' : 'Upload PDF'}
+      <div 
+        {...getRootProps()} 
+        ref={dropzoneRef}
+        className="flex items-center"
       >
-        {isUploading ? (
-          <>
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </>
-        ) : (
-          <>
-            <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            Upload Resume/CV
-          </>
+        <input {...getInputProps()} />
+        <button
+          type="button"
+          className={`p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm ${
+            isDragActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''
+          }`}
+          aria-label="Upload resume/CV"
+          title="Upload resume/CV (PDF)"
+        >
+          {isUploading ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <UploadCloud className="w-6 h-6" />
+          )}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {file && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute right-0 z-10 mt-2 w-64 origin-top-right rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          >
+            <div className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {file.name}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  {isUploading ? (
+                    <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin ml-2" />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile();
+                      }}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1"
+                      aria-label="Remove file"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                <div 
+                  className={`h-1.5 rounded-full ${
+                    isUploading ? 'bg-indigo-500 w-3/4' : 'bg-green-500 w-full'
+                  }`}
+                />
+              </div>
+            </div>
+          </motion.div>
         )}
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,application/pdf"
-        className="hidden"
-        onChange={handleFileChange}
-        disabled={isUploading}
-        aria-label="Upload PDF"
-      />
+      </AnimatePresence>
     </div>
   );
 }

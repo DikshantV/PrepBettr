@@ -43,23 +43,41 @@ export default function InterviewContent({ interview, user }: InterviewContentPr
     };
 
     return (
-        <div className="space-y-1">
-            <InterviewHeader 
-                role={interview.role}
-                techstack={interview.techstack}
-                type={interview.type}
-                onToggleEditor={toggleEditor}
-            />
+        <div className="space-y-6 p-6 max-w-7xl mx-auto w-full">
+            {/* Header Section */}
+            <div className="overflow-hidden">
+                <InterviewHeader 
+                    role={interview.role}
+                    techstack={interview.techstack}
+                    type={interview.type}
+                    onToggleEditor={toggleEditor}
+                />
+            </div>
             
-            <Agent 
-                interviewId={interview.id}
-                type={interview.type}
-                questions={interview.questions.map(q => q.content)}
-                userName={user.name}
-                userId={user.id}
-            />
-            
-            {isEditorExpanded && <CodeEditorWrapper />}
+            {/* Main Content Section */}
+            <div className="space-y-6">
+                {/* Agent Section */}
+                <div className="p-2">
+                    <h3 className="text-lg font-semibold text-white mb-4">Interview Session</h3>
+                    <div className="space-y-4">
+                        <Agent 
+                            interviewId={interview.id}
+                            type={interview.type}
+                            questions={interview.questions.map(q => q.content)}
+                            userName={user.name}
+                            userId={user.id}
+                        />
+                    </div>
+                </div>
+                
+                {/* Code Editor Section */}
+                {isEditorExpanded && (
+                    <div className="p-2">
+                        <h3 className="text-lg font-semibold text-white mb-4">Code Editor</h3>
+                        <CodeEditorWrapper />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

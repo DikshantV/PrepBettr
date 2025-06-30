@@ -18,45 +18,52 @@ export default function InterviewHeader({
     onToggleEditor 
 }: InterviewHeaderProps) {
     return (
-        <div className="flex items-center gap-4 pb-4">
-            <Image
-                src={getRandomInterviewCover()}
-                alt="cover-image"
-                width={40}
-                height={40}
-                className="rounded-full object-cover size-[40px]"
-            />
-            <h3 className="capitalize text-xl font-semibold">{role} Interview</h3>
-            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-            <DisplayTechIcons techStack={techstack} />
-            <p className="bg-dark-200 px-4 py-2 rounded-lg h-fit">
-                {type}
-            </p>
-            <div className="flex-1"></div>
-            <button
-                onClick={onToggleEditor}
-                className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Toggle code editor"
-                title="Toggle code editor"
-            >
-                <svg 
-                    className="w-6 h-6" 
-                    aria-hidden="true" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="24" 
-                    height="24" 
-                    fill="none" 
-                    viewBox="0 0 24 24"
-                >
-                    <path 
-                        stroke="currentColor" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2" 
-                        d="m8 8-4 4 4 4m8 0 4-4-4-4m-2-3-4 14"
+        <div className="flex flex-col w-full mb-6">
+            <div className="flex items-center gap-4 p-4">
+                <div className="flex items-center gap-4 flex-1">
+                    <Image
+                        src={getRandomInterviewCover()}
+                        alt="cover-image"
+                        width={48}
+                        height={48}
+                        className="rounded-full object-cover border-2 border-primary/20"
                     />
-                </svg>
-            </button>
+                    <div className="border-l border-gray-600 h-10 mx-2"></div>
+                    <div>
+                        <h2 className="text-2xl font-bold capitalize text-white">{role} Interview</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <DisplayTechIcons techStack={techstack} />
+                            <span className="text-sm text-gray-400">•</span>
+                            <span className="text-sm text-gray-300">{type} Interview</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button
+                    onClick={onToggleEditor}
+                    className="p-2.5 text-gray-400 hover:text-white hover:bg-dark-300 rounded-lg transition-colors border border-dark-300 hover:border-gray-600"
+                    aria-label="Toggle code editor"
+                    title="Toggle code editor"
+                >
+                    <svg 
+                        className="w-6 h-6" 
+                        aria-hidden="true" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="24" 
+                        height="24" 
+                        fill="none" 
+                        viewBox="0 0 24 24"
+                    >
+                        <path 
+                            stroke="currentColor" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth="2" 
+                            d="m8 8-4 4 4 4m8 0 4-4-4-4m-2-3-4 14"
+                        />
+                    </svg>
+                </button>
+            </div>
         </div>
     );
 }

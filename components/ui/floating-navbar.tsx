@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { auth } from '@/firebase/client';
+import { onAuthStateChanged } from 'firebase/auth';
 import type { JSX } from 'react';
 
 export const FloatingNav = ({
@@ -24,6 +26,17 @@ export const FloatingNav = ({
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isScrollingUp, setIsScrollingUp] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,6 +63,10 @@ export const FloatingNav = ({
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -108,15 +125,15 @@ export const FloatingNav = ({
             ))}
           </div>
 
-          {/* Login Button - Right Aligned */}
+          {/* Dashboard/Sign In Button - Right Aligned */}
           <div className="ml-auto">
             <Link
-              href="/sign-in"
+              href={isAuthenticated ? "/dashboard" : "/sign-in"}
               className="relative inline-flex h-10 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
             >
               <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
               <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl">
-                Dashboard
+                {isAuthenticated ? 'Dashboard' : 'Sign In'}
               </span>
             </Link>
           </div>
