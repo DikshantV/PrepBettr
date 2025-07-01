@@ -5,6 +5,7 @@ import { Spotlight } from '@/components/ui/spotlight';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { FeaturesSection } from '@/components/ui/features-section';
 import { MacbookScroll } from '@/components/ui/macbook-scroll';
+import Image from 'next/image';
 
 const SiteNavigation = dynamic(
   () => import('@/components/SiteNavigation').then((mod) => mod.SiteNavigation),
@@ -218,9 +219,11 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
               <div className="space-y-4">
                 <div className="flex flex-col space-y-2 items-start">
-                  <img 
+                  <Image 
                     src="/logo.svg" 
                     alt="Logo" 
+                    width={32}
+                    height={32}
                     className="h-8 w-auto"
                   />
                   <span className="text-xl font-bold text-gray-900 dark:text-white">PrepBettr</span>
