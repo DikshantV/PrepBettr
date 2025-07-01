@@ -82,13 +82,21 @@ const AuthForm = ({ type }: { type: FormType }) => {
                     return;
                 }
 
-                await signIn({
+                const result = await signIn({
                     email,
                     idToken,
                 });
 
-                toast.success("Signed in successfully.");
-                router.push("/");
+                if (result?.success) {
+                    toast.success("Signed in successfully.");
+                    // Use a full page reload to ensure auth state is updated
+                    setTimeout(() => {
+                        // Redirect to the dashboard
+                        window.location.href = '/dashboard';
+                    }, 500);
+                } else {
+                    throw new Error(result?.message || 'Failed to sign in');
+                }
             }
         } catch (error) {
             console.log(error);

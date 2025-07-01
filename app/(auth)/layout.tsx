@@ -12,7 +12,8 @@ const AuthLayout = async ({ children }: { children: ReactNode }) => {
             
             // Only redirect if we're sure the user is authenticated
             if (isUserAuthenticated && (pathname.endsWith('/sign-in') || pathname.endsWith('/sign-up'))) {
-                redirect("/");
+                // Redirect to the dashboard page
+                redirect('/dashboard');
             }
         } catch (error) {
             // Silently handle any errors during auth check
