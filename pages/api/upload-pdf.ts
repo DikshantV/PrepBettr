@@ -6,7 +6,7 @@ import { IncomingForm, File } from 'formidable';
 import { getAuth } from 'firebase-admin/auth';
 import * as pdfjs from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.js';
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const auth = getAuth();
