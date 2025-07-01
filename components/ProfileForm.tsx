@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import Image from "next/image";
 import { auth } from "@/firebase/client";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -13,12 +14,26 @@ interface ProfileUser {
   name?: string;
   email?: string;
   image?: string;
+  about?: string;
+  phone?: string;
+  workplace?: string;
+  skills?: string[];
+  experience?: string;
+  dateOfBirth?: string;
 }
 
 export default function ProfileForm({ user }: { user: ProfileUser }) {
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
   const [password, setPassword] = useState("");
+  const [about, setAbout] = useState(user?.about || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [workplace, setWorkplace] = useState(user?.workplace || "");
+  const [skills, setSkills] = useState<string[]>(user?.skills || []);
+  const [skillInput, setSkillInput] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [experience, setExperience] = useState(user?.experience || "");
+  const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth || "");
   const defaultProfilePic = (
     <svg 
       className="w-full h-full text-gray-800 dark:text-white" 
@@ -118,6 +133,12 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           name, 
           password: password || undefined, 
           profilePic: profilePicUrl,
+          about,
+          phone,
+          workplace,
+          skills,
+          experience,
+          dateOfBirth,
           idToken
         }),
       });
@@ -220,8 +241,8 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         />
       </div>
       
-      <div className="space-y-4">
-        <div className="space-y-2">
+      <div className="space-y-5">
+        <div className="space-y-1.5 pb-3">
           <Label htmlFor="name" className="text-light-100">Name</Label>
           <Input
             id="name"
@@ -231,7 +252,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           />
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-1.5 pb-3">
           <Label htmlFor="email" className="text-light-100">Email</Label>
           <Input 
             id="email" 
@@ -240,8 +261,8 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             className="bg-dark-100/50 border-light-600 text-light-400 cursor-not-allowed" 
           />
         </div>
-        
-        <div className="space-y-2">
+
+        <div className="space-y-1.5 pb-3">
           <Label htmlFor="password" className="text-light-100">New Password (leave blank to keep current)</Label>
           <Input
             id="password"
@@ -252,6 +273,167 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
           />
         </div>
+        
+        <div className="space-y-1.5 pb-3">
+          <Label htmlFor="about" className="text-light-100">About Me</Label>
+          <Textarea
+            id="about"
+            value={about}
+            onChange={e => setAbout(e.target.value)}
+            placeholder="Tell us about yourself..."
+            rows={3}
+            style={{ backgroundColor: '#0D1117' }}
+            className="border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 w-full"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-3">
+          <div className="space-y-1.5 pb-3">
+            <Label htmlFor="phone" className="text-light-100">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="+1 (555) 123-4567"
+              className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+            />
+          </div>
+
+          <div className="space-y-1.5 pb-3">
+            <Label htmlFor="dateOfBirth" className="text-light-100">Date of Birth</Label>
+            <div className="relative">
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={dateOfBirth}
+                onChange={e => setDateOfBirth(e.target.value)}
+                className="appearance-none bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0 pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+              />
+              <button 
+                type="button"
+                onClick={() => (document.getElementById('dateOfBirth') as HTMLInputElement)?.showPicker()}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-light-400 hover:text-light-100 transition-colors"
+                aria-label="Open date picker"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 pb-3">
+          <Label htmlFor="workplace" className="text-light-100">Current Workplace</Label>
+          <Input
+            id="workplace"
+            type="text"
+            value={workplace}
+            onChange={e => setWorkplace(e.target.value)}
+            placeholder="Company Name"
+            className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+          />
+        </div>
+
+        <div className="space-y-1.5 pb-3">
+          <Label htmlFor="skills" className="text-light-100">Skills & Tools</Label>
+          <div className="relative">
+            <div className="flex flex-wrap gap-2 mb-2">
+              {skills.map((skill, index) => (
+                <div key={index} className="flex items-center bg-primary-200/20 text-primary-100 px-3 py-1 rounded-full text-sm">
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => setSkills(skills.filter((_, i) => i !== index))}
+                    className="ml-2 text-primary-300 hover:text-white"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="relative">
+              <Input
+                id="skills"
+                type="text"
+                value={skillInput}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSkillInput(value);
+                  if (value) {
+                    // Simple autocomplete suggestions
+                    const techStack = [
+                      'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 'C#', 'C++', 'Ruby', 'PHP',
+                      'Go', 'Rust', 'Swift', 'Kotlin', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Git',
+                      'HTML', 'CSS', 'SASS', 'Tailwind CSS', 'Bootstrap', 'jQuery', 'Angular', 'Vue.js', 'Next.js',
+                      'Express', 'Django', 'Flask', 'Spring', 'Ruby on Rails', 'Laravel', 'ASP.NET', 'GraphQL',
+                      'REST API', 'MongoDB', 'PostgreSQL', 'MySQL', 'SQL Server', 'SQLite', 'Firebase', 'Redis',
+                      'Machine Learning', 'Data Science', 'Artificial Intelligence', 'Blockchain', 'Cybersecurity',
+                      'DevOps', 'CI/CD', 'Agile', 'Scrum', 'Project Management'
+                    ];
+                    const filtered = techStack.filter(tech => 
+                      tech.toLowerCase().includes(value.toLowerCase())
+                    );
+                    setSuggestions(filtered);
+                  } else {
+                    setSuggestions([]);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && skillInput.trim() && !skills.includes(skillInput.trim())) {
+                    e.preventDefault();
+                    setSkills([...skills, skillInput.trim()]);
+                    setSkillInput('');
+                    setSuggestions([]);
+                  } else if (e.key === 'Backspace' && !skillInput && skills.length > 0) {
+                    e.preventDefault();
+                    setSkills(skills.slice(0, -1));
+                  }
+                }}
+                placeholder="Add skills (e.g., JavaScript, Python, Project Management)"
+                className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-dark-200 border border-light-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 text-light-100 hover:bg-dark-300 cursor-pointer"
+                      onClick={() => {
+                        if (!skills.includes(suggestion)) {
+                          setSkills([...skills, suggestion]);
+                          setSkillInput('');
+                          setSuggestions([]);
+                        }
+                      }}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-light-400">Press Enter to add a skill</p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 pb-3">
+          <Label htmlFor="experience" className="text-light-100">Professional Experience</Label>
+          <Textarea
+            id="experience"
+            value={experience}
+            onChange={e => setExperience(e.target.value)}
+            placeholder="Describe your professional background and experience..."
+            rows={4}
+            style={{ backgroundColor: '#0D1117' }}
+            className="border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 w-full"
+          />
+        </div>
+
       </div>
       
       <div className="flex justify-center pt-4">

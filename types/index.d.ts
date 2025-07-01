@@ -72,6 +72,12 @@ interface GetLatestInterviewsParams {
   limit?: number;
 }
 
+interface SignInResponse {
+  success: boolean;
+  message: string;
+  userId?: string;
+}
+
 interface SignInParams {
   email: string;
   idToken: string;
