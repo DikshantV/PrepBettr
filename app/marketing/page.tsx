@@ -7,6 +7,7 @@ import { FeaturesSection } from '@/components/ui/features-section';
 import { MacbookScroll } from '@/components/ui/macbook-scroll';
 import BrandSlide from '@/components/BrandSlide';
 import FAQSection from '@/components/FAQsection';
+import StickyProduct from '@/components/StickyProduct';
 import Image from 'next/image';
 
 const SiteNavigation = dynamic(
@@ -84,6 +85,11 @@ export default function HomePage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Sticky Product Section */}
+        <div className="relative z-10 py-12 bg-white dark:bg-black">
+          <StickyProduct />
         </div>
 
         {/* Testimonials Section */}
