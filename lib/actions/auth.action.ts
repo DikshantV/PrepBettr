@@ -71,7 +71,7 @@ export async function signUp(params: SignUpParams) {
     }
 }
 
-export async function signIn(params: SignInParams) {
+export async function signIn(params: SignInParams): Promise<SignInResponse> {
     const { email, idToken } = params;
 
     try {
@@ -83,9 +83,14 @@ export async function signIn(params: SignInParams) {
             };
 
         await setSessionCookie(idToken);
-    } catch {
-        console.log("");
-
+        
+        return {
+            success: true,
+            message: "Successfully signed in.",
+            userId: userRecord.uid
+        };
+    } catch (error) {
+        console.error("Error in signIn:", error);
         return {
             success: false,
             message: "Failed to log into account. Please try again.",
