@@ -100,9 +100,9 @@ export default function GoogleSignInButton() {
         throw error;
       }
 
-      // Redirect to home page after successful sign-in
-      console.log('Redirecting to home page...');
-      router.push('/');
+      // Redirect to dashboard after successful sign-in
+      console.log('Redirecting to dashboard...');
+      router.push('/dashboard');
       
     } catch (error) {
       console.error("Google Sign-In Error:", error);
