@@ -6,7 +6,7 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_CLIENT_KEY,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY,
     authDomain: "prepbettr.firebaseapp.com",
     projectId: "prepbettr",
     storageBucket: "prepbettr.firebasestorage.app", // Make sure this is correct
