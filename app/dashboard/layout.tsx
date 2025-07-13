@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/actions/auth.action";
 import { Sidebar, SidebarBody, SidebarLink, DesktopSidebar, MobileSidebar, useSidebar } from "@/components/ui/sidebar";
-import { Home, MessageSquare, User, Settings, LogOut } from "lucide-react";
+import { Home, MessageSquare, User, Settings, LogOut, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 
@@ -19,6 +19,11 @@ const navLinks = [
     label: "Interviews",
     href: "/dashboard/interview",
     icon: <MessageSquare className="w-5 h-5" />,
+  },
+  {
+    label: "Resume Tailor",
+    href: "/dashboard/resume-tailor",
+    icon: <FileText className="w-5 h-5" />,
   },
   {
     label: "Profile",
