@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { auth as adminAuth } from "@/firebase/admin";
-import { getFirestore, setDoc } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 
 export interface UpdateProfileRequest {
     name: string;
@@ -33,8 +33,7 @@ export default async function handler(
         
         // Update Firestore user document
         const userRef = db.collection("users").doc(uid);
-        await setDoc(
-            userRef,
+        await userRef.set(
             { 
                 name, 
                 profilePic,
@@ -44,7 +43,11 @@ export default async function handler(
         );
 
         // Update Firebase Auth profile
-        const updateData: any = {
+        const updateData: {
+            displayName: string;
+            photoURL: string;
+            password?: string;
+        } = {
             displayName: name,
             photoURL: profilePic
         };
@@ -69,4 +72,3 @@ export default async function handler(
         });
     }
 }
-

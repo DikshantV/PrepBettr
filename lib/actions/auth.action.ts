@@ -11,21 +11,26 @@ const SESSION_DURATION = 60 * 60 * 24 * 7;
 
 // Set session cookie
 export async function setSessionCookie(idToken: string) {
-    const cookieStore = await cookies();
+    try {
+        const cookieStore = await cookies();
 
-    // Create a session cookie
-    const sessionCookie = await auth.createSessionCookie(idToken, {
-        expiresIn: SESSION_DURATION * 1000, // milliseconds
-    });
+        // Create a session cookie
+        const sessionCookie = await auth.createSessionCookie(idToken, {
+            expiresIn: SESSION_DURATION * 1000, // milliseconds
+        });
 
-    // Set cookie in the browser
-    cookieStore.set("session", sessionCookie, {
-        maxAge: SESSION_DURATION,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        sameSite: "lax",
-    });
+        // Set cookie in the browser
+        cookieStore.set("session", sessionCookie, {
+            maxAge: SESSION_DURATION,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+            sameSite: "lax",
+        });
+    } catch (error) {
+        console.error('Error setting session cookie:', error);
+        throw error;
+    }
 }
 
 export async function signUp(params: SignUpParams) {
@@ -83,7 +88,7 @@ export async function signIn(params: SignInParams): Promise<SignInResponse> {
             };
 
         await setSessionCookie(idToken);
-        
+
         return {
             success: true,
             message: "Successfully signed in.",
@@ -100,26 +105,30 @@ export async function signIn(params: SignInParams): Promise<SignInResponse> {
 
 // Sign out a user by clearing the session cookie
 export async function signOut() {
-    const cookieStore = await cookies();
-
-    cookieStore.delete("session");
+    try {
+        const cookieStore = await cookies();
+        cookieStore.delete("session");
+    } catch (error) {
+        console.error('Error signing out:', error);
+        throw error;
+    }
 }
 
 // Get current user from session cookie
 // Helper function to convert Firestore timestamps to plain objects
 const convertTimestamps = (data: Record<string, unknown> | null | unknown[] | Timestamp): Record<string, unknown> | null | unknown[] | string => {
     if (data === null || typeof data !== 'object') return data;
-    
+
     // Handle Firestore Timestamp
     if (data instanceof Timestamp) {
         return data.toDate().toISOString();
     }
-    
+
     // Handle arrays
     if (Array.isArray(data)) {
         return data.map(item => convertTimestamps(item as Record<string, unknown> | null));
     }
-    
+
     // Handle objects
     const result: Record<string, unknown> = {};
     for (const key in data) {
@@ -132,7 +141,7 @@ export async function getCurrentUser(): Promise<User | null> {
     try {
         const cookieStore = await cookies();
         const sessionCookie = cookieStore.get("session")?.value;
-        
+
         // If no session cookie, the user is not authenticated
         if (!sessionCookie) {
             console.log('No session cookie found');
@@ -148,7 +157,7 @@ export async function getCurrentUser(): Promise<User | null> {
                 .collection("users")
                 .doc(decodedClaims.uid)
                 .get();
-                
+
             if (!userRecord.exists) {
                 // Don't log this to the client console
                 if (typeof window === 'undefined') {
@@ -171,7 +180,7 @@ export async function getCurrentUser(): Promise<User | null> {
                     id: userRecord.id,
                 } as User;
             }
-            
+
             // If not a valid object, return the id only
             return {
                 id: userRecord.id,
@@ -181,9 +190,9 @@ export async function getCurrentUser(): Promise<User | null> {
             if (typeof window === 'undefined') {
                 console.log('Session verification status:', error instanceof Error ? error.message : 'invalid-session');
             }
-            
+
             // Clear the invalid session cookie
-            if (error instanceof Error && error.message.includes('auth/session-cookie-revoked') || 
+            if (error instanceof Error && error.message.includes('auth/session-cookie-revoked') ||
                 error instanceof Error && error.message.includes('auth/session-cookie-expired') ||
                 error instanceof Error && error.message.includes('auth/argument-error')) {
                 try {
@@ -198,7 +207,7 @@ export async function getCurrentUser(): Promise<User | null> {
                     }
                 }
             }
-            
+
             return null;
         }
     } catch (error) {

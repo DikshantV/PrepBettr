@@ -4,8 +4,9 @@ import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/actions/auth.action";
 import { Sidebar, SidebarBody, SidebarLink, DesktopSidebar, MobileSidebar, useSidebar } from "@/components/ui/sidebar";
-import { Home, MessageSquare, User, Settings, LogOut } from "lucide-react";
+import { Home, MessageSquare, User, Settings, LogOut, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from 'next/image';
 
 // Define navigation links
 const navLinks = [
@@ -18,6 +19,11 @@ const navLinks = [
     label: "Interviews",
     href: "/dashboard/interview",
     icon: <MessageSquare className="w-5 h-5" />,
+  },
+  {
+    label: "Resume Tailor",
+    href: "/dashboard/resume-tailor",
+    icon: <FileText className="w-5 h-5" />,
   },
   {
     label: "Profile",
@@ -86,9 +92,11 @@ const DashboardLayoutWrapper = ({ children }: DashboardLayoutProps) => {
     return (
       <div className={`flex items-center justify-center h-12 w-full`}>
         <div className="flex items-center">
-          <img 
+          <Image 
             src="/logo.svg" 
             alt="Logo" 
+            width={32}
+            height={32}
             className="h-8 w-8"
           />
           {open && (
