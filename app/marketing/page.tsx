@@ -5,6 +5,10 @@ import { Spotlight } from '@/components/ui/spotlight';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { FeaturesSection } from '@/components/ui/features-section';
 import { MacbookScroll } from '@/components/ui/macbook-scroll';
+import BrandSlide from '@/components/BrandSlide';
+import FAQSection from '@/components/FAQsection';
+import StickyProduct from '@/components/StickyProduct';
+import Image from 'next/image';
 
 const SiteNavigation = dynamic(
   () => import('@/components/SiteNavigation').then((mod) => mod.SiteNavigation),
@@ -38,7 +42,7 @@ export default function HomePage() {
                 >
                   <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
                   <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 py-3 text-sm font-medium text-white backdrop-blur-3xl">
-                    Get Started
+                    Get Started for Free
                   </span>
                 </Link>
                 <Link 
@@ -54,6 +58,16 @@ export default function HomePage() {
 
         {/* Features Section */}
         <FeaturesSection />
+
+        {/* Brand Logos Section */}
+        <section className="w-full bg-black py-12">
+          <div className="container mx-auto px-4 text-center">
+            <h3 className="text-xl font-medium mb-8 whitespace-nowrap text-white">
+              300,000+ offers from the most exciting companies and organizations
+            </h3>
+            <BrandSlide />
+          </div>
+        </section>
 
         {/* Macbook Scroll Demo */}
         <div className="relative z-0 py-12">
@@ -73,9 +87,19 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Sticky Product Section */}
+        <div className="relative z-10 py-12 bg-white dark:bg-black">
+          <StickyProduct />
+        </div>
+
         {/* Testimonials Section */}
         <div className="relative z-10">
           <TestimonialsSection />
+        </div>
+
+        {/* FAQ Section */}
+        <div className="relative z-0 pt-4 pb-12 bg-white dark:bg-black">
+          <FAQSection />
         </div>
 
         {/* Pricing Section */}
@@ -218,9 +242,11 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
               <div className="space-y-4">
                 <div className="flex flex-col space-y-2 items-start">
-                  <img 
+                  <Image 
                     src="/logo.svg" 
                     alt="Logo" 
+                    width={32}
+                    height={32}
                     className="h-8 w-auto"
                   />
                   <span className="text-xl font-bold text-gray-900 dark:text-white">PrepBettr</span>

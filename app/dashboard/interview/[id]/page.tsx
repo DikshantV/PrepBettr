@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation";
+export const dynamic = 'force-dynamic';
+
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import InterviewClient from "./InterviewClient";
 
@@ -37,7 +38,7 @@ async function getInterviewData(id: string) {
         // In a real app, you would fetch this data
         // const response = await fetch(`/api/interview/${id}`);
         // const result = await response.json();
-        
+
         // Mock data for now
         const mockData = {
             interview: {
@@ -65,12 +66,12 @@ async function getInterviewData(id: string) {
             },
             feedback: null,
         };
-        
+
         const currentUser = await getCurrentUser();
         if (!currentUser) {
             throw new Error('User not authenticated');
         }
-        
+
         return {
             ...mockData,
             user: {
@@ -85,30 +86,23 @@ async function getInterviewData(id: string) {
     }
 }
 
-interface PageProps {
-    params: { id: string };
-    searchParams?: { [key: string]: string | string[] | undefined };
+// import { Metadata } from 'next';
+
+interface PageParams {
+    id: string;
 }
 
-const InterviewDetails = async ({ params }: PageProps) => {
-    // Get the id from params
+interface PageProps {
+    params: Promise<PageParams>;
+}
+
+export default async function Page({ params }: PageProps) {
     const { id } = await params;
-    let data;
-    
-    try {
-        data = await getInterviewData(id);
-    } catch (error) {
-        console.error('Error:', error);
-        redirect('/sign-in');
-    }
-    
-    if (!data) {
-        return null; // Redirecting to home or sign-in
-    }
-    
-    const { interview, feedback, user } = data;
+    const interviewData = await getInterviewData(id);
 
-    return <InterviewClient interview={interview} feedback={feedback} user={user} />;
-};
-
-export default InterviewDetails;
+    return <InterviewClient
+        interview={interviewData.interview}
+        feedback={interviewData.feedback}
+        user={interviewData.user}
+    />;
+}

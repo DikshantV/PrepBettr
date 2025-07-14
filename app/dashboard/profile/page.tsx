@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import ProfileForm from '@/components/ProfileForm';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import { redirect } from 'next/navigation';

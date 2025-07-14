@@ -59,7 +59,7 @@ export function FeaturesSection() {
   
   return (
     <section id="features" className="pt-6 pb-20 bg-white dark:bg-black">
-      <div className="container mx-auto px-6">
+      <div id="features" className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto text-center mb-16 px-2">
           <h2 className="text-2xl md:text-5xl font-bold mb-6 flex flex-wrap justify-center items-baseline gap-2">
             <span>Why Choose</span>

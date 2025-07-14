@@ -1,4 +1,4 @@
-import { initializeApp, cert, getApps, getApp, App } from "firebase-admin/app";
+import { initializeApp, cert, getApps, App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage, Storage } from "firebase-admin/storage";
@@ -48,8 +48,7 @@ const initFirebaseAdmin = (): FirebaseAdmin => {
     // Initialize storage with explicit bucket name
     const storage = getStorage(app);
     const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-    const bucket = storage.bucket(bucketName);
-
+    
     console.log(`Firebase Admin initialized with bucket: ${bucketName}`);
     
     return { app, auth, db, storage };
