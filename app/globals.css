@@ -3,6 +3,11 @@
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
+/* Prevents horizontal overflow globally */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 
 @theme {
   --color-success-100: #49de50;
