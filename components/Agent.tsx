@@ -131,7 +131,7 @@ const Agent = ({
 
         if (callStatus === CallStatus.FINISHED) {
             if (type === "generate") {
-                router.push("/");
+                router.push("/dashboard");
             } else {
                 handleGenerateFeedback(messages);
             }
