@@ -8,6 +8,7 @@ interface InterviewHeaderProps {
     role: string;
     techstack: string[];
     type: string;
+    interviewId?: string;
     onToggleEditor: () => void;
 }
 
@@ -15,6 +16,7 @@ export default function InterviewHeader({
     role, 
     techstack, 
     type, 
+    interviewId,
     onToggleEditor 
 }: InterviewHeaderProps) {
     return (
@@ -22,7 +24,7 @@ export default function InterviewHeader({
             <div className="flex items-center gap-4 p-4">
                 <div className="flex items-center gap-4 flex-1">
                     <Image
-                        src={getRandomInterviewCover()}
+                        src={getRandomInterviewCover(interviewId)}
                         alt="cover-image"
                         width={48}
                         height={48}

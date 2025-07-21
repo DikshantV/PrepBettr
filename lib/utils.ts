@@ -100,7 +100,13 @@ export const getTechLogos = async (techArray: string[] = []) => {
   });
 };
 
-export const getRandomInterviewCover = () => {
-  const randomIndex = Math.floor(Math.random() * interviewCovers.length);
-  return `/covers${interviewCovers[randomIndex]}`;
+export const getRandomInterviewCover = (id?: string) => {
+  // Use deterministic selection based on ID to avoid hydration mismatch
+  if (id) {
+    const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const index = hash % interviewCovers.length;
+    return `/covers${interviewCovers[index]}`;
+  }
+  // Fallback to first cover if no ID provided
+  return `/covers${interviewCovers[0]}`;
 };
