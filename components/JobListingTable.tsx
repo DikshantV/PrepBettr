@@ -3,7 +3,8 @@ import { JobListing, JobListingTableProps, APPLICATION_STATUS_LABELS, APPLICATIO
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, BarChart3, Zap, Eye, Loader2 } from 'lucide-react';
+import { ExternalLink, BarChart3, Zap, Eye } from 'lucide-react';
+import { LoaderInline } from '@/components/ui/loader';
 
 export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply, onAnalyze, onView, loading, pagination }) => {
   if (jobs.length === 0) {
@@ -149,7 +150,7 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
                   <td className="px-4 py-4">
                     <Badge className={`text-xs ${getStatusColor(job.applicationStatus)}`}>
                       {job.applicationStatus === 'applying' && (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        <LoaderInline size="sm" className="mr-1" variant="accent" />
                       )}
                       {APPLICATION_STATUS_LABELS[job.applicationStatus] || job.applicationStatus}
                     </Badge>
@@ -191,7 +192,7 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
                           disabled={loading || job.applicationStatus === 'applying'}
                         >
                           {job.applicationStatus === 'applying' ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <LoaderInline size="sm" variant="accent" />
                           ) : (
                             <Zap className="h-3 w-3" />
                           )}

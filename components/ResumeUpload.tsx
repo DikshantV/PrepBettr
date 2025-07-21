@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ResumeUploadProps } from '@/types/auto-apply';
 import { Button } from '@/components/ui/button';
+import { LoaderInline } from '@/components/ui/loader';
 
 export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, loading }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -46,6 +47,7 @@ export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, 
         {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       </div>
       <Button onClick={handleUpload} disabled={loading || !file} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 disabled:bg-gray-700 disabled:text-gray-400">
+        {loading && <LoaderInline size="sm" className="mr-2" />}
         {loading ? 'Uploading...' : 'Upload and Extract'}</Button>
     </div>
   );
