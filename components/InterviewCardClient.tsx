@@ -43,7 +43,7 @@ const InterviewCardClient = ({
         }[normalizedType] || "bg-light-600";
 
     const formattedDate = dayjs(
-        feedback?.createdAt || createdAt || Date.now()
+        feedback?.createdAt || createdAt || new Date('2024-01-01')
     ).format("MMM D, YYYY");
 
     return (
@@ -62,7 +62,7 @@ const InterviewCardClient = ({
 
                     {/* Cover Image */}
                     <Image
-                        src={getRandomInterviewCover()}
+                        src={getRandomInterviewCover(interviewId)}
                         alt="cover-image"
                         width={90}
                         height={90}

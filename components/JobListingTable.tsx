@@ -40,7 +40,12 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
     if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
+    // Use consistent date format to avoid hydration mismatch
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const getStatusColor = (status: JobListing['applicationStatus']) => {
