@@ -33,14 +33,19 @@ export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, 
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800">Upload Your Resume</h3>
+    <div className="bg-gray-900 border border-gray-700 p-6 rounded-lg shadow-md space-y-4">
+      <h3 className="text-lg font-semibold text-white">Upload Your Resume</h3>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Select a PDF file</label>
-        <input type="file" accept=".pdf" onChange={handleFileChange} className="w-full" />
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        <label className="block text-sm font-medium text-gray-200 mb-1">Select a PDF file</label>
+        <input 
+          type="file" 
+          accept=".pdf" 
+          onChange={handleFileChange} 
+          className="w-full text-gray-300 bg-gray-800 border border-gray-600 rounded-md p-2 file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+        />
+        {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       </div>
-      <Button onClick={handleUpload} disabled={loading || !file} className="w-full">
+      <Button onClick={handleUpload} disabled={loading || !file} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 disabled:bg-gray-700 disabled:text-gray-400">
         {loading ? 'Uploading...' : 'Upload and Extract'}</Button>
     </div>
   );

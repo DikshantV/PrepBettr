@@ -263,78 +263,78 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
 
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
+      {/* Stats Overview - Dark theme optimized */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-white">Total Applications</CardTitle>
+            <BarChart3 className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalApplications}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{stats.totalApplications}</div>
+            <p className="text-xs text-gray-400">
               +12 from last week
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-white">Pending</CardTitle>
+            <Bot className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingApplications}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{stats.pendingApplications}</div>
+            <p className="text-xs text-gray-400">
               Awaiting response
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Interviews</CardTitle>
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-white">Interviews</CardTitle>
+            <Search className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.interviewRequests}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{stats.interviewRequests}</div>
+            <p className="text-xs text-gray-400">
               6.3% response rate
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="bg-gray-900 border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Match Score</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-white">Avg. Match Score</CardTitle>
+            <BarChart3 className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageRelevancyScore}%</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{stats.averageRelevancyScore}%</div>
+            <p className="text-xs text-gray-400">
               +2% improvement
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Auto-Apply Toggle */}
-      <Card>
+      {/* Auto-Apply Toggle - Dark theme with enhanced contrast */}
+      <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Bot className="h-5 w-5 text-blue-400" />
                 Auto-Apply Status
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-300">
                 AI agent will automatically search and apply to relevant jobs
               </CardDescription>
             </div>
             <Button 
               onClick={toggleAutoApply}
               variant={currentSettings.isEnabled ? 'default' : 'outline'}
-              className={currentSettings.isEnabled ? 'bg-green-600 hover:bg-green-700' : ''}
+              className={currentSettings.isEnabled ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' : 'border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white'}
             >
               {currentSettings.isEnabled ? (
                 <><Pause className="h-4 w-4 mr-2" /> Active</>
@@ -346,20 +346,20 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
         </CardHeader>
         {currentSettings.isEnabled && (
           <CardContent>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-gray-300">
               Next scheduled search: in 2 hours • Daily limit: {currentSettings.dailyApplicationLimit} applications
             </div>
           </CardContent>
         )}
       </Card>
 
-      {/* Main Tabs */}
+      {/* Main Tabs - Dark theme with accessible contrast */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="search">Job Search</TabsTrigger>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-gray-600">
+          <TabsTrigger value="search" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Job Search</TabsTrigger>
+          <TabsTrigger value="profile" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Profile</TabsTrigger>
+          <TabsTrigger value="settings" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Settings</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Analytics</TabsTrigger>
         </TabsList>
         
         <TabsContent value="search" className="space-y-4">
@@ -388,24 +388,24 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
             loading={loading}
           />
           
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle>Current Profile Summary</CardTitle>
-              <CardDescription>Your extracted profile information</CardDescription>
+              <CardTitle className="text-white">Current Profile Summary</CardTitle>
+              <CardDescription className="text-gray-300">Your extracted profile information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Contact Info</h4>
-                  <p className="text-sm text-muted-foreground">{userProfile.name}</p>
-                  <p className="text-sm text-muted-foreground">{userProfile.email}</p>
-                  <p className="text-sm text-muted-foreground">{userProfile.location}</p>
+                  <h4 className="font-semibold mb-2 text-white">Contact Info</h4>
+                  <p className="text-sm text-gray-300">{userProfile.name}</p>
+                  <p className="text-sm text-gray-300">{userProfile.email}</p>
+                  <p className="text-sm text-gray-300">{userProfile.location}</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-2">Skills</h4>
+                  <h4 className="font-semibold mb-2 text-white">Skills</h4>
                   <div className="flex flex-wrap gap-1">
                     {userProfile.skills.slice(0, 8).map((skill, index) => (
-                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      <span key={index} className="px-2 py-1 bg-blue-600 text-white text-xs rounded border border-blue-500">
                         {skill}
                       </span>
                     ))}
@@ -426,16 +426,16 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
         </TabsContent>
         
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle>Application Analytics</CardTitle>
-              <CardDescription>Track your job search performance</CardDescription>
+              <CardTitle className="text-white">Application Analytics</CardTitle>
+              <CardDescription className="text-gray-300">Track your job search performance</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold mb-2">Applications by Status</h4>
+                    <h4 className="font-semibold mb-2 text-white">Applications by Status</h4>
                     <div className="space-y-2">
                       {Object.entries({
                         applied: 87,
@@ -443,27 +443,27 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
                         interview: 8,
                         rejected: 9
                       }).map(([status, count]) => (
-                        <div key={status} className="flex justify-between items-center">
-                          <span className="text-sm capitalize">{status}</span>
-                          <span className="font-semibold">{count}</span>
+                        <div key={status} className="flex justify-between items-center border-b border-gray-700 pb-1">
+                          <span className="text-sm capitalize text-gray-300">{status}</span>
+                          <span className="font-semibold text-white">{count}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Top Job Portals</h4>
+                    <h4 className="font-semibold mb-2 text-white">Top Job Portals</h4>
                     <div className="space-y-2">
                       {[{ name: 'LinkedIn', count: 45 }, { name: 'Indeed', count: 32 }, { name: 'Glassdoor', count: 28 }].map((portal) => (
-                        <div key={portal.name} className="flex justify-between items-center">
-                          <span className="text-sm">{portal.name}</span>
-                          <span className="font-semibold">{portal.count}</span>
+                        <div key={portal.name} className="flex justify-between items-center border-b border-gray-700 pb-1">
+                          <span className="text-sm text-gray-300">{portal.name}</span>
+                          <span className="font-semibold text-white">{portal.count}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
                 
-                <Button onClick={downloadSummaryReport} className="w-full">
+                <Button onClick={downloadSummaryReport} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600">
                   <Download className="h-4 w-4 mr-2" />
                   Download Detailed Report
                 </Button>

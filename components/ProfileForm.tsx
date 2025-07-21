@@ -193,10 +193,10 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto space-y-6 p-8 bg-dark-200 rounded-2xl shadow-lg">
+    <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto space-y-6 p-8 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg">
       <div className="flex flex-col items-center gap-4 mb-8">
         <div className="relative group">
-          <div className="rounded-full border-4 border-primary-200 w-32 h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+          <div className="rounded-full border-4 border-blue-500 w-32 h-32 flex items-center justify-center bg-gray-800">
             {profilePic ? (
               <Image
                 src={profilePic}
@@ -211,12 +211,12 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
               </div>
             )}
           </div>
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <Button 
               type="button" 
               variant="ghost" 
               size="icon"
-              className="text-white hover:bg-primary-200/20"
+              className="text-white hover:bg-blue-500/20"
               onClick={() => fileInputRef.current?.click()}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -241,77 +241,76 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       
       <div className="space-y-5">
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="name" className="text-light-100">Name</Label>
+          <Label htmlFor="name" className="text-gray-200 font-medium">Name</Label>
           <Input
             id="name"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500"
           />
         </div>
         
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="email" className="text-light-100">Email</Label>
+          <Label htmlFor="email" className="text-gray-200 font-medium">Email</Label>
           <Input 
             id="email" 
             value={email} 
             disabled 
-            className="bg-dark-100/50 border-light-600 text-light-400 cursor-not-allowed" 
+            className="bg-gray-800/50 border-gray-600 text-gray-400 cursor-not-allowed" 
           />
         </div>
 
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="password" className="text-light-100">New Password (leave blank to keep current)</Label>
+          <Label htmlFor="password" className="text-gray-200 font-medium">New Password (leave blank to keep current)</Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500"
           />
         </div>
         
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="about" className="text-light-100">About Me</Label>
+          <Label htmlFor="about" className="text-gray-200 font-medium">About Me</Label>
           <Textarea
             id="about"
             value={about}
             onChange={e => setAbout(e.target.value)}
             placeholder="Tell us about yourself..."
             rows={3}
-            style={{ backgroundColor: '#0D1117' }}
-            className="border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 w-full"
+            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus:border-blue-500 w-full"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-3">
           <div className="space-y-1.5 pb-3">
-            <Label htmlFor="phone" className="text-light-100">Phone Number</Label>
+            <Label htmlFor="phone" className="text-gray-200 font-medium">Phone Number</Label>
             <Input
               id="phone"
               type="tel"
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+1 (555) 123-4567"
-              className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500"
             />
           </div>
 
           <div className="space-y-1.5 pb-3">
-            <Label htmlFor="dateOfBirth" className="text-light-100">Date of Birth</Label>
+            <Label htmlFor="dateOfBirth" className="text-gray-200 font-medium">Date of Birth</Label>
             <div className="relative">
               <Input
                 id="dateOfBirth"
                 type="date"
                 value={dateOfBirth}
                 onChange={e => setDateOfBirth(e.target.value)}
-                className="appearance-none bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0 pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                className="appearance-none bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500 pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
               />
               <button 
                 type="button"
                 onClick={() => (document.getElementById('dateOfBirth') as HTMLInputElement)?.showPicker()}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-light-400 hover:text-light-100 transition-colors"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 aria-label="Open date picker"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -326,28 +325,28 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         </div>
 
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="workplace" className="text-light-100">Current Workplace</Label>
+          <Label htmlFor="workplace" className="text-gray-200 font-medium">Current Workplace</Label>
           <Input
             id="workplace"
             type="text"
             value={workplace}
             onChange={e => setWorkplace(e.target.value)}
             placeholder="Company Name"
-            className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500"
           />
         </div>
 
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="skills" className="text-light-100">Skills & Tools</Label>
+          <Label htmlFor="skills" className="text-gray-200 font-medium">Skills & Tools</Label>
           <div className="relative">
             <div className="flex flex-wrap gap-2 mb-2">
               {skills.map((skill, index) => (
-                <div key={index} className="flex items-center bg-primary-200/20 text-primary-100 px-3 py-1 rounded-full text-sm">
+                <div key={index} className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-full text-sm border border-blue-500">
                   {skill}
                   <button
                     type="button"
                     onClick={() => setSkills(skills.filter((_, i) => i !== index))}
-                    className="ml-2 text-primary-300 hover:text-white"
+                    className="ml-2 text-blue-200 hover:text-white"
                   >
                     ×
                   </button>
@@ -393,14 +392,14 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
                   }
                 }}
                 placeholder="Add skills (e.g., JavaScript, Python, Project Management)"
-                className="bg-dark-100 border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 focus-visible:ring-offset-0"
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus-visible:ring-offset-0 focus:border-blue-500"
               />
               {suggestions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-dark-200 border border-light-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
                   {suggestions.map((suggestion, index) => (
                     <div
                       key={index}
-                      className="px-4 py-2 text-light-100 hover:bg-dark-300 cursor-pointer"
+                      className="px-4 py-2 text-white hover:bg-gray-700 cursor-pointer"
                       onClick={() => {
                         if (!skills.includes(suggestion)) {
                           setSkills([...skills, suggestion]);
@@ -415,20 +414,19 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
                 </div>
               )}
             </div>
-            <p className="mt-1 text-xs text-light-400">Press Enter to add a skill</p>
+            <p className="mt-1 text-xs text-gray-400">Press Enter to add a skill</p>
           </div>
         </div>
 
         <div className="space-y-1.5 pb-3">
-          <Label htmlFor="experience" className="text-light-100">Professional Experience</Label>
+          <Label htmlFor="experience" className="text-gray-200 font-medium">Professional Experience</Label>
           <Textarea
             id="experience"
             value={experience}
             onChange={e => setExperience(e.target.value)}
             placeholder="Describe your professional background and experience..."
             rows={4}
-            style={{ backgroundColor: '#0D1117' }}
-            className="border-light-600 text-light-100 placeholder-light-400 focus-visible:ring-primary-200 w-full"
+            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus-visible:ring-blue-500 focus:border-blue-500 w-full"
           />
         </div>
 
@@ -438,7 +436,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         <Button 
           type="submit" 
           disabled={loading}
-          className="btn-primary w-full max-w-xs py-6 text-lg font-semibold"
+          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 disabled:bg-gray-700 disabled:text-gray-400 w-full max-w-xs py-6 text-lg font-semibold transition-colors"
         >
           {loading ? (
             <>
