@@ -94,9 +94,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         duration: 5000,
       });
       // Redirect to the sign-in page after showing the error
-      setTimeout(() => {
-        window.location.href = '/sign-in';
-      }, 2000);
+      window.location.href = '/sign-in';
       return;
     }
 
@@ -172,8 +170,8 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         await fetch('/api/auth/signout', { method: 'POST' });
         window.location.href = '/sign-in';
       } else {
-        // For non-password updates, just reload the page
-        window.location.reload();
+        // For non-password updates, the page will already show the updated data
+        // No need to reload since the state is already updated
       }
     } catch (error) {
       console.error('Error updating profile:', error);

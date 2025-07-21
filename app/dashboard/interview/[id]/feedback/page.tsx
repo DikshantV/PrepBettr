@@ -1,96 +1,95 @@
+"use client";
+
 import dayjs from "dayjs";
 import Link from "next/link";
 import Image from "next/image";
-import { redirect } from "next/navigation";
-
-import {
-    getFeedbackByInterviewId,
-    getInterviewById,
-} from "@/lib/actions/general.action";
+import { redirect, useParams } from "next/navigation";
+import { useFeedback, useInterview } from "@/lib/hooks/useFirestore";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/actions/auth.action";
 
-const Feedback = async ({ params }: RouteParams) => {
-    const { id } = await params;
-    const user = await getCurrentUser();
+const Feedback = () => {
+    const params = useParams();
+    const id = params?.id as string;
+    const { feedback, loading: feedbackLoading, error: feedbackError } = useFeedback(id);
+    const { interview, loading: interviewLoading, error: interviewError } = useInterview(id);
 
-    const interview = await getInterviewById(id);
-    if (!interview) redirect("/");
-
-    const feedback = await getFeedbackByInterviewId({
-        interviewId: id,
-        userId: user?.id || '',
-    });
+    if (!interviewLoading && !interview) redirect("/");
 
     return (
         <section className="section-feedback">
             <div className="flex flex-row justify-center">
                 <h1 className="text-4xl font-semibold">
                     Feedback on the Interview -{" "}
-                    <span className="capitalize">{interview.role}</span> Interview
+                    <span className="capitalize">{interview?.role || "Loading..."}</span> Interview
                 </h1>
             </div>
 
-            <div className="flex flex-row justify-center ">
-                <div className="flex flex-row gap-5">
-                    {/* Overall Impression */}
-                    <div className="flex flex-row gap-2 items-center">
-                        <Image src="/star.svg" width={22} height={22} alt="star" />
-                        <p>
-                            Overall Impression:{" "}
-                            <span className="text-primary-200 font-bold">
-                {feedback?.totalScore}
-              </span>
-                            /100
-                        </p>
+            {!feedbackLoading ? (
+                <div className="feedback-content">
+                    <div className="flex flex-row justify-center ">
+                        <div className="flex flex-row gap-5">
+                            {/* Overall Impression */}
+                            <div className="flex flex-row gap-2 items-center">
+                                <Image src="/star.svg" width={22} height={22} alt="star" />
+                                <p>
+                                    Overall Impression:{" "}
+                                    <span className="text-primary-200 font-bold">
+                                        {feedback?.totalScore || "---"}
+                                    </span>
+                                    /100
+                                </p>
+                            </div>
+
+                            {/* Date */}
+                            <div className="flex flex-row gap-2">
+                                <Image src="/calendar.svg" width={22} height={22} alt="calendar" />
+                                <p>
+                                    {feedback?.createdAt
+                                        ? dayjs(feedback.createdAt).format("MMM D, YYYY h:mm A")
+                                        : "N/A"}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Date */}
-                    <div className="flex flex-row gap-2">
-                        <Image src="/calendar.svg" width={22} height={22} alt="calendar" />
-                        <p>
-                            {feedback?.createdAt
-                                ? dayjs(feedback.createdAt).format("MMM D, YYYY h:mm A")
-                                : "N/A"}
-                        </p>
+                    <hr />
+
+                    <p>{feedback?.finalAssessment || "No assessment available."}</p>
+
+                    {/* Interview Breakdown */}
+                    <div className="flex flex-col gap-4">
+                        <h2>Breakdown of the Interview:</h2>
+                        {feedback?.categoryScores?.map((category, index) => (
+                            <div key={index}>
+                                <p className="font-bold">
+                                    {index + 1}. {category.name} ({category.score}/100)
+                                </p>
+                                <p>{category.comment}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <h3>Strengths</h3>
+                        <ul>
+                            {feedback?.strengths?.map((strength, index) => (
+                                <li key={index}>{strength}</li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <h3>Areas for Improvement</h3>
+                        <ul>
+                            {feedback?.areasForImprovement?.map((area, index) => (
+                                <li key={index}>{area}</li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
-            </div>
-
-            <hr />
-
-            <p>{feedback?.finalAssessment}</p>
-
-            {/* Interview Breakdown */}
-            <div className="flex flex-col gap-4">
-                <h2>Breakdown of the Interview:</h2>
-                {feedback?.categoryScores?.map((category, index) => (
-                    <div key={index}>
-                        <p className="font-bold">
-                            {index + 1}. {category.name} ({category.score}/100)
-                        </p>
-                        <p>{category.comment}</p>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex flex-col gap-3">
-                <h3>Strengths</h3>
-                <ul>
-                    {feedback?.strengths?.map((strength, index) => (
-                        <li key={index}>{strength}</li>
-                    ))}
-                </ul>
-            </div>
-
-            <div className="flex flex-col gap-3">
-                <h3>Areas for Improvement</h3>
-                <ul>
-                    {feedback?.areasForImprovement?.map((area, index) => (
-                        <li key={index}>{area}</li>
-                    ))}
-                </ul>
-            </div>
+            ) : (
+                <p>Loading feedback...</p>
+            )}
 
             <div className="buttons">
                 <Button className="btn-secondary flex-1">

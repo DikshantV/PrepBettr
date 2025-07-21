@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/firebase/admin";
+import { firebaseVerification } from "@/lib/services/firebase-verification";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();

@@ -1,0 +1,30 @@
+   ▲ Next.js 15.3.2
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 7.0s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/api/auth/signin/route.ts
+2:10  Error: 'auth' is defined but never used.  @typescript-eslint/no-unused-vars
+2:16  Error: 'db' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./pages/api/test-firestore.ts
+106:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/actions/auth.action.ts
+3:10  Error: 'auth' is defined but never used.  @typescript-eslint/no-unused-vars
+138:7  Error: 'convertTimestamps' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./lib/actions/general.action.js
+9:14  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+10:18  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+11:17  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+12:21  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./lib/utils/firebase-admin-helper.ts
+32:54  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

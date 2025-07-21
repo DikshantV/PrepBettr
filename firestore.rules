@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Interviews - users can access their own interviews OR finalized public ones
+    match /interviews/{interviewId} {
+      // Users can read/write their own interviews
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      // Users can create interviews with their own userId
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      // All authenticated users can read finalized interviews
+      allow read: if request.auth != null && 
+        resource.data.finalized == true;
+    }
+    
+    // Feedback - users can only access feedback for their own interviews
+    match /feedback/{feedbackId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

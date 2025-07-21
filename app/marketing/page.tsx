@@ -33,7 +33,7 @@ export default function HomePage() {
                 Ace Your Next Interview with AI
               </h1>
               <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 mb-10 max-w-3xl mx-auto">
-                Practice with our AI-powered interview simulator and get real-time feedback to land your dream job.
+                Practice with our AI-powered interview simulator and land your dream job.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 

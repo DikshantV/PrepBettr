@@ -125,13 +125,13 @@ const Agent = ({
                 router.push(`/interview/${interviewId}/feedback`);
             } else {
                 console.log("Error saving feedback");
-                router.push("/");
+                router.push("/dashboard");
             }
         };
 
         if (callStatus === CallStatus.FINISHED) {
             if (type === "generate") {
-                router.push("/");
+                router.push("/dashboard");
             } else {
                 handleGenerateFeedback(messages);
             }
@@ -141,11 +141,15 @@ const Agent = ({
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
 
+        // Extract first name from full name for personalized greeting
+        const firstName = userName.split(' ')[0];
+
         if (type === "generate") {
             await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
                 variableValues: {
                     username: userName,
                     userid: userId,
+                    candidateName: firstName,
                 },
                 clientMessages: [],
                 serverMessages: [],
@@ -161,6 +165,7 @@ const Agent = ({
             await vapi.start(interviewer, {
                 variableValues: {
                     questions: formattedQuestions,
+                    candidateName: firstName,
                 },
                 clientMessages: [],
                 serverMessages: [],
@@ -168,10 +173,12 @@ const Agent = ({
         }
     };
 
-    const handleDisconnect = () => {
-        setCallStatus(CallStatus.FINISHED);
-        vapi.stop();
-    };
+const handleDisconnect = () =e {
+    setCallStatus(CallStatus.FINISHED);
+    vapi.stop();
+    // Redirecting to dashboard instead of marketing
+    router.push('/dashboard');
+};
 
     return (
         <>
