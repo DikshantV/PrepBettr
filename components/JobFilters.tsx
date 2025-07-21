@@ -40,36 +40,36 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800">Job Search Filters</h3>
+    <div className="bg-gray-900 border border-gray-700 p-6 rounded-lg shadow-md space-y-4">
+      <h3 className="text-lg font-semibold text-white">Job Search Filters</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Keywords</label>
+          <label className="block text-sm font-medium text-gray-200 mb-1">Keywords</label>
           <input
             type="text"
             placeholder="React, JavaScript, Python..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             onChange={handleKeywordChange}
             value={filters.keywords.join(', ')}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Locations</label>
+          <label className="block text-sm font-medium text-gray-200 mb-1">Locations</label>
           <input
             type="text"
             placeholder="New York, Remote, San Francisco..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             onChange={handleLocationChange}
             value={filters.locations.join(', ')}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date Posted</label>
+          <label className="block text-sm font-medium text-gray-200 mb-1">Date Posted</label>
           <select
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={filters.datePosted}
             onChange={(e) => onChange({ ...filters, datePosted: e.target.value as any })}
           >
@@ -83,7 +83,7 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Job Type</label>
           <div className="space-y-2">
             {['full-time', 'part-time', 'contract', 'internship'].map((type) => (
               <label key={type} className="flex items-center">
@@ -91,16 +91,16 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
                   type="checkbox"
                   checked={filters.jobTypes.includes(type as any)}
                   onChange={(e) => handleJobTypeChange(type, e.target.checked)}
-                  className="mr-2"
+                  className="mr-2 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <span className="capitalize">{type.replace('-', ' ')}</span>
+                <span className="capitalize text-gray-300">{type.replace('-', ' ')}</span>
               </label>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Work Arrangement</label>
+          <label className="block text-sm font-medium text-gray-200 mb-2">Work Arrangement</label>
           <div className="space-y-2">
             {['remote', 'hybrid', 'onsite'].map((arrangement) => (
               <label key={arrangement} className="flex items-center">
@@ -108,9 +108,9 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
                   type="checkbox"
                   checked={filters.workArrangements.includes(arrangement as any)}
                   onChange={(e) => handleWorkArrangementChange(arrangement, e.target.checked)}
-                  className="mr-2"
+                  className="mr-2 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <span className="capitalize">{arrangement}</span>
+                <span className="capitalize text-gray-300">{arrangement}</span>
               </label>
             ))}
           </div>
@@ -118,19 +118,19 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Relevancy Score</label>
+        <label className="block text-sm font-medium text-gray-200 mb-1">Minimum Relevancy Score</label>
         <input
           type="range"
           min="0"
           max="100"
           value={filters.minimumRelevancyScore}
           onChange={(e) => onChange({ ...filters, minimumRelevancyScore: parseInt(e.target.value) })}
-          className="w-full"
+          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
         />
-        <span className="text-sm text-gray-500">{filters.minimumRelevancyScore}%</span>
+        <span className="text-sm text-gray-300">{filters.minimumRelevancyScore}%</span>
       </div>
 
-      <Button onClick={onSearch} disabled={loading} className="w-full">
+      <Button onClick={onSearch} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600">
         {loading ? 'Searching...' : 'Search Jobs'}
       </Button>
     </div>

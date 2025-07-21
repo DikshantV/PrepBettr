@@ -6,73 +6,131 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const techIconsMap: Record<string, string> = {
+// Tech icon configuration using React Icons (primary) and DevIcons (fallback)
+const techIconsMap: Record<string, { type: 'react-icon' | 'devicon'; icon: string; fallbackUrl?: string }> = {
   // Frontend
-  'react': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
-  'nextjs': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg',
-  'next': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg',
-  'next.js': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg',
-  'vue': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg',
-  'angular': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/angularjs/angularjs-original.svg',
-  'svelte': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/svelte/svelte-original.svg',
-  'typescript': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
-  'javascript': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-  'html': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
-  'css': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg',
-  'sass': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sass/sass-original.svg',
-  'tailwind': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-plain.svg',
-  'bootstrap': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bootstrap/bootstrap-original.svg',
-  'materialui': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/materialui/materialui-original.svg',
+  'react': { type: 'react-icon', icon: 'FaReact' },
+  'nextjs': { type: 'react-icon', icon: 'SiNextdotjs' },
+  'next': { type: 'react-icon', icon: 'SiNextdotjs' },
+  'next.js': { type: 'react-icon', icon: 'SiNextdotjs' },
+  'vue': { type: 'react-icon', icon: 'FaVuejs' },
+  'angular': { type: 'react-icon', icon: 'FaAngular' },
+  'svelte': { type: 'react-icon', icon: 'SiSvelte' },
+  'typescript': { type: 'react-icon', icon: 'SiTypescript' },
+  'javascript': { type: 'react-icon', icon: 'SiJavascript' },
+  'html': { type: 'react-icon', icon: 'FaHtml5' },
+  'css': { type: 'react-icon', icon: 'FaCss3Alt' },
+  'sass': { type: 'react-icon', icon: 'FaSass' },
+  'tailwind': { type: 'react-icon', icon: 'SiTailwindcss' },
+  'tailwindcss': { type: 'react-icon', icon: 'SiTailwindcss' },
+  'bootstrap': { type: 'react-icon', icon: 'FaBootstrap' },
+  'materialui': { type: 'react-icon', icon: 'SiMui' },
+  'mui': { type: 'react-icon', icon: 'SiMui' },
   
   // Backend
-  'nodejs': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
-  'node': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
-  'node.js': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
-  'express': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg',
-  'python': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-  'django': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/django/django-plain.svg',
-  'flask': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg',
-  'java': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-  'spring': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg',
-  'php': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg',
-  'ruby': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg',
-  'rails': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rails/rails-original-wordmark.svg',
-  'go': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg',
-  'rust': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-plain.svg',
+  'nodejs': { type: 'react-icon', icon: 'FaNodeJs' },
+  'node': { type: 'react-icon', icon: 'FaNodeJs' },
+  'node.js': { type: 'react-icon', icon: 'FaNodeJs' },
+  'express': { type: 'react-icon', icon: 'SiExpress' },
+  'python': { type: 'react-icon', icon: 'FaPython' },
+  'django': { type: 'react-icon', icon: 'SiDjango' },
+  'flask': { type: 'react-icon', icon: 'SiFlask' },
+  'java': { type: 'react-icon', icon: 'FaJava' },
+  'spring': { type: 'react-icon', icon: 'SiSpring' },
+  'php': { type: 'react-icon', icon: 'FaPhp' },
+  'ruby': { type: 'react-icon', icon: 'SiRuby' },
+  'rails': { type: 'react-icon', icon: 'SiRubyonrails' },
+  'go': { type: 'react-icon', icon: 'SiGo' },
+  'golang': { type: 'react-icon', icon: 'SiGo' },
+  'rust': { type: 'react-icon', icon: 'SiRust' },
+  'csharp': { type: 'devicon', icon: '', fallbackUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg' },
+  'c#': { type: 'devicon', icon: '', fallbackUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg' },
+  'dotnet': { type: 'react-icon', icon: 'SiDotnet' },
+  '.net': { type: 'react-icon', icon: 'SiDotnet' },
   
   // Databases
-  'mongodb': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
-  'mysql': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg',
-  'postgresql': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
-  'redis': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg',
-  'sqlite': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg',
-  'oracle': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/oracle/oracle-original.svg',
+  'mongodb': { type: 'react-icon', icon: 'SiMongodb' },
+  'mysql': { type: 'react-icon', icon: 'SiMysql' },
+  'postgresql': { type: 'react-icon', icon: 'SiPostgresql' },
+  'postgres': { type: 'react-icon', icon: 'SiPostgresql' },
+  'redis': { type: 'react-icon', icon: 'SiRedis' },
+  'sqlite': { type: 'react-icon', icon: 'SiSqlite' },
+  'oracle': { type: 'react-icon', icon: 'SiOracle' },
+  'elasticsearch': { type: 'react-icon', icon: 'SiElasticsearch' },
   
   // Mobile
-  'reactnative': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
-  'flutter': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg',
-  'swift': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/swift/swift-original.svg',
-  'kotlin': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
-  'android': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/android/android-original.svg',
-  'ios': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apple/apple-original.svg',
+  'reactnative': { type: 'react-icon', icon: 'FaReact' },
+  'flutter': { type: 'react-icon', icon: 'SiFlutter' },
+  'swift': { type: 'react-icon', icon: 'SiSwift' },
+  'kotlin': { type: 'react-icon', icon: 'SiKotlin' },
+  'android': { type: 'react-icon', icon: 'FaAndroid' },
+  'ios': { type: 'react-icon', icon: 'FaApple' },
   
-  // Other
-  'docker': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
-  'kubernetes': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg',
-  'aws': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original.svg',
-  'azure': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg',
-  'gcp': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg',
-  'git': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg',
-  'github': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg',
-  'gitlab': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/gitlab/gitlab-original.svg',
-  'jenkins': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jenkins/jenkins-original.svg',
-  'graphql': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/graphql/graphql-plain.svg',
-  'redux': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redux/redux-original.svg',
-  'webpack': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/webpack/webpack-original.svg',
-  'babel': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/babel/babel-original.svg',
-  'jest': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jest/jest-plain.svg',
+  // Cloud & DevOps
+  'docker': { type: 'react-icon', icon: 'FaDocker' },
+  'kubernetes': { type: 'react-icon', icon: 'SiKubernetes' },
+  'aws': { type: 'react-icon', icon: 'FaAws' },
+  'azure': { type: 'devicon', icon: '', fallbackUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg' },
+  'gcp': { type: 'react-icon', icon: 'SiGooglecloud' },
+  'googlecloud': { type: 'react-icon', icon: 'SiGooglecloud' },
+  'firebase': { type: 'react-icon', icon: 'SiFirebase' },
+  'vercel': { type: 'react-icon', icon: 'SiVercel' },
+  'netlify': { type: 'react-icon', icon: 'SiNetlify' },
+  
+  // Version Control
+  'git': { type: 'react-icon', icon: 'FaGitAlt' },
+  'github': { type: 'react-icon', icon: 'FaGithub' },
+  'gitlab': { type: 'react-icon', icon: 'FaGitlab' },
+  'bitbucket': { type: 'react-icon', icon: 'FaBitbucket' },
+  
+  // Build Tools & Bundlers
+  'webpack': { type: 'react-icon', icon: 'SiWebpack' },
+  'vite': { type: 'react-icon', icon: 'SiVite' },
+  'rollup': { type: 'react-icon', icon: 'SiRollupdotjs' },
+  'babel': { type: 'react-icon', icon: 'SiBabel' },
+  'eslint': { type: 'react-icon', icon: 'SiEslint' },
+  'prettier': { type: 'react-icon', icon: 'SiPrettier' },
+  
+  // Testing
+  'jest': { type: 'react-icon', icon: 'SiJest' },
+  'cypress': { type: 'react-icon', icon: 'SiCypress' },
+  'mocha': { type: 'devicon', icon: '', fallbackUrl: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mocha/mocha-plain.svg' },
+  
+  // State Management
+  'redux': { type: 'react-icon', icon: 'SiRedux' },
+  'mobx': { type: 'react-icon', icon: 'SiMobx' },
+  
+  // API Technologies
+  'graphql': { type: 'react-icon', icon: 'SiGraphql' },
+  'apollo': { type: 'react-icon', icon: 'SiApollographql' },
+  'restapi': { type: 'react-icon', icon: 'SiPostman' },
+  'rest': { type: 'react-icon', icon: 'SiPostman' },
+  
+  // CI/CD
+  'jenkins': { type: 'react-icon', icon: 'SiJenkins' },
+  'githubactions': { type: 'react-icon', icon: 'SiGithubactions' },
+  'circleci': { type: 'react-icon', icon: 'SiCircleci' },
+  'travis': { type: 'react-icon', icon: 'SiTravisci' },
+  
+  // Additional Popular Technologies
+  'laravel': { type: 'react-icon', icon: 'SiLaravel' },
+  'symfony': { type: 'react-icon', icon: 'SiSymfony' },
+  'codeigniter': { type: 'react-icon', icon: 'SiCodeigniter' },
+  'wordpress': { type: 'react-icon', icon: 'FaWordpress' },
+  'drupal': { type: 'react-icon', icon: 'FaDrupal' },
+  'joomla': { type: 'react-icon', icon: 'FaJoomla' },
+  'shopify': { type: 'react-icon', icon: 'SiShopify' },
+  'strapi': { type: 'react-icon', icon: 'SiStrapi' },
+  'contentful': { type: 'react-icon', icon: 'SiContentful' },
+  'sanity': { type: 'react-icon', icon: 'SiSanity' },
+};
+
+// DevIcon fallback URLs for technologies not available in React Icons
+const devIconFallbacks: Record<string, string> = {
+  'rails': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rails/rails-original-wordmark.svg',
   'mocha': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mocha/mocha-plain.svg',
-  'firebase': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg',
+  'materialui': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/materialui/materialui-original.svg',
+  'oracle': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/oracle/oracle-original.svg',
 };
 
 const normalizeTechName = (tech: string) => {
@@ -90,13 +148,73 @@ const normalizeTechName = (tech: string) => {
   return normalized;
 };
 
+/**
+ * Get available tech icons configuration for a given array of technologies
+ * Only returns technologies that have corresponding icons available
+ * @param techArray - Array of technology names
+ * @param maxIcons - Maximum number of icons to return (default: 6)
+ * @returns Array of tech icon configurations
+ */
+export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => {
+  if (!techArray || techArray.length === 0) return [];
+  
+  // Filter and map technologies to their icon configurations
+  const availableIcons = techArray
+    .map(tech => {
+      const normalized = normalizeTechName(tech);
+      const iconConfig = techIconsMap[normalized];
+      
+      // Only include technologies that have icon configurations
+      if (iconConfig) {
+        return {
+          tech: tech.trim(), // Use original tech name for display
+          normalized,
+          ...iconConfig
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) // Remove null values (technologies without icons)
+    .slice(0, maxIcons); // Limit number of icons
+    
+  return availableIcons;
+};
+
+/**
+ * Check if a technology has an available icon
+ * @param tech - Technology name to check
+ * @returns boolean indicating if icon is available
+ */
+export const hasTechIcon = (tech: string): boolean => {
+  const normalized = normalizeTechName(tech);
+  return !!techIconsMap[normalized];
+};
+
+/**
+ * Get filtered array of technologies that have available icons
+ * @param techArray - Array of technology names
+ * @returns Array of technology names that have available icons
+ */
+export const getAvailableTechnologies = (techArray: string[] = []): string[] => {
+  return techArray.filter(hasTechIcon);
+};
+
+// Legacy function for backward compatibility - will be deprecated
 export const getTechLogos = async (techArray: string[] = []) => {
   if (!techArray || techArray.length === 0) return [];
   
   return techArray.slice(0, 5).map(tech => {
     const normalized = normalizeTechName(tech);
-    const url = techIconsMap[normalized] || '/tech.svg';
-    return { tech, url };
+    const iconConfig = techIconsMap[normalized];
+    
+    // For backward compatibility, return URL format
+    if (iconConfig?.type === 'react-icon') {
+      return { tech, url: iconConfig.icon }; // React Icon component name
+    } else if (iconConfig?.fallbackUrl) {
+      return { tech, url: iconConfig.fallbackUrl };
+    }
+    
+    return { tech, url: '/tech.svg' };
   });
 };
 

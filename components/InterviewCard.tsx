@@ -88,8 +88,13 @@ const InterviewCard = async ({
                     </p>
                 </div>
 
-                <div className="flex flex-row justify-between">
-                    <DisplayTechIcons techStack={techstack} />
+                <div className="flex flex-row justify-between items-center">
+                    <DisplayTechIcons 
+                        techStack={techstack} 
+                        maxIcons={4}
+                        iconSize="sm"
+                        showTooltip={true}
+                    />
 
                     <Button className="btn-primary">
                         <Link

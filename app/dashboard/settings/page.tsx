@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   Tabs,
   TabsList,
@@ -19,10 +20,24 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 export default function SettingsPage() {
   const [reminderTime, setReminderTime] = useState('08:00');
   const timeInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      // Clear any local storage or session data
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Redirect to sign-in page
+      router.push('/sign-in');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <div className="max-w-4xl mx-auto px-6 py-10 bg-gray-950 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-white">Settings</h1>
 
       <Tabs defaultValue="interview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -34,104 +49,104 @@ export default function SettingsPage() {
         </TabsList>
 
         {/* Interview Preferences */}
-        <TabsContent value="interview" className="space-y-4">
+        <TabsContent value="interview" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="space-y-2">
-            <Label htmlFor="target-roles">Target Roles</Label>
-            <Input id="target-roles" placeholder="e.g. Frontend Engineer, PM" />
+            <Label htmlFor="target-roles" className="text-gray-300">Target Roles</Label>
+            <Input id="target-roles" placeholder="e.g. Frontend Engineer, PM" className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus-visible:ring-blue-500" />
           </div>
 
           <div className="space-y-2">
-            <Label>Experience Level</Label>
+            <Label className="text-gray-300">Experience Level</Label>
             <Select>
-              <SelectTrigger>
+              <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Choose experience level" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fresher">Fresher</SelectItem>
-                <SelectItem value="mid">Mid-level</SelectItem>
-                <SelectItem value="senior">Senior</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="fresher" className="text-white hover:bg-gray-700">Fresher</SelectItem>
+                <SelectItem value="mid" className="text-white hover:bg-gray-700">Mid-level</SelectItem>
+                <SelectItem value="senior" className="text-white hover:bg-gray-700">Senior</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Preferred Question Types</Label>
-            <Input placeholder="e.g. Coding, Behavioral" />
+            <Label className="text-gray-300">Preferred Question Types</Label>
+            <Input placeholder="e.g. Coding, Behavioral" className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus-visible:ring-blue-500" />
           </div>
 
           <div className="space-y-2">
-            <Label>Preferred Domain</Label>
-            <Input placeholder="e.g. Fintech, Edtech" />
+            <Label className="text-gray-300">Preferred Domain</Label>
+            <Input placeholder="e.g. Fintech, Edtech" className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus-visible:ring-blue-500" />
           </div>
         </TabsContent>
 
         {/* AI Personalization */}
-        <TabsContent value="ai" className="space-y-4">
+        <TabsContent value="ai" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
-            <Label>Enable Smart Feedback</Label>
+            <Label className="text-gray-300">Enable Smart Feedback</Label>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
-            <Label>Adaptive Difficulty</Label>
+            <Label className="text-gray-300">Adaptive Difficulty</Label>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
-            <Label>Use Past Performance</Label>
+            <Label className="text-gray-300">Use Past Performance</Label>
             <Switch />
           </div>
           <div className="space-y-2">
-            <Label>Preferred Language</Label>
+            <Label className="text-gray-300">Preferred Language</Label>
             <Select>
-              <SelectTrigger>
+              <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                 <SelectValue placeholder="Choose a language" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
-                <SelectItem value="hi">Hindi</SelectItem>
-                <SelectItem value="es">Spanish</SelectItem>
-                <SelectItem value="fr">French</SelectItem>
-                <SelectItem value="ar">Arabic</SelectItem>
-                <SelectItem value="bn">Bengali</SelectItem>
-                <SelectItem value="pt">Portuguese</SelectItem>
-                <SelectItem value="ru">Russian</SelectItem>
-                <SelectItem value="ja">Japanese</SelectItem>
-                <SelectItem value="de">German</SelectItem>
-                <SelectItem value="ko">Korean</SelectItem>
-                <SelectItem value="it">Italian</SelectItem>
-                <SelectItem value="tr">Turkish</SelectItem>
-                <SelectItem value="nl">Dutch</SelectItem>
-                <SelectItem value="pl">Polish</SelectItem>
-                <SelectItem value="uk">Ukrainian</SelectItem>
-                <SelectItem value="vi">Vietnamese</SelectItem>
-                <SelectItem value="th">Thai</SelectItem>
-                <SelectItem value="fa">Persian</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="en" className="text-white hover:bg-gray-700">English</SelectItem>
+                <SelectItem value="zh" className="text-white hover:bg-gray-700">Chinese (Mandarin)</SelectItem>
+                <SelectItem value="hi" className="text-white hover:bg-gray-700">Hindi</SelectItem>
+                <SelectItem value="es" className="text-white hover:bg-gray-700">Spanish</SelectItem>
+                <SelectItem value="fr" className="text-white hover:bg-gray-700">French</SelectItem>
+                <SelectItem value="ar" className="text-white hover:bg-gray-700">Arabic</SelectItem>
+                <SelectItem value="bn" className="text-white hover:bg-gray-700">Bengali</SelectItem>
+                <SelectItem value="pt" className="text-white hover:bg-gray-700">Portuguese</SelectItem>
+                <SelectItem value="ru" className="text-white hover:bg-gray-700">Russian</SelectItem>
+                <SelectItem value="ja" className="text-white hover:bg-gray-700">Japanese</SelectItem>
+                <SelectItem value="de" className="text-white hover:bg-gray-700">German</SelectItem>
+                <SelectItem value="ko" className="text-white hover:bg-gray-700">Korean</SelectItem>
+                <SelectItem value="it" className="text-white hover:bg-gray-700">Italian</SelectItem>
+                <SelectItem value="tr" className="text-white hover:bg-gray-700">Turkish</SelectItem>
+                <SelectItem value="nl" className="text-white hover:bg-gray-700">Dutch</SelectItem>
+                <SelectItem value="pl" className="text-white hover:bg-gray-700">Polish</SelectItem>
+                <SelectItem value="uk" className="text-white hover:bg-gray-700">Ukrainian</SelectItem>
+                <SelectItem value="vi" className="text-white hover:bg-gray-700">Vietnamese</SelectItem>
+                <SelectItem value="th" className="text-white hover:bg-gray-700">Thai</SelectItem>
+                <SelectItem value="fa" className="text-white hover:bg-gray-700">Persian</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </TabsContent>
 
         {/* Notifications */}
-        <TabsContent value="notifications" className="space-y-4">
+        <TabsContent value="notifications" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
-            <Label>Daily Practice Reminder</Label>
+            <Label className="text-gray-300">Daily Practice Reminder</Label>
             <Switch defaultChecked />
           </div>
 
           <div className="space-y-2">
-            <Label>Reminder Time</Label>
+            <Label className="text-gray-300">Reminder Time</Label>
             <div className="relative w-40">
               <Input
                 ref={timeInputRef}
                 type="time"
                 value={reminderTime}
                 onChange={(e) => setReminderTime(e.target.value)}
-                className="pl-10 pr-3 py-2 w-full [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden"
+                className="pl-10 pr-3 py-2 w-full bg-gray-800 border-gray-600 text-white [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden"
               />
               <button
                 type="button"
                 onClick={() => timeInputRef.current?.showPicker()}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-white transition-colors"
               >
                 <Clock className="h-4 w-4" />
               </button>
@@ -139,36 +154,52 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>Email Notifications</Label>
+            <Label className="text-gray-300">Email Notifications</Label>
             <Switch />
           </div>
         </TabsContent>
 
         {/* Account Settings */}
-        <TabsContent value="account" className="space-y-4">
+        <TabsContent value="account" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="space-y-2">
-            <Label>Change Password</Label>
-            <Input type="password" placeholder="New Password" />
-            <Button className="mt-2">Update Password</Button>
+            <Label className="text-gray-300">Change Password</Label>
+            <Input type="password" placeholder="New Password" className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus-visible:ring-blue-500" />
+            <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-500">Update Password</Button>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="my-4 border-gray-600" />
 
-          <Button variant="destructive">Delete My Account</Button>
+          {/* Logout Section */}
+          <div className="space-y-2">
+            <Label className="text-gray-300">Account Actions</Label>
+            <div className="flex gap-4">
+              <Button 
+                onClick={handleLogout}
+                variant="outline" 
+                className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 hover:text-white border-gray-500 flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+              <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-red-500">
+                Delete My Account
+              </Button>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Billing */}
-        <TabsContent value="billing" className="space-y-4">
+        <TabsContent value="billing" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div>
-            <Label>Current Plan</Label>
-            <p className="text-sm font-semibold mt-1">Free</p>
-            <Button className="mt-2">Upgrade to Pro</Button>
+            <Label className="text-gray-300">Current Plan</Label>
+            <p className="text-sm font-semibold mt-1 text-white">Free</p>
+            <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-500">Upgrade to Pro</Button>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="my-4 border-gray-600" />
 
-          <Label>Billing History</Label>
-          <Textarea disabled placeholder="Coming soon..." />
+          <Label className="text-gray-300">Billing History</Label>
+          <Textarea disabled placeholder="Coming soon..." className="bg-gray-800 border-gray-600 text-gray-400 placeholder-gray-500" />
         </TabsContent>
       </Tabs>
     </div>
