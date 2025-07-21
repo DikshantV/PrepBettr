@@ -1,0 +1,70 @@
+   ▲ Next.js 15.3.2
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.3:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1281ms
+ ✓ Compiled /api/test-firestore in 224ms (79 modules)
+Firebase Admin initialized with bucket: prepbettr.firebasestorage.app
+Testing createFeedback...
+Error saving feedback: [Error: 2 UNKNOWN: Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported] {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported',
+  metadata: [Metadata],
+  note: 'Exception occurred in retry method that was not classified as transient'
+}
+ GET /api/test-firestore?mode=write 200 in 3000ms
+Testing getInterviewById...
+Firestore error in getInterviewById: [Error: 2 UNKNOWN: Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported] {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported',
+  metadata: [Metadata]
+}
+Testing getFeedbackByInterviewId...
+Firestore error in getFeedbackByInterviewId: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported
+    at getFeedbackByInterviewId (lib/actions/general.action.js:88:17)
+    at handler (pages/api/test-firestore.ts:52:54)
+  86 |                 .where("userId", "==", userId)
+  87 |                 .limit(1)
+> 88 |                 .get();
+     |                 ^
+  89 |             if (querySnapshot.empty)
+  90 |                 return null;
+  91 |             const feedbackDoc = querySnapshot.docs[0]; {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported',
+  metadata: [Metadata]
+}
+Testing getLatestInterviews...
+Firestore error in getLatestInterviews: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported
+    at getLatestInterviews (lib/actions/general.action.js:117:43)
+    at handler (pages/api/test-firestore.ts:66:49)
+  115 |         }
+  116 |         try {
+> 117 |             const interviews = await query.get();
+      |                                           ^
+  118 |             return interviews.docs.map((doc) => ({
+  119 |                 id: doc.id,
+  120 |                 ...doc.data(), {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported',
+  metadata: [Metadata]
+}
+Testing getInterviewsByUserId...
+Firestore error in getInterviewsByUserId: Error: 2 UNKNOWN: Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported
+    at getInterviewsByUserId (lib/actions/general.action.js:144:17)
+    at handler (pages/api/test-firestore.ts:80:51)
+  142 |                 .where("userId", "==", userId)
+  143 |                 .orderBy("createdAt", "desc")
+> 144 |                 .get();
+      |                 ^
+  145 |             return interviews.docs.map((doc) => ({
+  146 |                 id: doc.id,
+  147 |                 ...doc.data(), {
+  code: 2,
+  details: 'Getting metadata from plugin failed with error: error:1E08010C:DECODER routines::unsupported',
+  metadata: [Metadata]
+}
+ GET /api/test-firestore?mode=read 200 in 28479ms
+[?25h

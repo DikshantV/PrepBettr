@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import { TextHoverEffect } from "./text-hover-effect";
 import {
   IconAdjustmentsBolt,
-  IconCloud,
+  IconBrain,
   IconCurrencyDollar,
   IconEaseInOut,
+  IconWorldSearch,
   IconHeart,
-  IconHelp,
   IconRouteAltLeft,
   IconTerminal2,
 } from "@tabler/icons-react";
@@ -21,19 +21,14 @@ export function FeaturesSection() {
       icon: <IconTerminal2 className="w-6 h-6" />,
     },
     {
-      title: "Instant Feedback",
-      description: "Get detailed analysis of your answers, including suggestions for improvement.",
-      icon: <IconEaseInOut className="w-6 h-6" />,
+      title: "Resume Optimizer",
+      description: "AI tailors your resume to match job descriptions, boosting relevance and visibility.",
+      icon: <IconBrain className="w-6 h-6" />,
     },
     {
-      title: "Affordable Pricing",
-      description: "High-quality interview preparation at a fraction of the cost of human coaches.",
-      icon: <IconCurrencyDollar className="w-6 h-6" />,
-    },
-    {
-      title: "Available 24/7",
-      description: "Practice anytime, anywhere - our AI is always ready for your next session.",
-      icon: <IconCloud className="w-6 h-6" />,
+      title: "Smart Apply",
+      description: "Automatically apply to relevant jobs using your tailored resume and preferences.",
+      icon: <IconWorldSearch className="w-6 h-6" />,
     },
     {
       title: "Multiple Domains",
@@ -41,14 +36,19 @@ export function FeaturesSection() {
       icon: <IconRouteAltLeft className="w-6 h-6" />,
     },
     {
-      title: "Expert Support",
-      description: "Our team is here to help you with any questions or issues.",
-      icon: <IconHelp className="w-6 h-6" />,
+      title: "Instant Feedback",
+      description: "Get detailed analysis of your answers, including suggestions for improvement.",
+      icon: <IconEaseInOut className="w-6 h-6" />,
     },
     {
       title: "Progress Tracking",
       description: "Monitor your improvement with detailed analytics and insights.",
       icon: <IconAdjustmentsBolt className="w-6 h-6" />,
+    },
+    {
+      title: "Affordable Pricing",
+      description: "High-quality interview preparation at a fraction of the cost of human coaches.",
+      icon: <IconCurrencyDollar className="w-6 h-6" />,
     },
     {
       title: "And much more",

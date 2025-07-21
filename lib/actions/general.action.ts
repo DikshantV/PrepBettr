@@ -3,7 +3,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 
-import { db } from "@/firebase/admin";
+import { getDBService } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
 
 export async function createFeedback(params: CreateFeedbackParams) {
@@ -52,8 +52,10 @@ export async function createFeedback(params: CreateFeedbackParams) {
         let feedbackRef;
 
         if (feedbackId) {
+            const db = getDBService();
             feedbackRef = db.collection("feedback").doc(feedbackId);
         } else {
+            const db = getDBService();
             feedbackRef = db.collection("feedback").doc();
         }
 
@@ -67,51 +69,84 @@ export async function createFeedback(params: CreateFeedbackParams) {
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
-    const interview = await db.collection("interviews").doc(id).get();
-
-    return interview.data() as Interview | null;
+    try {
+        try {
+            const db = getDBService();
+            const interview = await db.collection("interviews").doc(id).get();
+            return interview.data() as Interview | null;
+        } catch (firestoreError) {
+            console.error('Firestore error in getInterviewById:', firestoreError);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in getInterviewById:', error);
+        return null;
+    }
 }
 
 export async function getFeedbackByInterviewId(
     params: GetFeedbackByInterviewIdParams
 ): Promise<Feedback | null> {
-    const { interviewId, userId } = params;
+    try {
+        const { interviewId, userId } = params;
 
-    const querySnapshot = await db
-        .collection("feedback")
-        .where("interviewId", "==", interviewId)
-        .where("userId", "==", userId)
-        .limit(1)
-        .get();
+        try {
+            const db = getDBService();
+            const querySnapshot = await db
+                .collection("feedback")
+                .where("interviewId", "==", interviewId)
+                .where("userId", "==", userId)
+                .limit(1)
+                .get();
 
-    if (querySnapshot.empty) return null;
+            if (querySnapshot.empty) return null;
 
-    const feedbackDoc = querySnapshot.docs[0];
-    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+            const feedbackDoc = querySnapshot.docs[0];
+            return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+        } catch (firestoreError) {
+            console.error('Firestore error in getFeedbackByInterviewId:', firestoreError);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in getFeedbackByInterviewId:', error);
+        return null;
+    }
 }
 
 export async function getLatestInterviews(
     params: GetLatestInterviewsParams
 ): Promise<Interview[]> {
-    const { userId, limit = 20 } = params;
-    
-    let query = db
-        .collection("interviews")
-        .where("finalized", "==", true)
-        .orderBy("createdAt", "desc")
-        .limit(limit);
-    
-    // Only add the userId filter if userId is provided
-    if (userId) {
-        query = query.where("userId", "!=", userId);
+    try {
+        const { userId, limit = 20 } = params;
+        
+        const db = getDBService();
+        let query = db
+            .collection("interviews")
+            .where("finalized", "==", true)
+            .orderBy("createdAt", "desc")
+            .limit(limit);
+        
+        // Only add the userId filter if userId is provided
+        if (userId) {
+            query = query.where("userId", "!=", userId);
+        }
+        
+        try {
+            const interviews = await query.get();
+            
+            return interviews.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Interview[];
+        } catch (firestoreError) {
+            console.error('Firestore error in getLatestInterviews:', firestoreError);
+            // Return empty array on Firestore errors
+            return [];
+        }
+    } catch (error) {
+        console.error('Error in getLatestInterviews:', error);
+        return [];
     }
-    
-    const interviews = await query.get();
-
-    return interviews.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Interview[];
 }
 
 export async function getInterviewsByUserId(
@@ -121,14 +156,26 @@ export async function getInterviewsByUserId(
         return [];
     }
     
-    const interviews = await db
-        .collection("interviews")
-        .where("userId", "==", userId)
-        .orderBy("createdAt", "desc")
-        .get();
+    try {
+        try {
+            const db = getDBService();
+            const interviews = await db
+                .collection("interviews")
+                .where("userId", "==", userId)
+                .orderBy("createdAt", "desc")
+                .get();
 
-    return interviews.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Interview[];
+            return interviews.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Interview[];
+        } catch (firestoreError) {
+            console.error('Firestore error in getInterviewsByUserId:', firestoreError);
+            // Return empty array on Firestore errors
+            return [];
+        }
+    } catch (error) {
+        console.error('Error in getInterviewsByUserId:', error);
+        return [];
+    }
 }

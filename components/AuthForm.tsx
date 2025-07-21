@@ -65,7 +65,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                     return;
                 }
 
-                toast.success("Account created successfully. Please sign in.");
+toast.success("Account created successfully. You can now sign in.");
                 router.push("/sign-in");
             } else {
                 const { email, password } = data;
@@ -82,20 +82,31 @@ const AuthForm = ({ type }: { type: FormType }) => {
                     return;
                 }
 
-                const result = await signIn({
-                    email,
-                    idToken,
+                // Call the API endpoint directly
+                const response = await fetch('/api/auth/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken }),
                 });
 
-                if (result?.success) {
+                if (response.ok) {
+                    console.log('AuthForm: Sign in successful, redirecting to dashboard');
                     toast.success("Signed in successfully.");
-                    // Use a full page reload to ensure auth state is updated
-                    setTimeout(() => {
-                        // Redirect to the dashboard
-                        window.location.href = '/dashboard';
-                    }, 500);
+                    
+                    // Redirect immediately after successful sign-in
+                    console.log('AuthForm: Attempting router.replace to /dashboard');
+                    try {
+                        router.replace('/dashboard');
+                    } catch (error) {
+                        console.error('Router.replace failed:', error);
+                        console.log('AuthForm: Fallback to window.location.replace');
+                        window.location.replace('/dashboard');
+                    }
                 } else {
-                    throw new Error(result?.message || 'Failed to sign in');
+                    const errorData = await response.json().catch(() => ({}));
+toast.error(errorData.error || 'Failed to sign in. Please check your credentials and try again.');
                 }
             }
         } catch (error) {
