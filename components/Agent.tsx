@@ -173,7 +173,7 @@ const Agent = ({
         }
     };
 
-const handleDisconnect = () =e {
+const handleDisconnect = () => {
     setCallStatus(CallStatus.FINISHED);
     vapi.stop();
     // Redirecting to dashboard instead of marketing

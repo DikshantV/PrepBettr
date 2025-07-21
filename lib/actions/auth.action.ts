@@ -1,12 +1,10 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { FirebaseError } from "@firebase/util";
 // FALLBACK: Import manual token decoding functions for cases where Firebase Admin SDK fails
 // These functions are used as a backup when SDK cannot decode tokens due to network/SSL issues
-import { decodeFirebaseToken, getUserFromDecodedToken } from "@/lib/utils/jwt-decoder";
-import { firebaseVerification, createFirebaseSessionCookie, verifyFirebaseSessionCookie } from "@/lib/services/firebase-verification";
-import { cloudFunctionsVerification } from "@/lib/services/cloud-functions-verification";
+import { getUserFromDecodedToken } from "@/lib/utils/jwt-decoder";
+import { firebaseVerification } from "@/lib/services/firebase-verification";
 
 
 // Session duration (1 week)
@@ -66,6 +64,8 @@ export async function setSessionCookie(idToken: string) {
 }
 
 export async function signUp(params: SignUpParams) {
+    // Destructuring for future use when SSL issues are resolved
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { uid, name, email } = params;
 
     try {

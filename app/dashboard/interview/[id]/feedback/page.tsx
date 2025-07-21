@@ -7,7 +7,7 @@ import { redirect, useParams } from "next/navigation";
 import { useFeedback, useInterview } from "@/lib/hooks/useFirestore";
 import { Button } from "@/components/ui/button";
 
-const Feedback = () => {
+const Feedback = () => {
     const params = useParams();
     const id = params?.id as string;
     const { feedback, loading: feedbackLoading, error: feedbackError } = useFeedback(id);
