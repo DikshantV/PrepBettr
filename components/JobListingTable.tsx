@@ -182,7 +182,7 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
                         </Button>
                       )}
                       
-                      {(job.applicationStatus === 'ready_to_apply' || job.applicationStatus === 'analyzing') && (
+                      {(job.applicationStatus === 'ready_to_apply' || job.applicationStatus === 'analyzing' || job.applicationStatus === 'applying') && (
                         <Button
                           variant="ghost"
                           size="sm"

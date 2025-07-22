@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -8,7 +8,6 @@ import { Textarea } from "./ui/textarea";
 import { LoaderInline } from "./ui/loader";
 import Image from "next/image";
 import { auth } from "@/firebase/client";
-import { onAuthStateChanged, User } from "firebase/auth";
 import { toast } from "sonner";
 
 interface ProfileUser {
@@ -58,15 +57,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   const [profilePic, setProfilePic] = useState<string | null>(user?.image || null);
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
@@ -84,6 +75,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
     // Get the current user's ID token with force refresh
     let idToken = '';
     try {
+      const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error("User not authenticated");
       }

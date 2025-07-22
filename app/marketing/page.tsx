@@ -4,8 +4,32 @@ import dynamic from 'next/dynamic';
 import { Spotlight } from '@/components/ui/spotlight';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { FeaturesSection } from '@/components/ui/features-section';
-import { MacbookScroll } from '@/components/ui/macbook-scroll';
-import BrandSlide from '@/components/BrandSlide';
+// Dynamic import for MacbookScroll component that requires DOM and scroll APIs
+const MacbookScroll = dynamic(() => import('@/components/ui/macbook-scroll').then(mod => ({ default: mod.MacbookScroll })), {
+  ssr: false,
+  loading: () => (
+    <div className="relative w-full overflow-visible" style={{ minHeight: '500px' }}>
+      <div className="animate-pulse">
+        <div className="bg-gray-300 dark:bg-gray-700 rounded-lg h-80 w-full max-w-4xl mx-auto"></div>
+      </div>
+    </div>
+  )
+});
+// Dynamic import for BrandSlide component that requires framer-motion
+const BrandSlide = dynamic(() => import('@/components/BrandSlide'), {
+  ssr: false,
+  loading: () => (
+    <div className="py-12 bg-black">
+      <div className="animate-pulse">
+        <div className="flex justify-center space-x-12">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="bg-gray-800 h-12 w-32 rounded"></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+});
 import FAQSection from '@/components/FAQsection';
 import StickyProduct from '@/components/StickyProduct';
 import Image from 'next/image';

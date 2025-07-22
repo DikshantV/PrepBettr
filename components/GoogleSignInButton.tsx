@@ -4,13 +4,30 @@ import { auth } from "@/firebase/client";
 import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { googleProvider } from "@/firebase/client";
 
 export default function GoogleSignInButton() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [signInSuccess, setSignInSuccess] = useState(false);
+
+  // Handle redirect on successful sign-in
+  useEffect(() => {
+    if (signInSuccess) {
+      console.log('GoogleSignInButton: Attempting router.replace to /dashboard');
+      try {
+        router.replace('/dashboard');
+      } catch (error) {
+        console.error('Router.replace failed:', error);
+        console.log('GoogleSignInButton: Fallback to window.location.replace');
+        if (typeof window !== 'undefined') {
+          window.location.replace('/dashboard');
+        }
+      }
+    }
+  }, [signInSuccess, router]);
 
   const handleGoogleSignIn = async () => {
     if (isLoading) return; // Prevent multiple clicks
@@ -46,16 +63,7 @@ export default function GoogleSignInButton() {
         if (signInResponse.ok) {
           console.log('GoogleSignInButton: First sign in successful, redirecting to dashboard');
           toast.success('Signed in successfully!');
-          
-          // Redirect immediately after successful sign-in
-          console.log('GoogleSignInButton: Attempting router.replace to /dashboard');
-          try {
-            router.replace('/dashboard');
-          } catch (error) {
-            console.error('Router.replace failed:', error);
-            console.log('GoogleSignInButton: Fallback to window.location.replace');
-            window.location.replace('/dashboard');
-          }
+          setSignInSuccess(true);
           return;
         }
 
@@ -100,9 +108,7 @@ export default function GoogleSignInButton() {
           if (retrySignIn.ok) {
             console.log('GoogleSignInButton: Second sign in successful, redirecting to dashboard');
             toast.success('Signed in successfully!');
-            
-            // Redirect immediately after successful sign-in
-            router.replace('/dashboard');
+            setSignInSuccess(true);
             return;
           }
 

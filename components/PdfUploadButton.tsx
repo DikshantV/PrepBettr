@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { UploadCloud, FileText, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +12,8 @@ import Uploady, {
   useItemAbortListener
 } from '@rpldy/uploady';
 import { asUploadButton } from '@rpldy/upload-button';
+import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/firebase/client';
 
 type UploadResponse = {
   success: boolean;
@@ -196,14 +198,43 @@ const PdfUploadButton = ({
 
 // Main component with Uploady provider
 export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
+  const { user } = useAuth();
+  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache'
+  });
+
+  // Update headers with auth token when user changes
+  React.useEffect(() => {
+    const updateAuthHeaders = async () => {
+      try {
+        if (user && auth.currentUser) {
+          const idToken = await auth.currentUser.getIdToken();
+          setAuthHeaders(prev => ({
+            ...prev,
+            'Authorization': `Bearer ${idToken}`
+          }));
+        } else {
+          // Remove auth header if no user
+          setAuthHeaders(prev => {
+            const { Authorization, ...rest } = prev;
+            return rest;
+          });
+        }
+      } catch (error) {
+        console.error('Error getting auth token:', error);
+        // Continue without auth token - server will handle development mode
+      }
+    };
+
+    updateAuthHeaders();
+  }, [user]);
+
   return (
     <Uploady
       destination={{ 
         url: '/api/upload-pdf',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
+        headers: authHeaders
       }}
       accept="application/pdf"
       multiple={false}

@@ -4,7 +4,8 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import pdfParse from 'pdf-parse';
+// Dynamic import to prevent issues during build
+// import pdfParse from 'pdf-parse';
 
 // File upload configurations
 const UPLOAD_DIR = '/tmp/resume-uploads';
@@ -38,6 +39,8 @@ function cleanupOldFiles() {
 async function parseFile(filePath: string, mimeType: string): Promise<string> {
   try {
     if (mimeType === 'application/pdf') {
+      // Dynamic import to prevent build-time issues
+      const { default: pdfParse } = await import('pdf-parse');
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
       return data.text;

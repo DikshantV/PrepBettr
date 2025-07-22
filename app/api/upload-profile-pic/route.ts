@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         resumable: false,
       });
 
-      blobStream.on('error', (error) => {
+      blobStream.on('error', (error: Error) => {
         console.error('Error uploading file:', error);
         reject(new Error('Error uploading file'));
       });

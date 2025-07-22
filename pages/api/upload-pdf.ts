@@ -1,26 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { writeFile, unlink, readFile } from 'fs/promises';
-import { join } from 'path';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm, File } from 'formidable';
-import { getAuth } from 'firebase-admin/auth';
-import * as pdfjs from 'pdfjs-dist';
-import { TextItem } from 'pdfjs-dist/types/src/display/api';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker as string;
-
-const auth = getAuth();
-
-// Helper to verify the Firebase ID token
-async function verifyIdToken(token: string) {
-  try {
-    const decodedToken = await auth.verifyIdToken(token);
-    return decodedToken;
-  } catch (error) {
-    console.error('Error verifying token:', error);
-    return null;
-  }
-}
+import { readFile, writeFile, unlink } from 'fs/promises';
+import { join } from 'path';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { updateUserResume } from '../../lib/services/firebase-resume-service';
+import { parseResumeText, generateInterviewQuestions } from '../../lib/utils/resume-parser';
+import { verifyIdToken } from '../../lib/firebase/admin';
 
 export const config = {
   api: {
@@ -33,24 +18,10 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
 
 async function parsePDF(filePath: string): Promise<string> {
   try {
-    const data = new Uint8Array(await readFile(filePath));
-    const loadingTask = pdfjs.getDocument({ data });
-    const pdfDocument = await loadingTask.promise;
-    
-    let fullText = '';
-    
-    // Extract text from each page
-    for (let i = 1; i <= pdfDocument.numPages; i++) {
-      const page = await pdfDocument.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map(item => (item as TextItem).str || '')
-        .join(' ');
-      
-      fullText += pageText + '\n\n';
-    }
-    
-    return fullText.trim();
+    const dataBuffer = await readFile(filePath);
+    const { default: pdf } = await import('pdf-parse');
+    const data = await pdf(dataBuffer);
+    return data.text.trim();
   } finally {
     // Clean up the temporary file
     await unlink(filePath).catch(console.error);
@@ -77,23 +48,46 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Verify Firebase ID token from Authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized - No token provided' });
-  }
-
-  const idToken = authHeader.split(' ')[1];
-  const decodedToken = await verifyIdToken(idToken);
-  if (!decodedToken) {
-    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
-  }
-  
   try {
+    // Check if Google API key is available
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      console.error('Google Generative AI API key is not configured');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        details: process.env.NODE_ENV === 'development' ? 'Google AI API key not configured' : undefined
+      });
+    }
+
+    // For now, skip Firebase auth in development if no token is provided
+    // This allows testing without full auth setup
+    const authHeader = req.headers.authorization;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const idToken = authHeader.split(' ')[1];
+      const decodedToken = await verifyIdToken(idToken);
+      if (!decodedToken) {
+        return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      // In production, always require auth
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    } else {
+      console.warn('Development mode: Skipping authentication for PDF upload');
+    }
+
     // Parse the form data
     const form = new IncomingForm();
     const { files } = await new Promise<{ files: { file?: File[] } }>((resolve, reject) => {
@@ -127,7 +121,7 @@ export default async function handler(
     // Extract key info
     const resumeInfo = extractResumeInfo(text);
     // Generate questions using Gemini, sending only key info
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Given the following resume information, generate 5 relevant interview questions. Format each question on a new line. Only return the questions, no additional text.\n\nName: ${resumeInfo.name}\nExperience: ${resumeInfo.experience}\nEducation: ${resumeInfo.education}\nSkills: ${resumeInfo.skills}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;

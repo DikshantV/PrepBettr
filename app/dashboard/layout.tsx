@@ -4,6 +4,10 @@ import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { AuthProvider } from "@/contexts/AuthContext";
 
+// Force dynamic rendering since we use cookies
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface DashboardLayoutProps {
   children: ReactNode;
 }
@@ -18,7 +22,7 @@ export default async function Layout({ children }: DashboardLayoutProps) {
   const user = await getCurrentUser();
   
   return (
-    <AuthProvider user={user}>
+    <AuthProvider>
       <DashboardLayout>
         {children}
       </DashboardLayout>

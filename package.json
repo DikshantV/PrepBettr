@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "FIRESTORE_EMULATOR_HOST='' GOOGLE_APPLICATION_CREDENTIALS='' GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next dev --turbopack",
+    "dev": "FIRESTORE_EMULATOR_HOST='' GOOGLE_APPLICATION_CREDENTIALS='' GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next dev",
     "build": "FIRESTORE_EMULATOR_HOST='' GOOGLE_APPLICATION_CREDENTIALS='' GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next build",
     "start": "FIRESTORE_EMULATOR_HOST='' GOOGLE_APPLICATION_CREDENTIALS='' GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next start",
     "lint": "next lint",
@@ -14,7 +14,11 @@
     "test:auth-flow": "NODE_ENV=development playwright test auth-flow.spec.ts",
     "test:auth-performance": "NODE_ENV=development playwright test auth-performance.spec.ts",
     "test:auth-flow:prod": "NODE_ENV=production playwright test auth-flow.spec.ts --config=playwright.config.production.ts",
-    "test:auth-performance:prod": "NODE_ENV=production playwright test auth-performance.spec.ts --config=playwright.config.production.ts"
+    "test:auth-performance:prod": "NODE_ENV=production playwright test auth-performance.spec.ts --config=playwright.config.production.ts",
+    "test:hydration": "NODE_ENV=development playwright test e2e/hydration.spec.ts",
+    "test:hydration:prod": "NODE_ENV=production playwright test e2e/hydration.spec.ts --config=playwright.config.production.ts",
+    "test:hydration:headed": "NODE_ENV=development playwright test e2e/hydration.spec.ts --headed",
+    "build:test": "npm run build && npm run test:hydration"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.17",
@@ -88,6 +92,7 @@
     "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

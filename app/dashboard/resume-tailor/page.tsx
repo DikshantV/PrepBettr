@@ -1,5 +1,12 @@
-import ResumeTailor from "@/components/ResumeTailor";
+"use client";
+
+import dynamic from "next/dynamic";
 import { LuBrainCircuit } from "react-icons/lu";
+
+// Dynamic import for ResumeTailor component that requires DOM APIs
+const ResumeTailor = dynamic(() => import("@/components/dynamic/ResumeTailorDynamic"), {
+  ssr: false
+});
 
 export default function ResumeTailorPage() {
   return (
