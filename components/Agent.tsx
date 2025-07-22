@@ -148,13 +148,31 @@ const Agent = ({
         if (type === "generate") {
             // Generate Workflow Variables
             // Maps to VAPI placeholders: {{username}} (TEMPORARY - should be {{firstName}})
-            await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+            const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+            const vapiConfig = {
                 variableValues: {
                     username: firstName, // → {{username}} in VAPI workflow greeting (sends first name as username)
-                } as any, // Using 'any' temporarily until workflow is updated
+                },
                 clientMessages: [],
                 serverMessages: [],
-            });
+            };
+            
+            console.log('VAPI Debug - Workflow ID:', workflowId);
+            console.log('VAPI Debug - Config:', vapiConfig);
+            console.log('VAPI Debug - firstName:', firstName);
+            
+            if (!workflowId) {
+                console.error('NEXT_PUBLIC_VAPI_WORKFLOW_ID is not set');
+                return;
+            }
+            
+            try {
+                await vapi.start(workflowId, vapiConfig);
+            } catch (error) {
+                console.error('VAPI start error:', error);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                throw error;
+            }
         } else {
             // Format questions for VAPI workflow consumption
             // Questions are formatted as bulleted list for voice assistant readability
