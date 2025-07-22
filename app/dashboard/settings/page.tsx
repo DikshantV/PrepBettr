@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Clock, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { BillingSection } from '@/components/billing/BillingSection';
 import {
   Tabs,
   TabsList,
@@ -13,7 +14,6 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
@@ -36,8 +36,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 bg-gray-950 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-white">Settings</h1>
+    <div className="max-w-4xl mx-auto px-6 py-10">
+      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Settings</h1>
 
       <Tabs defaultValue="interview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -189,17 +189,8 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Billing */}
-        <TabsContent value="billing" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
-          <div>
-            <Label className="text-gray-300">Current Plan</Label>
-            <p className="text-sm font-semibold mt-1 text-white">Free</p>
-            <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-500">Upgrade to Pro</Button>
-          </div>
-
-          <Separator className="my-4 border-gray-600" />
-
-          <Label className="text-gray-300">Billing History</Label>
-          <Textarea disabled placeholder="Coming soon..." className="bg-gray-800 border-gray-600 text-gray-400 placeholder-gray-500" />
+        <TabsContent value="billing" className="space-y-4">
+          <BillingSection />
         </TabsContent>
       </Tabs>
     </div>

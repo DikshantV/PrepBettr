@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { subscriptionService } from '@/lib/services/subscription-service';
+import { UserUsageCounters } from '@/types/subscription';
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     if (!incremented) {
       // Get current usage to show in response
       const usage = await subscriptionService.getUserUsage(userId);
-      const currentUsage = usage?.[feature];
+      const currentUsage = usage?.[feature as keyof UserUsageCounters];
       
       return NextResponse.json(
         { 
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Usage incremented successfully',
       feature,
-      currentUsage: usage?.[feature] || { count: 1, limit: 0, updatedAt: new Date() },
+      currentUsage: usage?.[feature as keyof UserUsageCounters] || { count: 1, limit: 0, updatedAt: new Date() },
       plan: subscription?.plan || 'free'
     });
 

@@ -6,7 +6,9 @@ import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
 import { getCurrentUser } from "@/lib/actions/auth.action";
+import { UsageIndicator } from "@/components/UsageIndicator";
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 const SUPPORTED_LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
@@ -67,9 +69,22 @@ const Page = () => {
 
     return (
         <div className="flex flex-col gap-8">
-            <h2 className="text-2xl font-bold mb-6 p-4 border-b border-gray-200 dark:border-gray-700">
-                AI-Powered Mock Interview
-            </h2>
+            <div className="mb-6 p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-bold">
+                            AI-Powered Mock Interview
+                        </h2>
+                        <PremiumBadge 
+                            feature="interviews" 
+                            onClick={() => window.location.href = "/api/payments/create-checkout"}
+                        />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <UsageIndicator feature="interviews" variant="badge" showLabel={false} />
+                    </div>
+                </div>
+            </div>
             
             <div className="">
                 <div className="flex justify-between items-center mb-6">

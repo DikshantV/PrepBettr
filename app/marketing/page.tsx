@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Spotlight } from '@/components/ui/spotlight';
 import { TestimonialsSection } from '@/components/ui/testimonials-section';
 import { FeaturesSection } from '@/components/ui/features-section';
+import { BentoGridFeatures } from '@/components/ui/bento-grid-features';
 // Dynamic import for MacbookScroll component that requires DOM and scroll APIs
 const MacbookScroll = dynamic(() => import('@/components/ui/macbook-scroll').then(mod => ({ default: mod.MacbookScroll })), {
   ssr: false,
@@ -31,7 +32,6 @@ const BrandSlide = dynamic(() => import('@/components/BrandSlide'), {
   )
 });
 import FAQSection from '@/components/FAQsection';
-import StickyProduct from '@/components/StickyProduct';
 import Image from 'next/image';
 
 const SiteNavigation = dynamic(
@@ -111,10 +111,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Sticky Product Section */}
-        <div className="relative z-10 py-12 bg-white dark:bg-black">
-          <StickyProduct />
-        </div>
+        {/* Bento Grid Features Section */}
+        <BentoGridFeatures />
 
         {/* Testimonials Section */}
         <div className="relative z-10">
