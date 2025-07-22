@@ -54,12 +54,12 @@ type Message =
 // Any changes here must be synchronized with the VAPI workflow configurations
 
 /**
- * Variables for the Generate workflow (NEXT_PUBLIC_VAPI_WORKFLOW_ID)
- * VAPI Placeholders: {{firstName}}
- * Used for personalized greeting in question generation workflow
+ * Variables for the Generate Assistant (NEXT_PUBLIC_VAPI_ASSISTANT_ID)
+ * VAPI Placeholders: {{username}}
+ * Used for personalized greeting in question generation assistant
  */
-interface GenerateWorkflowVariables {
-  firstName: string; // Maps to {{firstName}} placeholder in VAPI workflow greeting
+interface GenerateAssistantVariables {
+  username: string; // Maps to {{username}} placeholder in VAPI assistant greeting
 }
 
 /**
@@ -73,7 +73,7 @@ interface InterviewWorkflowVariables {
 }
 
 // Union type for all possible variable values
-type VariableValues = GenerateWorkflowVariables | InterviewWorkflowVariables;
+type VariableValues = GenerateAssistantVariables | InterviewWorkflowVariables;
 
 // VAPI start method options
 interface VapiStartOptions {

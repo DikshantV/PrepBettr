@@ -88,16 +88,16 @@ FIRESTORE_PREFER_REST="true"
 ### Overview
 This section documents the variable contract between VAPI workflows and the front-end application to prevent drift between the two systems.
 
-### Generate Workflow Variables
-**Workflow ID**: `NEXT_PUBLIC_VAPI_WORKFLOW_ID` environment variable
+### Generate Assistant Variables
+**Assistant ID**: `NEXT_PUBLIC_VAPI_ASSISTANT_ID` environment variable
 
 | VAPI Placeholder | Front-end Variable Key | Description | Source |
 |------------------|------------------------|-------------|--------|
-| `{{firstName}}`  | `firstName`            | User's first name for personalized greeting | Extracted from `userName.split(' ')[0]` |
+| `{{username}}`   | `username`             | User's first name for personalized greeting | Extracted from `userName.split(' ')[0]` |
 
-**Usage Example in VAPI Workflow:**
+**Usage Example in VAPI Assistant:**
 ```
-Hello {{firstName}}, welcome to PrepBettr!
+Hello {{username}}, welcome to PrepBettr!
 ```
 
 ### Interview Workflow Variables
@@ -115,34 +115,16 @@ Let's start with these questions: {{questions}}
 ```
 
 ### Implementation Details
-- **File**: `components/Agent.tsx` (lines 144-171)
-- **Types**: Defined in `types/vapi.d.ts` as `GenerateWorkflowVariables` and `InterviewWorkflowVariables`
-- **Variable Extraction**: Both `firstName` and `candidateName` use the same logic: `userName.split(' ')[0]`
+- **File**: `components/Agent.tsx` (lines 148-198)
+- **Types**: Defined in `types/vapi.d.ts` as `GenerateAssistantVariables` and `InterviewWorkflowVariables`
+- **Variable Extraction**: Both `username` and `candidateName` use the same logic: `userName.split(' ')[0]`
 
 ### Important Notes
-⚠️ **Critical**: Any changes to variable names in VAPI workflows must be reflected in the TypeScript interfaces and vice versa.
+⚠️ **Critical**: Any changes to variable names in VAPI assistants/workflows must be reflected in the TypeScript interfaces and vice versa.
 
 ⚠️ **Naming Convention**: 
-- Use `firstName` for generate workflows
+- Use `username` for generate assistant (sends firstName as username value)
 - Use `candidateName` for interview workflows (both reference the same extracted value)
-
-### 🚨 URGENT FIX REQUIRED
-**Current Issue**: The VAPI workflow (ID: `09c470ab-628b-43e6-8a61-7bbd2dc7c50a`) still uses `{{username}}` but front-end now sends `firstName`.
-
-**To Fix**:
-1. Open VAPI dashboard
-2. Navigate to workflow ID: `09c470ab-628b-43e6-8a61-7bbd2dc7c50a`
-3. Find the greeting message that contains `{{username}}`
-4. Replace `{{username}}` with `{{firstName}}`
-5. Save the workflow
-
-**Alternative**: If you prefer to keep the workflow as-is, revert the front-end change:
-```typescript
-// In components/Agent.tsx, change:
-firstName: firstName, // ← Current
-// Back to:
-username: firstName,  // ← Revert to this
-```
 
 ## Deploy on Vercel
 

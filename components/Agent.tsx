@@ -146,31 +146,33 @@ const Agent = ({
         const firstName = userName.split(' ')[0];
 
         if (type === "generate") {
-            // Generate Workflow Variables
-            // Maps to VAPI placeholders: {{username}} (TEMPORARY - should be {{firstName}})
+            // Generate Interview Assistant
+            // Uses VAPI Assistant for dynamic question generation and personalized greeting
             const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
-            const vapiConfig = {
+            const assistantConfig = {
                 variableValues: {
-                    username: firstName, // → {{username}} in VAPI assistant greeting (sends first name as username)
-                },
+                    username: firstName, // → {{username}} placeholder in VAPI assistant (sends firstName as username)
+                } as GenerateAssistantVariables,
                 clientMessages: [],
                 serverMessages: [],
             };
             
             console.log('VAPI Debug - Assistant ID:', assistantId);
-            console.log('VAPI Debug - Config:', vapiConfig);
+            console.log('VAPI Debug - Config:', assistantConfig);
             console.log('VAPI Debug - firstName:', firstName);
             
             if (!assistantId) {
-                console.error('NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set');
+                console.error('NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set in environment variables');
+                setCallStatus(CallStatus.INACTIVE);
                 return;
             }
             
             try {
-                await vapi.start(assistantId, vapiConfig);
+                await vapi.start(assistantId, assistantConfig);
             } catch (error) {
-                console.error('VAPI start error:', error);
+                console.error('Failed to start VAPI assistant:', error);
                 console.error('Error details:', JSON.stringify(error, null, 2));
+                setCallStatus(CallStatus.INACTIVE);
                 throw error;
             }
         } else {
