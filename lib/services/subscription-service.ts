@@ -227,6 +227,28 @@ export class SubscriptionService {
   }
 
   /**
+   * Get subscription event by webhook event ID for idempotency checking
+   */
+  async getEventById(eventId: string): Promise<SubscriptionEvent | null> {
+    const snapshot = await this.db
+      .collection('subscription_events')
+      .where('eventId', '==', eventId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate() || new Date()
+    } as SubscriptionEvent;
+  }
+
+  /**
    * Mark subscription event as processed
    */
   async markEventAsProcessed(eventId: string, error?: string): Promise<void> {

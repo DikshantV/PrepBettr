@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ApplyToJobRequest, ApiResponse, JobApplication, AutomationLogEntry } from '@/types/auto-apply';
 import { v4 as uuidv4 } from 'uuid';
+import { withQuota } from '@/lib/middleware/quota-middleware';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 
@@ -154,15 +155,23 @@ function createAutomationLog(
   };
 }
 
-export async function POST(request: NextRequest) {
+async function handleJobApplication(request: NextRequest, context?: { userId: string }) {
   try {
     const body: ApplyToJobRequest = await request.json();
-    const { userId, jobId, customCoverLetter, customResume, applicationData } = body;
-
-    // TODO: Add authentication check
+    const { userId: bodyUserId, jobId, customCoverLetter, customResume, applicationData } = body;
+    
+    // Get user ID from context (passed by middleware) or fallback to body in dev mode
+    let userId = context?.userId || bodyUserId;
+    
+    // In development mode, allow passing userId in request body as fallback
+    if (!userId && process.env.NODE_ENV !== 'production') {
+      console.log('[DEV MODE] No userId in context, using body or generating mock ID');
+      userId = bodyUserId || 'dev-user-' + Date.now();
+    }
+    
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'User authentication required', timestamp: new Date().toISOString() } as ApiResponse<null>,
+        { success: false, error: 'User ID not available', timestamp: new Date().toISOString() } as ApiResponse<null>,
         { status: 401 }
       );
     }
@@ -327,6 +336,13 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply quota middleware to the POST handler
+export const POST = withQuota({
+  featureKey: 'autoApply',
+  limitFree: 1, // Free users can apply to 1 job
+  usageDocId: undefined // Use the authenticated user's ID
+})(handleJobApplication);
 
 // GET endpoint for retrieving application status
 export async function GET(request: NextRequest) {

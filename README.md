@@ -127,11 +127,11 @@ Let's start with these questions: {{questions}}
 - Use `candidateName` for interview workflows (both reference the same extracted value)
 
 ### 🚨 URGENT FIX REQUIRED
-**Current Issue**: The VAPI workflow (ID: `a6955838-3217-4263-9869-efa82d396593`) still uses `{{username}}` but front-end now sends `firstName`.
+**Current Issue**: The VAPI workflow (ID: `09c470ab-628b-43e6-8a61-7bbd2dc7c50a`) still uses `{{username}}` but front-end now sends `firstName`.
 
 **To Fix**:
 1. Open VAPI dashboard
-2. Navigate to workflow ID: `a6955838-3217-4263-9869-efa82d396593`
+2. Navigate to workflow ID: `09c470ab-628b-43e6-8a61-7bbd2dc7c50a`
 3. Find the greeting message that contains `{{username}}`
 4. Replace `{{username}}` with `{{firstName}}`
 5. Save the workflow

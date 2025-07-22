@@ -148,26 +148,26 @@ const Agent = ({
         if (type === "generate") {
             // Generate Workflow Variables
             // Maps to VAPI placeholders: {{username}} (TEMPORARY - should be {{firstName}})
-            const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+            const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
             const vapiConfig = {
                 variableValues: {
-                    username: firstName, // → {{username}} in VAPI workflow greeting (sends first name as username)
+                    username: firstName, // → {{username}} in VAPI assistant greeting (sends first name as username)
                 },
                 clientMessages: [],
                 serverMessages: [],
             };
             
-            console.log('VAPI Debug - Workflow ID:', workflowId);
+            console.log('VAPI Debug - Assistant ID:', assistantId);
             console.log('VAPI Debug - Config:', vapiConfig);
             console.log('VAPI Debug - firstName:', firstName);
             
-            if (!workflowId) {
-                console.error('NEXT_PUBLIC_VAPI_WORKFLOW_ID is not set');
+            if (!assistantId) {
+                console.error('NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set');
                 return;
             }
             
             try {
-                await vapi.start(workflowId, vapiConfig);
+                await vapi.start(assistantId, vapiConfig);
             } catch (error) {
                 console.error('VAPI start error:', error);
                 console.error('Error details:', JSON.stringify(error, null, 2));

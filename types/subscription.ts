@@ -29,6 +29,7 @@ export interface UserUsageCounters {
 // Subscription event log entry
 export interface SubscriptionEvent {
   id: string;
+  eventId: string; // Webhook event ID for idempotency
   userId: string;
   eventType: string;
   timestamp: Date;
@@ -41,6 +42,8 @@ export interface SubscriptionEvent {
     currentPeriodEnd?: Date;
     amount?: number;
     currency?: string;
+    previousPlan?: PlanType;
+    error?: string;
   };
   processed: boolean;
   error?: string;
