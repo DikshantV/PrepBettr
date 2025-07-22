@@ -103,10 +103,10 @@ export default function HomePage() {
               Our AI-powered platform provides real-time feedback and personalized coaching to help you ace your next interview.
             </p>
             <div className="relative w-full overflow-visible" style={{ minHeight: '500px' }}>
-              <MacbookScroll 
-                src="/demo-screenshot.png" 
-                showGradient={false}
-              />
+            <MacbookScroll 
+              src="/ProductMockup1.png" 
+              showGradient={false}
+            />
             </div>
           </div>
         </div>

@@ -45,16 +45,10 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await query.get();
     
-    // Get total count for pagination
-    let totalQuery = db.collection('users');
-    if (planFilter) {
-      totalQuery = totalQuery.where('plan', '==', planFilter);
-    }
-    if (statusFilter) {
-      totalQuery = totalQuery.where('planStatus', '==', statusFilter);
-    }
-    const totalSnapshot = await totalQuery.count().get();
-    const total = totalSnapshot.data().count;
+    // For now, use a simplified total count - in production you might want to cache this
+    // or use a more efficient counting strategy
+    const allUsersSnapshot = await db.collection('users').select().get();
+    const total = allUsersSnapshot.docs.length;
 
     // Process user data and get usage counters
     const subscriptions = await Promise.all(

@@ -120,7 +120,16 @@ const InterviewCardClient = ({
                             </Link>
                         </Button>
                     ) : (
-                        <RequireQuota feature="interviews">
+                        <RequireQuota 
+                            feature="interviews"
+                            fallback={
+                                <Button className="btn-primary">
+                                    <Link href={`/dashboard/interview/${interviewId}`}>
+                                        View Interview
+                                    </Link>
+                                </Button>
+                            }
+                        >
                             <Button className="btn-primary">
                                 <Link href={`/dashboard/interview/${interviewId}`}>
                                     Take Interview

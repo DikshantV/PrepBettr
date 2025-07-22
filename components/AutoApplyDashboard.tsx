@@ -323,7 +323,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2 text-white mb-3">
                 <Bot className="h-5 w-5 text-blue-400" />
                 Auto-Apply Status
               </CardTitle>

@@ -32,4 +32,4 @@ jest.mock('@/lib/services/subscription-service', () => ({
 }));
 
 // Set test environment
-process.env.NODE_ENV = 'test';
+(process.env as any).NODE_ENV = 'test';

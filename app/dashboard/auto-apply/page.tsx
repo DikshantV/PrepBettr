@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { UserProfile, AutoApplySettings, JobSearchFilters } from '@/types/auto-apply';
-import { PremiumBadge } from '@/components/PremiumBadge';
 
 // Dynamic import for AutoApplyDashboard component that requires DOM APIs
 const AutoApplyDashboard = dynamic(() => import('@/components/AutoApplyDashboard').then(mod => ({ default: mod.AutoApplyDashboard })), {
@@ -144,10 +143,6 @@ export default function AutoApplyPage() {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Auto Apply with AI</h1>
-          <PremiumBadge 
-            feature="autoApply" 
-            onClick={() => window.location.href = "/api/payments/create-checkout"}
-          />
         </div>
         <p className="text-gray-600 dark:text-gray-300">
           Automate your job search with AI-powered job matching and application submission.

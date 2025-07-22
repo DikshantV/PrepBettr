@@ -40,10 +40,6 @@ export function FreeBanner({ className }: FreeBannerProps) {
 
   const usagePercentage = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
 
-  const handleUpgrade = () => {
-    window.location.href = "/api/payments/create-checkout";
-  };
-
   return (
     <div 
       className={cn(
@@ -66,21 +62,12 @@ export function FreeBanner({ className }: FreeBannerProps) {
               </Badge>
             </div>
             <p className="text-sm text-white/80">
-              You're using the free plan. Upgrade for unlimited access to all features.
+              You're currently using the free plan with access to all features.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleUpgrade}
-            className="bg-white text-purple-700 hover:bg-white/90 font-medium"
-            size="sm"
-          >
-            <Zap className="h-4 w-4 mr-1" />
-            Upgrade
-          </Button>
-          
           <button
             onClick={() => setDismissed(true)}
             className="p-1 text-white/60 hover:text-white/80 transition-colors"
