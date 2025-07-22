@@ -1,5 +1,6 @@
 import fs from 'fs';
-import pdfParse from 'pdf-parse';
+// Dynamic import to prevent build-time issues
+// import pdfParse from 'pdf-parse';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ParseResumeResponse, UserProfile } from '@/types/auto-apply';
 
@@ -10,7 +11,8 @@ export async function parseResume(filePath: string): Promise<ParseResumeResponse
     // Read the PDF file
     const dataBuffer = fs.readFileSync(filePath);
     
-    // Parse the PDF to extract text
+    // Parse the PDF to extract text using dynamic import
+    const { default: pdfParse } = await import('pdf-parse');
     const pdfData = await pdfParse(dataBuffer);
     const extractedText = pdfData.text;
 

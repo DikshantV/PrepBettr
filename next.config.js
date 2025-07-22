@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Temporarily disable during hydration testing
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {

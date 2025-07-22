@@ -1,11 +1,13 @@
 'use client';
 
-import {useState, useEffect, JSX} from 'react';
+import {JSX} from 'react';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSimpleScrollDirection } from '@/hooks/useSimpleScrollDirection';
+import { useIsClient } from '@/hooks/useIsClient';
 
 export const FloatingNav = ({
   navItems,
@@ -19,23 +21,8 @@ export const FloatingNav = ({
   className?: string;
 }) => {
   const pathname = usePathname();
-  const [visible, setVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setVisible(false);
-      } else {
-        setVisible(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  const isClient = useIsClient();
+  const { visible } = useSimpleScrollDirection();
 
   return (
     <motion.div
@@ -77,12 +64,12 @@ export const FloatingNav = ({
                 href={navItem.link}
                 className={cn(
                   'relative flex items-center space-x-2 text-light-100 hover:text-primary-100 transition-colors',
-                  pathname === navItem.link ? 'text-primary-100' : ''
+                  isClient && pathname === navItem.link ? 'text-primary-100' : ''
                 )}
               >
                 <span className="block sm:hidden">{navItem.icon}</span>
                 <span className="hidden text-sm font-medium sm:block">{navItem.name}</span>
-                {pathname === navItem.link && (
+                {isClient && pathname === navItem.link && (
                   <span className="absolute -bottom-2 left-0 h-0.5 w-full bg-primary-100" />
                 )}
               </a>

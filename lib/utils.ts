@@ -174,7 +174,7 @@ export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => 
       }
       return null;
     })
-    .filter(Boolean) // Remove null values (technologies without icons)
+    .filter((icon): icon is NonNullable<typeof icon> => icon !== null) // Remove null values with proper typing
     .slice(0, maxIcons); // Limit number of icons
     
   return availableIcons;

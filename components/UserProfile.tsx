@@ -10,10 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
  * to access the current user information without additional API calls
  */
 export default function UserProfile() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center space-x-4 p-4">
         <Skeleton className="h-12 w-12 rounded-full" />

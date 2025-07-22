@@ -1,8 +1,33 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AutoApplyDashboard } from '@/components/AutoApplyDashboard';
+import dynamic from 'next/dynamic';
 import { UserProfile, AutoApplySettings, JobSearchFilters } from '@/types/auto-apply';
+
+// Dynamic import for AutoApplyDashboard component that requires DOM APIs
+const AutoApplyDashboard = dynamic(() => import('@/components/AutoApplyDashboard').then(mod => ({ default: mod.AutoApplyDashboard })), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="bg-gray-800 border border-gray-700 rounded-lg p-6 animate-pulse">
+            <div className="h-4 bg-gray-700 rounded mb-2"></div>
+            <div className="h-8 bg-gray-600 rounded mb-1"></div>
+            <div className="h-3 bg-gray-700 rounded"></div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-700 rounded mb-4 w-1/3"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-700 rounded"></div>
+          <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+        </div>
+      </div>
+    </div>
+  )
+});
 
 // Mock data for development
 const mockUserProfile: UserProfile = {
@@ -20,7 +45,7 @@ const mockUserProfile: UserProfile = {
       company: 'Tech Corp',
       position: 'Senior Software Engineer',
       startDate: '2020-01',
-      endDate: null,
+      endDate: undefined,
       isCurrent: true,
       description: 'Leading frontend development for web applications',
       achievements: ['Increased performance by 40%', 'Led team of 5 developers'],

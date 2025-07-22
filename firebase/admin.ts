@@ -125,23 +125,16 @@ const initFirebaseAdmin = (): FirebaseAdmin => {
     // Initialize services
     const auth = getAuth(app);
     
-    // Initialize Firestore with REST transport settings
+    // Initialize Firestore 
     let db;
     try {
-      // Try to initialize Firestore with gRPC-Web settings
+      // Initialize Firestore
       db = getFirestore(app);
       
-      // Configure Firestore client settings to use REST
-      if (db && typeof db._delegate?._settings === 'object') {
-        (db._delegate as any)._settings = {
-          ...(db._delegate as any)._settings,
-          ssl: false,
-          grpc: false,
-          preferRest: true
-        };
-      }
+      // Note: We rely on environment variables and settings rather than private property access
+      // for configuring Firestore transport settings
     } catch (error) {
-      console.warn('Failed to initialize Firestore with gRPC, falling back to basic initialization:', error);
+      console.warn('Failed to initialize Firestore, falling back to basic initialization:', error);
       // Fallback to basic Firestore initialization
       db = getFirestore(app);
     }

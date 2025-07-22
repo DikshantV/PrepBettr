@@ -8,6 +8,7 @@ import { auth } from "@/firebase/client";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 
 import {
     createUserWithEmailAndPassword,
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 import { signIn, signUp } from "@/lib/actions/auth.action";
 import FormField from "./FormField";
-import GoogleSignInButton from "./GoogleSignInButton";
+import GoogleSignInButton from "./dynamic/GoogleSignInButtonDynamic";
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -31,6 +32,7 @@ const authFormSchema = (type: FormType) => {
 
 const AuthForm = ({ type }: { type: FormType }) => {
     const router = useRouter();
+    const [signInSuccess, setSignInSuccess] = useState(false);
 
     const formSchema = authFormSchema(type);
     const form = useForm<z.infer<typeof formSchema>>({
@@ -94,16 +96,7 @@ toast.success("Account created successfully. You can now sign in.");
                 if (response.ok) {
                     console.log('AuthForm: Sign in successful, redirecting to dashboard');
                     toast.success("Signed in successfully.");
-                    
-                    // Redirect immediately after successful sign-in
-                    console.log('AuthForm: Attempting router.replace to /dashboard');
-                    try {
-                        router.replace('/dashboard');
-                    } catch (error) {
-                        console.error('Router.replace failed:', error);
-                        console.log('AuthForm: Fallback to window.location.replace');
-                        window.location.replace('/dashboard');
-                    }
+                    setSignInSuccess(true);
                 } else {
                     const errorData = await response.json().catch(() => ({}));
 toast.error(errorData.error || 'Failed to sign in. Please check your credentials and try again.');
@@ -114,6 +107,22 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
             toast.error(`There was an error: ${error}`);
         }
     };
+
+    // Handle redirect on successful sign-in
+    useEffect(() => {
+        if (signInSuccess) {
+            console.log('AuthForm: Attempting router.replace to /dashboard');
+            try {
+                router.replace('/dashboard');
+            } catch (error) {
+                console.error('Router.replace failed:', error);
+                console.log('AuthForm: Fallback to window.location.replace');
+                if (typeof window !== 'undefined') {
+                    window.location.replace('/dashboard');
+                }
+            }
+        }
+    }, [signInSuccess, router]);
 
     const isSignIn = type === "sign-in";
 

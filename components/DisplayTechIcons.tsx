@@ -181,7 +181,7 @@ const DisplayTechIcons = ({
     <div 
       className="flex items-center"
       role="list"
-      aria-label={`Technology stack: ${availableIcons.map(icon => icon.tech).join(', ')}`}
+      aria-label={`Technology stack: ${availableIcons.map(icon => icon?.tech).filter(Boolean).join(', ')}`}
     >
       {availableIcons.map((iconConfig, index) => (
         <div key={`${iconConfig.tech}-${index}`} role="listitem">

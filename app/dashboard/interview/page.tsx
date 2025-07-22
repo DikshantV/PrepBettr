@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
 import { getCurrentUser } from "@/lib/actions/auth.action";
-import PdfUploadButton from "@/components/PdfUploadButton";
+import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
 
 const SUPPORTED_LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },

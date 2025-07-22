@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { Timestamp } from 'firebase-admin/firestore';
 // FALLBACK: Import manual token decoding functions for cases where Firebase Admin SDK fails
 // These functions are used as a backup when SDK cannot decode tokens due to network/SSL issues
 import { getUserFromDecodedToken } from "@/lib/utils/jwt-decoder";

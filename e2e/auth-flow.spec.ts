@@ -1,3 +1,39 @@
+
+// Test to ensure no console errors during the load
+async function checkConsoleErrors(page: Page, url: string = '/') {
+  const errors: string[] = [];
+  const hydrationErrors: string[] = [];
+  
+  page.on('console', msg => {
+    if (msg.type() === 'error') {
+      const errorText = msg.text();
+      errors.push(errorText);
+      
+      // Check specifically for hydration errors
+      if (errorText.includes('hydrated but some attributes') || 
+          errorText.includes('Text content did not match') ||
+          errorText.includes('hydration mismatch')) {
+        hydrationErrors.push(errorText);
+      }
+    }
+  });
+
+  await page.goto(url);
+  
+  // Wait a bit for any async hydration to complete
+  await page.waitForTimeout(2000);
+
+  if (hydrationErrors.length > 0) {
+    throw new Error(`Hydration errors encountered: ${hydrationErrors.join('\n\n')}`);
+  }
+  
+  if (errors.length > 0) {
+    throw new Error(`Console errors encountered: ${errors.join('\n\n')}`);
+  }
+}
+
+// Add a new test case block
+
 import { test, expect, type Page } from '@playwright/test';
 
 // Test data - consider using environment variables for credentials in CI
@@ -312,6 +348,65 @@ test.describe('Authentication Flow End-to-End Tests', () => {
       
       await newPage.close();
     });
+  });
+});
+
+
+// Test suite to check for console errors and hydration issues on load
+test.describe('Hydration and Console Error Checks', () => {
+  test('should have no hydration errors on homepage', async ({ page }) => {
+    await checkConsoleErrors(page, '/');
+    console.log('✓ No hydration errors on homepage');
+  });
+
+  test('should have no hydration errors on sign-in page', async ({ page }) => {
+    await checkConsoleErrors(page, '/sign-in');
+    console.log('✓ No hydration errors on sign-in page');
+  });
+
+  test('should have no hydration errors on sign-up page', async ({ page }) => {
+    await checkConsoleErrors(page, '/sign-up');
+    console.log('✓ No hydration errors on sign-up page');
+  });
+
+  test('should have no hydration errors on marketing page', async ({ page }) => {
+    await checkConsoleErrors(page, '/marketing');
+    console.log('✓ No hydration errors on marketing page');
+  });
+
+  test('should have no hydration errors on authenticated dashboard page', async ({ page }) => {
+    // First sign in to get access to dashboard
+    await signIn(page, TEST_USER);
+    await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 15000 });
+    
+    // Clear previous console listeners and set up new ones
+    const errors: string[] = [];
+    const hydrationErrors: string[] = [];
+    
+    page.removeAllListeners('console');
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        const errorText = msg.text();
+        errors.push(errorText);
+        
+        // Check specifically for hydration errors
+        if (errorText.includes('hydrated but some attributes') || 
+            errorText.includes('Text content did not match') ||
+            errorText.includes('hydration mismatch')) {
+          hydrationErrors.push(errorText);
+        }
+      }
+    });
+
+    // Reload the dashboard to check for hydration issues
+    await page.reload();
+    await page.waitForTimeout(2000);
+
+    if (hydrationErrors.length > 0) {
+      throw new Error(`Hydration errors on dashboard: ${hydrationErrors.join('\n\n')}`);
+    }
+
+    console.log('✓ No hydration errors on authenticated dashboard page');
   });
 });
 

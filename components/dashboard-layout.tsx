@@ -1,7 +1,21 @@
 "use client";
 import { ReactNode } from "react";
-import { FloatingDock } from "@/components/ui/floating-dock";
+import dynamic from "next/dynamic";
 import { Home, MessageSquare, User, Settings, FileText, Bot } from "lucide-react";
+
+// Dynamic import for FloatingDock component that requires framer-motion
+const FloatingDock = dynamic(() => import("@/components/ui/floating-dock").then(mod => ({ default: mod.FloatingDock })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-fit mx-auto my-3">
+      <div className="flex items-center justify-center space-x-2 bg-gray-900 border border-gray-700 rounded-full px-4 py-2">
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} className="w-8 h-8 bg-gray-700 rounded animate-pulse"></div>
+        ))}
+      </div>
+    </div>
+  )
+});
 
 // Define navigation items for the floating dock
 const navItems = [

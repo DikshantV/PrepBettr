@@ -9,7 +9,7 @@ import { useUserInterviews, usePublicInterviews } from "@/lib/hooks/useFirestore
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardClient() {
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const { user, isAuthenticated, loading } = useAuth();
     const { interviews: userInterviews, loading: userLoading, error: userError } = useUserInterviews();
     const { interviews: publicInterviews, loading: publicLoading, error: publicError } = usePublicInterviews();
 

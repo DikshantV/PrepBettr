@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import PdfUploadButton from './PdfUploadButton';
+import PdfUploadButton from './dynamic/PdfUploadButtonDynamic';
 import dynamic from 'next/dynamic';
 import * as monaco from 'monaco-editor';
 
