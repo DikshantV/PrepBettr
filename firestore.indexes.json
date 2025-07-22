@@ -15,13 +15,9 @@
       ]
     },
     {
-      "collectionGroup": "interviews",
+      "collectionGroup": "feedback",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "finalized",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "userId",
           "order": "ASCENDING"
@@ -33,16 +29,58 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "interviews",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "interviewId",
+          "fieldPath": "finalized",
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "subscription_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "processed",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "subscription_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "userId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "plan",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }

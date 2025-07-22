@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { getDBService } from '@/firebase/admin';
+import { subscriptionService } from '@/lib/services/subscription-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,6 +61,19 @@ export async function GET(request: NextRequest) {
         };
         
         await db.collection('users').doc(userId).set(basicProfile);
+        
+        // Initialize subscription and usage counters for new user
+        try {
+          await subscriptionService.initializeUserSubscription(
+            userId,
+            decodedToken.email || '',
+            basicProfile.name
+          );
+          console.log(`Subscription initialized for new user: ${userId}`);
+        } catch (subscriptionError) {
+          console.error('Failed to initialize subscription for new user:', subscriptionError);
+          // Don't fail the request if subscription initialization fails
+        }
         
         return NextResponse.json({
           success: true,
