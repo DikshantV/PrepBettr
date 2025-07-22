@@ -3,9 +3,24 @@ import { google } from "@ai-sdk/google";
 
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
+import { withQuota } from "@/lib/middleware/quota-middleware";
+import { NextRequest } from "next/server";
 
-export async function POST(request: Request) {
-    const { type, role, level, techstack, amount, userid } = await request.json();
+async function handleInterviewGeneration(request: NextRequest, context?: { userId: string }) {
+    const { type, role, level, techstack, amount, userid: bodyUserId } = await request.json();
+
+    // Get user ID from context (passed by middleware) or fallback to body in dev mode
+    let userid = context?.userId || bodyUserId;
+    
+    // In development mode, allow passing userId in request body as fallback
+    if (!userid && process.env.NODE_ENV !== 'production') {
+        console.log('[DEV MODE] No userId in context, using body or generating mock ID');
+        userid = bodyUserId || 'dev-user-' + Date.now();
+    }
+    
+    if (!userid) {
+        return Response.json({ success: false, error: "User ID not available" }, { status: 401 });
+    }
 
     try {
         const { text: questions } = await generateText({
@@ -45,6 +60,13 @@ export async function POST(request: Request) {
         return Response.json({ success: false, error: error }, { status: 500 });
     }
 }
+
+// Apply quota middleware to the POST handler
+export const POST = withQuota({
+  featureKey: 'interviews',
+  limitFree: 3, // Free users can generate 3 interviews
+  usageDocId: undefined // Use the authenticated user's ID
+})(handleInterviewGeneration);
 
 export async function GET() {
     return Response.json({ success: true, data: "Thank you!" }, { status: 200 });

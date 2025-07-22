@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getCurrentUser } from '@/lib/actions/auth.action';
+import { withQuota } from '@/lib/middleware/quota-middleware';
 
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '');
@@ -26,22 +27,26 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-export async function POST(request: NextRequest) {
+async function handleResumeAnalysis(request: NextRequest, context?: { userId: string }) {
   try {
-    // Check authentication
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
+    // Get user ID from context (passed by middleware) - try getCurrentUser as fallback in dev mode
+    let userId = context?.userId;
+    
+    if (!userId && process.env.NODE_ENV !== 'production') {
+      console.log('[DEV MODE] No userId in context, trying getCurrentUser fallback');
+      try {
+        const currentUser = await getCurrentUser();
+        userId = currentUser?.id || 'dev-user-' + Date.now();
+      } catch (error) {
+        console.log('[DEV MODE] getCurrentUser failed, using mock ID');
+        userId = 'dev-user-' + Date.now();
+      }
     }
-
-    // Check rate limiting
-    if (!checkRateLimit(currentUser.id)) {
+    
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
+        { success: false, error: 'User ID not available' },
+        { status: 401 }
       );
     }
 
@@ -163,7 +168,7 @@ Please provide a tailored version that uses relevant keywords and highlights mat
     return NextResponse.json({
       success: true,
       data: {
-        analysisId: `analysis_${Date.now()}_${currentUser.id}`,
+        analysisId: `analysis_${Date.now()}_${userId}`,
         matchScore: analysisResult.matchScore || 75,
         keywordAnalysis: analysisResult.keywordAnalysis || {},
         atsCompatibility: analysisResult.atsCompatibility || { score: 80, issues: [], recommendations: [] },
@@ -185,6 +190,13 @@ Please provide a tailored version that uses relevant keywords and highlights mat
     );
   }
 }
+
+// Apply quota middleware to the POST handler
+export const POST = withQuota({
+  featureKey: 'resumeTailor',
+  limitFree: 2, // Free users can tailor 2 resumes
+  usageDocId: undefined // Use the authenticated user's ID
+})(handleResumeAnalysis);
 
 // Handle preflight requests
 export async function OPTIONS() {
