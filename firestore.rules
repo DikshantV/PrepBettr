@@ -27,6 +27,20 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.userId;
     }
     
+    // Usage counters - users can only read/write their own usage data
+    match /usage/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /counters/{counterId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Subscription events - only admin/system can write, users can't access directly
+    match /subscription_events/{eventId} {
+      allow read, write: if false; // Only server-side access
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

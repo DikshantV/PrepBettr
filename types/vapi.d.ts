@@ -48,3 +48,36 @@ type Message =
   | TranscriptMessage
   | FunctionCallMessage
   | FunctionCallResultMessage;
+
+// Variable values interfaces for VAPI workflows
+// IMPORTANT: These interfaces define the contract between front-end variables and VAPI workflow placeholders
+// Any changes here must be synchronized with the VAPI workflow configurations
+
+/**
+ * Variables for the Generate workflow (NEXT_PUBLIC_VAPI_WORKFLOW_ID)
+ * VAPI Placeholders: {{firstName}}
+ * Used for personalized greeting in question generation workflow
+ */
+interface GenerateWorkflowVariables {
+  firstName: string; // Maps to {{firstName}} placeholder in VAPI workflow greeting
+}
+
+/**
+ * Variables for the Interview workflow (defined in constants/index.ts as 'interviewer')
+ * VAPI Placeholders: {{candidateName}}, {{questions}}
+ * Used for conducting personalized interviews with dynamic questions
+ */
+interface InterviewWorkflowVariables {
+  questions: string;      // Maps to {{questions}} placeholder - formatted as "- Question1\n- Question2"
+  candidateName: string;  // Maps to {{candidateName}} placeholder in VAPI workflow greeting
+}
+
+// Union type for all possible variable values
+type VariableValues = GenerateWorkflowVariables | InterviewWorkflowVariables;
+
+// VAPI start method options
+interface VapiStartOptions {
+  variableValues: VariableValues;
+  clientMessages: any[];
+  serverMessages: any[];
+}

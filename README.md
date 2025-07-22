@@ -83,6 +83,67 @@ FIRESTORE_PREFER_REST="true"
 
 **Current Status**: ✅ **Fully Functional** - Authentication works reliably with REST API fallback
 
+## VAPI Workflow Variable Contract
+
+### Overview
+This section documents the variable contract between VAPI workflows and the front-end application to prevent drift between the two systems.
+
+### Generate Workflow Variables
+**Workflow ID**: `NEXT_PUBLIC_VAPI_WORKFLOW_ID` environment variable
+
+| VAPI Placeholder | Front-end Variable Key | Description | Source |
+|------------------|------------------------|-------------|--------|
+| `{{firstName}}`  | `firstName`            | User's first name for personalized greeting | Extracted from `userName.split(' ')[0]` |
+
+**Usage Example in VAPI Workflow:**
+```
+Hello {{firstName}}, welcome to PrepBettr!
+```
+
+### Interview Workflow Variables
+**Workflow ID**: Defined in `constants/index.ts` as `interviewer`
+
+| VAPI Placeholder | Front-end Variable Key | Description | Source |
+|------------------|------------------------|-------------|--------|
+| `{{candidateName}}` | `candidateName` | Candidate's first name for personalized interaction | Extracted from `userName.split(' ')[0]` |
+| `{{questions}}` | `questions` | Formatted list of interview questions | Array of questions formatted as `"- Question1\n- Question2"` |
+
+**Usage Examples in VAPI Workflow:**
+```
+Hi {{candidateName}}, I'm your AI interviewer today.
+Let's start with these questions: {{questions}}
+```
+
+### Implementation Details
+- **File**: `components/Agent.tsx` (lines 144-171)
+- **Types**: Defined in `types/vapi.d.ts` as `GenerateWorkflowVariables` and `InterviewWorkflowVariables`
+- **Variable Extraction**: Both `firstName` and `candidateName` use the same logic: `userName.split(' ')[0]`
+
+### Important Notes
+⚠️ **Critical**: Any changes to variable names in VAPI workflows must be reflected in the TypeScript interfaces and vice versa.
+
+⚠️ **Naming Convention**: 
+- Use `firstName` for generate workflows
+- Use `candidateName` for interview workflows (both reference the same extracted value)
+
+### 🚨 URGENT FIX REQUIRED
+**Current Issue**: The VAPI workflow (ID: `a6955838-3217-4263-9869-efa82d396593`) still uses `{{username}}` but front-end now sends `firstName`.
+
+**To Fix**:
+1. Open VAPI dashboard
+2. Navigate to workflow ID: `a6955838-3217-4263-9869-efa82d396593`
+3. Find the greeting message that contains `{{username}}`
+4. Replace `{{username}}` with `{{firstName}}`
+5. Save the workflow
+
+**Alternative**: If you prefer to keep the workflow as-is, revert the front-end change:
+```typescript
+// In components/Agent.tsx, change:
+firstName: firstName, // ← Current
+// Back to:
+username: firstName,  // ← Revert to this
+```
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

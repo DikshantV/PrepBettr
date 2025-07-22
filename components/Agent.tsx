@@ -141,18 +141,23 @@ const Agent = ({
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
 
-        // Extract first name from full name for personalized greeting
+        // VAPI Variable Contract: Extract first name for workflow placeholders
+        // This value maps to {{firstName}} and {{candidateName}} in VAPI workflows
         const firstName = userName.split(' ')[0];
 
         if (type === "generate") {
+            // Generate Workflow Variables
+            // Maps to VAPI placeholders: {{username}} (TEMPORARY - should be {{firstName}})
             await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
                 variableValues: {
-                    firstName: firstName,
-                },
+                    username: firstName, // → {{username}} in VAPI workflow greeting (sends first name as username)
+                } as any, // Using 'any' temporarily until workflow is updated
                 clientMessages: [],
                 serverMessages: [],
             });
         } else {
+            // Format questions for VAPI workflow consumption
+            // Questions are formatted as bulleted list for voice assistant readability
             let formattedQuestions = "";
             if (questions) {
                 formattedQuestions = questions
@@ -160,11 +165,13 @@ const Agent = ({
                     .join("\n");
             }
 
+            // Interview Workflow Variables
+            // Maps to VAPI placeholders: {{questions}}, {{candidateName}}
             await vapi.start(interviewer, {
                 variableValues: {
-                    questions: formattedQuestions,
-                    candidateName: firstName,
-                },
+                    questions: formattedQuestions,  // → {{questions}} in VAPI workflow
+                    candidateName: firstName,       // → {{candidateName}} in VAPI workflow greeting
+                } as InterviewWorkflowVariables,
                 clientMessages: [],
                 serverMessages: [],
             });

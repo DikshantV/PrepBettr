@@ -1,6 +1,8 @@
 // app/api/webhooks/dodo/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyDodoWebhook } from '@/lib/dodo-webhook';
+import { subscriptionService } from '@/lib/services/subscription-service';
+import { PlanType, PlanStatus } from '@/types/subscription';
 
 interface PaymentIntentMetadata {
   userId: string;
@@ -13,15 +15,30 @@ interface PaymentIntent {
   amount: number;
   currency: string;
   status: string;
+  current_period_end?: number; // Optional for payment intents
   metadata?: PaymentIntentMetadata;
   // Add other relevant fields based on your payment provider's API
 }
 
+interface SubscriptionData {
+  id: string;
+  customer: string;
+  status: string;
+  current_period_end: number;
+  plan?: {
+    id: string;
+    nickname?: string;
+  };
+  metadata?: PaymentIntentMetadata;
+}
+
 interface WebhookPayload<T = unknown> {
+  id: string; // Event ID for idempotency
   type: string;
   data: {
     object: T;
   };
+  created?: number; // Event creation timestamp
   // Add other relevant fields from the webhook payload
 }
 
@@ -51,22 +68,45 @@ export async function POST(request: NextRequest) {
         // Parse the webhook payload
         const payload = JSON.parse(body) as WebhookPayload<PaymentIntent>;
         const eventType = payload.type;
+        const eventId = payload.id;
         const data = payload.data?.object;
 
-        console.log(`Received webhook event: ${eventType}`, data);
+        console.log(`Received webhook event: ${eventType} (ID: ${eventId})`, data);
+
+        // Check for idempotency - ensure we haven't processed this event before
+        const existingEvent = await subscriptionService.getEventById(eventId);
+        if (existingEvent) {
+            console.log(`Event ${eventId} already processed, returning success`);
+            return NextResponse.json({ received: true, duplicate: true });
+        }
 
         // Handle different webhook events
         switch (eventType) {
             case 'payment_intent.succeeded':
-                await handleSuccessfulPayment(data);
+                await handleSuccessfulPayment(data, body, eventId);
                 break;
 
             case 'payment_intent.payment_failed':
-                await handleFailedPayment(data);
+                await handleFailedPayment(data, body, eventId);
+                break;
+
+            case 'subscription.created':
+            case 'subscription.updated':
+            case 'subscription.canceled':
+                await handleSubscriptionEvent(eventType, payload.data.object as SubscriptionData, body, eventId);
                 break;
 
             default:
                 console.log(`Unhandled event type: ${eventType}`);
+                // Still log unhandled events for tracking
+                await subscriptionService.logSubscriptionEvent({
+                    eventId,
+                    userId: 'unknown',
+                    eventType,
+                    rawWebhookData: JSON.parse(body),
+                    parsedData: {},
+                    processed: false
+                });
         }
 
         return NextResponse.json({ received: true });
@@ -79,21 +119,198 @@ export async function POST(request: NextRequest) {
     }
 }
 
-async function handleSuccessfulPayment(paymentIntent: PaymentIntent) {
+async function handleSuccessfulPayment(paymentIntent: PaymentIntent, rawBody: string, eventId: string) {
     console.log('Payment succeeded:', paymentIntent.id);
 
-    // TODO: Implement your business logic here
-    // Example:
-    // - Update database
-    // - Send confirmation email
-    // - Grant access to premium features
+    if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
+        console.error('Missing user ID in metadata');
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId: 'unknown',
+            eventType: 'payment_intent.succeeded',
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: { error: 'Missing user ID in metadata' },
+            processed: false
+        });
+        return;
+    }
+
+    const userId = paymentIntent.metadata.userId;
+    const plan = paymentIntent.metadata.plan as PlanType;
+
+    try {
+        const updates = {
+            plan: plan,
+            planStatus: 'active' as PlanStatus,
+            currentPeriodEnd: paymentIntent.current_period_end 
+              ? new Date(paymentIntent.current_period_end * 1000) 
+              : null
+        };
+
+        await subscriptionService.updateUserSubscription(userId, updates);
+        console.log(`User ${userId}'s subscription updated successfully to ${plan}`);
+
+        // Log successful event
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId,
+            eventType: 'payment_intent.succeeded',
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: {
+                amount: paymentIntent.amount,
+                currency: paymentIntent.currency,
+                plan: plan,
+                status: 'active'
+            },
+            processed: true
+        });
+    } catch (error) {
+        console.error('Error processing successful payment:', error);
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId,
+            eventType: 'payment_intent.succeeded',
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: {
+                amount: paymentIntent.amount,
+                currency: paymentIntent.currency,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            },
+            processed: false
+        });
+        throw error;
+    }
 }
 
-async function handleFailedPayment(paymentIntent: PaymentIntent) {
+async function handleFailedPayment(paymentIntent: PaymentIntent, rawBody: string, eventId: string) {
     console.log('Payment failed:', paymentIntent.id);
 
-    // TODO: Implement your failure handling logic
-    // Example:
-    // - Notify the user
-    // - Log the failure for review
+    const userId = paymentIntent.metadata?.userId;
+    console.log(`Payment failed for user ID: ${userId}`);
+
+    // Log failure event (Not updating subscription in failed event)
+    await subscriptionService.logSubscriptionEvent({
+        eventId,
+        userId: userId || 'unknown',
+        eventType: 'payment_intent.payment_failed',
+        rawWebhookData: JSON.parse(rawBody),
+        parsedData: {
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+        },
+        processed: true // We successfully handled the failure
+    });
+}
+
+async function handleSubscriptionEvent(eventType: string, subscription: SubscriptionData, rawBody: string, eventId: string) {
+    const { id, customer, status, current_period_end, plan, metadata } = subscription;
+    const userId = metadata?.userId;
+    
+    if (!userId) {
+        console.error('User ID not found in subscription metadata');
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId: 'unknown',
+            eventType,
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: { error: 'Missing user ID in subscription metadata' },
+            processed: false
+        });
+        return;
+    }
+
+    console.log(`Processing ${eventType} event for user: ${userId}`);
+
+    try {
+        // Get current user subscription for comparison
+        const currentSubscription = await subscriptionService.getUserSubscription(userId);
+        const currentPlan = currentSubscription?.plan || 'free';
+        
+        let planType: PlanType;
+        let planStatus: PlanStatus;
+        
+        // Handle different subscription events
+        switch (eventType) {
+            case 'subscription.created':
+            case 'subscription.updated':
+                planType = plan?.nickname as PlanType || 'free';
+                planStatus = status as PlanStatus;
+                
+                // Check if this is an upgrade/downgrade and reset counters
+                const shouldResetCounters = currentPlan !== planType;
+                
+                await subscriptionService.updateUserSubscription(userId, {
+                    plan: planType,
+                    planStatus,
+                    currentPeriodEnd: new Date(current_period_end * 1000),
+                    dodoCustomerId: customer,
+                    dodoSubscriptionId: id
+                });
+                
+                // Reset usage counters on plan change (upgrade/downgrade)
+                if (shouldResetCounters) {
+                    console.log(`Plan changed from ${currentPlan} to ${planType}, resetting counters`);
+                    await subscriptionService.resetUsageCounters(userId);
+                }
+                
+                console.log(`Subscription ${eventType} completed for user ${userId}: ${planType}`);
+                break;
+                
+            case 'subscription.canceled':
+                // Set to free plan and canceled status
+                planType = 'free';
+                planStatus = 'canceled';
+                
+                await subscriptionService.updateUserSubscription(userId, {
+                    plan: planType,
+                    planStatus,
+                    currentPeriodEnd: new Date(current_period_end * 1000),
+                    dodoCustomerId: customer,
+                    dodoSubscriptionId: id
+                });
+                
+                // Reset to free plan limits
+                console.log(`Subscription canceled for user ${userId}, resetting to free plan limits`);
+                await subscriptionService.resetUsageCounters(userId);
+                
+                console.log(`Subscription canceled for user ${userId}`);
+                break;
+                
+            default:
+                throw new Error(`Unhandled subscription event type: ${eventType}`);
+        }
+
+        // Log successful subscription event
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId,
+            eventType,
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: {
+                customerId: customer,
+                subscriptionId: id,
+                plan: planType,
+                status: planStatus,
+                currentPeriodEnd: new Date(current_period_end * 1000),
+                previousPlan: currentPlan
+            },
+            processed: true
+        });
+        
+    } catch (error) {
+        console.error(`Error processing subscription event ${eventType}:`, error);
+        await subscriptionService.logSubscriptionEvent({
+            eventId,
+            userId,
+            eventType,
+            rawWebhookData: JSON.parse(rawBody),
+            parsedData: {
+                customerId: customer,
+                subscriptionId: id,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            },
+            processed: false
+        });
+        throw error;
+    }
 }
