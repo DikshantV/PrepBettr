@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Parse the webhook payload
-        const payload = JSON.parse(body) as WebhookPayload<PaymentIntent>;
+        const payload = JSON.parse(body) as WebhookPayload<any>;
         const eventType = payload.type;
         const eventId = payload.id;
         const data = payload.data?.object;
@@ -83,17 +83,17 @@ export async function POST(request: NextRequest) {
         // Handle different webhook events
         switch (eventType) {
             case 'payment_intent.succeeded':
-                await handleSuccessfulPayment(data, body, eventId);
+                await handleSuccessfulPayment(data as PaymentIntent, body, eventId);
                 break;
 
             case 'payment_intent.payment_failed':
-                await handleFailedPayment(data, body, eventId);
+                await handleFailedPayment(data as PaymentIntent, body, eventId);
                 break;
 
             case 'subscription.created':
             case 'subscription.updated':
             case 'subscription.canceled':
-                await handleSubscriptionEvent(eventType, payload.data.object as SubscriptionData, body, eventId);
+                await handleSubscriptionEvent(eventType, data as SubscriptionData, body, eventId);
                 break;
 
             default:

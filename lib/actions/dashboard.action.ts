@@ -17,7 +17,7 @@ export async function getUserInterviews(): Promise<Interview[]> {
     
     const snapshot = await query.get();
     
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
       id: doc.id,
       ...doc.data()
     })) as Interview[];
@@ -43,7 +43,7 @@ export async function getPublicInterviews(): Promise<Interview[]> {
     
     const snapshot = await query.get();
     
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
       id: doc.id,
       ...doc.data()
     })) as Interview[];
@@ -65,7 +65,7 @@ export async function getUserUsage(): Promise<UserUsageCounters | null> {
     
     const usageData: Partial<UserUsageCounters> = {};
     
-    snapshot.docs.forEach((doc) => {
+    snapshot.docs.forEach((doc: FirebaseFirestore.DocumentData) => {
       const data = doc.data();
       const counter: UsageCounter = {
         count: data.count || 0,

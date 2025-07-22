@@ -4,7 +4,7 @@ import { google } from "@ai-sdk/google";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 import { withQuota } from "@/lib/middleware/quota-middleware";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 async function handleInterviewGeneration(request: NextRequest, context?: { userId: string }) {
     const { type, role, level, techstack, amount, userid: bodyUserId } = await request.json();
@@ -19,7 +19,7 @@ async function handleInterviewGeneration(request: NextRequest, context?: { userI
     }
     
     if (!userid) {
-        return Response.json({ success: false, error: "User ID not available" }, { status: 401 });
+        return NextResponse.json({ success: false, error: "User ID not available" }, { status: 401 });
     }
 
     try {
@@ -54,10 +54,10 @@ async function handleInterviewGeneration(request: NextRequest, context?: { userI
 
         await db.collection("interviews").add(interview);
 
-        return Response.json({ success: true }, { status: 200 });
+        return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
         console.error("Error:", error);
-        return Response.json({ success: false, error: error }, { status: 500 });
+        return NextResponse.json({ success: false, error: error }, { status: 500 });
     }
 }
 
@@ -69,5 +69,5 @@ export const POST = withQuota({
 })(handleInterviewGeneration);
 
 export async function GET() {
-    return Response.json({ success: true, data: "Thank you!" }, { status: 200 });
+    return NextResponse.json({ success: true, data: "Thank you!" }, { status: 200 });
 }

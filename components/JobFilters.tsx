@@ -118,18 +118,6 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-200 mb-1">Minimum Relevancy Score</label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={filters.minimumRelevancyScore}
-          onChange={(e) => onChange({ ...filters, minimumRelevancyScore: parseInt(e.target.value) })}
-          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
-        />
-        <span className="text-sm text-gray-300">{filters.minimumRelevancyScore}%</span>
-      </div>
 
       <Button onClick={onSearch} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600">
         {loading && <LoaderInline size="sm" className="mr-2" />}

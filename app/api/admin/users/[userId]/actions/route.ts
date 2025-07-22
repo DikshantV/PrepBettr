@@ -10,8 +10,9 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await context.params;
   try {
     // Check admin authentication
     if (!(await isAdmin(request))) {
@@ -20,8 +21,6 @@ export async function POST(
         { status: 403 }
       );
     }
-
-    const { userId } = params;
     const body = await request.json();
     const { action, data } = body;
 
