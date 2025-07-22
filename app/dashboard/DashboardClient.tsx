@@ -5,14 +5,36 @@ import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import InterviewCardClient from "@/components/InterviewCardClient";
-import { useUserInterviews, usePublicInterviews } from "@/lib/hooks/useFirestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { FreeBanner } from "@/components/FreeBanner";
+import { UserUsageCounters } from "@/types/subscription";
 
-export default function DashboardClient() {
-    const { user, isAuthenticated, loading } = useAuth();
-    const { interviews: userInterviews, loading: userLoading, error: userError } = useUserInterviews();
-    const { interviews: publicInterviews, loading: publicLoading, error: publicError } = usePublicInterviews();
+interface DashboardClientProps {
+  userInterviews: Interview[];
+  publicInterviews: Interview[];
+  usage: UserUsageCounters | null;
+}
 
+export default function DashboardClient({ userInterviews, publicInterviews, usage }: DashboardClientProps) {
+    const { user, loading } = useAuth();
+
+    // Show loading state while auth is being determined
+    if (loading) {
+        return (
+            <>
+                <section className="card-cta">
+                    <div className="flex flex-col gap-6 max-w-lg">
+                        <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                        <p className="text-lg">
+                            Loading your dashboard...
+                        </p>
+                    </div>
+                </section>
+            </>
+        );
+    }
+
+    // Show sign in message only if not loading and no user
     if (!user) {
         return (
             <>
@@ -33,6 +55,7 @@ export default function DashboardClient() {
 
     return (
         <>
+            <FreeBanner />
             <section className="card-cta">
                 <div className="flex flex-col gap-6 max-w-lg">
                     <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
@@ -58,13 +81,7 @@ export default function DashboardClient() {
                 <h2>Your Interviews</h2>
 
                 <div className="interviews-section">
-                    {userLoading ? (
-                        <p className="text-center py-8">Loading your interviews...</p>
-                    ) : userError ? (
-                        <p className="text-center py-8 text-red-500">
-                            Error loading interviews: {userError}
-                        </p>
-                    ) : hasPastInterviews ? (
+                    {hasPastInterviews ? (
                         userInterviews.map((interview) => (
                             <InterviewCardClient
                                 key={interview.id}
@@ -85,13 +102,7 @@ export default function DashboardClient() {
                 <h2>Take Interviews</h2>
 
                 <div className="interviews-section">
-                    {publicLoading ? (
-                        <p className="text-center py-8">Loading available interviews...</p>
-                    ) : publicError ? (
-                        <p className="text-center py-8 text-red-500">
-                            Error loading interviews: {publicError}
-                        </p>
-                    ) : hasPublicInterviews ? (
+                    {hasPublicInterviews ? (
                         publicInterviews.map((interview) => (
                             <InterviewCardClient
                                 key={interview.id}

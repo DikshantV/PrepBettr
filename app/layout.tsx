@@ -2,6 +2,7 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { Mona_Sans } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { UsageProvider } from "@/contexts/UsageContext";
 
 import "./globals.css";
 
@@ -22,9 +23,11 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="dark">
-        <body className={`${monaSans.className} antialiased pattern`}>
+        <body className={`${monaSans.className} antialiased`}>
         <AuthProvider>
-            {children}
+            <UsageProvider>
+                {children}
+            </UsageProvider>
         </AuthProvider>
 
         <Toaster />

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ResumeUploadProps } from '@/types/auto-apply';
 import { Button } from '@/components/ui/button';
 import { LoaderInline } from '@/components/ui/loader';
+import { useUsageActions } from '@/hooks/useUsageActions';
+import { toast } from 'sonner';
 
 export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, loading }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -15,12 +17,24 @@ export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, 
     }
   };
 
+  const { incrementUsageOptimistic, incrementUsage, canUseFeature } = useUsageActions();
+
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file to upload.');
       return;
     }
+
+    // Check if user can use this feature
+    if (!canUseFeature('resumeTailor')) {
+      toast.error("You've reached your Resume Tailor limit. Upgrade your plan for more usage.");
+      return;
+    }
+
     try {
+      // Optimistically increment usage for immediate UI feedback
+      incrementUsageOptimistic('resumeTailor');
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -28,6 +42,12 @@ export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, 
       // For now, immediately extract mock profile data
       onProfileExtracted({ skills: ['JavaScript', 'React'], experience: [] }); // Mock response
       setError(null);
+
+      // Sync usage increment with server (no need to wait for this)
+      incrementUsage('resumeTailor').catch(err => {
+        console.error('Failed to sync usage with server:', err);
+      });
+
     } catch (err) {
       setError('Failed to upload the file. Please try again.');
     }

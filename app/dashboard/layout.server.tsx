@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/actions/auth.action";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import AuthenticatedLayout from "@/components/authenticated-layout";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,9 +13,8 @@ export default async function Layout({ children }: DashboardLayoutProps) {
   }
   
   return (
-    <DashboardLayout>
+    <AuthenticatedLayout>
       {children}
-    </DashboardLayout>
+    </AuthenticatedLayout>
   );
 }
-

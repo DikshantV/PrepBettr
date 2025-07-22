@@ -6,6 +6,54 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+// Reset usage counters when user plan changes
+exports.onUserPlanChange = functions.firestore
+  .document('users/{userId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+
+    if (before.plan !== after.plan) {
+      const userId = context.params.userId;
+      const db = admin.firestore();
+      
+      try {
+        // Get default usage limits based on new plan
+        const plans = {
+          free: {
+            interviews: { count: 0, limit: 3 },
+            resumeTailor: { count: 0, limit: 2 },
+            autoApply: { count: 0, limit: 1 },
+          },
+          premium: {
+            interviews: { count: 0, limit: -1 },
+            resumeTailor: { count: 0, limit: -1 },
+            autoApply: { count: 0, limit: -1 },
+          },
+        };
+
+        const newPlanLimits = plans[after.plan];
+        const timestamp = admin.firestore.FieldValue.serverTimestamp();
+
+        // Batch update Firestore - reset counts and update limits
+        const batch = db.batch();
+        Object.entries(newPlanLimits).forEach(([feature, { count, limit }]) => {
+          const counterRef = db.collection('usage').doc(userId).collection('counters').doc(feature);
+          batch.set(counterRef, { 
+            count, 
+            limit, 
+            updatedAt: timestamp 
+          }, { merge: true });
+        });
+
+        await batch.commit();
+        console.log(`Usage counters reset for user: ${userId}, plan changed from ${before.plan} to ${after.plan}`);
+      } catch (error) {
+        console.error('Error resetting usage counters:', error);
+      }
+    }
+  });
+
 /**
  * Verify Firebase ID Token
  * This function provides server-side token verification as a Cloud Function

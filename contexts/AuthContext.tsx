@@ -22,12 +22,13 @@ const AuthContext = createContext<AuthContextType>({
 // AuthProvider props interface
 interface AuthProviderProps {
   children: ReactNode;
+  initialUser?: User | null; // Accept initial user from server
 }
 
 // AuthProvider component that manages auth state
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser || null);
+  const [loading, setLoading] = useState(!initialUser); // If we have initial user, don't start loading
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
@@ -40,13 +41,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
         setUser(userData);
       } else {
-        setUser(null);
+        // Only set user to null if we don't have an initial user from server
+        // This prevents clearing the user when Firebase client auth hasn't loaded yet
+        if (!initialUser) {
+          setUser(null);
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initialUser]);
 
   const contextValue: AuthContextType = {
     user,

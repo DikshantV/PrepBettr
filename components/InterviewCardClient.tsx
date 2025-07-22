@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
 import { useFeedback } from "@/lib/hooks/useFirestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { RequireQuota } from "@/components/RequireQuota";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 
@@ -112,17 +113,21 @@ const InterviewCardClient = ({
                         showTooltip={true}
                     />
 
-                    <Button className="btn-primary">
-                        <Link
-                            href={
-                                feedback
-                                    ? `/dashboard/interview/${interviewId}/feedback`
-                                    : `/dashboard/interview/${interviewId}`
-                            }
-                        >
-                            {feedback ? "Check Feedback" : "Take Interview"}
-                        </Link>
-                    </Button>
+                    {feedback ? (
+                        <Button className="btn-primary">
+                            <Link href={`/dashboard/interview/${interviewId}/feedback`}>
+                                Check Feedback
+                            </Link>
+                        </Button>
+                    ) : (
+                        <RequireQuota feature="interviews">
+                            <Button className="btn-primary">
+                                <Link href={`/dashboard/interview/${interviewId}`}>
+                                    Take Interview
+                                </Link>
+                            </Button>
+                        </RequireQuota>
+                    )}
                 </div>
             </div>
         </div>

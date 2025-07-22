@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { subscriptionService } from '@/lib/services/subscription-service';
+import { UserUsageCounters } from '@/types/subscription';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       success: true,
       canUse,
       feature,
-      currentUsage: usage?.[feature] || { count: 0, limit: 0, updatedAt: new Date() },
+      currentUsage: usage?.[feature as keyof UserUsageCounters] || { count: 0, limit: 0, updatedAt: new Date() },
       plan: subscription?.plan || 'free'
     });
 
