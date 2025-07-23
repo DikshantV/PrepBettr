@@ -5,37 +5,38 @@ import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { IconBrandYoutubeFilled } from "@tabler/icons-react";
+import TimelineCompact from "./TimelineCompact";
 
 
 export function FeaturesSectionDemo() {
   const features = [
     {
-      title: "Track issues effectively",
+      title: "Track applications effectively",
       description:
-        "Track and manage your project issues with ease using our intuitive interface.",
+        "Manage your entire application pipeline with a single click.",
       skeleton: <SkeletonOne />,
       className:
         "col-span-1 lg:col-span-4 border-b lg:border-r dark:border-neutral-800",
     },
     {
-      title: "Capture pictures with AI",
+      title: "Mock interviews",
       description:
-        "Capture stunning photos effortlessly using our advanced AI technology.",
+        "Practice with AI-generated questions tailored to your target role and get instant feedback.",
       skeleton: <SkeletonTwo />,
       className: "border-b col-span-1 lg:col-span-2 dark:border-neutral-800",
     },
     {
       title: "Watch our AI on YouTube",
       description:
-        "Whether its you or Tyler Durden, you can get to know about our product on YouTube",
+        "Learn how to land your next role in just 30* days",
       skeleton: <SkeletonThree />,
       className:
         "col-span-1 lg:col-span-3 lg:border-r  dark:border-neutral-800",
     },
     {
-      title: "Deploy in seconds",
+      title: "Used by Learners Everywhere",
       description:
-        "With our blazing fast, state of the art, cutting edge, we are so back cloud servies (read AWS) - you can deploy your model in seconds.",
+        "Join thousands of users who trust PrepBettr to advance their careers.",
       skeleton: <SkeletonFour />,
       className: "col-span-1 lg:col-span-3 border-b lg:border-none",
     },
@@ -44,12 +45,12 @@ export function FeaturesSectionDemo() {
     <div className="relative z-20 py-10 lg:py-40 max-w-7xl mx-auto bg-black">
       <div className="px-8">
         <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white">
-          Packed with thousands of features
+          Packed with everything you need
         </h4>
 
         <p className="text-sm lg:text-base  max-w-2xl  my-4 mx-auto text-neutral-500 text-center font-normal dark:text-neutral-300">
-          From Image generation to video generation, Everything AI has APIs for
-          literally everything. It can even create this website copy for you.
+          From ATS Resume Optimizer, Cover Letter Generator, Auto-Apply and Smart Tracker, 
+          Everything you need to master your job application process
         </p>
       </div>
 
@@ -138,8 +139,8 @@ export const SkeletonThree = () => {
           {/* TODO */}
           <IconBrandYoutubeFilled className="h-20 w-20 absolute z-10 inset-0 text-red-500 m-auto " />
           <img
-            src="https://assets.aceternity.com/fireship.jpg"
-            alt="header"
+            src="/YTThumbnail.png"
+            alt="YouTube video thumbnail"
             width={800}
             height={800}
             className="h-full w-full aspect-square object-cover object-center rounded-sm blur-none group-hover/image:blur-md transition-all duration-200"
@@ -151,76 +152,9 @@ export const SkeletonThree = () => {
 };
 
 export const SkeletonTwo = () => {
-  const images = [
-    "https://images.unsplash.com/photo-1517322048670-4fba75cbbb62?q=80&w=3000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1573790387438-4da905039392?q=80&w=3425&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1555400038-63f5ba517a47?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1554931670-4ebfabf6e7a9?q=80&w=3387&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1546484475-7f7bd55792da?q=80&w=2581&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  ];
-
-  const imageVariants = {
-    whileHover: {
-      scale: 1.1,
-      rotate: 0,
-      zIndex: 100,
-    },
-    whileTap: {
-      scale: 1.1,
-      rotate: 0,
-      zIndex: 100,
-    },
-  };
   return (
-    <div className="relative flex flex-col items-start p-8 gap-10 h-full overflow-hidden">
-      {/* TODO */}
-      <div className="flex flex-row -ml-20">
-        {images.map((image, idx) => (
-          <motion.div
-            variants={imageVariants}
-            key={"images-first" + idx}
-            style={{
-              rotate: Math.random() * 20 - 10,
-            }}
-            whileHover="whileHover"
-            whileTap="whileTap"
-            className="rounded-xl -mr-4 mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 shrink-0 overflow-hidden"
-          >
-            <img
-              src={image}
-              alt="bali images"
-              width="500"
-              height="500"
-              className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover shrink-0"
-            />
-          </motion.div>
-        ))}
-      </div>
-      <div className="flex flex-row">
-        {images.map((image, idx) => (
-          <motion.div
-            key={"images-second" + idx}
-            style={{
-              rotate: Math.random() * 20 - 10,
-            }}
-            variants={imageVariants}
-            whileHover="whileHover"
-            whileTap="whileTap"
-            className="rounded-xl -mr-4 mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 shrink-0 overflow-hidden"
-          >
-            <img
-              src={image}
-              alt="bali images"
-              width="500"
-              height="500"
-              className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover shrink-0"
-            />
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="absolute left-0 z-[100] inset-y-0 w-20 bg-gradient-to-r from-white dark:from-black to-transparent  h-full pointer-events-none" />
-      <div className="absolute right-0 z-[100] inset-y-0 w-20 bg-gradient-to-l from-white dark:from-black  to-transparent h-full pointer-events-none" />
+    <div className="relative flex flex-col items-center justify-center h-full w-full">
+      <TimelineCompact />
     </div>
   );
 };
@@ -256,8 +190,31 @@ export const Globe = ({ className }: { className?: string }) => {
       glowColor: [1, 1, 1],
       markers: [
         // longitude latitude
-        { location: [37.7595, -122.4367], size: 0.03 },
-        { location: [40.7128, -74.006], size: 0.1 },
+        { location: [37.7595, -122.4367], size: 0.03 }, // San Francisco
+        { location: [40.7128, -74.006], size: 0.1 }, // New York
+        { location: [51.5074, -0.1278], size: 0.08 }, // London
+        { location: [48.8566, 2.3522], size: 0.06 }, // Paris
+        { location: [35.6762, 139.6503], size: 0.09 }, // Tokyo
+        { location: [55.7558, 37.6176], size: 0.05 }, // Moscow
+        { location: [-33.8688, 151.2093], size: 0.07 }, // Sydney
+        { location: [19.4326, -99.1332], size: 0.04 }, // Mexico City
+        { location: [-23.5505, -46.6333], size: 0.06 }, // São Paulo
+        { location: [28.6139, 77.209], size: 0.08 }, // New Delhi
+        { location: [39.9042, 116.4074], size: 0.07 }, // Beijing
+        { location: [1.3521, 103.8198], size: 0.05 }, // Singapore
+        { location: [25.2048, 55.2708], size: 0.04 }, // Dubai
+        { location: [-26.2041, 28.0473], size: 0.06 }, // Johannesburg
+        { location: [52.3676, 4.9041], size: 0.05 }, // Amsterdam
+        { location: [59.9311, 10.7583], size: 0.04 }, // Oslo
+        { location: [41.9028, 12.4964], size: 0.05 }, // Rome
+        { location: [50.1109, 8.6821], size: 0.04 }, // Frankfurt
+        { location: [43.6532, -79.3832], size: 0.06 }, // Toronto
+        { location: [49.2827, -123.1207], size: 0.05 }, // Vancouver
+        { location: [-34.6037, -58.3816], size: 0.07 }, // Buenos Aires
+        { location: [30.0444, 31.2357], size: 0.05 }, // Cairo
+        { location: [13.7563, 100.5018], size: 0.06 }, // Bangkok
+        { location: [60.1699, 24.9384], size: 0.04 }, // Helsinki
+        { location: [-1.2921, 36.8219], size: 0.05 }, // Nairobi
       ],
       onRender: (state) => {
         // Called on every animation frame.

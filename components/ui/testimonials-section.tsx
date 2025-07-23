@@ -15,7 +15,7 @@ export function TestimonialsSection() {
       <section id="testimonials" className="relative z-10 py-20 bg-white dark:bg-black">
         <div className="container mx-auto px-4">
           <div className="text-center py-12 px-4">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-4xl md:text-5xl font-medium text-gray-900 dark:text-white mb-4">
               Don&apos;t just take our word for it
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
@@ -62,7 +62,7 @@ export function TestimonialsSection() {
     <section id="testimonials" className="py-20 bg-white dark:bg-black">
       <div className="container mx-auto px-4 overflow-visible">
         <div className="text-center py-12 px-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white mb-4">
             Dont just take our word for it
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300">
