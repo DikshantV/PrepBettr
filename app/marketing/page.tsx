@@ -53,7 +53,7 @@ export default function HomePage() {
           </div>
           <div className="container mx-auto px-8">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-12 pt-8 bg-clip-text text-transparent bg-gradient-to-b from-neutral-900 to-neutral-600 dark:from-neutral-100 dark:to-neutral-300">
+              <h1 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-bold text-black dark:text-white mb-12 pt-8">
                 Ace Your Next Interview with AI
               </h1>
               <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 mb-10 max-w-3xl mx-auto">
@@ -96,7 +96,7 @@ export default function HomePage() {
         {/* Macbook Scroll Demo */}
         <div className="relative z-0 py-12">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-12">
+            <h2 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white mb-12">
               Experience the Future of Interview Prep
             </h2>
             <p className="text-xl text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
@@ -229,7 +229,7 @@ export default function HomePage() {
               </span>
               Join 1,000+ satisfied users
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-900 to-neutral-600 dark:from-neutral-100 dark:to-neutral-300">
+            <h2 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white mb-6">
               Ready to ace your next interview?
             </h2>
             <p className="text-xl text-neutral-600 dark:text-neutral-300 mb-8 max-w-2xl mx-auto">

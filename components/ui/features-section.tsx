@@ -61,7 +61,7 @@ export function FeaturesSection() {
     <section id="features" className="pt-6 pb-20 bg-white dark:bg-black">
       <div id="features" className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto text-center mb-16 px-2">
-          <h2 className="text-2xl md:text-5xl font-bold mb-6 flex flex-wrap justify-center items-baseline gap-2">
+          <h2 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white mb-6 flex flex-wrap justify-center items-baseline gap-2">
             <span>Why Choose</span>
             <TextHoverEffect 
               text="PrepBettr" 

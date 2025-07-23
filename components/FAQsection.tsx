@@ -37,7 +37,7 @@ const FAQSection = () => {
     <section className="py-20 bg-white dark:bg-black">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16 max-w-3xl mx-auto">
-          <h2 className="text-4xl font-bold mt-2 mb-4">Frequently Asked Questions</h2>
+          <h2 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white mb-6 flex flex-wrap justify-center items-baseline gap-2">Frequently Asked Questions</h2>
           <p className="text-gray-600 dark:text-gray-300">
             Find answers to common questions about PrepBettr and how it can help you land your dream job.
           </p>
@@ -46,7 +46,7 @@ const FAQSection = () => {
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/3">
             <span className="text-indigo-600 dark:text-indigo-400 text-sm font-medium">Need Help?</span>
-            <h2 className="text-2xl font-bold my-4">Still have questions?</h2>
+            <h2 className="text-2xl font-bold my-4 text-black dark:text-white">Still have questions?</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               Can&apos;t find the answer you&apos;re looking for? Our support team is here to help you with any questions you might have.
             </p>
