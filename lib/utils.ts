@@ -180,51 +180,18 @@ export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => 
   return availableIcons;
 };
 
-/**
- * Check if a technology has an available icon
- * @param tech - Technology name to check
- * @returns boolean indicating if icon is available
- */
-export const hasTechIcon = (tech: string): boolean => {
-  const normalized = normalizeTechName(tech);
-  return !!techIconsMap[normalized];
-};
-
-/**
- * Get filtered array of technologies that have available icons
- * @param techArray - Array of technology names
- * @returns Array of technology names that have available icons
- */
-export const getAvailableTechnologies = (techArray: string[] = []): string[] => {
-  return techArray.filter(hasTechIcon);
-};
-
-// Legacy function for backward compatibility - will be deprecated
-export const getTechLogos = async (techArray: string[] = []) => {
-  if (!techArray || techArray.length === 0) return [];
-  
-  return techArray.slice(0, 5).map(tech => {
-    const normalized = normalizeTechName(tech);
-    const iconConfig = techIconsMap[normalized];
-    
-    // For backward compatibility, return URL format
-    if (iconConfig?.type === 'react-icon') {
-      return { tech, url: iconConfig.icon }; // React Icon component name
-    } else if (iconConfig?.fallbackUrl) {
-      return { tech, url: iconConfig.fallbackUrl };
-    }
-    
-    return { tech, url: '/tech.svg' };
-  });
-};
 
 export const getRandomInterviewCover = (id?: string) => {
   // Use deterministic selection based on ID to avoid hydration mismatch
   if (id) {
     const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const index = hash % interviewCovers.length;
-    return `/covers${interviewCovers[index]}`;
+    const path = `/covers${interviewCovers[index]}`;
+    console.log('Generated cover path:', path, 'for ID:', id);
+    return path;
   }
   // Fallback to first cover if no ID provided
-  return `/covers${interviewCovers[0]}`;
+  const path = `/covers${interviewCovers[0]}`;
+  console.log('Fallback cover path:', path);
+  return path;
 };

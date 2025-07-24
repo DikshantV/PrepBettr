@@ -68,21 +68,6 @@ export async function createFeedback(params: CreateFeedbackParams) {
     }
 }
 
-export async function getInterviewById(id: string): Promise<Interview | null> {
-    try {
-        try {
-            const db = getDBService();
-            const interview = await db.collection("interviews").doc(id).get();
-            return interview.data() as Interview | null;
-        } catch (firestoreError) {
-            console.error('Firestore error in getInterviewById:', firestoreError);
-            return null;
-        }
-    } catch (error) {
-        console.error('Error in getInterviewById:', error);
-        return null;
-    }
-}
 
 export async function getFeedbackByInterviewId(
     params: GetFeedbackByInterviewIdParams
@@ -113,69 +98,3 @@ export async function getFeedbackByInterviewId(
     }
 }
 
-export async function getLatestInterviews(
-    params: GetLatestInterviewsParams
-): Promise<Interview[]> {
-    try {
-        const { userId, limit = 20 } = params;
-        
-        const db = getDBService();
-        let query = db
-            .collection("interviews")
-            .where("finalized", "==", true)
-            .orderBy("createdAt", "desc")
-            .limit(limit);
-        
-        // Only add the userId filter if userId is provided
-        if (userId) {
-            query = query.where("userId", "!=", userId);
-        }
-        
-        try {
-            const interviews = await query.get();
-            
-            return interviews.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Interview[];
-        } catch (firestoreError) {
-            console.error('Firestore error in getLatestInterviews:', firestoreError);
-            // Return empty array on Firestore errors
-            return [];
-        }
-    } catch (error) {
-        console.error('Error in getLatestInterviews:', error);
-        return [];
-    }
-}
-
-export async function getInterviewsByUserId(
-    userId: string | undefined
-): Promise<Interview[]> {
-    if (!userId) {
-        return [];
-    }
-    
-    try {
-        try {
-            const db = getDBService();
-            const interviews = await db
-                .collection("interviews")
-                .where("userId", "==", userId)
-                .orderBy("createdAt", "desc")
-                .get();
-
-            return interviews.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Interview[];
-        } catch (firestoreError) {
-            console.error('Firestore error in getInterviewsByUserId:', firestoreError);
-            // Return empty array on Firestore errors
-            return [];
-        }
-    } catch (error) {
-        console.error('Error in getInterviewsByUserId:', error);
-        return [];
-    }
-}

@@ -27,6 +27,12 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.userId;
     }
     
+    // Allow querying the feedback collection for authenticated users
+    // This is needed for compound queries with where clauses
+    match /feedback/{document=**} {
+      allow read: if request.auth != null;
+    }
+    
     // Usage counters - users can only read/write their own usage data
     // Cloud Functions can also manage resets (they run with admin privileges)
     match /usage/{userId} {

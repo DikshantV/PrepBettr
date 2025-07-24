@@ -142,7 +142,7 @@ Updated Firestore rules include:
 
 ### Modified Files
 - `app/api/webhooks/dodo/route.ts` - Enhanced webhook handling
-- `app/api/protected/user-profile/route.ts` - Auto-initialize subscriptions
+- **Note**: `app/api/protected/user-profile/route.ts` has been moved to `__trash__/api/protected/user-profile/route.ts`
 - `firestore.rules` - Added security rules for new collections
 - `firestore.indexes.json` - Added indexes for new queries
 

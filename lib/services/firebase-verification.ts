@@ -286,15 +286,3 @@ interface SessionCookieResult {
 // Export singleton instance
 export const firebaseVerification = new FirebaseVerificationService();
 
-// Helper functions for backward compatibility
-export async function verifyFirebaseToken(idToken: string): Promise<VerificationResult> {
-  return await firebaseVerification.verifyIdToken(idToken);
-}
-
-export async function createFirebaseSessionCookie(idToken: string): Promise<SessionCookieResult> {
-  return await firebaseVerification.createSessionCookie(idToken);
-}
-
-export async function verifyFirebaseSessionCookie(sessionCookie: string): Promise<VerificationResult> {
-  return await firebaseVerification.verifySessionCookie(sessionCookie);
-}

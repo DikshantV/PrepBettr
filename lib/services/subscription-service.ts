@@ -32,6 +32,10 @@ export class SubscriptionService {
       currentPeriodEnd: null,
       dodoCustomerId: null,
       dodoSubscriptionId: null,
+      licenseKey: null,
+      licenseKeyStatus: null,
+      licenseKeyActivatedAt: null,
+      emailVerified: false,
     };
 
     // Update user document with subscription fields
@@ -127,6 +131,10 @@ export class SubscriptionService {
       currentPeriodEnd: userData?.currentPeriodEnd?.toDate() || null,
       dodoCustomerId: userData?.dodoCustomerId || null,
       dodoSubscriptionId: userData?.dodoSubscriptionId || null,
+      licenseKey: userData?.licenseKey || null,
+      licenseKeyStatus: userData?.licenseKeyStatus || null,
+      licenseKeyActivatedAt: userData?.licenseKeyActivatedAt?.toDate() || null,
+      emailVerified: userData?.emailVerified || false,
     };
   }
 
