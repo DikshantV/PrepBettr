@@ -18,6 +18,7 @@ We've implemented a comprehensive server-side verification system that provides 
 
 - **Firebase Verification Service** (`/lib/services/firebase-verification.ts`)
 - **Cloud Functions Service** (`/lib/services/cloud-functions-verification.ts`)
+- **Note**: Some legacy verification utilities have been moved to `__trash__/utils/unused-firebase-verification.ts` and `__trash__/utils/unused-cloud-functions-verification.ts`
 - **Updated Authentication Actions** (`/lib/actions/auth.action.ts`)
 - **Protected API Routes** (`/app/api/protected/`)
 - **Authentication Middleware** (`/middleware.ts`)
@@ -136,6 +137,8 @@ import { cloudFunctionsVerification } from '@/lib/services/cloud-functions-verif
 const result = await cloudFunctionsVerification.verifyTokenWithCloudFunction(idToken);
 ```
 
+**Note**: Legacy cloud function verification utilities have been moved to `__trash__/utils/unused-cloud-functions-verification.ts`. Use the active services in `/lib/services/` instead.
+
 ## Configuration
 
 ### Environment Variables
@@ -176,6 +179,8 @@ curl -X POST http://localhost:3000/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"idToken": "your-firebase-id-token"}'
 ```
+
+**Note**: Some legacy verification functions like `verifyFirebaseToken()`, `createFirebaseSessionCookie()`, and `verifyFirebaseSessionCookie()` have been moved to `__trash__/utils/unused-firebase-verification.ts`.
 
 ### 2. Test Protected Routes
 

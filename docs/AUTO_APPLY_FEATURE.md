@@ -112,10 +112,11 @@ The Auto-Apply with AI feature is a comprehensive job application automation sys
 
 ### Google Gemini API Usage
 
-#### 1. Resume Parsing (`lib/utils/parseResume.ts`)
+#### 1. Resume Parsing
 - Extracts structured data from PDF resumes
 - Identifies skills, experience, education, and contact information
 - Provides fallback parsing for robustness
+- **Note**: Legacy parseResume utility has been moved to `__trash__/utils/parseResume.ts`. Current implementation uses updated resume parsing logic.
 
 #### 2. Job Relevancy Analysis
 - Calculates compatibility scores between user profiles and job postings

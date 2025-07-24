@@ -187,9 +187,7 @@ async function handleSuccessfulPayment(paymentIntent: PaymentIntent, rawBody: st
                 amount: paymentIntent.amount,
                 currency: paymentIntent.currency,
                 plan: plan,
-                status: 'active',
-                licenseKey: licenseResult.licenseKey,
-                emailSent: true
+                status: 'active'
             },
             processed: true
         });

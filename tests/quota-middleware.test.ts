@@ -4,12 +4,32 @@ import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { subscriptionService } from '@/lib/services/subscription-service';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Mock the services
+jest.mock('@/lib/services/firebase-verification', () => ({
+  firebaseVerification: {
+    verifyIdToken: jest.fn(),
+  },
+}));
+
+jest.mock('@/lib/services/subscription-service', () => ({
+  subscriptionService: {
+    getUserSubscription: jest.fn(),
+    getUserUsage: jest.fn(),
+    incrementUsage: jest.fn(),
+    initializeUsageCounters: jest.fn(),
+    canPerformAction: jest.fn(),
+    getUserSubscriptionStatus: jest.fn(),
+  },
+}));
+
 // Mock dependencies
 const mockVerifyIdToken = firebaseVerification.verifyIdToken as jest.MockedFunction<typeof firebaseVerification.verifyIdToken>;
 const mockGetUserSubscription = subscriptionService.getUserSubscription as jest.MockedFunction<typeof subscriptionService.getUserSubscription>;
 const mockGetUserUsage = subscriptionService.getUserUsage as jest.MockedFunction<typeof subscriptionService.getUserUsage>;
 const mockIncrementUsage = subscriptionService.incrementUsage as jest.MockedFunction<typeof subscriptionService.incrementUsage>;
 const mockInitializeUsageCounters = subscriptionService.initializeUsageCounters as jest.MockedFunction<typeof subscriptionService.initializeUsageCounters>;
+const mockCanPerformAction = subscriptionService.canPerformAction as jest.MockedFunction<typeof subscriptionService.canPerformAction>;
+const mockGetUserSubscriptionStatus = subscriptionService.getUserSubscriptionStatus as jest.MockedFunction<typeof subscriptionService.getUserSubscriptionStatus>;
 
 describe('Quota Middleware', () => {
   let mockRequest: Partial<NextRequest>;
@@ -117,9 +137,16 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'premium-user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: true,
+      });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
         plan: 'premium',
-        status: 'active',
+        planStatus: 'active',
+        hasPremium: true,
+        premiumSource: 'subscription',
+        emailVerified: true,
+        usage: null
       } as any);
 
       const middleware = withQuota({
@@ -140,17 +167,25 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'free-user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({
-        plan: 'free',
-        status: 'active',
-      } as any);
-      mockGetUserUsage.mockResolvedValue({
-        interviews: {
-          count: 5,
-          limit: 5,
-          resetDate: new Date(),
-        },
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: false,
+        reason: "You've reached your interviews limit for the free plan",
+        upgradeRequired: true
       });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          interviews: {
+            count: 5,
+            limit: 5,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
 
       const middleware = withQuota({
         featureKey: 'interviews',
@@ -170,17 +205,23 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'free-user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({
-        plan: 'free',
-        status: 'active',
-      } as any);
-      mockGetUserUsage.mockResolvedValue({
-        interviews: {
-          count: 3,
-          limit: 5,
-          resetDate: new Date(),
-        },
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: true,
       });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          interviews: {
+            count: 3,
+            limit: 5,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
 
       const middleware = withQuota({
         featureKey: 'interviews',
@@ -200,17 +241,23 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'free-user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({
-        plan: 'free',
-        status: 'active',
-      } as any);
-      mockGetUserUsage.mockResolvedValue({
-        interviews: {
-          count: 3,
-          limit: 5,
-          resetDate: new Date(),
-        },
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: true,
       });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          interviews: {
+            count: 3,
+            limit: 5,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
       mockIncrementUsage.mockResolvedValue(true);
 
       const middleware = withQuota({
@@ -233,11 +280,17 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'new-user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: true,
+      });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
         plan: 'free',
-        status: 'active',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: null
       } as any);
-      mockGetUserUsage.mockResolvedValue({});
       mockInitializeUsageCounters.mockResolvedValue();
 
       const middleware = withQuota({
@@ -248,7 +301,6 @@ describe('Quota Middleware', () => {
       const wrappedHandler = middleware(mockHandler);
       const response = await wrappedHandler(mockRequest as NextRequest);
 
-      expect(mockInitializeUsageCounters).toHaveBeenCalledWith('new-user-id', 'free');
       expect(response.status).toBe(200);
     });
 
@@ -284,14 +336,23 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({ plan: 'free' } as any);
-      mockGetUserUsage.mockResolvedValue({
-        resumeTailor: {
-          count: 2,
-          limit: 3,
-          resetDate: new Date(),
-        },
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: true,
       });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          resumeTailor: {
+            count: 2,
+            limit: 3,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
 
       const middleware = withQuota({
         featureKey: 'resumeTailor',
@@ -310,14 +371,25 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({ plan: 'free' } as any);
-      mockGetUserUsage.mockResolvedValue({
-        autoApply: {
-          count: 10,
-          limit: 10,
-          resetDate: new Date(),
-        },
+      mockCanPerformAction.mockResolvedValue({
+        canPerform: false,
+        reason: "You've reached your auto-apply job application limit for the free plan",
+        upgradeRequired: true
       });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          autoApply: {
+            count: 10,
+            limit: 10,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
 
       const middleware = withQuota({
         featureKey: 'autoApply',
@@ -352,14 +424,21 @@ describe('Quota Middleware', () => {
         success: true,
         decodedToken: { uid: 'user-id' } as any,
       });
-      mockGetUserSubscription.mockResolvedValue({ plan: 'free' } as any);
-      mockGetUserUsage.mockResolvedValue({
-        interviews: {
-          count: 1,
-          limit: 5,
-          resetDate: new Date(),
-        },
-      });
+      mockCanPerformAction.mockResolvedValue({ canPerform: true });
+      mockGetUserSubscriptionStatus.mockResolvedValue({
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: true,
+        usage: {
+          interviews: {
+            count: 1,
+            limit: 5,
+            updatedAt: new Date(),
+          }
+        }
+      } as any);
 
       const middleware = withQuota({
         featureKey: 'interviews',
@@ -370,8 +449,7 @@ describe('Quota Middleware', () => {
       const wrappedHandler = middleware(mockHandler);
       await wrappedHandler(mockRequest as NextRequest);
 
-      expect(mockGetUserSubscription).toHaveBeenCalledWith('custom-doc-id');
-      expect(mockGetUserUsage).toHaveBeenCalledWith('custom-doc-id');
+      expect(mockCanPerformAction).toHaveBeenCalledWith('custom-doc-id', 'interviews', true);
     });
   });
 });

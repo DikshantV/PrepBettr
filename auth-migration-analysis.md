@@ -89,7 +89,7 @@ graph TD
 
 ### **Next.js Server Runtime Components**
 - `lib/actions/auth.action.ts` - Core authentication server actions
-- `lib/utils/jwt-decoder.ts` - **Custom JWT decoder** (bypasses Firebase Admin)
+- **Note**: `lib/utils/jwt-decoder.ts` - **Custom JWT decoder** has been moved to `__trash__/utils/jwt-decoder.ts`
 - `firebase/admin.ts` - Firebase Admin SDK (partially disabled due to SSL issues)
 - All `/api/auth/*` routes - Authentication API endpoints
 - All `/api/profile/*` routes - Profile management
@@ -133,7 +133,7 @@ graph TD
 
 ### After (Client-side Trust):
 ```typescript
-// From lib/utils/jwt-decoder.ts
+// From __trash__/utils/jwt-decoder.ts (moved from lib/utils/jwt-decoder.ts)
 export function decodeFirebaseToken(token: string): DecodedToken | null {
   // Split the token into parts and decode payload
   // Basic validation - no cryptographic verification

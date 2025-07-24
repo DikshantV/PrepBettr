@@ -38,7 +38,7 @@ async function clearAuthState(page: Page) {
 async function generateInterviews(page: Page, count: number = 1): Promise<boolean> {
   for (let i = 0; i < count; i++) {
     // Navigate to interview generation page
-    await page.goto('/dashboard/interviews');
+    await page.goto('/dashboard/interview');
     
     // Fill out interview generation form
     await page.selectOption('select[name="type"]', 'technical');
@@ -126,12 +126,12 @@ test.describe('Quota Flow Tests', () => {
       await expect(page.locator('text=premium', { exact: false })).toBeVisible();
       
       // Check for upgrade CTA button
-      const upgradeButton = page.locator('a[href="/pricing"], button:has-text("upgrade")').first();
+      const upgradeButton = page.locator('a[href="/account/billing"], button:has-text("upgrade")').first();
       await expect(upgradeButton).toBeVisible();
       
-      // Click upgrade button and verify redirect to pricing
+      // Click upgrade button and verify redirect to billing
       await upgradeButton.click();
-      await expect(page).toHaveURL(/.*\/pricing/, { timeout: 10000 });
+      await expect(page).toHaveURL(/.*\/account\/billing/, { timeout: 10000 });
       
       console.log('✓ Free user successfully redirected to pricing after hitting quota limit');
     });

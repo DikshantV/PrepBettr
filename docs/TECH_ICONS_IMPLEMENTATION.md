@@ -12,7 +12,7 @@ This document shows the implementation of professional tech stack icons in the I
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-import { cn, getTechLogos } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface TechIconProps {
     techStack: string[];
@@ -28,7 +28,9 @@ const DisplayTechIcons = ({ techStack }: TechIconProps) => {
 
     useEffect(() => {
         const loadTechIcons = async () => {
-            const icons = await getTechLogos(techStack);
+            // Note: getTechLogos utility was moved to __trash__/utils/unused-tech-utils.ts
+            // This implementation now uses the new getTechIcons utility
+            const icons = getTechIcons(techStack);
             setTechIcons(icons);
         };
         
@@ -260,20 +262,8 @@ export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => 
   return availableIcons;
 };
 
-/**
- * Check if a technology has an available icon
- */
-export const hasTechIcon = (tech: string): boolean => {
-  const normalized = normalizeTechName(tech);
-  return !!techIconsMap[normalized];
-};
-
-/**
- * Get filtered array of technologies that have available icons
- */
-export const getAvailableTechnologies = (techArray: string[] = []): string[] => {
-  return techArray.filter(hasTechIcon);
-};
+// Note: hasTechIcon and getAvailableTechnologies utilities were moved to __trash__/utils/unused-tech-utils.ts
+// These functions are no longer used in the current implementation.
 ```
 
 ### Enhanced InterviewCardClient.tsx Usage
@@ -353,10 +343,8 @@ export const getAvailableTechnologies = (techArray: string[] = []): string[] => 
   showTooltip={true}
 />
 
-// Check if technology has icon before displaying
-import { hasTechIcon } from "@/lib/utils";
-
-const techStackFiltered = techStack.filter(hasTechIcon);
+// Note: hasTechIcon utility was moved to __trash__/utils/unused-tech-utils.ts
+// The current implementation automatically filters technologies with available icons in getTechIcons
 ```
 
 ## Result
