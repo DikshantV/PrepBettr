@@ -3,7 +3,12 @@
 import { Home, MessageSquare, BarChart, DollarSign } from 'lucide-react';
 import { FloatingNav } from '@/components/ui/floating-navbar';
 
-export function SiteNavigation() {
+interface SiteNavigationProps {
+  onDashboardClick?: () => void;
+}
+
+export function SiteNavigation({ onDashboardClick }: SiteNavigationProps) {
+
   const navItems = [
     {
       name: 'Home',
@@ -27,5 +32,5 @@ export function SiteNavigation() {
     }
   ];
 
-  return <FloatingNav navItems={navItems} />;
+  return <FloatingNav navItems={navItems} onDashboardClick={onDashboardClick} />;
 }

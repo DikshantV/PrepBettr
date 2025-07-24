@@ -71,7 +71,7 @@ const Page = () => {
             <div className="mb-6 p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold">
+                        <h2 className="text-2xl font-bold text-white dark:text-white">
                             AI-Powered Mock Interview
                         </h2>
                     </div>
@@ -83,7 +83,7 @@ const Page = () => {
             
             <div className="">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-semibold">Interview Panel</h3>
+                    <h3 className="text-xl font-semibold text-white dark:text-white">Interview Panel</h3>
                     <div className="flex items-center gap-2">
                         <PdfUploadButton />
                         <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ const Page = () => {
             {isEditorExpanded && (
                 <div className="">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold">Code Editor</h3>
+                        <h3 className="text-xl font-semibold text-white dark:text-white">Code Editor</h3>
                         <div className="relative">
                             <button
                                 type="button"

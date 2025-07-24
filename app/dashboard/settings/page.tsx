@@ -37,7 +37,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Settings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white dark:text-white">Settings</h1>
 
       <Tabs defaultValue="interview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
