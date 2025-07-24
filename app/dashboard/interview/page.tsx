@@ -68,10 +68,10 @@ const Page = () => {
 
     return (
         <div className="flex flex-col gap-8">
-            <div className="mb-6 p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="mb-6 p-4 border-b border-gray-700">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-white dark:text-white">
+                        <h2 className="text-2xl font-bold text-white">
                             AI-Powered Mock Interview
                         </h2>
                     </div>
@@ -83,14 +83,14 @@ const Page = () => {
             
             <div className="">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-semibold text-white dark:text-white">Interview Panel</h3>
+                    <h3 className="text-xl font-semibold text-white">Interview Panel</h3>
                     <div className="flex items-center gap-2">
                         <PdfUploadButton />
                         <div className="flex items-center gap-2">
 
                             <button
                                 onClick={() => setIsEditorExpanded(!isEditorExpanded)}
-                                className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                                className="p-2 text-gray-300 hover:text-white rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors shadow-sm"
                                 aria-label={isEditorExpanded ? 'Hide code editor' : 'Show code editor'}
                                 title={isEditorExpanded ? 'Hide code editor' : 'Show code editor'}
                             >
@@ -127,7 +127,7 @@ const Page = () => {
             {isEditorExpanded && (
                 <div className="">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold text-white dark:text-white">Code Editor</h3>
+                        <h3 className="text-xl font-semibold text-white">Code Editor</h3>
                         <div className="relative">
                             <button
                                 type="button"
@@ -135,13 +135,13 @@ const Page = () => {
                                     e.stopPropagation();
                                     setIsLanguageDropdownOpen(!isLanguageDropdownOpen);
                                 }}
-                                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-200 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
                             >
                                 {SUPPORTED_LANGUAGES.find(lang => lang.value === selectedLanguage)?.label || 'Language'}
                                 <ChevronDown className="w-4 h-4 ml-1" />
                             </button>
                             {isLanguageDropdownOpen && (
-                                <div className="absolute right-0 z-10 mt-1 w-40 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div className="absolute right-0 z-10 mt-1 w-40 origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                     <div className="py-1">
                                         {SUPPORTED_LANGUAGES.map((language) => (
                                             <button
@@ -153,8 +153,8 @@ const Page = () => {
                                                 }}
                                                 className={`block w-full text-left px-4 py-2 text-sm ${
                                                     selectedLanguage === language.value
-                                                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                                                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                        ? 'bg-gray-700 text-white'
+                                                        : 'text-gray-200 hover:bg-gray-700'
                                                 }`}
                                             >
                                                 {language.label}

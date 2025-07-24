@@ -71,7 +71,7 @@ const InterviewCardClient = ({
                     />
 
                     {/* Interview Role */}
-                    <h3 className="mt-5 capitalize text-white dark:text-white">{role} Interview</h3>
+                    <h3 className="mt-5 capitalize text-white">{role} Interview</h3>
 
                     {/* Date & Score */}
                     <div className="flex flex-row gap-5 mt-3">

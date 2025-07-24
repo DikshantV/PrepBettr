@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyDodoWebhook } from '@/lib/dodo-webhook';
 import { subscriptionService } from '@/lib/services/subscription-service';
+import { licenseKeyService } from '@/lib/services/license-key-service';
+import { getAdminFirestore } from '@/lib/firebase/admin';
 import { PlanType, PlanStatus } from '@/types/subscription';
 
 interface PaymentIntentMetadata {
@@ -139,16 +141,41 @@ async function handleSuccessfulPayment(paymentIntent: PaymentIntent, rawBody: st
     const plan = paymentIntent.metadata.plan as PlanType;
 
     try {
-        const updates = {
-            plan: plan,
-            planStatus: 'active' as PlanStatus,
-            currentPeriodEnd: paymentIntent.current_period_end 
-              ? new Date(paymentIntent.current_period_end * 1000) 
-              : null
-        };
+        // Get user data for email and name
+        const db = getAdminFirestore();
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            throw new Error('User not found');
+        }
+        
+        const userData = userDoc.data();
+        const userEmail = userData?.email;
+        const userName = userData?.name;
+        
+        if (!userEmail) {
+            throw new Error('User email not found');
+        }
 
-        await subscriptionService.updateUserSubscription(userId, updates);
-        console.log(`User ${userId}'s subscription updated successfully to ${plan}`);
+        // Generate license key instead of direct subscription
+        const licenseResult = await licenseKeyService.generateLicenseKey(
+            userId,
+            userEmail,
+            1, // activation limit
+            365 // expires in 1 year
+        );
+
+        if (!licenseResult.success || !licenseResult.licenseKey) {
+            throw new Error('Failed to generate license key: ' + licenseResult.error);
+        }
+
+        // Send license key via email
+        await licenseKeyService.sendLicenseKeyEmail(
+            userEmail,
+            licenseResult.licenseKey,
+            userName
+        );
+
+        console.log(`License key generated and sent for user ${userId}: ${licenseResult.licenseKey}`);
 
         // Log successful event
         await subscriptionService.logSubscriptionEvent({
@@ -160,7 +187,9 @@ async function handleSuccessfulPayment(paymentIntent: PaymentIntent, rawBody: st
                 amount: paymentIntent.amount,
                 currency: paymentIntent.currency,
                 plan: plan,
-                status: 'active'
+                status: 'active',
+                licenseKey: licenseResult.licenseKey,
+                emailSent: true
             },
             processed: true
         });

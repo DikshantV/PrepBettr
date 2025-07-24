@@ -133,7 +133,7 @@ export function withQuota(options: WithQuotaOptions) {
 }
 
 /**
- * Check if user can proceed based on their plan and current usage
+ * Check if user can proceed based on their plan, current usage, email verification, and license key
  */
 async function checkUserQuota(
   userId: string,
@@ -141,49 +141,43 @@ async function checkUserQuota(
   limitFree: number
 ): Promise<QuotaCheckResult> {
   try {
-    // Get user subscription info
-    const subscription = await subscriptionService.getUserSubscription(userId);
-    const plan = subscription?.plan || 'free';
-
-    // Premium users always get unlimited access
-    if (plan === 'premium') {
-      return {
-        canProceed: true,
-        plan
-      };
-    }
-
-    // For free users, check current usage
-    const usage = await subscriptionService.getUserUsage(userId);
-    const currentFeatureUsage = usage?.[feature];
-
-    if (!currentFeatureUsage) {
-      // No usage record found, initialize it
-      await subscriptionService.initializeUsageCounters(userId, 'free');
-      return {
-        canProceed: true,
-        plan
-      };
-    }
-
-    const currentCount = currentFeatureUsage.count || 0;
-    const limit = Math.min(currentFeatureUsage.limit, limitFree); // Use the most restrictive limit
-
-    // Check if user has reached their limit
-    if (currentCount >= limit) {
+    // Use enhanced subscription service method that checks all access types
+    const actionCheck = await subscriptionService.canPerformAction(userId, feature, true);
+    
+    if (!actionCheck.canPerform) {
+      // Handle different types of restrictions
+      if (actionCheck.emailVerificationRequired) {
+        return {
+          canProceed: false,
+          error: 'Email verification required',
+          upgradeMessage: 'Please verify your email address before using this feature. Check your inbox for a verification link.',
+          plan: 'free'
+        };
+      }
+      
+      if (actionCheck.upgradeRequired) {
+        return {
+          canProceed: false,
+          error: actionCheck.reason || `You've reached your ${getFeatureDisplayName(feature)} limit`,
+          upgradeMessage: 'Please get a premium subscription.',
+          plan: 'free'
+        };
+      }
+      
       return {
         canProceed: false,
-        error: `You've reached your ${getFeatureDisplayName(feature)} limit for the free plan`,
-        upgradeMessage: getUpgradeMessage(feature, currentCount, limit),
-        currentUsage: currentFeatureUsage,
-        plan
+        error: actionCheck.reason || 'Access denied',
+        plan: 'free'
       };
     }
 
+    // Get detailed subscription status for response metadata
+    const subscriptionStatus = await subscriptionService.getUserSubscriptionStatus(userId);
+    
     return {
       canProceed: true,
-      currentUsage: currentFeatureUsage,
-      plan
+      plan: subscriptionStatus.hasPremium ? 'premium' : 'free',
+      currentUsage: subscriptionStatus.usage?.[feature]
     };
 
   } catch (error) {

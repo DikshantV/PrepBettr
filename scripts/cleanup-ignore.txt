@@ -1,0 +1,144 @@
+# CLEANUP IGNORE LIST
+# Files and directories to exclude from cleanup operations
+
+## TOP-LEVEL FOLDERS ENUMERATION
+# app/ - Next.js app directory with routes and API endpoints
+# components/ - React UI components
+# public/ - Static assets (images, icons, etc.)
+# lib/ - Library code, services, and utilities
+# hooks/ - Custom React hooks
+# contexts/ - React context providers
+# types/ - TypeScript type definitions
+# tests/ - Unit and integration tests
+# e2e/ - End-to-end test files
+# docs/ - Project documentation
+# functions/ - Firebase Cloud Functions
+# firebase/ - Firebase configuration
+# scripts/ - Utility and migration scripts
+# constants/ - Application constants
+
+## CONFIGURATION FILES
+.env.example
+.env.local
+.firebaserc
+firebase.json
+firestore.indexes.json
+firestore.rules
+storage.rules
+next.config.js
+next.config.ts
+components.json
+postcss.config.mjs
+eslint.config.mjs
+tsconfig.json
+tsconfig.test.json
+jest.config.js
+playwright.config.ts
+playwright.config.production.ts
+middleware.ts
+
+## FIREBASE FUNCTIONS
+functions/
+functions/index.js
+functions/package.json
+
+## PACKAGE.JSON REFERENCED SCRIPTS AND TOOLS
+scripts/migrate-users.js
+check-env.js
+test-curl-commands.sh
+test-email-license-flow.js
+test-firestore-error.ts
+test-firestore-read.ts
+test-payment-flow.js
+test-payment-simple.js
+test-quota-middleware.js
+test-webhook-signature.js
+test_responsive_verification.js
+
+## TEST UTILITIES AND FRAMEWORKS
+tests/
+tests/setup.ts
+tests/quota-middleware.test.ts
+tests/webhook-emulator-test.js
+tests/webhook-integration.test.ts
+e2e/
+e2e/helpers/test-utils.ts
+e2e/auth-flow.spec.ts
+e2e/auth-performance.spec.ts
+e2e/hydration.spec.ts
+e2e/quota-flows.spec.ts
+test-results/
+playwright-report/
+coverage/
+coverage-baseline-cleanup/
+.github/workflows/
+
+## ENV FILES
+.env.example
+.env.local
+
+## DODO PAYMENTS INTEGRATION CODE (per rules)
+app/api/webhooks/dodo/route.ts
+app/api/license/activate/route.ts
+app/api/license/validate/route.ts
+app/api/test/email-license-flow/route.ts
+lib/services/license-key-service.ts
+lib/services/mock-license-key-service.ts
+lib/services/email-verification-service.ts
+lib/test-utils/email-license-test-utils.ts
+lib/dodo-webhook.ts
+components/billing/BillingSection.tsx
+app/account/billing/page.tsx
+app/api/payments/create-checkout/route.ts
+app/api/payments/portal-link/route.ts
+
+## FIREBASE SERVICES (per rules)
+firebase/
+firebase/admin.ts
+firebase/client.ts
+lib/firebase/admin.ts
+lib/services/firebase-resume-service.ts
+lib/services/firebase-verification.ts
+lib/services/cloud-functions-verification.ts
+
+## GOOGLE GEMINI AI INTEGRATION (per rules)
+lib/vapi.sdk.ts
+app/api/vapi/generate/route.ts
+
+## BUILD AND DEPLOYMENT FILES
+node_modules/
+.next/
+dist/
+build/
+package-lock.json
+tsconfig.tsbuildinfo
+
+## IDE AND EDITOR FILES
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+## LOG AND TEMP FILES
+server.log
+*.log
+*.tmp
+
+## GENERATED REPORTS AND DOCS
+manual_testing_guide.md
+regression_test_summary.md
+auth-migration-analysis.md
+security-properties-analysis.md
+token_abuse_session_risks_assessment.md
+COMPREHENSIVE_SECURITY_ASSESSMENT_REPORT.md
+DEPLOYMENT_SECURITY.md
+SERVER_SIDE_VERIFICATION.md
+STEP_10_IMPLEMENTATION_SUMMARY.md
+UI_RESTORE_SUMMARY.md
+VAPI_FIX_SUMMARY.md
+WEBHOOK_SETUP_GUIDE.md
+STYLE_AUDIT_REPORT.md
+cleanup-baseline.md
+docs/
+README.md
