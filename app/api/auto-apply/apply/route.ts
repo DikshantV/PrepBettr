@@ -340,7 +340,7 @@ async function handleJobApplication(request: NextRequest, context?: { userId: st
 // Apply quota middleware to the POST handler
 export const POST = withQuota({
   featureKey: 'autoApply',
-  limitFree: 1, // Free users can apply to 1 job
+  limitFree: 3, // Free users can apply to 3 jobs
   usageDocId: undefined // Use the authenticated user's ID
 })(handleJobApplication);
 

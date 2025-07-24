@@ -12,6 +12,12 @@ import {
   DEFAULT_USAGE_LIMITS,
   ExtendedUser
 } from '@/types/subscription';
+import { licenseKeyService } from './license-key-service';
+import { mockLicenseKeyService } from './mock-license-key-service';
+import { emailVerificationService } from './email-verification-service';
+
+// Use mock service in development
+const activeLicenseService = process.env.NODE_ENV === 'production' ? licenseKeyService : mockLicenseKeyService;
 
 export class SubscriptionService {
   private db = getAdminFirestore();
@@ -302,6 +308,228 @@ export class SubscriptionService {
     });
 
     await batch.commit();
+  }
+
+  /**
+   * Enhanced user initialization with email verification
+   */
+  async initializeUserWithVerification(userId: string, email: string, name: string): Promise<void> {
+    const defaultSubscriptionFields: UserSubscriptionFields = {
+      plan: 'free',
+      planStatus: 'active',
+      currentPeriodEnd: null,
+      dodoCustomerId: null,
+      dodoSubscriptionId: null,
+      licenseKey: null,
+      licenseKeyStatus: null,
+      licenseKeyActivatedAt: null,
+      emailVerified: false
+    };
+
+    // Update user document with subscription fields
+    await this.db.collection('users').doc(userId).set({
+      ...defaultSubscriptionFields,
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // Initialize usage counters
+    await this.initializeUsageCounters(userId, 'free');
+
+    // Send email verification
+    await emailVerificationService.sendVerificationEmail(userId, email, name);
+  }
+
+  /**
+   * Check if user has premium access (via subscription or license key)
+   */
+  async hasPremiumAccess(userId: string, userEmail?: string): Promise<{
+    hasPremium: boolean;
+    source: 'subscription' | 'license_key' | 'allow_list' | null;
+    details?: any;
+  }> {
+    try {
+      // Check allow-list first (for staging/testing)
+      if (userEmail) {
+        const environment = process.env.NODE_ENV || 'production';
+        const isInAllowList = await activeLicenseService.isInAllowList(userEmail, environment);
+        if (isInAllowList) {
+          return {
+            hasPremium: true,
+            source: 'allow_list',
+            details: { environment }
+          };
+        }
+      }
+
+      // Get user subscription data
+      const userDoc = await this.db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        return { hasPremium: false, source: null };
+      }
+
+      const userData = userDoc.data();
+
+      // Check regular subscription
+      if (userData?.plan === 'premium' && userData?.planStatus === 'active') {
+        return {
+          hasPremium: true,
+          source: 'subscription',
+          details: {
+            plan: userData.plan,
+            status: userData.planStatus,
+            currentPeriodEnd: userData.currentPeriodEnd?.toDate()
+          }
+        };
+      }
+
+      // Check license key
+      if (userData?.licenseKey && userData?.licenseKeyStatus === 'active') {
+        const licenseValidation = await activeLicenseService.validateLicenseKey(userData.licenseKey);
+        if (licenseValidation.valid) {
+          return {
+            hasPremium: true,
+            source: 'license_key',
+            details: {
+              licenseKey: userData.licenseKey,
+              activatedAt: userData.licenseKeyActivatedAt?.toDate()
+            }
+          };
+        }
+      }
+
+      return { hasPremium: false, source: null };
+
+    } catch (error) {
+      console.error('Error checking premium access:', error);
+      return { hasPremium: false, source: null };
+    }
+  }
+
+  /**
+   * Check if user can perform action (includes email verification check)
+   */
+  async canPerformAction(
+    userId: string,
+    feature: keyof UserUsageCounters,
+    requireEmailVerification: boolean = true
+  ): Promise<{
+    canPerform: boolean;
+    reason?: string;
+    upgradeRequired?: boolean;
+    emailVerificationRequired?: boolean;
+  }> {
+    try {
+      // Check email verification if required
+      if (requireEmailVerification) {
+        const isEmailVerified = await emailVerificationService.isEmailVerified(userId);
+        if (!isEmailVerified) {
+          return {
+            canPerform: false,
+            reason: 'Email verification required before using premium features',
+            emailVerificationRequired: true
+          };
+        }
+      }
+
+      // Get user data
+      const userDoc = await this.db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        return {
+          canPerform: false,
+          reason: 'User not found'
+        };
+      }
+
+      const userData = userDoc.data();
+
+      // Check premium access
+      const premiumAccess = await this.hasPremiumAccess(userId, userData?.email);
+      if (premiumAccess.hasPremium) {
+        return { canPerform: true };
+      }
+
+      // Check usage limits for free users
+      const canUse = await this.canUseFeature(userId, feature);
+      if (!canUse) {
+        return {
+          canPerform: false,
+          reason: `You've reached your ${feature} limit for the free plan`,
+          upgradeRequired: true
+        };
+      }
+
+      return { canPerform: true };
+
+    } catch (error) {
+      console.error('Error checking if user can perform action:', error);
+      return {
+        canPerform: false,
+        reason: 'Unable to verify access. Please try again.'
+      };
+    }
+  }
+
+  /**
+   * Get comprehensive user subscription status
+   */
+  async getUserSubscriptionStatus(userId: string): Promise<{
+    plan: PlanType;
+    planStatus: PlanStatus;
+    hasPremium: boolean;
+    premiumSource: 'subscription' | 'license_key' | 'allow_list' | null;
+    emailVerified: boolean;
+    licenseKey?: string;
+    licenseKeyStatus?: string;
+    currentPeriodEnd?: Date;
+    usage: UserUsageCounters | null;
+  }> {
+    try {
+      const userDoc = await this.db.collection('users').doc(userId).get();
+      
+      if (!userDoc.exists) {
+        // Return default for non-existent users
+        return {
+          plan: 'free',
+          planStatus: 'active',
+          hasPremium: false,
+          premiumSource: null,
+          emailVerified: false,
+          usage: null
+        };
+      }
+
+      const userData = userDoc.data();
+      const emailVerified = userData?.emailVerified === true;
+      
+      // Check premium access
+      const premiumAccess = await this.hasPremiumAccess(userId, userData?.email);
+      
+      // Get usage counters
+      const usage = await this.getUserUsage(userId);
+
+      return {
+        plan: userData?.plan || 'free',
+        planStatus: userData?.planStatus || 'active',
+        hasPremium: premiumAccess.hasPremium,
+        premiumSource: premiumAccess.source,
+        emailVerified,
+        licenseKey: userData?.licenseKey || undefined,
+        licenseKeyStatus: userData?.licenseKeyStatus || undefined,
+        currentPeriodEnd: userData?.currentPeriodEnd?.toDate() || undefined,
+        usage
+      };
+
+    } catch (error) {
+      console.error('Error getting user subscription status:', error);
+      return {
+        plan: 'free',
+        planStatus: 'active',
+        hasPremium: false,
+        premiumSource: null,
+        emailVerified: false,
+        usage: null
+      };
+    }
   }
 }
 

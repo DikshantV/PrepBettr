@@ -194,7 +194,7 @@ Please provide a tailored version that uses relevant keywords and highlights mat
 // Apply quota middleware to the POST handler
 export const POST = withQuota({
   featureKey: 'resumeTailor',
-  limitFree: 2, // Free users can tailor 2 resumes
+  limitFree: 3, // Free users can tailor 3 resumes
   usageDocId: undefined // Use the authenticated user's ID
 })(handleResumeAnalysis);
 

@@ -10,6 +10,11 @@ export interface UserSubscriptionFields {
   currentPeriodEnd: Date | null;
   dodoCustomerId: string | null;
   dodoSubscriptionId: string | null;
+  // License key fields
+  licenseKey: string | null;
+  licenseKeyStatus: 'active' | 'inactive' | 'expired' | null;
+  licenseKeyActivatedAt: Date | null;
+  emailVerified: boolean;
 }
 
 // Usage counter document structure
@@ -53,8 +58,8 @@ export interface SubscriptionEvent {
 export const DEFAULT_USAGE_LIMITS: Record<PlanType, UserUsageCounters> = {
   free: {
     interviews: { count: 0, limit: 3, updatedAt: new Date() },
-    resumeTailor: { count: 0, limit: 2, updatedAt: new Date() },
-    autoApply: { count: 0, limit: 1, updatedAt: new Date() },
+    resumeTailor: { count: 0, limit: 3, updatedAt: new Date() },
+    autoApply: { count: 0, limit: 3, updatedAt: new Date() },
   },
   premium: {
     interviews: { count: 0, limit: -1, updatedAt: new Date() }, // -1 = unlimited
@@ -62,6 +67,41 @@ export const DEFAULT_USAGE_LIMITS: Record<PlanType, UserUsageCounters> = {
     autoApply: { count: 0, limit: -1, updatedAt: new Date() },
   },
 };
+
+// License key interface
+export interface LicenseKey {
+  id: string;
+  key: string;
+  userId: string;
+  status: 'active' | 'inactive' | 'expired';
+  activatedAt: Date | null;
+  expiresAt: Date | null;
+  activationLimit: number;
+  activationCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Email verification interface
+export interface EmailVerification {
+  userId: string;
+  email: string;
+  token: string;
+  verified: boolean;
+  createdAt: Date;
+  verifiedAt: Date | null;
+  expiresAt: Date;
+}
+
+// Allow-list for free premium access
+export interface AllowListEntry {
+  email: string;
+  userId?: string;
+  environment: 'staging' | 'production' | 'all';
+  reason: string;
+  createdAt: Date;
+  active: boolean;
+}
 
 // Complete user document with subscription fields
 export interface ExtendedUser {
@@ -87,4 +127,9 @@ export interface ExtendedUser {
   currentPeriodEnd: Date | null;
   dodoCustomerId: string | null;
   dodoSubscriptionId: string | null;
+  // License key fields
+  licenseKey: string | null;
+  licenseKeyStatus: 'active' | 'inactive' | 'expired' | null;
+  licenseKeyActivatedAt: Date | null;
+  emailVerified: boolean;
 }

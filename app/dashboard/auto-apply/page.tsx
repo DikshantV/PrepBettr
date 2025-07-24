@@ -143,10 +143,10 @@ export default function AutoApplyPage() {
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold text-white dark:text-white">Auto Apply with AI</h1>
+          <h1 className="text-3xl font-bold text-white">Auto Apply with AI</h1>
           <UsageIndicator feature="autoApply" variant="badge" showLabel={false} />
         </div>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-gray-300">
           Automate your job search with AI-powered job matching and application submission.
         </p>
       </div>

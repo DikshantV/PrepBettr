@@ -13,7 +13,7 @@ export default function ResumeTailorPage() {
     <div className="w-full min-h-screen flex flex-col">
       <div className="flex-1 p-6 pb-24">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-white dark:text-white">AI-Powered Resume Tailor</h1>
+          <h1 className="text-3xl font-bold text-white">AI-Powered Resume Tailor</h1>
           <UsageIndicator feature="resumeTailor" variant="badge" showLabel={false} />
         </div>
         <ResumeTailor />

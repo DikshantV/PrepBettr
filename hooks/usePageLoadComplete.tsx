@@ -23,29 +23,23 @@ export function usePageLoadComplete() {
       setIsPageLoaded(false);
     };
 
-    // Check if page is already loaded
-    if (document.readyState === 'complete') {
-      handleLoad();
-    } else {
-      window.addEventListener('load', handleLoad);
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      // Check if page is already loaded
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad);
+      }
+
+      // Reset on navigation start
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener('load', handleLoad);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
     }
-
-    // Listen for route changes
-    const handleRouteChange = () => {
-      setIsPageLoaded(false);
-      // Set a timeout to mark as loaded after navigation
-      setTimeout(() => {
-        setIsPageLoaded(true);
-      }, 1000);
-    };
-
-    // Reset on navigation start
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('load', handleLoad);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
   }, [router]);
 
   return isPageLoaded;

@@ -80,6 +80,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 // This is sample data.
 const data = {
@@ -194,8 +195,19 @@ interface AuthenticatedLayoutProps {
 
 export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const [activeTeam, setActiveTeam] = React.useState(data.teams[0]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/profile/logout", { method: "POST" });
+      router.push("/sign-in");
+      router.refresh();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   // Check if current route is admin or account
   const isAdminRoute = pathname?.startsWith('/admin') ?? false;
@@ -397,7 +409,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </DropdownMenuItem>

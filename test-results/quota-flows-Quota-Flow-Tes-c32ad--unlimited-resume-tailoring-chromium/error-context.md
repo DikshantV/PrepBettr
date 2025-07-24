@@ -5,9 +5,9 @@
 - heading "PrepBettr" [level=2]
 - heading "Practice job interviews with AI" [level=3]
 - text: Email
-- textbox "Email"
+- textbox "Email": premium-user@example.com
 - text: Password
-- textbox "Password"
+- textbox "Password": premiumuser123
 - button "Sign In"
 - text: Or continue with
 - button "Google":
