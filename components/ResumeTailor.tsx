@@ -2,39 +2,34 @@
 
 import React, { useState } from 'react';
 import { Upload, FileText, Zap, Download, Copy, Check, Loader2, Link, AlertCircle } from 'lucide-react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || '');
-
-// Function to generate tailored resume using Google Gemini API
+// Function to generate tailored resume using server-side API
 async function generateTailoredResume(resumeText: string, jobDescription: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    const prompt = `You are an expert resume writer and ATS optimization specialist. Please tailor this resume to better match the following job description for maximum ATS compatibility and relevance.
+    const response = await fetch('/api/resume/tailor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        resumeText,
+        jobDescription,
+      }),
+    });
 
-JOB DESCRIPTION:
-${jobDescription}
+    const data = await response.json();
 
-CURRENT RESUME:
-${resumeText}
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to generate tailored resume');
+    }
 
-Please provide a tailored version of the resume that:
-1. Uses keywords and phrases directly from the job description
-2. Highlights relevant skills and experiences that match the job requirements
-3. Maintains professional formatting and ATS-friendly structure
-4. Uses strong action verbs and quantifiable achievements
-5. Keeps the same overall length and format structure
-6. Optimizes for Applicant Tracking Systems (ATS)
-7. Ensures keyword density without keyword stuffing
-
-Return ONLY the tailored resume content with no additional commentary or explanations.`;
-
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    return data.tailoredResume;
   } catch (error) {
-    console.error('Gemini API Error:', error);
-    throw new Error('Failed to generate tailored resume. Please check your API key and try again.');
+    console.error('Resume tailoring API Error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to generate tailored resume. Please try again.');
   }
 }
 

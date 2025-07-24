@@ -200,8 +200,7 @@ The Auto-Apply with AI feature is a comprehensive job application automation sys
 ### Environment Variables
 ```bash
 # Required
-GOOGLE_AI_API_KEY=your_gemini_api_key
-NEXT_PUBLIC_GOOGLE_AI_API_KEY=your_public_gemini_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 
 # Optional
 AUTO_APPLY_RATE_LIMIT=100
