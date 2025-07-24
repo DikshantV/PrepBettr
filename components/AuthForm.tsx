@@ -132,11 +132,11 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
                 <div className="flex flex-col items-center gap-4">
                     <div className="flex flex-row gap-2 justify-center">
                         <Image src="/logo.svg" alt="logo" height={32} width={38} />
-                        <h2 className="text-primary-100">PrepBettr</h2>
+                        <h2 className="text-white">PrepBettr</h2>
                     </div>
                 </div>
 
-                <h3 className="text-center">Practice job interviews with AI</h3>
+                <h3 className="text-center text-white">Practice job interviews with AI</h3>
 
                 <Form {...form}>
                     <form
@@ -180,7 +180,7 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
                         <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
+                        <span className="bg-gray-900 px-2 text-white">
                             Or continue with
                         </span>
                     </div>
