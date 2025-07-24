@@ -83,7 +83,7 @@ export function UsageIndicator({
       if (remaining === 0) {
         return <Badge variant="destructive" className="text-xs">0 left</Badge>;
       }
-      return <Badge variant="outline" className="text-xs">{remaining} left</Badge>;
+      return <Badge variant="outline" className="text-xs border-2 border-gray-300 dark:border-gray-600">{remaining} left</Badge>;
     }
 
     if (variant === "compact") {

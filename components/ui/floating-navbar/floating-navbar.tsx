@@ -13,13 +13,16 @@ import type { JSX } from 'react';
 export const FloatingNav = ({
   navItems,
   className,
+  onDashboardClick,
 }: {
   navItems: {
     name: string;
     link: string;
     icon?: JSX.Element;
+    onClick?: () => void;
   }[];
   className?: string;
+  onDashboardClick?: () => void;
 }) => {
   const pathname = usePathname();
   const isClient = useIsClient();
@@ -144,31 +147,59 @@ export const FloatingNav = ({
 
           {/* Navigation Items - Centered */}
           <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 transform md:flex items-center space-x-8">
-            {navItems.map((navItem, idx) => (
-              <a
-                key={`link-${idx}`}
-                href={navItem.link}
-                className={cn(
-                  'text-sm font-medium text-neutral-600 hover:text-black dark:text-neutral-300 dark:hover:text-white transition-colors',
-                  isClient && pathname === navItem.link ? 'text-black dark:text-white font-semibold' : ''
-                )}
-              >
-                {navItem.name}
-              </a>
-            ))}
+            {navItems.map((navItem, idx) => {
+              if (navItem.onClick) {
+                return (
+                  <button
+                    key={`btn-${idx}`}
+                    onClick={navItem.onClick}
+                    className={cn(
+                      'text-sm font-medium text-neutral-600 hover:text-black dark:text-neutral-300 dark:hover:text-white transition-colors',
+                      isClient && pathname === navItem.link ? 'text-black dark:text-white font-semibold' : ''
+                    )}
+                  >
+                    {navItem.name}
+                  </button>
+                );
+              }
+              return (
+                <a
+                  key={`link-${idx}`}
+                  href={navItem.link}
+                  className={cn(
+                    'text-sm font-medium text-neutral-600 hover:text-black dark:text-neutral-300 dark:hover:text-white transition-colors',
+                    isClient && pathname === navItem.link ? 'text-black dark:text-white font-semibold' : ''
+                  )}
+                >
+                  {navItem.name}
+                </a>
+              );
+            })}
           </div>
 
           {/* Dashboard/Sign In Button - Right Aligned */}
           <div className="ml-auto">
-            <Link
-              href={user ? "/dashboard" : "/sign-in"}
-              className="relative inline-flex h-10 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
-            >
-              <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-              <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl">
-                {user ? 'Dashboard' : 'Sign In'}
-              </span>
-            </Link>
+            {user && onDashboardClick ? (
+              <button
+                onClick={onDashboardClick}
+                className="relative inline-flex h-10 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+              >
+                <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl">
+                  Dashboard
+                </span>
+              </button>
+            ) : (
+              <Link
+                href={user ? "/dashboard" : "/sign-in"}
+                className="relative inline-flex h-10 items-center justify-center overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+              >
+                <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
+                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl">
+                  {user ? 'Dashboard' : 'Sign In'}
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       </motion.div>

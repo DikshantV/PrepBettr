@@ -24,7 +24,7 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
             <>
                 <section className="card-cta">
                     <div className="flex flex-col gap-6 max-w-lg">
-                        <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                        <h2 className="text-white dark:text-white">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
                         <p className="text-lg">
                             Loading your dashboard...
                         </p>
@@ -40,7 +40,7 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
             <>
                 <section className="card-cta">
                     <div className="flex flex-col gap-6 max-w-lg">
-                        <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                        <h2 className="text-white dark:text-white">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
                         <p className="text-lg">
                             Please sign in to access your interviews
                         </p>
@@ -58,7 +58,7 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
             <FreeBanner />
             <section className="card-cta">
                 <div className="flex flex-col gap-6 max-w-lg">
-                    <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                    <h2 className="text-white dark:text-white">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
                     <p className="text-lg">
                         Practice real interview questions & get instant feedback
                     </p>
@@ -79,7 +79,7 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
 
 
             <section className="flex flex-col gap-6 mt-8">
-                <h2>Take Interviews</h2>
+                <h2 className="text-white dark:text-white">Take Interviews</h2>
 
                 <div className="interviews-section">
                     {hasPublicInterviews ? (

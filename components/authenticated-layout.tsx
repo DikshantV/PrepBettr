@@ -79,7 +79,6 @@ import {
   SidebarInput
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { UsageIndicator } from "@/components/UsageIndicator";
 import { useAuth } from "@/contexts/AuthContext";
 
 // This is sample data.
@@ -228,18 +227,19 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
       style={{
         "--sidebar-width": "20rem", // 320px - larger than default 16rem
         "--sidebar-width-mobile": "22rem", // 352px for mobile
+        "--sidebar-width-icon": "5.5rem", // Further increased collapsed width for better clarity
       } as React.CSSProperties}
     >
       <Sidebar variant="sidebar" collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center justify-center gap-3 px-2 py-2 group-data-[collapsible=icon]:justify-center">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
+        <SidebarHeader className="group-data-[collapsible=icon]:h-16 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center">
+          <div className="flex items-center justify-center gap-3 px-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground group-data-[collapsible=icon]:size-12">
               <Image
                 src="/logo.svg"
                 alt="PrepBettr Logo"
                 width={20}
                 height={20}
-                className="size-5"
+                className="size-5 group-data-[collapsible=icon]:size-8"
               />
             </div>
             <span className="text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:group-data-[state=collapsed]:hidden">
@@ -248,9 +248,9 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
           </div>
         </SidebarHeader>
         
-        <SidebarContent>
-          {/* Search */}
-          <SidebarGroup className="py-0">
+        <SidebarContent className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:h-full">
+          {/* Search - hidden when collapsed */}
+          <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel className="group relative">
               <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <SidebarInput
@@ -261,6 +261,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
           </SidebarGroup>
 
           {/* Navigation */}
+          <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-6 group-data-[collapsible=icon]:flex-1">
           {navMainWithAdmin.map((item) => (
             <Collapsible
               key={item.title}
@@ -268,12 +269,12 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
               defaultOpen={item.isActive}
               className="group/collapsible"
             >
-              <SidebarGroup>
+              <SidebarGroup className="mt-8"> {/* Increased spacing between icons and section titles */}
                 <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                    <item.icon className="size-5" />
-                    <span>{item.title}</span>
-                    <ChevronUp className="ml-auto size-4 transition-transform duration-200 group-data-[state=closed]/collapsible:rotate-180" />
+                  <CollapsibleTrigger className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center">
+                    <item.icon className="size-5 mr-3 group-data-[collapsible=icon]:mr-0" /> {/* Added horizontal gap for expanded state */}
+                    <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                    <ChevronUp className="ml-auto size-4 transition-transform duration-200 group-data-[state=closed]/collapsible:rotate-180 group-data-[collapsible=icon]:hidden" />
                   </CollapsibleTrigger>
                 </SidebarGroupLabel>
                 <CollapsibleContent>
@@ -284,10 +285,10 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
                       
                       return (
                         <SidebarMenuItem key={subItem.title}>
-                          <SidebarMenuButton asChild isActive={isActive}>
-                            <Link href={subItem.url}>
-                              <subItem.icon className="size-5 mx-1" />
-                              <span>{subItem.title}</span>
+                          <SidebarMenuButton asChild isActive={isActive} className="group-data-[collapsible=icon]:!h-12 group-data-[collapsible=icon]:!p-0">
+                            <Link href={subItem.url} className="flex items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-full">
+                              <subItem.icon className="size-5 mr-3 group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:mx-0" />
+                              <span className="group-data-[collapsible=icon]:hidden">{subItem.title}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -298,17 +299,18 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
               </SidebarGroup>
             </Collapsible>
           ))}
+          </div>
 
           {/* Secondary Navigation */}
-          <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel>Support</SidebarGroupLabel>
-            <SidebarMenu>
+          <SidebarGroup className="mt-auto group-data-[collapsible=icon]:mt-0">
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Support</SidebarGroupLabel>
+            <SidebarMenu className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-4">
               {data.navSecondary.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="sm">
-                    <a href={item.url}>
-                      <item.icon className="size-5 mx-1" />
-                      <span>{item.title}</span>
+                  <SidebarMenuButton asChild size="sm" className="group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!p-0">
+                    <a href={item.url} className="flex items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-full">
+                      <item.icon className="size-5 mr-3 group-data-[collapsible=icon]:mr-0 group-data-[collapsible=icon]:mx-0" />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -318,17 +320,13 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
         </SidebarContent>
         
         <SidebarFooter>
-          <div className="p-1">
-            <UsageIndicator variant="compact" />
-          </div>
-          
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!justify-center group-data-[collapsible=icon]:!items-center group-data-[collapsible=icon]:!h-12 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!w-full group-data-[collapsible=icon]:!flex"
                   >
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage
@@ -339,7 +337,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
                         {(user?.name || user?.email || data.user.name).slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
+                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                       <span className="truncate font-semibold">
                         {user?.name || data.user.name}
                       </span>
@@ -347,7 +345,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
                         {user?.email || data.user.email}
                       </span>
                     </div>
-                    <ChevronsUpDown className="ml-auto size-4" />
+                    <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -424,10 +422,9 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/20 to-transparent dark:from-black/20"></div>
         </div>
         
-        <header className="flex h-16 shrink-0 items-center gap-2 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="group-data-[collapsible=icon]:ml-0" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
             {/* Dynamic Breadcrumb based on current path */}
             <Breadcrumb>
               <BreadcrumbList>
