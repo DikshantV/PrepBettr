@@ -24,7 +24,7 @@ export function UsageIndicator({
   if (loading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <BanterLoader size="sm" />
+      <BanterLoader />
         {showLabel && variant !== "badge" && (
           <span className="text-xs text-muted-foreground">Loading...</span>
         )}
