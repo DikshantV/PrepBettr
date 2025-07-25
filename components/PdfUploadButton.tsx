@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { UploadCloud, FileText, Loader2, X } from 'lucide-react';
+import { UploadCloud, FileText, X } from 'lucide-react';
+import BanterLoader from '@/components/ui/BanterLoader';
 import { motion, AnimatePresence } from 'framer-motion';
 import Uploady, { 
   useItemProgressListener, 
@@ -143,7 +144,7 @@ const PdfUploadButton = ({
         ref={uploaderRef}
       >
         {isUploading || isUploadingProp ? (
-          <Loader2 className="w-6 h-6 animate-spin" />
+          <BanterLoader size="sm" />
         ) : (
           <UploadCloud className="w-6 h-6" />
         )}
@@ -167,7 +168,7 @@ const PdfUploadButton = ({
                 </div>
                 <div className="flex items-center">
                   {isUploading ? (
-                    <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin ml-2" />
+                    <BanterLoader size="sm" />
                   ) : (
                     <button
                       type="button"

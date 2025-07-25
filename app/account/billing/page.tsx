@@ -15,11 +15,11 @@ import {
   Settings, 
   Crown, 
   Calendar,
-  Loader,
   ArrowLeft,
   CheckCircle,
   AlertCircle
 } from "lucide-react";
+import BanterLoader from "@/components/ui/BanterLoader";
 import { toast } from "sonner";
 
 export default function BillingPage() {
@@ -135,10 +135,7 @@ export default function BillingPage() {
     return (
       <div className="container max-w-4xl mx-auto py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center gap-4">
-            <Loader className="h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">Loading billing information...</p>
-          </div>
+          <BanterLoader size="lg" />
         </div>
       </div>
     );
@@ -147,22 +144,11 @@ export default function BillingPage() {
   return (
     <div className="container max-w-4xl mx-auto py-8">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-          <p className="text-muted-foreground">
-            Manage your subscription and view usage statistics
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white">Billing & Subscription</h1>
+        <p className="text-white">
+          Manage your subscription and view usage statistics
+        </p>
       </div>
 
       <div className="grid gap-6">
@@ -219,7 +205,7 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {upgrading ? (
-                    <Loader className="h-4 w-4 animate-spin" />
+                    <BanterLoader size="sm" />
                   ) : (
                     <Crown className="h-4 w-4" />
                   )}
@@ -235,7 +221,7 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {managingSubscription ? (
-                    <Loader className="h-4 w-4 animate-spin" />
+                    <BanterLoader size="sm" />
                   ) : (
                     <Settings className="h-4 w-4" />
                   )}
@@ -339,7 +325,7 @@ export default function BillingPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <p className="text-2xl font-bold">$19<span className="text-sm text-muted-foreground">/month</span></p>
+                  <p className="text-2xl font-bold">$49<span className="text-sm text-muted-foreground">/month</span></p>
                 </div>
                 {subscription?.plan === "free" && (
                   <Button

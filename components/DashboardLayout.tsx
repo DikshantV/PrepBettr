@@ -53,21 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Background Pattern */}
-      <div 
-        className="absolute inset-0 -z-10" 
-        style={{
-          backgroundImage: "url('/pattern.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.1
-        }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_300px,rgba(201,235,255,0.1),transparent_70%)] dark:bg-[radial-gradient(circle_600px_at_50%_300px,rgba(26,26,46,0.3),transparent_70%)]"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/20 to-transparent dark:from-black/20"></div>
-      </div>
+    <div className="min-h-screen">
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (

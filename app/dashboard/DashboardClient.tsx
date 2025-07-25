@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import BanterLoader from "@/components/ui/BanterLoader";
 
 import { Button } from "@/components/ui/button";
 import InterviewCardClient from "@/components/InterviewCardClient";
@@ -23,9 +24,10 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
         return (
             <>
                 <section className="card-cta">
-                    <div className="flex flex-col gap-6 max-w-lg">
-                        <h2 className="text-white dark:text-white">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
-                        <p className="text-lg">
+                    <div className="flex flex-col items-center gap-6 max-w-lg">
+                        <BanterLoader size="lg" />
+                        <h2 className="text-white dark:text-white text-center">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
+                        <p className="text-lg text-white text-center">
                             Loading your dashboard...
                         </p>
                     </div>

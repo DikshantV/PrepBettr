@@ -127,8 +127,7 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
     const isSignIn = type === "sign-in";
 
     return (
-        <div className="card-border lg:min-w-[566px]">
-            <div className="flex flex-col gap-6 card py-14 px-10">
+        <div className="flex flex-col gap-6 bg-gray-900/60 backdrop-blur-md rounded-2xl min-h-full py-14 px-10 border border-white/20 lg:min-w-[566px] w-full">
                 <div className="flex flex-col items-center gap-4">
                     <div className="flex flex-row gap-2 justify-center">
                         <Image src="/logo.svg" alt="logo" height={32} width={38} />
@@ -180,7 +179,7 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
                         <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-gray-900 px-2 text-white">
+                        <span className="bg-gray-900/80 px-2 text-white">
                             Or continue with
                         </span>
                     </div>
@@ -197,7 +196,6 @@ toast.error(errorData.error || 'Failed to sign in. Please check your credentials
                         {!isSignIn ? "Sign In" : "Sign Up"}
                     </Link>
                 </p>
-            </div>
         </div>
     );
 };

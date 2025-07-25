@@ -24,7 +24,16 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className="dark">
-        <body className={`${monaSans.className} antialiased`} suppressHydrationWarning={true}>
+        <body className={`${monaSans.className} antialiased`} style={{ 
+          backgroundColor: "#0a0a0a",
+          backgroundImage: "url('/pattern.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed",
+          "--color-background": "transparent",
+          "--background": "transparent"
+        } as React.CSSProperties} suppressHydrationWarning={true}>
         <Providers>
             <AuthProvider>
                 <UsageProvider>
