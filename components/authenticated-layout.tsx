@@ -135,28 +135,6 @@ const data = {
         },
       ],
     },
-    {
-      title: "Account",
-      url: "#",
-      icon: User2,
-      items: [
-        {
-          title: "Profile",
-          url: "/dashboard/profile",
-          icon: User,
-        },
-        {
-          title: "Settings",
-          url: "/dashboard/settings",
-          icon: Settings,
-        },
-        {
-          title: "Billing",
-          url: "/account/billing",
-          icon: CreditCard,
-        },
-      ],
-    },
   ],
   navSecondary: [
     {
@@ -422,17 +400,6 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
       </Sidebar>
       
       <SidebarInset>
-        {/* Background Pattern */}
-        <div className="absolute inset-0 -z-10" style={{
-          backgroundImage: "url('/pattern.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          opacity: 0.1
-        }}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_300px,rgba(201,235,255,0.1),transparent_70%)] dark:bg-[radial-gradient(circle_600px_at_50%_300px,rgba(26,26,46,0.3),transparent_70%)]"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/20 to-transparent dark:from-black/20"></div>
-        </div>
         
         <header className="flex h-16 shrink-0 items-center gap-2 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16">
           <div className="flex items-center gap-2">

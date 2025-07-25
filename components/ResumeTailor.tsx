@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Upload, FileText, Zap, Download, Copy, Check, Loader2, Link, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Zap, Download, Copy, Check, Link, AlertCircle } from 'lucide-react';
+import BanterLoader from '@/components/ui/BanterLoader';
 
 // Function to generate tailored resume using server-side API
 async function generateTailoredResume(resumeText: string, jobDescription: string): Promise<string> {
@@ -377,8 +378,8 @@ const ResumeTailorSection = () => {
           >
             {isProcessing ? (
               <>
-                <Loader2 className="animate-spin mr-3 h-5 w-5 text-white" />
-                Tailoring Resume with AI...
+                <BanterLoader size="sm" />
+                <span className="ml-3">Tailoring Resume with AI...</span>
               </>
             ) : (
               <>
@@ -419,7 +420,7 @@ const ResumeTailorSection = () => {
 
           {isProcessing ? (
             <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center flex-1 flex items-center justify-center flex-col space-y-4">
-              <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+              <BanterLoader size="lg" />
               <p className="text-gray-300">Tailoring your resume with AI...</p>
               <p className="text-sm text-gray-400">Analyzing job requirements and optimizing for ATS compatibility</p>
             </div>

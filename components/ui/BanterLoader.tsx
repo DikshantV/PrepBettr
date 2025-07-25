@@ -513,7 +513,8 @@ const StyledWrapper = styled.div`
 
   .banter-loader__box:nth-child(9) {
     animation: moveBox-9 4s infinite;
-  }`;
+  }
+`;
 
 export default Loader;
 

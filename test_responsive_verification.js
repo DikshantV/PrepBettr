@@ -57,9 +57,36 @@ function checkResponsivePatterns() {
   return responsiveCount > 0;
 }
 
+// Check for form centering implementation  
+function checkFormCentering() {
+  console.log('2. Checking form centering implementation...');
+  
+  const authLayoutFile = 'app/(auth)/layout.tsx';
+  
+  if (fs.existsSync(authLayoutFile)) {
+    const content = fs.readFileSync(authLayoutFile, 'utf8');
+    
+    // Check for the required centering classes
+    const hasFlexCenter = content.includes('min-h-screen flex items-center justify-center');
+    const hasPadding = content.includes('p-4');
+    const hasOverflowAuto = content.includes('overflow-auto');
+    
+    console.log(`   ${hasFlexCenter ? '✅' : '❌'} Flex centering: ${hasFlexCenter}`);
+    console.log(`   ${hasPadding ? '✅' : '❌'} Padding (p-4): ${hasPadding}`);
+    console.log(`   ${hasOverflowAuto ? '✅' : '❌'} Overflow auto: ${hasOverflowAuto}`);
+    
+    const allCenteringFeatures = hasFlexCenter && hasPadding && hasOverflowAuto;
+    console.log(`   📊 Form centering implementation: ${allCenteringFeatures ? 'COMPLETE' : 'INCOMPLETE'}\n`);
+    return allCenteringFeatures;
+  } else {
+    console.log(`   ❌ ${authLayoutFile}: File not found\n`);
+    return false;
+  }
+}
+
 // Check for loader implementation with timing
 function checkLoaderImplementation() {
-  console.log('2. Checking loader implementation...');
+  console.log('3. Checking loader implementation...');
   
   const files = [
     'hooks/usePageLoadComplete.tsx',
@@ -91,7 +118,7 @@ function checkLoaderImplementation() {
 
 // Check CSS for responsive breakpoints
 function checkCSSBreakpoints() {
-  console.log('3. Checking CSS for responsive breakpoints...');
+  console.log('4. Checking CSS for responsive breakpoints...');
   
   const cssFiles = [
     'app/globals.css',
@@ -127,25 +154,28 @@ function checkCSSBreakpoints() {
 
 // Generate viewport testing commands
 function generateTestingCommands() {
-  console.log('4. Manual Testing Commands');
+  console.log('5. Manual Testing Commands');
   console.log('==========================');
   
   const viewports = [
-    { name: 'Mobile', width: 320, height: 568 },
-    { name: 'Tablet', width: 768, height: 1024 },
-    { name: 'Desktop', width: 1280, height: 800 }
+    { name: 'Mobile (320px)', width: 320, height: 568 },
+    { name: 'Tablet (768px)', width: 768, height: 1024 },
+    { name: 'Desktop (1280px)', width: 1280, height: 800 },
+    { name: 'Large Desktop (1920px)', width: 1920, height: 1080 }
   ];
   
-  console.log('To test responsiveness manually:');
-  console.log('1. Open Chrome DevTools (F12)');
-  console.log('2. Click the device toolbar icon');
-  console.log('3. Set these dimensions and test:\n');
+  console.log('To test form centering manually:');
+  console.log('1. Navigate to /sign-in or /sign-up');
+  console.log('2. Open Chrome DevTools (F12)');
+  console.log('3. Click the device toolbar icon');
+  console.log('4. Set these dimensions and verify form centering:\n');
   
   viewports.forEach(viewport => {
     console.log(`   ${viewport.name}: ${viewport.width}px × ${viewport.height}px`);
-    console.log(`   - Check layout adapts properly`);
-    console.log(`   - Verify no horizontal scrolling`);
-    console.log(`   - Test all interactive elements\n`);
+    console.log(`   - Form stays horizontally centered`);
+    console.log(`   - Form stays vertically centered when space allows`);
+    console.log(`   - Form moves to top-center with scroll when needed`);
+    console.log(`   - No horizontal overflow issues\n`);
   });
   
   console.log('To test loader timing:');
@@ -159,26 +189,29 @@ function generateTestingCommands() {
 // Main execution
 function main() {
   const responsiveCheck = checkResponsivePatterns();
+  const formCenteringCheck = checkFormCentering();
   const loaderCheck = checkLoaderImplementation();
   const cssCheck = checkCSSBreakpoints();
   
   generateTestingCommands();
   
-  console.log('5. Summary');
+  console.log('6. Summary');
   console.log('==========');
   console.log(`Responsive patterns: ${responsiveCheck ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`Form centering: ${formCenteringCheck ? '✅ PASS' : '❌ FAIL'}`);
   console.log(`Loader implementation: ${loaderCheck ? '✅ PASS' : '❌ FAIL'}`);
   console.log(`CSS breakpoints: ${cssCheck ? '✅ PASS' : '❌ FAIL'}`);
   
-  const allPassed = responsiveCheck && loaderCheck && cssCheck;
+  const allPassed = responsiveCheck && formCenteringCheck && loaderCheck && cssCheck;
   console.log(`\nOverall: ${allPassed ? '✅ READY FOR MANUAL TESTING' : '⚠️  NEEDS ATTENTION'}`);
   
   if (allPassed) {
     console.log('\n📋 Next Steps:');
     console.log('1. Start the development server: npm run dev');
-    console.log('2. Follow the manual testing guide in manual_testing_guide.md');
-    console.log('3. Test responsiveness at 320px, 768px, and 1280px widths');
-    console.log('4. Verify loader timing with slow-3G throttling');
+    console.log('2. Navigate to /sign-in or /sign-up');
+    console.log('3. Test form centering at 320px, 768px, 1280px, and 1920px widths');
+    console.log('4. Verify form stays centered vertically/horizontally when space allows');
+    console.log('5. Verify form moves to top-center with scroll on small screens');
   }
   
   return allPassed;

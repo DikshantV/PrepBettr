@@ -4,7 +4,7 @@ import { useUsage } from "@/contexts/UsageContext";
 import { UserUsageCounters } from "@/types/subscription";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader } from "lucide-react";
+import BanterLoader from "@/components/ui/BanterLoader";
 
 interface UsageIndicatorProps {
   feature?: keyof UserUsageCounters;
@@ -24,7 +24,7 @@ export function UsageIndicator({
   if (loading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Loader className="h-3 w-3 animate-spin" />
+        <BanterLoader size="sm" />
         {showLabel && variant !== "badge" && (
           <span className="text-xs text-muted-foreground">Loading...</span>
         )}
