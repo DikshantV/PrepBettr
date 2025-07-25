@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { Clock, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { BillingSection } from '@/components/billing/BillingSection';
 import {
   Tabs,
   TabsList,
@@ -40,12 +39,11 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold mb-6 text-white dark:text-white">Settings</h1>
 
       <Tabs defaultValue="interview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="interview">Interview</TabsTrigger>
           <TabsTrigger value="ai">AI</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
         {/* Interview Preferences */}
@@ -83,15 +81,15 @@ export default function SettingsPage() {
         {/* AI Personalization */}
         <TabsContent value="ai" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
-            <Label className="text-gray-300">Enable Smart Feedback</Label>
+            <Label className="text-white">Enable Smart Feedback</Label>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
-            <Label className="text-gray-300">Adaptive Difficulty</Label>
+            <Label className="text-white">Adaptive Difficulty</Label>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
-            <Label className="text-gray-300">Use Past Performance</Label>
+            <Label className="text-white">Use Past Performance</Label>
             <Switch />
           </div>
           <div className="space-y-2">
@@ -129,7 +127,7 @@ export default function SettingsPage() {
         {/* Notifications */}
         <TabsContent value="notifications" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
-            <Label className="text-gray-300">Daily Practice Reminder</Label>
+            <Label className="text-white">Daily Practice Reminder</Label>
             <Switch defaultChecked />
           </div>
 
@@ -154,7 +152,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="text-gray-300">Email Notifications</Label>
+            <Label className="text-white">Email Notifications</Label>
             <Switch />
           </div>
         </TabsContent>
@@ -188,10 +186,6 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        {/* Billing */}
-        <TabsContent value="billing" className="space-y-4">
-          <BillingSection />
-        </TabsContent>
       </Tabs>
     </div>
   );

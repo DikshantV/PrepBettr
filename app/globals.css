@@ -3,6 +3,16 @@
 
 @plugin "tailwindcss-animate";
 
+/* Force pattern background globally */
+body {
+  background-color: #0a0a0a !important; /* Dark fallback background */
+  background-image: url('/pattern.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 /* Prevents horizontal overflow globally */
 html, body {
@@ -145,7 +155,7 @@ html, body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
   p {
     @apply text-light-100;
@@ -386,7 +396,7 @@ blockquote, .quote-container {
 }
 
 @utility pattern {
-  @apply bg-[url('/pattern.png')] bg-cover bg-center bg-fixed opacity-20;
+  @apply bg-[url('/pattern.png')] bg-cover bg-center bg-fixed;
 }
 
 @utility blue-gradient-dark {

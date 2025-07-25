@@ -139,7 +139,7 @@ export default function GoogleSignInButton() {
     <Button 
       variant="outline" 
       type="button" 
-      className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-foreground border-gray-300 hover:border-gray-400"
+      className="w-full flex items-center justify-center gap-3 !bg-dark-200 hover:!bg-dark-200/80 !text-light-100 !border-white/20 hover:!border-white/30 !rounded-full !min-h-12"
       onClick={handleGoogleSignIn}
       disabled={isLoading}
     >
