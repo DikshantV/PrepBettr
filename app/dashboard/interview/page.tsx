@@ -8,6 +8,7 @@ import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { UsageIndicator } from "@/components/UsageIndicator";
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
+import { useLoading } from "@/contexts/LoadingContext";
 
 const SUPPORTED_LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
@@ -28,11 +29,12 @@ interface User {
 
 const Page = () => {
     const router = useRouter();
+    const { showLoader, hideLoader } = useLoading();
     const [isEditorExpanded, setIsEditorExpanded] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState('javascript');
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -51,15 +53,15 @@ const Page = () => {
                 console.error('Error fetching user:', error);
                 router.push('/sign-in');
             } finally {
-                setIsLoading(false);
+                setIsInitialized(true);
             }
         };
 
         fetchUser();
     }, [router]);
 
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (!isInitialized) {
+        return null; // Global loader is handling this
     }
 
     if (!user) {
