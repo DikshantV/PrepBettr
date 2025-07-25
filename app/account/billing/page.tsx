@@ -135,7 +135,7 @@ export default function BillingPage() {
     return (
       <div className="container max-w-4xl mx-auto py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <BanterLoader size="lg" />
+          <BanterLoader />
         </div>
       </div>
     );
@@ -205,7 +205,7 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {upgrading ? (
-                    <BanterLoader size="sm" />
+                    <BanterLoader />
                   ) : (
                     <Crown className="h-4 w-4" />
                   )}
@@ -221,7 +221,7 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {managingSubscription ? (
-                    <BanterLoader size="sm" />
+                    <BanterLoader />
                   ) : (
                     <Settings className="h-4 w-4" />
                   )}
