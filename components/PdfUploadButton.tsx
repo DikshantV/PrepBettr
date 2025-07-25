@@ -144,7 +144,7 @@ const PdfUploadButton = ({
         ref={uploaderRef}
       >
         {isUploading || isUploadingProp ? (
-          <BanterLoader size="sm" />
+          <BanterLoader />
         ) : (
           <UploadCloud className="w-6 h-6" />
         )}
@@ -168,7 +168,7 @@ const PdfUploadButton = ({
                 </div>
                 <div className="flex items-center">
                   {isUploading ? (
-                    <BanterLoader size="sm" />
+                    <BanterLoader />
                   ) : (
                     <button
                       type="button"

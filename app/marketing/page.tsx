@@ -14,7 +14,7 @@ const MacbookScroll = dynamic(() => import('@/components/ui/macbook-scroll').the
   loading: () => (
     <div className="relative w-full overflow-visible" style={{ minHeight: '500px' }}>
       <div className="flex items-center justify-center h-80">
-        <BanterLoader size="lg" />
+        <BanterLoader />
       </div>
     </div>
   )
@@ -25,7 +25,7 @@ const BrandSlide = dynamic(() => import('@/components/BrandSlide'), {
   loading: () => (
     <div className="py-12 bg-black">
       <div className="flex items-center justify-center">
-        <BanterLoader size="md" />
+        <BanterLoader />
       </div>
     </div>
   )

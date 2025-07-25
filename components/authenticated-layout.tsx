@@ -197,6 +197,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
       title: "Administration",
       url: "#",
       icon: Shield,
+      isActive: false,
       items: [
         {
           title: "Admin Dashboard",

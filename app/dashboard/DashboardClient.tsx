@@ -25,7 +25,7 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
             <>
                 <section className="card-cta">
                     <div className="flex flex-col items-center gap-6 max-w-lg">
-                        <BanterLoader size="lg" />
+                        <BanterLoader />
                         <h2 className="text-white dark:text-white text-center">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
                         <p className="text-lg text-white text-center">
                             Loading your dashboard...
