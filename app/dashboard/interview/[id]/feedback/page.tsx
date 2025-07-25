@@ -6,6 +6,8 @@ import Image from "next/image";
 import { redirect, useParams } from "next/navigation";
 import { useFeedback, useInterview } from "@/lib/hooks/useFirestore";
 import { Button } from "@/components/ui/button";
+import { useLoading } from "@/contexts/LoadingContext";
+import { useEffect } from "react";
 
 const Feedback = () => {
     const params = useParams();
@@ -88,7 +90,7 @@ const Feedback = () => {
                     </div>
                 </div>
             ) : (
-                <p>Loading feedback...</p>
+                null // Global loader handles this
             )}
 
             <div className="buttons">

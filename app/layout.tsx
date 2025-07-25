@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Mona_Sans } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import { RouterLoadingHandler } from "@/components/RouterLoadingHandler";
 import Providers from "./providers";
 
 import "./globals.css";
@@ -15,6 +17,21 @@ const monaSans = Mona_Sans({
 export const metadata: Metadata = {
     title: "PrepBettr",
     description: "An AI-powered platform for preparing for mock interviews",
+    icons: {
+        icon: [
+            { url: '/icon', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [
+            { url: '/apple-icon', sizes: '1024x1024', type: 'image/png' },
+        ],
+        other: [
+            {
+                rel: 'icon',
+                url: '/favicon.ico',
+                sizes: '256x256',
+            },
+        ],
+    },
 };
 
 export default function RootLayout({
@@ -35,11 +52,14 @@ export default function RootLayout({
           "--background": "transparent"
         } as React.CSSProperties} suppressHydrationWarning={true}>
         <Providers>
-            <AuthProvider>
-                <UsageProvider>
-                    {children}
-                </UsageProvider>
-            </AuthProvider>
+            <LoadingProvider>
+                <RouterLoadingHandler />
+                <AuthProvider>
+                    <UsageProvider>
+                        {children}
+                    </UsageProvider>
+                </AuthProvider>
+            </LoadingProvider>
         </Providers>
 
         <Toaster />

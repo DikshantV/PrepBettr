@@ -13,8 +13,8 @@ const MacbookScroll = dynamic(() => import('@/components/ui/macbook-scroll').the
   ssr: false,
   loading: () => (
     <div className="relative w-full overflow-visible" style={{ minHeight: '500px' }}>
-      <div className="animate-pulse">
-        <div className="bg-gray-300 dark:bg-gray-700 rounded-lg h-80 w-full max-w-4xl mx-auto"></div>
+      <div className="flex items-center justify-center h-80">
+        <BanterLoader size="lg" />
       </div>
     </div>
   )
@@ -24,12 +24,8 @@ const BrandSlide = dynamic(() => import('@/components/BrandSlide'), {
   ssr: false,
   loading: () => (
     <div className="py-12 bg-black">
-      <div className="animate-pulse">
-        <div className="flex justify-center space-x-12">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="bg-gray-800 h-12 w-32 rounded"></div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center">
+        <BanterLoader size="md" />
       </div>
     </div>
   )
