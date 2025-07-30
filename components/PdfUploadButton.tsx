@@ -132,6 +132,7 @@ const PdfUploadButton = ({
   // Custom button component for Uploady
   const CustomUploadButton = asUploadButton(({ onClick, isUploading: isUploadingProp }: { onClick: () => void, isUploading: boolean }) => (
     <div className="relative">
+      {isUploading && <BanterLoader overlay text="Uploading and Processing PDF..." />}
       <button
         type="button"
         onClick={onClick}

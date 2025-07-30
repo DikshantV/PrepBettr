@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { LoaderInline } from "./ui/loader";
+import BanterLoader from "./ui/BanterLoader";
 import Image from "next/image";
 import { auth } from "@/firebase/client";
 import { toast } from "sonner";
@@ -433,7 +433,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         >
           {loading ? (
             <>
-              <LoaderInline size="sm" className="mr-3" />
+              <BanterLoader className="mr-3 w-4 h-4" />
               Saving...
             </>
           ) : 'Save Changes'}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, BarChart3, Zap, Eye } from 'lucide-react';
-import { LoaderInline } from '@/components/ui/loader';
+import BanterLoader from '@/components/ui/BanterLoader';
 
 export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply, onAnalyze, onView, loading, pagination }) => {
   if (jobs.length === 0) {
@@ -150,7 +150,7 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
                   <td className="px-4 py-4">
                     <Badge className={`text-xs ${getStatusColor(job.applicationStatus)}`}>
                       {job.applicationStatus === 'applying' && (
-                        <LoaderInline size="sm" className="mr-1" variant="accent" />
+                        <BanterLoader className="mr-1" />
                       )}
                       {APPLICATION_STATUS_LABELS[job.applicationStatus] || job.applicationStatus}
                     </Badge>
@@ -192,7 +192,7 @@ export const JobListingTable: React.FC<JobListingTableProps> = ({ jobs, onApply,
                           disabled={loading || job.applicationStatus === 'applying'}
                         >
                           {job.applicationStatus === 'applying' ? (
-                            <LoaderInline size="sm" variant="accent" />
+                            <BanterLoader />
                           ) : (
                             <Zap className="h-3 w-3" />
                           )}

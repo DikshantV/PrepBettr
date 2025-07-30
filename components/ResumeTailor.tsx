@@ -224,6 +224,7 @@ const ResumeTailorSection = () => {
 
   return (
     <div className="w-full h-full p-6 mb-8">
+      {isProcessing && <BanterLoader overlay text="Tailoring Resume with AI..." />}
       <div className="mb-6">
         <p className="text-gray-300">
           Upload your resume and provide a job description to get an AI-tailored version optimized for ATS systems and maximum job relevance.

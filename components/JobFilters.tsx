@@ -1,7 +1,7 @@
 import React from 'react';
 import { JobFiltersProps, JobSearchFilters } from '@/types/auto-apply';
 import { Button } from '@/components/ui/button';
-import { LoaderInline } from '@/components/ui/loader';
+import BanterLoader from '@/components/ui/BanterLoader';
 
 export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSearch, loading }) => {
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +120,7 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ filters, onChange, onSea
 
 
       <Button onClick={onSearch} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600">
-        {loading && <LoaderInline size="sm" className="mr-2" />}
+        {loading && <BanterLoader className="mr-2" />}
         {loading ? 'Searching...' : 'Search Jobs'}
       </Button>
     </div>

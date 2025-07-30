@@ -132,13 +132,7 @@ export default function BillingPage() {
   };
 
   if (loading || usageLoading) {
-    return (
-      <div className="container max-w-4xl mx-auto py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <BanterLoader />
-        </div>
-      </div>
-    );
+    return <BanterLoader overlay />;
   }
 
   return (
@@ -205,11 +199,16 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {upgrading ? (
-                    <BanterLoader />
+                    <>
+                      <BanterLoader overlay text="Redirecting to checkout..." />
+                      Processing...
+                    </>
                   ) : (
-                    <Crown className="h-4 w-4" />
+                    <>
+                      <Crown className="h-4 w-4" />
+                      Upgrade to Premium
+                    </>
                   )}
-                  Upgrade to Premium
                 </Button>
               )}
 
@@ -221,11 +220,16 @@ export default function BillingPage() {
                   className="flex items-center gap-2"
                 >
                   {managingSubscription ? (
-                    <BanterLoader />
+                    <>
+                      <BanterLoader overlay text="Opening subscription portal..." />
+                      Loading...
+                    </>
                   ) : (
-                    <Settings className="h-4 w-4" />
+                    <>
+                      <Settings className="h-4 w-4" />
+                      Manage Subscription
+                    </>
                   )}
-                  Manage Subscription
                 </Button>
               )}
             </div>

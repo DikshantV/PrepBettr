@@ -61,9 +61,7 @@ const Page = () => {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <BanterLoader />
-            </div>
+            <BanterLoader overlay />
         );
     }
 
