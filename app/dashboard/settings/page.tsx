@@ -27,8 +27,10 @@ export default function SettingsPage() {
       localStorage.clear();
       sessionStorage.clear();
       
-      // Redirect to sign-in page
-      router.push('/sign-in');
+      // Call logout API and redirect to marketing page
+      await fetch("/api/profile/logout", { method: "POST" });
+      router.push('/marketing');
+      router.refresh();
     } catch (error) {
       console.error('Error during logout:', error);
     }
