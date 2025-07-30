@@ -212,7 +212,8 @@ function getFeatureDisplayName(feature: keyof UserUsageCounters): string {
   const displayNames: Record<keyof UserUsageCounters, string> = {
     interviews: 'interview generation',
     resumeTailor: 'resume tailoring',
-    autoApply: 'auto-apply job application'
+    autoApply: 'auto-apply job application',
+    coverLetterGenerator: 'cover letter generation',
   };
   
   return displayNames[feature] || feature;

@@ -35,7 +35,8 @@ export function UsageDisplayServer({
     const names = {
       interviews: "Interviews",
       resumeTailor: "Resume Tailor", 
-      autoApply: "Auto Apply"
+      autoApply: "Auto Apply",
+      coverLetterGenerator: "Cover Letter Generator",
     };
     return names[featureKey];
   };

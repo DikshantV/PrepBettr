@@ -81,6 +81,7 @@ export async function getUserUsage(): Promise<UserUsageCounters | null> {
       interviews: usageData.interviews || { count: 0, limit: 0, updatedAt: new Date() },
       resumeTailor: usageData.resumeTailor || { count: 0, limit: 0, updatedAt: new Date() },
       autoApply: usageData.autoApply || { count: 0, limit: 0, updatedAt: new Date() },
+      coverLetterGenerator: usageData.coverLetterGenerator || { count: 0, limit: 0, updatedAt: new Date() },
     };
 
     return completeUsage;

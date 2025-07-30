@@ -29,7 +29,8 @@ import {
   User2,
   ChevronsUpDown,
   LogOut,
-  Sparkles
+  Sparkles,
+  Mail
 } from "lucide-react";
 import {
   Avatar,
@@ -127,6 +128,11 @@ const data = {
           title: "Resume Tailor",
           url: "/dashboard/resume-tailor",
           icon: FileText,
+        },
+        {
+          title: "Cover Letter Generator",
+          url: "/dashboard/cover-letter-generator",
+          icon: Mail,
         },
         {
           title: "Auto Apply",
