@@ -12,7 +12,7 @@ export const RouterLoadingHandler = () => {
 
     // Listen for browser navigation (back/forward buttons)
     const handlePopState = () => {
-      showLoader('Loading page...', 500);
+      showLoader('', 500);
       
       // Auto-hide after a maximum time to prevent infinite loading
       navigationTimer = setTimeout(() => {

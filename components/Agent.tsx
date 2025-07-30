@@ -67,7 +67,7 @@ const Agent = ({
         
         const { name, parameters } = message.functionCall;
         
-        if (name === 'generateInterviewQuestions') {
+        if (name === 'generate_interview_questions') {
             try {
                 console.log('Generating interview questions with parameters:', parameters);
                 
@@ -269,11 +269,17 @@ const Agent = ({
         }
     };
 
-const handleDisconnect = () => {
-    setCallStatus(CallStatus.FINISHED);
-    vapi.stop();
-    // Redirecting to dashboard instead of marketing
-    router.push('/dashboard');
+const handleDisconnect = async () => {
+    try {
+        setCallStatus(CallStatus.FINISHED);
+        vapi.stop();
+        // Immediate redirect for better UX
+        router.push('/dashboard');
+    } catch (error) {
+        console.error('Error ending call:', error);
+        setCallStatus(CallStatus.FINISHED);
+        router.push('/dashboard');
+    }
 };
 
     return (
@@ -339,15 +345,36 @@ const handleDisconnect = () => {
             {messages.length > 0 && (
                 <div className="transcript-border">
                     <div className="transcript">
-                        <p
-                            key={lastMessage}
-                            className={cn(
-                                "transition-opacity duration-500 opacity-0",
-                                "animate-fadeIn opacity-100"
-                            )}
-                        >
-                            {lastMessage}
-                        </p>
+                        <div className="transcript-header">
+                            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Live Transcript</h4>
+                        </div>
+                        <div className="transcript-messages max-h-40 overflow-y-auto space-y-2">
+                            {messages.map((message, index) => (
+                                <div 
+                                    key={index}
+                                    className={cn(
+                                        "transcript-message p-2 rounded-lg",
+                                        message.role === "assistant" 
+                                            ? "bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500" 
+                                            : "bg-gray-50 dark:bg-gray-800/50 border-l-2 border-gray-400"
+                                    )}
+                                >
+                                    <div className="flex items-start space-x-2">
+                                        <span className={cn(
+                                            "text-xs font-medium uppercase tracking-wide",
+                                            message.role === "assistant" 
+                                                ? "text-blue-600 dark:text-blue-400" 
+                                                : "text-gray-600 dark:text-gray-400"
+                                        )}>
+                                            {message.role === "assistant" ? "AI" : "You"}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+                                        {message.content}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
