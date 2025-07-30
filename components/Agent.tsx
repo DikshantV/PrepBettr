@@ -233,7 +233,13 @@ const Agent = ({
             }
             
             try {
-                await vapi.start(assistantId, assistantConfig);
+                await vapi.start(assistantId, {
+                    variableValues: {
+                        username: firstName, // → {{username}} placeholder in VAPI assistant (sends firstName as username)
+                    },
+                    clientMessages: [],
+                    serverMessages: [],
+                });
             } catch (error) {
                 console.error('Failed to start VAPI assistant:', error);
                 console.error('Error details:', JSON.stringify(error, null, 2));
