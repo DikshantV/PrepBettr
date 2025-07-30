@@ -63,63 +63,10 @@ const Agent = ({
     }, []);
 
     const handleFunctionCall = useCallback(async (message: FunctionCallMessage) => {
-        console.log('VAPI Function Call:', message.functionCall);
-        
-        const { name, parameters } = message.functionCall;
-        
-        if (name === 'generate_interview_questions') {
-            try {
-                console.log('Generating interview questions with parameters:', parameters);
-                
-                // Call the API endpoint with the parameters from VAPI
-                const response = await fetch('/api/vapi/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        ...(parameters as Record<string, any>),
-                        userid: userId, // Add the current user ID
-                    }),
-                });
-                
-                const result = await response.json();
-                console.log('Interview generation result:', result);
-                
-                // Send the result back to VAPI
-                (vapi as any).send({
-                    type: 'function-call-result',
-                    functionCallResult: {
-                        result: result,
-                        forwardToClientEnabled: true,
-                    },
-                });
-                
-            } catch (error) {
-                console.error('Error generating interview questions:', error);
-                
-                // Send error result back to VAPI
-                (vapi as any).send({
-                    type: 'function-call-result',
-                    functionCallResult: {
-                        result: { success: false, error: 'Failed to generate interview questions' },
-                        forwardToClientEnabled: true,
-                    },
-                });
-            }
-        } else {
-            console.warn('Unknown function call:', name);
-            
-            // Send unknown function error back to VAPI
-            (vapi as any).send({
-                type: 'function-call-result',
-                functionCallResult: {
-                    result: { success: false, error: `Unknown function: ${name}` },
-                    forwardToClientEnabled: true,
-                },
-            });
-        }
-    }, [userId]);
+        // This function is now a placeholder as VAPI directly calls the webhook.
+        // We can add client-side logic here if needed, but for now, we just log it.
+        console.log('VAPI Function Call received on client:', message.functionCall);
+    }, []);
 
     useEffect(() => {
         const onCallStart = () => {
