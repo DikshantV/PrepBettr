@@ -1,9 +1,32 @@
 import React from 'react';
 import styled from 'styled-components';
+import { cn } from '@/lib/utils';
 
-const Loader = () => {
-  return (
-    <StyledWrapper>
+interface BanterLoaderProps {
+  /** Whether to show as an overlay with backdrop blur */
+  overlay?: boolean;
+  /** Text to display below the loader when in overlay mode */
+  text?: string;
+  /** Background opacity (0-100) when in overlay mode */
+  backgroundOpacity?: number;
+  /** Whether to show backdrop blur when in overlay mode */
+  blur?: boolean;
+  /** Custom CSS classes */
+  className?: string;
+  /** ARIA label for accessibility */
+  ariaLabel?: string;
+}
+
+const Loader = ({
+  overlay = false,
+  text,
+  backgroundOpacity = 80,
+  blur = true,
+  className,
+  ariaLabel = 'Loading...'
+}: BanterLoaderProps) => {
+  const loaderContent = (
+    <StyledWrapper className={className}>
       <div className="banter-loader">
         <div className="banter-loader__box" />
         <div className="banter-loader__box" />
@@ -15,19 +38,57 @@ const Loader = () => {
         <div className="banter-loader__box" />
         <div className="banter-loader__box" />
       </div>
+      {overlay && text && (
+        <p 
+          className="text-white text-center mt-4 font-medium"
+          aria-live="polite"
+        >
+          {text}
+        </p>
+      )}
     </StyledWrapper>
+  );
+
+  if (overlay) {
+    return (
+      <div 
+        className={cn(
+          "fixed inset-0 z-50 flex items-center justify-center flex-col",
+          blur && "backdrop-blur-md",
+          "transition-all duration-300"
+        )}
+        style={{
+          backgroundColor: `rgba(0, 0, 0, ${backgroundOpacity / 100})`,
+          backdropFilter: blur ? 'blur(8px)' : 'none',
+          WebkitBackdropFilter: blur ? 'blur(8px)' : 'none'
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
+      >
+        <div className="relative">
+          {loaderContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      role="status"
+      aria-label={ariaLabel}
+    >
+      {loaderContent}
+    </div>
   );
 }
 
 const StyledWrapper = styled.div`
   .banter-loader {
-    position: absolute;
-    left: 50%;
-    top: 50%;
+    position: relative;
     width: 72px;
     height: 72px;
-    margin-left: -36px;
-    margin-top: -36px;
+    margin: 0 auto;
   }
 
   .banter-loader__box {

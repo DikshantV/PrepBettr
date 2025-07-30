@@ -187,6 +187,7 @@ const CoverLetterGeneratorSection = () => {
 
   return (
     <div className="w-full h-full p-6 mb-8">
+      {isProcessing && <BanterLoader overlay text="Generating Cover Letter..." />}
       <div className="mb-6">
         <p className="text-gray-300">
           Upload your resume and a job description to generate a compelling, AI-powered cover letter tailored to the role.

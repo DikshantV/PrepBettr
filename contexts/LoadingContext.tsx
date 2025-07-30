@@ -90,11 +90,7 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) =>
     <LoadingContext.Provider value={value}>
       {children}
       {/* Global Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <BanterLoader />
-        </div>
-      )}
+      {isLoading && <BanterLoader overlay text={loadingText} />}
     </LoadingContext.Provider>
   );
 };

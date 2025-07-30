@@ -1,7 +1,7 @@
 import React from 'react';
 import { SettingsFormProps } from '@/types/auto-apply';
 import { Button } from '@/components/ui/button';
-import { LoaderInline } from '@/components/ui/loader';
+import BanterLoader from '@/components/ui/BanterLoader';
 
 export const SettingsForm: React.FC<SettingsFormProps> = ({ settings, onChange, onSave, loading }) => {
   const handleToggleChange = (field: keyof typeof settings, value: boolean) => {
@@ -131,7 +131,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ settings, onChange, 
       </div>
 
       <Button onClick={onSave} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600">
-        {loading && <LoaderInline size="sm" className="mr-2" variant="secondary" />}
+        {loading && <BanterLoader className="mr-2" />}
         {loading ? 'Saving...' : 'Save Settings'}
       </Button>
     </div>
