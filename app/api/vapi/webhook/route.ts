@@ -26,7 +26,7 @@ async function generateInterviewQuestions(params: any): Promise<string> {
   const experienceLevel = experience_level;
   const questionCount = question_count;
   
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   
   const prompt = `Prepare questions for a job interview.
         The job role is ${jobRole}.

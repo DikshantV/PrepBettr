@@ -20,7 +20,7 @@ const Feedback = () => {
     return (
         <section className="section-feedback">
             <div className="flex flex-row justify-center">
-                <h1 className="text-4xl font-semibold">
+                <h1 className="text-4xl font-semibold text-white">
                     Feedback on the Interview -{" "}
                     <span className="capitalize">{interview?.role || "Loading..."}</span> Interview
                 </h1>
@@ -60,7 +60,7 @@ const Feedback = () => {
 
                     {/* Interview Breakdown */}
                     <div className="flex flex-col gap-4">
-                        <h2>Breakdown of the Interview:</h2>
+                        <h2 className="text-white">Breakdown of the Interview:</h2>
                         {feedback?.categoryScores?.map((category, index) => (
                             <div key={index}>
                                 <p className="font-bold">
@@ -72,7 +72,7 @@ const Feedback = () => {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <h3>Strengths</h3>
+                        <h3 className="text-white">Strengths</h3>
                         <ul>
                             {feedback?.strengths?.map((strength, index) => (
                                 <li key={index}>{strength}</li>
@@ -81,7 +81,7 @@ const Feedback = () => {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <h3>Areas for Improvement</h3>
+                        <h3 className="text-white">Areas for Improvement</h3>
                         <ul>
                             {feedback?.areasForImprovement?.map((area, index) => (
                                 <li key={index}>{area}</li>
@@ -94,17 +94,17 @@ const Feedback = () => {
             )}
 
             <div className="buttons">
-                <Button className="btn-secondary flex-1">
-                    <Link href="/" className="flex w-full justify-center">
+                <Button asChild className="btn-secondary flex-1">
+                    <Link href="/dashboard" className="flex w-full justify-center">
                         <p className="text-sm font-semibold text-primary-200 text-center">
                             Back to dashboard
                         </p>
                     </Link>
                 </Button>
 
-                <Button className="btn-primary flex-1">
+                <Button asChild className="btn-primary flex-1">
                     <Link
-                        href={`/interview/${id}`}
+                        href={`/dashboard/interview/${id}`}
                         className="flex w-full justify-center"
                     >
                         <p className="text-sm font-semibold text-black text-center">

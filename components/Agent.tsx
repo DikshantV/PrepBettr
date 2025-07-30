@@ -48,6 +48,8 @@ const Agent = ({
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [lastMessage, setLastMessage] = useState<string>("");
     const [userImage, setUserImage] = useState<string>("");
+    const [feedbackGenerated, setFeedbackGenerated] = useState(false);
+    const [generatedFeedbackId, setGeneratedFeedbackId] = useState<string | null>(null);
 
     useEffect(() => {
         fetch("/api/profile/me")
@@ -134,17 +136,20 @@ const Agent = ({
             });
 
             if (success && id) {
-                router.push(`/interview/${interviewId}/feedback`);
+                setFeedbackGenerated(true);
+                setGeneratedFeedbackId(id);
+                console.log("Feedback generated successfully:", id);
             } else {
                 console.log("Error saving feedback");
-                router.push("/dashboard");
             }
         };
 
         if (callStatus === CallStatus.FINISHED) {
             if (type === "generate") {
-                router.push("/dashboard");
-            } else {
+                // For generate type, don't redirect anywhere - stay on current page
+                console.log("Interview generation completed");
+            } else if (interviewId && messages.length > 0) {
+                // Only generate feedback if we have an interviewId and messages
                 handleGenerateFeedback(messages);
             }
         }
@@ -220,12 +225,10 @@ const handleDisconnect = async () => {
     try {
         setCallStatus(CallStatus.FINISHED);
         vapi.stop();
-        // Immediate redirect for better UX
-        router.push('/dashboard');
+        // Don't redirect - let user stay on interview page
     } catch (error) {
         console.error('Error ending call:', error);
         setCallStatus(CallStatus.FINISHED);
-        router.push('/dashboard');
     }
 };
 
@@ -326,22 +329,31 @@ const handleDisconnect = async () => {
                 </div>
             )}
 
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center gap-4">
                 {callStatus !== "ACTIVE" ? (
-                    <button className="relative btn-call" onClick={() => handleCall()}>
-            <span
-                className={cn(
-                    "absolute animate-ping rounded-full opacity-75",
-                    callStatus !== "CONNECTING" && "hidden"
-                )}
-            />
-
-                        <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                  ? "Call"
-                  : ". . ."}
-            </span>
-                    </button>
+                    <>
+                        <button className="relative btn-call" onClick={() => handleCall()}>
+                            <span
+                                className={cn(
+                                    "absolute animate-ping rounded-full opacity-75",
+                                    callStatus !== "CONNECTING" && "hidden"
+                                )}
+                            />
+                            <span className="relative">
+                                {callStatus === "INACTIVE" || callStatus === "FINISHED"
+                                    ? "Call"
+                                    : ". . ."}
+                            </span>
+                        </button>
+                        {feedbackGenerated && generatedFeedbackId && (
+                            <button 
+                                className="btn-secondary" 
+                                onClick={() => router.push(`/dashboard/interview/${interviewId}/feedback`)}
+                            >
+                                View Feedback
+                            </button>
+                        )}
+                    </>
                 ) : (
                     <button className="btn-disconnect" onClick={() => handleDisconnect()}>
                         End
