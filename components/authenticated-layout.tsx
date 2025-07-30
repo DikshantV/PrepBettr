@@ -206,7 +206,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
   const handleLogout = async () => {
     try {
       await fetch("/api/profile/logout", { method: "POST" });
-      router.push("/sign-in");
+      router.push("/marketing");
       router.refresh();
     } catch (error) {
       console.error('Logout failed:', error);
@@ -241,6 +241,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
 
   return (
     <SidebarProvider 
+      defaultOpen={false}
       style={{
         "--sidebar-width": "20rem", // 320px - larger than default 16rem
         "--sidebar-width-mobile": "22rem", // 352px for mobile
