@@ -34,7 +34,8 @@ function UpgradeModal({ isOpen, onClose, feature, remaining }: UpgradeModalProps
     const names = {
       interviews: "Interview",
       resumeTailor: "Resume Tailor", 
-      autoApply: "Auto Apply"
+      autoApply: "Auto Apply",
+      coverLetterGenerator: "Cover Letter Generator",
     };
     return names[featureKey];
   };

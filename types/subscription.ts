@@ -29,6 +29,7 @@ export interface UserUsageCounters {
   interviews: UsageCounter;
   resumeTailor: UsageCounter;
   autoApply: UsageCounter;
+  coverLetterGenerator: UsageCounter;
 }
 
 // Subscription event log entry
@@ -60,11 +61,13 @@ export const DEFAULT_USAGE_LIMITS: Record<PlanType, UserUsageCounters> = {
     interviews: { count: 0, limit: 3, updatedAt: new Date() },
     resumeTailor: { count: 0, limit: 3, updatedAt: new Date() },
     autoApply: { count: 0, limit: 3, updatedAt: new Date() },
+    coverLetterGenerator: { count: 0, limit: 3, updatedAt: new Date() },
   },
   premium: {
     interviews: { count: 0, limit: -1, updatedAt: new Date() }, // -1 = unlimited
     resumeTailor: { count: 0, limit: -1, updatedAt: new Date() },
     autoApply: { count: 0, limit: -1, updatedAt: new Date() },
+    coverLetterGenerator: { count: 0, limit: -1, updatedAt: new Date() },
   },
 };
 

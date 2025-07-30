@@ -11,7 +11,7 @@ import TimelineCompact from "./TimelineCompact";
 export function FeaturesSectionDemo() {
   const features = [
     {
-      title: "Track applications effectively",
+      title: "Hack job hunting",
       description:
         "Manage your entire application pipeline with a single click.",
       skeleton: <SkeletonOne />,

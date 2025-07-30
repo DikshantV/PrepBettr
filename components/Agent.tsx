@@ -1,13 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
+
+// Import VAPI types
+import type { Message, FunctionCallMessage, GenerateAssistantVariables, InterviewWorkflowVariables } from "@/types/vapi";
 
 enum CallStatus {
     INACTIVE = "INACTIVE",
@@ -59,6 +62,65 @@ const Agent = ({
             .catch(console.error);
     }, []);
 
+    const handleFunctionCall = useCallback(async (message: FunctionCallMessage) => {
+        console.log('VAPI Function Call:', message.functionCall);
+        
+        const { name, parameters } = message.functionCall;
+        
+        if (name === 'generateInterviewQuestions') {
+            try {
+                console.log('Generating interview questions with parameters:', parameters);
+                
+                // Call the API endpoint with the parameters from VAPI
+                const response = await fetch('/api/vapi/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...(parameters as Record<string, any>),
+                        userid: userId, // Add the current user ID
+                    }),
+                });
+                
+                const result = await response.json();
+                console.log('Interview generation result:', result);
+                
+                // Send the result back to VAPI
+                (vapi as any).send({
+                    type: 'function-call-result',
+                    functionCallResult: {
+                        result: result,
+                        forwardToClientEnabled: true,
+                    },
+                });
+                
+            } catch (error) {
+                console.error('Error generating interview questions:', error);
+                
+                // Send error result back to VAPI
+                (vapi as any).send({
+                    type: 'function-call-result',
+                    functionCallResult: {
+                        result: { success: false, error: 'Failed to generate interview questions' },
+                        forwardToClientEnabled: true,
+                    },
+                });
+            }
+        } else {
+            console.warn('Unknown function call:', name);
+            
+            // Send unknown function error back to VAPI
+            (vapi as any).send({
+                type: 'function-call-result',
+                functionCallResult: {
+                    result: { success: false, error: `Unknown function: ${name}` },
+                    forwardToClientEnabled: true,
+                },
+            });
+        }
+    }, [userId]);
+
     useEffect(() => {
         const onCallStart = () => {
             setCallStatus(CallStatus.ACTIVE);
@@ -72,6 +134,9 @@ const Agent = ({
             if (message.type === "transcript" && message.transcriptType === "final") {
                 const newMessage = { role: message.role, content: message.transcript };
                 setMessages((prev) => [...prev, newMessage]);
+            } else if (message.type === "function-call") {
+                // Handle VAPI function calls for interview generation
+                handleFunctionCall(message);
             }
         };
 
@@ -104,7 +169,7 @@ const Agent = ({
             vapi.off("speech-end", onSpeechEnd);
             vapi.off("error", onError);
         };
-    }, []);
+    }, [handleFunctionCall]);
 
     useEffect(() => {
         if (messages.length > 0) {
