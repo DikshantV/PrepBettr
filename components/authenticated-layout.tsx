@@ -182,6 +182,26 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
   const router = useRouter();
   const { user } = useAuth();
   const [activeTeam, setActiveTeam] = React.useState(data.teams[0]);
+  const [interviewNames, setInterviewNames] = React.useState<{[key: string]: string}>({});
+
+  // Effect to fetch interview names for breadcrumb display
+  React.useEffect(() => {
+    // Extract interview IDs from current path
+    const pathSegments = (pathname || '').split('/').filter(Boolean);
+    const interviewIndex = pathSegments.findIndex(segment => segment === 'interview');
+    
+    if (interviewIndex !== -1 && pathSegments[interviewIndex + 1]) {
+      const interviewId = pathSegments[interviewIndex + 1];
+      
+      // Only fetch if we don't already have this interview name
+      if (!interviewNames[interviewId] && interviewId.length > 10) { // Basic check for UUID-like ID
+        // For now, we'll use a mock name since we don't have a real API
+        // In a real app, you would fetch from your API
+        const mockInterviewName = `${interviewId.substring(0, 8)}... Interview`;
+        setInterviewNames(prev => ({ ...prev, [interviewId]: mockInterviewName }));
+      }
+    }
+  }, [pathname, interviewNames]);
 
   const handleLogout = async () => {
     try {
@@ -417,7 +437,11 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
                 {(pathname || '').split('/').filter(Boolean).map((segment, index, array) => {
                   const href = '/' + array.slice(0, index + 1).join('/');
                   const isLast = index === array.length - 1;
-                  const title = segment.charAt(0).toUpperCase() + segment.slice(1);
+                  let title = segment.charAt(0).toUpperCase() + segment.slice(1);
+
+                  if (array[index - 1] === 'interview' && interviewNames[segment]) {
+                    title = interviewNames[segment];
+                  }
                   
                   return (
                     <React.Fragment key={segment}>
