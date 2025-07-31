@@ -4,6 +4,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { EmailVerification } from '@/types/subscription';
 import { randomBytes } from 'crypto';
+import { awsSESService } from './aws-ses-service';
 
 export class EmailVerificationService {
   private db = getAdminFirestore();
@@ -66,12 +67,13 @@ export class EmailVerificationService {
         verificationUrl
       });
 
-      // TODO: Integrate with your email service (SendGrid, AWS SES, etc.)
-      // await emailService.send({
-      //   to: email,
-      //   subject: 'Verify your PrepBettr account',
-      //   html: emailContent
-      // });
+      const { success, error } = await awsSESService.sendEmail({
+        to: email,
+        subject: 'Verify your PrepBettr account',
+        html: emailContent
+      });
+
+      if (!success) throw new Error(error);
 
       console.log(`Email verification sent to ${email} for user ${userId}`);
 

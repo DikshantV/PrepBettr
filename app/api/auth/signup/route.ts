@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth, db } from '@/firebase/admin';
+import { emailVerificationService } from '@/lib/services/email-verification-service';
 
 export async function POST(request: Request) {
   try {
     const { idToken, name, email } = await request.json();
+    const userName = name || email.split('@')[0];
     
     if (!idToken || !email) {
       return NextResponse.json(
@@ -29,14 +31,25 @@ export async function POST(request: Request) {
     // Create user in Firestore
     await db.collection('users').doc(uid).set({
       id: uid,
-      name: name || email.split('@')[0],
+      name: userName,
       email,
       image: '/default-avatar.svg',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      emailVerified: false
     });
 
-    return NextResponse.json({ success: true });
+    const verificationUrl = `${process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000'}/api/auth/verify-email?token`;
+    const { success, error } = await emailVerificationService.sendVerificationEmail(uid, email, userName);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: `Failed to send verification email: ${error}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: 'Verification email sent. Please check your inbox.' });
     
   } catch (error) {
     console.error('Signup error:', error);
