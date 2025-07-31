@@ -82,6 +82,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 
 // This is sample data.
 const data = {
@@ -463,6 +464,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
         </header>
         
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+<EmailVerificationBanner />
           {children}
         </div>
       </SidebarInset>

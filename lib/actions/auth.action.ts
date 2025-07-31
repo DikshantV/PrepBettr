@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { Timestamp } from 'firebase-admin/firestore';
 // FALLBACK: Import manual token decoding functions for cases where Firebase Admin SDK fails
 // These functions are used as a backup when SDK cannot decode tokens due to network/SSL issues
-import { getUserFromDecodedToken } from "@/lib/utils/jwt-decoder";
+import { initializeUser } from "@/lib/utils/jwt-decoder";
 import { firebaseVerification } from "@/lib/services/firebase-verification";
 
 
@@ -228,8 +228,8 @@ export async function getCurrentUser(): Promise<User | null> {
             
             console.log(`Successfully verified user: ${decodedToken.uid}`);
             
-            // Extract user info from decoded token
-            return getUserFromDecodedToken(decodedToken);
+            // Extract user info from decoded token using centralized function
+            return initializeUser(decodedToken);
         } catch (error: unknown) {
             // Only log server-side to avoid client console errors
             if (typeof window === 'undefined') {

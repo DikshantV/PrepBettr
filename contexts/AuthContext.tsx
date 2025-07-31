@@ -4,6 +4,7 @@ import { createContext, useContext, ReactNode, useEffect, useState } from "react
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/firebase/client";
 import type { User as FirebaseUser } from "firebase/auth";
+import { initializeUser } from "@/lib/utils/jwt-decoder";
 
 // Define the auth context interface
 interface AuthContextType {
@@ -25,6 +26,25 @@ interface AuthProviderProps {
   initialUser?: User | null; // Accept initial user from server
 }
 
+// Helper function to convert Firebase User to our consistent User format
+function convertFirebaseUserToUser(firebaseUser: FirebaseUser): User {
+  // Create a token-like object to use with initializeUser for consistency
+  const tokenLikeObject = {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email,
+    name: firebaseUser.displayName,
+    picture: firebaseUser.photoURL,
+    email_verified: firebaseUser.emailVerified,
+    // Required fields for DecodedToken interface (not used but needed for type compatibility)
+    exp: Math.floor(Date.now() / 1000) + 3600, 
+    iat: Math.floor(Date.now() / 1000),
+    aud: '',
+    iss: 'firebase-client'
+  };
+  
+  return initializeUser(tokenLikeObject);
+}
+
 // AuthProvider component that manages auth state
 export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(initialUser || null);
@@ -33,12 +53,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        const userData: User = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          email: firebaseUser.email || '',
-          image: firebaseUser.photoURL || undefined,
-        };
+        const userData: User = convertFirebaseUserToUser(firebaseUser);
         setUser(userData);
       } else {
         // Only set user to null if we don't have an initial user from server

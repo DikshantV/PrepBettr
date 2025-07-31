@@ -8,6 +8,7 @@ interface DecodedToken {
   user_id?: string;
   sub?: string;
   email?: string;
+  email_verified?: boolean;
   name?: string;
   picture?: string;
   exp: number;
@@ -78,14 +79,23 @@ export function decodeFirebaseToken(token: string): DecodedToken | null {
   }
 }
 
-export function getUserFromDecodedToken(decodedToken: DecodedToken): User {
-  // Get the user ID from whichever field is available
+export function initializeUser(decodedToken: DecodedToken): User {
   const userId = decodedToken.uid || decodedToken.user_id || decodedToken.sub || '';
   
+  // Debug logging to verify emailVerified is being set correctly
+  console.log('initializeUser - email_verified from token:', decodedToken.email_verified);
+  console.log('initializeUser - setting emailVerified to:', decodedToken.email_verified || false);
+
   return {
     id: userId,
     email: decodedToken.email || '',
     name: decodedToken.name || decodedToken.email?.split('@')[0] || 'User',
-    image: decodedToken.picture || '/default-avatar.svg'
+    image: decodedToken.picture || '/default-avatar.svg',
+    emailVerified: decodedToken.email_verified || false
   };
+}
+
+// Keep the old function for backward compatibility (deprecate later)
+export function getUserFromDecodedToken(decodedToken: DecodedToken): User {
+  return initializeUser(decodedToken);
 }

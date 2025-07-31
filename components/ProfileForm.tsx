@@ -9,10 +9,12 @@ import BanterLoader from "./ui/BanterLoader";
 import Image from "next/image";
 import { auth } from "@/firebase/client";
 import { toast } from "sonner";
+import { Mail, Loader2 } from "lucide-react";
 
 interface ProfileUser {
   name?: string;
   email?: string;
+  emailVerified?: boolean;
   image?: string;
   about?: string;
   phone?: string;
@@ -23,6 +25,10 @@ interface ProfileUser {
 }
 
 export default function ProfileForm({ user }: { user: ProfileUser }) {
+  // Remove debug logging in production
+  // console.log('ProfileForm user data:', user);
+  // console.log('EmailVerified status:', user?.emailVerified);
+  
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
   const [password, setPassword] = useState("");
@@ -57,6 +63,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   const [profilePic, setProfilePic] = useState<string | null>(user?.image || null);
   const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +71,42 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
     const file = e.target.files[0];
     setProfilePic(URL.createObjectURL(file));
     setProfilePicFile(file);
+  };
+
+  const handleResendVerification = async () => {
+    if (!email || resendingVerification) return;
+
+    setResendingVerification(true);
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Verification email sent!', {
+          description: 'Please check your inbox and click the verification link.',
+          duration: 5000,
+        });
+      } else {
+        toast.error('Failed to send verification email', {
+          description: data.error || 'Please try again later.',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      toast.error('Failed to send verification email', {
+        description: 'Please try again later.',
+        duration: 5000,
+      });
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
 
@@ -251,6 +294,31 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             disabled 
             className="bg-gray-800/50 border-gray-600 text-gray-400 cursor-not-allowed" 
           />
+          {/* Resend verification button - only show if email is not verified */}
+          {user?.emailVerified === false && (
+            <div className="mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerification}
+                disabled={resendingVerification}
+                className="text-blue-400 border-blue-400 hover:bg-blue-400/10 hover:text-blue-300 transition-colors"
+              >
+                {resendingVerification ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Resend verification link
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5 pb-3">
