@@ -6,7 +6,6 @@ import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
 import { getCurrentUser } from "@/lib/actions/auth.action";
-import { UsageIndicator } from "@/components/UsageIndicator";
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
 import BanterLoader from "@/components/ui/BanterLoader";
 
@@ -79,7 +78,6 @@ const Page = () => {
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
-                        <UsageIndicator feature="interviews" variant="badge" showLabel={false} />
                     </div>
                 </div>
             </div>

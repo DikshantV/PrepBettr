@@ -8,7 +8,6 @@ import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
 import { useFeedback } from "@/lib/hooks/useFirestore";
 import { useAuth } from "@/contexts/AuthContext";
-import { RequireQuota } from "@/components/RequireQuota";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 
@@ -120,22 +119,11 @@ const InterviewCardClient = ({
                             </Link>
                         </Button>
                     ) : (
-                        <RequireQuota 
-                            feature="interviews"
-                            fallback={
-                                <Button className="btn-primary">
-                                    <Link href={`/dashboard/interview/${interviewId}`}>
-                                        View Interview
-                                    </Link>
-                                </Button>
-                            }
-                        >
-                            <Button className="btn-primary">
-                                <Link href={`/dashboard/interview/${interviewId}`}>
-                                    Take Interview
-                                </Link>
-                            </Button>
-                        </RequireQuota>
+                        <Button className="btn-primary">
+                            <Link href={`/dashboard/interview/${interviewId}`}>
+                                Take Interview
+                            </Link>
+                        </Button>
                     )}
                 </div>
             </div>

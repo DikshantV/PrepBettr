@@ -3,24 +3,27 @@ import { google } from "@ai-sdk/google";
 
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
-import { withQuota } from "@/lib/middleware/quota-middleware";
 import { NextRequest, NextResponse } from "next/server";
+import { firebaseVerification } from '@/lib/services/firebase-verification';
 
-async function handleInterviewGeneration(request: NextRequest, context?: { userId: string }) {
+async function handleInterviewGeneration(request: NextRequest) {
     const { type, role, level, techstack, amount, userid: bodyUserId } = await request.json();
 
-    // Get user ID from context (passed by middleware) or fallback to body in dev mode
-    let userid = context?.userId || bodyUserId;
+    // Extract session cookie and verify user authentication
+    const sessionCookie = request.cookies.get('session')?.value;
     
-    // In development mode, allow passing userId in request body as fallback
-    if (!userid && process.env.NODE_ENV !== 'production') {
-        console.log('[DEV MODE] No userId in context, using body or generating mock ID');
-        userid = bodyUserId || 'dev-user-' + Date.now();
+    if (!sessionCookie) {
+        return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
     }
     
-    if (!userid) {
-        return NextResponse.json({ success: false, error: "User ID not available" }, { status: 401 });
+    // Verify the session token
+    const verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
+    
+    if (!verificationResult.success || !verificationResult.decodedToken) {
+        return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
     }
+    
+    const userid = verificationResult.decodedToken.uid;
 
     try {
         const { text: questions } = await generateText({
@@ -78,12 +81,8 @@ async function handleInterviewGeneration(request: NextRequest, context?: { userI
     }
 }
 
-// Apply quota middleware to the POST handler
-export const POST = withQuota({
-  featureKey: 'interviews',
-  limitFree: 3, // Free users can generate 3 interviews
-  usageDocId: undefined // Use the authenticated user's ID
-})(handleInterviewGeneration);
+// POST handler without quota restrictions
+export const POST = handleInterviewGeneration;
 
 export async function GET() {
     return NextResponse.json({ success: true, data: "Thank you!" }, { status: 200 });

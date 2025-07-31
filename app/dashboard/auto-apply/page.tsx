@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { UserProfile, AutoApplySettings, JobSearchFilters } from '@/types/auto-apply';
-import { UsageIndicator } from '@/components/UsageIndicator';
 
 // Dynamic import for AutoApplyDashboard component that requires DOM APIs
 const AutoApplyDashboard = dynamic(() => import('@/components/AutoApplyDashboard').then(mod => ({ default: mod.AutoApplyDashboard })), {
@@ -144,7 +143,6 @@ export default function AutoApplyPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-bold text-white">Auto Apply with AI</h1>
-          <UsageIndicator feature="autoApply" variant="badge" showLabel={false} />
         </div>
         <p className="text-gray-300">
           Automate your job search with AI-powered job matching and application submission.

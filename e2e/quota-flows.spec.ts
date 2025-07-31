@@ -1,4 +1,8 @@
-// e2e/quota-flows.spec.ts
+// e2e/quota-flows.spec.ts - DISABLED (quota system removed)
+// This test file has been disabled because the quota middleware and payment system
+// have been removed to eliminate usage restrictions from the application.
+
+/*
 import { test, expect, type Page } from '@playwright/test';
 
 // Test users for different subscription tiers
@@ -359,3 +363,4 @@ test.describe('Quota Flow Tests', () => {
     });
   });
 });
+*/

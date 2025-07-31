@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 import { Upload, FileText, Zap, Download, Copy, Check, AlertCircle } from 'lucide-react';
 import BanterLoader from '@/components/ui/BanterLoader';
 import { jsPDF } from "jspdf";
-import { useUsage } from '@/contexts/UsageContext';
 
 // Function to parse PDF files on the client side
 async function parsePdfFile(file: File): Promise<string> {
@@ -69,7 +68,6 @@ const CoverLetterGeneratorSection = () => {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { canUseFeature, incrementUsageOptimistic, getRemainingCount } = useUsage();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'resume' | 'job') => {
     const files = event.target.files;
@@ -119,12 +117,6 @@ const CoverLetterGeneratorSection = () => {
       return;
     }
 
-    // Check if user can use the feature
-    if (!canUseFeature('coverLetterGenerator')) {
-      const remaining = getRemainingCount('coverLetterGenerator');
-      setError(`You've reached your limit for cover letter generation. You have ${remaining} generations remaining.`);
-      return;
-    }
 
     setError(null);
     setIsProcessing(true);
@@ -134,8 +126,6 @@ const CoverLetterGeneratorSection = () => {
       const coverLetter = await generateCoverLetter(resumeText, jobDescription);
       setGeneratedCoverLetter(coverLetter);
       
-      // Increment usage counter after successful generation
-      incrementUsageOptimistic('coverLetterGenerator');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred while generating the cover letter.';
       setError(errorMessage);

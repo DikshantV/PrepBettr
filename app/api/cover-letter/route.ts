@@ -1,12 +1,33 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { firebaseVerification } from '@/lib/services/firebase-verification';
 
 // Initialize Google Generative AI with server-side environment variable
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
+    // Extract session cookie and verify user authentication
+    const sessionCookie = request.cookies.get('session')?.value;
+    
+    if (!sessionCookie) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify the session token
+    const verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
+    
+    if (!verificationResult.success || !verificationResult.decodedToken) {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+    
     const { resumeText, jobDescription } = await request.json();
 
     // Validate input
