@@ -81,10 +81,6 @@ export function decodeFirebaseToken(token: string): DecodedToken | null {
 
 export function initializeUser(decodedToken: DecodedToken): User {
   const userId = decodedToken.uid || decodedToken.user_id || decodedToken.sub || '';
-  
-  // Debug logging to verify emailVerified is being set correctly
-  console.log('initializeUser - email_verified from token:', decodedToken.email_verified);
-  console.log('initializeUser - setting emailVerified to:', decodedToken.email_verified || false);
 
   return {
     id: userId,
