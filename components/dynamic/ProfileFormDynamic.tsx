@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 interface ProfileUser {
   name?: string;
   email?: string;
+  emailVerified?: boolean;
   image?: string;
   about?: string;
   phone?: string;
