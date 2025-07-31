@@ -10,10 +10,6 @@ export const EmailVerificationBanner = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Debug logging to verify user data in banner
-  console.log('EmailVerificationBanner - user:', user);
-  console.log('EmailVerificationBanner - user.emailVerified:', user?.emailVerified);
-
   // Only show banner if user exists and email is not verified
   const shouldShowBanner = user && !user.emailVerified;
 
