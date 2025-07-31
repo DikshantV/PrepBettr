@@ -1,4 +1,8 @@
-// tests/quota-middleware.test.ts
+// tests/quota-middleware.test.ts - DISABLED (quota system removed)
+// This test file has been disabled because the quota middleware has been removed
+// to eliminate payment and usage restrictions from the application.
+
+/*
 import { withQuota } from '@/lib/middleware/quota-middleware';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { subscriptionService } from '@/lib/services/subscription-service';
@@ -453,3 +457,4 @@ describe('Quota Middleware', () => {
     });
   });
 });
+*/

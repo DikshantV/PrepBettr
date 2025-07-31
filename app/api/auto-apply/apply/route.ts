@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ApplyToJobRequest, ApiResponse, JobApplication, AutomationLogEntry } from '@/types/auto-apply';
 import { v4 as uuidv4 } from 'uuid';
-import { withQuota } from '@/lib/middleware/quota-middleware';
+import { firebaseVerification } from '@/lib/services/firebase-verification';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 
@@ -155,26 +155,32 @@ function createAutomationLog(
   };
 }
 
-async function handleJobApplication(request: NextRequest, context?: { userId: string }) {
+async function handleJobApplication(request: NextRequest) {
   try {
     const body: ApplyToJobRequest = await request.json();
-    const { userId: bodyUserId, jobId, customCoverLetter, customResume, applicationData } = body;
+    const { jobId, customCoverLetter, customResume, applicationData } = body;
     
-    // Get user ID from context (passed by middleware) or fallback to body in dev mode
-    let userId = context?.userId || bodyUserId;
+    // Extract session cookie and verify user authentication
+    const sessionCookie = request.cookies.get('session')?.value;
     
-    // In development mode, allow passing userId in request body as fallback
-    if (!userId && process.env.NODE_ENV !== 'production') {
-      console.log('[DEV MODE] No userId in context, using body or generating mock ID');
-      userId = bodyUserId || 'dev-user-' + Date.now();
-    }
-    
-    if (!userId) {
+    if (!sessionCookie) {
       return NextResponse.json(
-        { success: false, error: 'User ID not available', timestamp: new Date().toISOString() } as ApiResponse<null>,
+        { success: false, error: 'Authentication required', timestamp: new Date().toISOString() } as ApiResponse<null>,
         { status: 401 }
       );
     }
+    
+    // Verify the session token
+    const verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
+    
+    if (!verificationResult.success || !verificationResult.decodedToken) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid session', timestamp: new Date().toISOString() } as ApiResponse<null>,
+        { status: 401 }
+      );
+    }
+    
+    const userId = verificationResult.decodedToken.uid;
 
     if (!jobId) {
       return NextResponse.json(
@@ -337,12 +343,8 @@ async function handleJobApplication(request: NextRequest, context?: { userId: st
   }
 }
 
-// Apply quota middleware to the POST handler
-export const POST = withQuota({
-  featureKey: 'autoApply',
-  limitFree: 3, // Free users can apply to 3 jobs
-  usageDocId: undefined // Use the authenticated user's ID
-})(handleJobApplication);
+// POST handler without quota restrictions
+export const POST = handleJobApplication;
 
 // GET endpoint for retrieving application status
 export async function GET(request: NextRequest) {

@@ -2,7 +2,6 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { Mona_Sans } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { UsageProvider } from "@/contexts/UsageContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { RouterLoadingHandler } from "@/components/RouterLoadingHandler";
 import Providers from "./providers";
@@ -55,9 +54,7 @@ export default function RootLayout({
             <LoadingProvider>
                 <RouterLoadingHandler />
                 <AuthProvider>
-                    <UsageProvider>
-                        {children}
-                    </UsageProvider>
+                    {children}
                 </AuthProvider>
             </LoadingProvider>
         </Providers>

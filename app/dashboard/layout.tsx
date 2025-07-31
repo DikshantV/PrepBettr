@@ -1,10 +1,9 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
-import { getUserInterviews, getPublicInterviews, getUserUsage } from "@/lib/actions/dashboard.action";
+import { getUserInterviews, getPublicInterviews } from "@/lib/actions/dashboard.action";
 import AuthenticatedLayout from "@/components/authenticated-layout";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { UsageProvider } from "@/contexts/UsageContext";
 import DashboardClient from "./DashboardClient";
 
 // Force dynamic rendering since we use cookies
@@ -26,11 +25,9 @@ export default async function Layout({ children }: DashboardLayoutProps) {
   
   return (
     <AuthProvider initialUser={user}>
-    <UsageProvider>
-        <AuthenticatedLayout>
-          {children}
-        </AuthenticatedLayout>
-      </UsageProvider>
+      <AuthenticatedLayout>
+        {children}
+      </AuthenticatedLayout>
     </AuthProvider>
   );
 }

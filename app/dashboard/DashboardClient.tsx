@@ -7,16 +7,13 @@ import BanterLoader from "@/components/ui/BanterLoader";
 import { Button } from "@/components/ui/button";
 import InterviewCardClient from "@/components/InterviewCardClient";
 import { useAuth } from "@/contexts/AuthContext";
-import { FreeBanner } from "@/components/FreeBanner";
-import { UserUsageCounters } from "@/types/subscription";
 
 interface DashboardClientProps {
   userInterviews: Interview[];
   publicInterviews: Interview[];
-  usage: UserUsageCounters | null;
 }
 
-export default function DashboardClient({ userInterviews, publicInterviews, usage }: DashboardClientProps) {
+export default function DashboardClient({ userInterviews, publicInterviews }: DashboardClientProps) {
     const { user, loading } = useAuth();
 
     // Show loading state while auth is being determined
@@ -57,7 +54,6 @@ export default function DashboardClient({ userInterviews, publicInterviews, usag
 
     return (
         <>
-            <FreeBanner />
             <section className="card-cta">
                 <div className="flex flex-col gap-6 max-w-lg">
                     <h2 className="text-white dark:text-white">Get Interview-Ready with AI-Powered Practice & Feedback</h2>
