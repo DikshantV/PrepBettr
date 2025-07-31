@@ -4,6 +4,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { LicenseKey, EmailVerification, AllowListEntry } from '@/types/subscription';
 import { DodoPayments } from 'dodopayments';
+import { awsSESService } from './aws-ses-service';
 
 export class LicenseKeyService {
   private db = getAdminFirestore();
@@ -331,12 +332,13 @@ export class LicenseKeyService {
         content: emailContent
       });
 
-      // TODO: Integrate with your email service (SendGrid, AWS SES, etc.)
-      // await emailService.send({
-      //   to: email,
-      //   subject: 'Your PrepBettr Premium License Key',
-      //   html: emailContent
-      // });
+      const { success, error } = await awsSESService.sendEmail({
+        to: email,
+        subject: 'Your PrepBettr Premium License Key',
+        html: emailContent
+      });
+
+      if (!success) throw new Error(error);
 
       return { success: true };
 

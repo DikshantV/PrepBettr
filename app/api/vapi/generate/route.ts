@@ -56,8 +56,25 @@ async function handleInterviewGeneration(request: NextRequest, context?: { userI
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        console.error("Error:", error);
-        return NextResponse.json({ success: false, error: error }, { status: 500 });
+        console.error("Error generating interview:", error);
+        console.error("Error details:", {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            name: error instanceof Error ? error.name : undefined,
+            userid,
+            type,
+            role,
+            level,
+            techstack,
+            amount
+        });
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ 
+            success: false, 
+            error: errorMessage,
+            details: error instanceof Error ? error.name : 'Unknown error type'
+        }, { status: 500 });
     }
 }
 

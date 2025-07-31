@@ -79,11 +79,13 @@ export function withQuota(options: WithQuotaOptions) {
         const customUsageDocId = options.usageDocId || userId;
 
         // Check quota and get user data
+        console.log(`[QUOTA] Checking quota for user ${userId}, feature: ${options.featureKey}`);
         const quotaResult = await checkUserQuota(
           customUsageDocId,
           options.featureKey,
           options.limitFree
         );
+        console.log(`[QUOTA] Quota check result:`, quotaResult);
 
         if (!quotaResult.canProceed) {
           // Return 402 Payment Required with upgrade CTA
