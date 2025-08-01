@@ -23,7 +23,9 @@ const testPayload = {
 // Create signature like VAPI would
 const secret = process.env.VAPI_WEBHOOK_SECRET;
 const body = JSON.stringify(testPayload);
-const signature = crypto.createHmac('sha256', secret).update(body, 'utf8').digest('hex');
+const timestamp = Math.floor(Date.now() / 1000).toString(); // Current timestamp in seconds
+const messageToSign = timestamp + body; // VAPI signature format: timestamp + payload
+const signature = crypto.createHmac('sha256', secret).update(messageToSign, 'utf8').digest('hex');
 
 console.log('Test payload:', JSON.stringify(testPayload, null, 2));
 console.log('Expected signature:', signature);
@@ -38,7 +40,8 @@ async function testWebhook() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-vapi-signature': signature
+        'x-vapi-signature': signature,
+        'x-vapi-timestamp': timestamp
       },
       body: body
     });
