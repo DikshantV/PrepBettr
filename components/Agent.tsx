@@ -80,27 +80,35 @@ const Agent = ({
         };
 
         const onMessage = (message: Message) => {
+            console.log('📨 VAPI Message received:', message);
             if (message.type === "transcript" && message.transcriptType === "final") {
                 const newMessage = { role: message.role, content: message.transcript };
+                console.log('📝 Adding transcript message:', newMessage);
                 setMessages((prev) => [...prev, newMessage]);
             } else if (message.type === "function-call") {
+                console.log('🔧 VAPI Function call received:', message);
                 // Handle VAPI function calls for interview generation
                 handleFunctionCall(message);
+            } else {
+                console.log('🔍 Other message type:', message.type, message);
             }
         };
 
         const onSpeechStart = () => {
-            console.log("speech start");
+            console.log("🎤 Speech start");
             setIsSpeaking(true);
         };
 
         const onSpeechEnd = () => {
-            console.log("speech end");
+            console.log("🎤 Speech end");
             setIsSpeaking(false);
         };
 
         const onError = (error: Error) => {
-            console.log("Error:", error);
+            console.error("❌ VAPI Error:", error);
+            console.error("❌ Error details:", JSON.stringify(error, null, 2));
+            setCallStatus(CallStatus.INACTIVE);
+            alert(`VAPI Error: ${error.message}`);
         };
 
         vapi.on("call-start", onCallStart);
@@ -157,6 +165,7 @@ const Agent = ({
 
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
+        console.log('🚀 Starting VAPI call with type:', type);
 
         // VAPI Variable Contract: Extract first name for workflow placeholders
         // This value maps to {{firstName}} and {{candidateName}} in VAPI workflows
@@ -174,29 +183,45 @@ const Agent = ({
                 serverMessages: [],
             };
             
-            console.log('VAPI Debug - Assistant ID:', assistantId);
-            console.log('VAPI Debug - Config:', assistantConfig);
-            console.log('VAPI Debug - firstName:', firstName);
+            console.log('🔧 VAPI Debug - Assistant ID:', assistantId);
+            console.log('🔧 VAPI Debug - Config:', assistantConfig);
+            console.log('🔧 VAPI Debug - firstName:', firstName);
+            console.log('🔧 VAPI Debug - Type:', type);
+            console.log('🔧 VAPI Debug - UserName:', userName);
+            console.log('🔧 VAPI Debug - UserID:', userId);
             
             if (!assistantId) {
-                console.error('NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set in environment variables');
+                console.error('❌ NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set in environment variables');
+                console.error('❌ Available env vars:', Object.keys(process.env).filter(key => key.includes('VAPI')));
                 setCallStatus(CallStatus.INACTIVE);
                 return;
             }
             
             try {
-                await vapi.start(assistantId, {
+                console.log('🎯 Starting VAPI assistant with config:', {
+                    assistantId,
+                    variableValues: { username: firstName },
+                    clientMessages: [],
+                    serverMessages: []
+                });
+                
+                const result = await vapi.start(assistantId, {
                     variableValues: {
                         username: firstName, // → {{username}} placeholder in VAPI assistant (sends firstName as username)
                     },
                     clientMessages: [],
                     serverMessages: [],
                 });
+                
+                console.log('✅ VAPI start result:', result);
             } catch (error) {
-                console.error('Failed to start VAPI assistant:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
+                console.error('❌ Failed to start VAPI assistant:', error);
+                console.error('❌ Error details:', JSON.stringify(error, null, 2));
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
                 setCallStatus(CallStatus.INACTIVE);
-                throw error;
+                alert(`Failed to start interview: ${error.message}`);
+                return;
             }
         } else {
             // Format questions for VAPI workflow consumption
