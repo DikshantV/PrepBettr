@@ -279,6 +279,55 @@ export async function POST(request: NextRequest) {
           });
         }
       }
+    } else if (message.type === 'tool-calls') {
+      // Handle the new VAPI tool-calls format
+      console.log('Handling tool-calls format');
+      const toolCalls = message.toolCalls || message.toolCallList;
+      
+      if (toolCalls && toolCalls.length > 0) {
+        const toolCall = toolCalls[0];
+        
+        if (toolCall.function && toolCall.function.name === 'generate_interview_questions') {
+          try {
+            const parameters = toolCall.function.arguments;
+            console.log('Tool call parameters:', JSON.stringify(parameters, null, 2));
+            const questionsText = await generateInterviewQuestions(parameters);
+            
+            // Parse the JSON string returned by Gemini into an array
+            let questionsArray: string[];
+            try {
+              questionsArray = JSON.parse(questionsText);
+              console.log('Successfully parsed questions array:', questionsArray);
+            } catch (parseError) {
+              console.error('Failed to parse questions JSON:', parseError);
+              console.error('Raw questions text:', questionsText);
+              // Return a fallback error message as an array
+              questionsArray = [
+                "I apologize, but I'm experiencing technical difficulties generating interview questions at the moment.",
+                "Please try again in a few moments.",
+                "In the meantime, I can still conduct a general interview discussion with you."
+              ];
+            }
+            
+            // Return the tool result in the format VAPI expects
+            return NextResponse.json({
+              results: [{
+                toolCallId: toolCall.id,
+                result: questionsArray
+              }]
+            });
+            
+          } catch (error) {
+            console.error('Error in tool call:', error);
+            return NextResponse.json({
+              results: [{
+                toolCallId: toolCall.id,
+                error: (error as Error).message || 'Failed to generate interview questions'
+              }]
+            });
+          }
+        }
+      }
     }
 
     // For other message types, just acknowledge

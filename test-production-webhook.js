@@ -31,9 +31,9 @@ console.log('Test payload:', JSON.stringify(testPayload, null, 2));
 console.log('Expected signature:', signature);
 console.log('Webhook secret configured:', !!secret);
 
-// Test the webhook locally
+// Test the webhook on production
 async function testWebhook() {
-  const url = 'http://localhost:3000/api/vapi/webhook';
+  const url = 'https://www.prepbettr.com/api/vapi/webhook';
   
   try {
     const response = await fetch(url, {
