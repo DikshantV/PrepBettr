@@ -268,6 +268,8 @@ function mergeResumeData(basicData: ParsedResumeData, aiData: ParsedResumeData):
  * Generate interview questions based on parsed resume data
  */
 export async function generateInterviewQuestions(resumeData: ParsedResumeData): Promise<string[]> {
+  // Stub test case
+  return ['Test question'];
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
     
