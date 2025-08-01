@@ -5,12 +5,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { vapi } from "@/lib/vapi.sdk";
-import { interviewer } from "@/constants";
+import { vocode } from "@/lib/vocode.sdk";
+import { vocodeOpenSource } from "@/lib/vocode-opensource";
+// import { vapi } from "@/lib/vapi.sdk"; // Commented out for Vocode testing
+import { vocodeInterviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
-// Import VAPI types
-import type { Message, FunctionCallMessage, GenerateAssistantVariables, InterviewWorkflowVariables } from "@/types/vapi";
+// Import Vocode types
+import type { Message, FunctionCallMessage, GenerateAssistantVariables, InterviewWorkflowVariables } from "@/types/vocode";
 
 enum CallStatus {
     INACTIVE = "INACTIVE",
@@ -65,9 +67,9 @@ const Agent = ({
     }, []);
 
     const handleFunctionCall = useCallback(async (message: FunctionCallMessage) => {
-        // This function is now a placeholder as VAPI directly calls the webhook.
+        // This function is now a placeholder as Vocode directly calls the webhook.
         // We can add client-side logic here if needed, but for now, we just log it.
-        console.log('VAPI Function Call received on client:', message.functionCall);
+        console.log('Vocode Function Call received on client:', message.functionCall);
     }, []);
 
     useEffect(() => {
@@ -80,14 +82,14 @@ const Agent = ({
         };
 
         const onMessage = (message: Message) => {
-            console.log('📨 VAPI Message received:', message);
+            console.log('📨 Vocode Message received:', message);
             if (message.type === "transcript" && message.transcriptType === "final") {
                 const newMessage = { role: message.role, content: message.transcript };
                 console.log('📝 Adding transcript message:', newMessage);
                 setMessages((prev) => [...prev, newMessage]);
             } else if (message.type === "function-call") {
-                console.log('🔧 VAPI Function call received:', message);
-                // Handle VAPI function calls for interview generation
+                console.log('🔧 Vocode Function call received:', message);
+                // Handle Vocode function calls for interview generation
                 handleFunctionCall(message);
             } else {
                 console.log('🔍 Other message type:', message.type, message);
@@ -105,26 +107,40 @@ const Agent = ({
         };
 
         const onError = (error: Error) => {
-            console.error("❌ VAPI Error:", error);
+            console.error("❌ Vocode Error:", error);
             console.error("❌ Error details:", JSON.stringify(error, null, 2));
             setCallStatus(CallStatus.INACTIVE);
-            alert(`VAPI Error: ${error.message}`);
+            alert(`Vocode Error: ${error.message}`);
         };
 
-        vapi.on("call-start", onCallStart);
-        vapi.on("call-end", onCallEnd);
-        vapi.on("message", onMessage);
-        vapi.on("speech-start", onSpeechStart);
-        vapi.on("speech-end", onSpeechEnd);
-        vapi.on("error", onError);
+    // Use Vocode and select between hosted or open source
+    const hasVocodeHostedKeys = process.env.NEXT_PUBLIC_VOCODE_API_KEY && process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
+    const activeSDK = hasVocodeHostedKeys ? vocode : vocodeOpenSource;
+
+    activeSDK.on("call-start", onCallStart);
+    activeSDK.on("call-end", onCallEnd);
+    activeSDK.on("message", onMessage);
+    activeSDK.on("speech-start", onSpeechStart);
+    activeSDK.on("speech-end", onSpeechEnd);
+    activeSDK.on("error", onError);
 
         return () => {
-            vapi.off("call-start", onCallStart);
-            vapi.off("call-end", onCallEnd);
-            vapi.off("message", onMessage);
-            vapi.off("speech-start", onSpeechStart);
-            vapi.off("speech-end", onSpeechEnd);
-            vapi.off("error", onError);
+            // Clean up event listeners based on which SDK is active
+            if (activeSDK === vocodeOpenSource) {
+                activeSDK.off("call-start", onCallStart);
+                activeSDK.off("call-end", onCallEnd);
+                activeSDK.off("message", onMessage);
+                activeSDK.off("speech-start", onSpeechStart);
+                activeSDK.off("speech-end", onSpeechEnd);
+                activeSDK.off("error", onError);
+            } else {
+                activeSDK.off("conversation-start", onCallStart);
+                activeSDK.off("conversation-end", onCallEnd);
+                activeSDK.off("message", onMessage);
+                activeSDK.off("speech-start", onSpeechStart);
+                activeSDK.off("speech-end", onSpeechEnd);
+                activeSDK.off("error", onError);
+            }
         };
     }, [handleFunctionCall]);
 
@@ -165,91 +181,108 @@ const Agent = ({
 
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
-        console.log('🚀 Starting VAPI call with type:', type);
+        console.log('🚀 Starting call with type:', type);
 
-        // VAPI Variable Contract: Extract first name for workflow placeholders
-        // This value maps to {{firstName}} and {{candidateName}} in VAPI workflows
+        // Get the active SDK based on configuration
+        const voiceProvider = process.env.NEXT_PUBLIC_VOICE_PROVIDER;
+        const hasVocodeHostedKeys = process.env.NEXT_PUBLIC_VOCODE_API_KEY && process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
+        
+        let activeSDK;
+        if (hasVocodeHostedKeys) {
+            activeSDK = vocode; // Use hosted Vocode service
+        } else {
+            activeSDK = vocodeOpenSource; // Use open source implementation
+        }
+
+        // Extract first name for workflow placeholders
         const firstName = userName.split(' ')[0];
 
-        if (type === "generate") {
-            // Generate Interview Assistant
-            // Uses VAPI Assistant for dynamic question generation and personalized greeting
-            const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
-            const assistantConfig = {
-                variableValues: {
-                    username: firstName, // → {{username}} placeholder in VAPI assistant (sends firstName as username)
-                } as GenerateAssistantVariables,
-                clientMessages: [],
-                serverMessages: [],
-            };
-            
-            console.log('🔧 VAPI Debug - Assistant ID:', assistantId);
-            console.log('🔧 VAPI Debug - Config:', assistantConfig);
-            console.log('🔧 VAPI Debug - firstName:', firstName);
-            console.log('🔧 VAPI Debug - Type:', type);
-            console.log('🔧 VAPI Debug - UserName:', userName);
-            console.log('🔧 VAPI Debug - UserID:', userId);
-            
-            if (!assistantId) {
-                console.error('❌ NEXT_PUBLIC_VAPI_ASSISTANT_ID is not set in environment variables');
-                console.error('❌ Available env vars:', Object.keys(process.env).filter(key => key.includes('VAPI')));
-                setCallStatus(CallStatus.INACTIVE);
-                return;
-            }
-            
-            try {
-                console.log('🎯 Starting VAPI assistant with config:', {
-                    assistantId,
-                    variableValues: { username: firstName },
-                    clientMessages: [],
-                    serverMessages: []
-                });
-                
-                const result = await vapi.start(assistantId, {
-                    variableValues: {
-                        username: firstName, // → {{username}} placeholder in VAPI assistant (sends firstName as username)
-                    },
-                    clientMessages: [],
-                    serverMessages: [],
-                });
-                
-                console.log('✅ VAPI start result:', result);
-            } catch (error) {
-                console.error('❌ Failed to start VAPI assistant:', error);
-                console.error('❌ Error details:', JSON.stringify(error, null, 2));
-                console.error('❌ Error message:', error.message);
-                console.error('❌ Error stack:', error.stack);
-                setCallStatus(CallStatus.INACTIVE);
-                alert(`Failed to start interview: ${error.message}`);
-                return;
-            }
-        } else {
-            // Format questions for VAPI workflow consumption
-            // Questions are formatted as bulleted list for voice assistant readability
-            let formattedQuestions = "";
-            if (questions) {
-                formattedQuestions = questions
-                    .map((question) => `- ${question}`)
-                    .join("\n");
-            }
+        try {
+            if (type === "generate") {
+                // Generate Interview Assistant
+                if (activeSDK === vocodeOpenSource) {
+                    // Use open source Vocode with interviewer config for generation
+                    await activeSDK.start(vocodeInterviewer, {
+                        variableValues: {
+                            username: firstName,
+                            candidateName: firstName
+                        },
+                        clientMessages: [],
+                        serverMessages: [],
+                    });
+                } else {
+                    // Use hosted Vocode assistant
+                    const assistantId = process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
+                    if (!assistantId) {
+                        console.error('❌ NEXT_PUBLIC_VOCODE_ASSISTANT_ID is not set');
+                        setCallStatus(CallStatus.INACTIVE);
+                        return;
+                    }
+                    
+                    await activeSDK.start(assistantId, {
+                        variableValues: {
+                            username: firstName,
+                        } as GenerateAssistantVariables,
+                        clientMessages: [],
+                        serverMessages: [],
+                    });
+                }
+            } else {
+                // Regular Interview
+                let formattedQuestions = "";
+                if (questions) {
+                    formattedQuestions = questions
+                        .map((question) => `- ${question}`)
+                        .join("\n");
+                }
 
-            // Interview Workflow Variables
-            // Maps to VAPI placeholders: {{questions}}, {{candidateName}}
-            await vapi.start(interviewer, {
-                variableValues: {
-                    questions: formattedQuestions,  // → {{questions}} in VAPI workflow
-                    candidateName: firstName,       // → {{candidateName}} in VAPI workflow greeting
-                } as InterviewWorkflowVariables,
-                clientMessages: [],
-                serverMessages: [],
-            });
+                if (activeSDK === vocodeOpenSource) {
+                    // Open source Vocode
+                    await activeSDK.start(vocodeInterviewer, {
+                        variableValues: {
+                            questions: formattedQuestions,
+                            candidateName: firstName,
+                        },
+                        clientMessages: [],
+                        serverMessages: [],
+                    });
+                } else {
+                    // Hosted Vocode or VAPI
+                    await activeSDK.start(vocodeInterviewer, {
+                        variableValues: {
+                            questions: formattedQuestions,
+                            candidateName: firstName,
+                        } as InterviewWorkflowVariables,
+                        clientMessages: [],
+                        serverMessages: [],
+                    });
+                }
+            }
+            
+            console.log('✅ Call started successfully');
+        } catch (error) {
+            console.error('❌ Failed to start call:', error);
+            setCallStatus(CallStatus.INACTIVE);
+            alert(`Failed to start interview: ${error.message}`);
         }
     };
 
 const handleDisconnect = async () => {
     try {
         setCallStatus(CallStatus.FINISHED);
-        vapi.stop();
+        
+        // Get the active SDK and stop it
+        const voiceProvider = process.env.NEXT_PUBLIC_VOICE_PROVIDER;
+        const hasVocodeHostedKeys = process.env.NEXT_PUBLIC_VOCODE_API_KEY && process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
+        
+        let activeSDK;
+        if (hasVocodeHostedKeys) {
+            activeSDK = vocode;
+        } else {
+            activeSDK = vocodeOpenSource;
+        }
+        
+        await activeSDK.stop();
         // Don't redirect - let user stay on interview page
     } catch (error) {
         console.error('Error ending call:', error);
@@ -319,9 +352,9 @@ const handleDisconnect = async () => {
 
             {messages.length > 0 && (
                 <div className="transcript-border">
-                    <div className="transcript">
-                        <div className="transcript-header">
-                            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Live Transcript</h4>
+                    <div className="dark-gradient rounded-2xl min-h-12 px-5 py-3 flex flex-col border-l-4 border-blue-500">
+                        <div className="transcript-header mb-3">
+                            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 text-left">Live Transcript</h4>
                         </div>
                         <div className="transcript-messages max-h-40 overflow-y-auto space-y-2">
                             {messages.map((message, index) => (
@@ -330,8 +363,8 @@ const handleDisconnect = async () => {
                                     className={cn(
                                         "transcript-message p-2 rounded-lg",
                                         message.role === "assistant" 
-                                            ? "bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500" 
-                                            : "bg-gray-50 dark:bg-gray-800/50 border-l-2 border-gray-400"
+                                            ? "bg-blue-50 dark:bg-blue-900/20" 
+                                            : "bg-gray-50 dark:bg-gray-800/50"
                                     )}
                                 >
                                     <div className="flex items-start space-x-2">

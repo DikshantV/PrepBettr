@@ -17,8 +17,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  typescript: {
+typescript: {
     ignoreBuildErrors: true,
+  },
+  env: {
+    NEXT_PUBLIC_VOICE_PROVIDER: process.env.NEXT_PUBLIC_VOICE_PROVIDER || 'vocode',
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

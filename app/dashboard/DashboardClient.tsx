@@ -77,7 +77,7 @@ export default function DashboardClient({ userInterviews, publicInterviews }: Da
 
 
             <section className="flex flex-col gap-6 mt-8">
-                <h2 className="text-white dark:text-white">Take Interviews</h2>
+                <h2 className="text-white dark:text-white">Mock Interviews</h2>
 
                 <div className="interviews-section">
                     {hasPublicInterviews ? (

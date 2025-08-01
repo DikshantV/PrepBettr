@@ -12,6 +12,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/",
     "test:quota": "jest tests/quota-middleware.test.ts",
+    "test:voice": "jest tests/webhook-integration.test.ts && playwright test e2e/vocode-websocket.spec.ts",
     "test:webhook": "jest tests/webhook-integration.test.ts",
     "test:webhook:emulator": "node tests/webhook-emulator-test.js",
     "test:e2e": "NODE_ENV=development playwright test",
@@ -29,7 +30,8 @@
     "test:hydration:headed": "NODE_ENV=development playwright test e2e/hydration.spec.ts --headed",
     "test:all": "npm run test:unit && npm run test:e2e:quota && npm run test:webhook:emulator",
     "test:ci": "npm run test:coverage && npm run test:e2e:quota",
-    "build:test": "npm run build && npm run test:hydration"
+    "build:test": "npm run build && npm run test:hydration",
+    "test:audio": "jest lib/audio/__tests__/micCapture.simple.test.js --testEnvironment=jsdom"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.17",
@@ -68,7 +70,6 @@
     "@uploadthing/dropzone": "^0.4.1",
     "@uploadthing/react": "^7.3.2",
     "@uploadthing/shared": "^7.1.9",
-    "@vapi-ai/web": "^2.3.0",
     "@vocode/vocode-api": "^0.0.48",
     "ai": "^4.3.15",
     "axios": "^1.10.0",
@@ -124,6 +125,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "jest-environment-node": "^30.0.5",
     "playwright": "^1.54.1",
     "tailwindcss": "^4",

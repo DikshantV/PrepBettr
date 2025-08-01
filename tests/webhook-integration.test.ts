@@ -417,4 +417,52 @@ describe('Webhook Integration Tests', () => {
       delete process.env.ALLOWED_WEBHOOK_IPS;
     });
   });
-});
+  });
+
+  describe('Vocode Signature Verification', () => {
+    const TEST_SECRET = process.env.VOCODE_WEBHOOK_SECRET || 'test_secret';
+
+    function createVocodeRequest(payload, signature) {
+      return {
+        method: 'POST',
+        headers: new Map([
+          ['content-type', 'application/json'],
+          ['x-vocode-signature', signature],
+          ['x-vocode-timestamp', Math.floor(Date.now() / 1000).toString()]
+        ]),
+        text: async () => JSON.stringify(payload)
+      };
+    }
+
+    function generateSignature(payload, timestamp) {
+      const message = timestamp + JSON.stringify(payload);
+      return crypto.createHmac('sha256', TEST_SECRET).update(message).digest('hex');
+    }
+
+    it('should accept requests with valid signatures', async () => {
+      const payload = { id: 'vocode_123', data: 'test' };
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const signature = generateSignature(payload, timestamp);
+      const request = createVocodeRequest(payload, signature);
+
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+    });
+
+    it('should reject requests with invalid signatures', async () => {
+      const payload = { id: 'vocode_123', data: 'test' };
+      const request = createVocodeRequest(payload, 'invalid_signature');
+
+      const response = await POST(request);
+      expect(response.status).toBe(401);
+    });
+
+    it('should reject requests with missing signatures', async () => {
+      const payload = { id: 'vocode_123', data: 'test' };
+      const request = createVocodeRequest(payload);
+      request.headers.delete('x-vocode-signature');
+
+      const response = await POST(request);
+      expect(response.status).toBe(401);
+    });
+  });
