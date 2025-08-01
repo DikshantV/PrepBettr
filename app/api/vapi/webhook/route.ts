@@ -1,20 +1,87 @@
 import crypto from 'crypto';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from 'next/server';
+import { writeFileSync, appendFileSync } from 'fs';
+import { join } from 'path';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-// Verify VAPI webhook signature
-function verifySignature(payload: string, signature: string, secret: string): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload, 'utf8')
-    .digest('hex');
+// Helper function to save webhook data to file
+function saveWebhookData(headers: { [key: string]: string }, body: string, timestamp: string) {
+  const logData = {
+    capturedAt: new Date().toISOString(),
+    timestamp,
+    headers,
+    rawBody: body,
+    bodyLength: body.length,
+    parsedBody: null as any
+  };
   
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expectedSignature, 'hex')
-  );
+  try {
+    logData.parsedBody = JSON.parse(body);
+  } catch (e) {
+    logData.parsedBody = { error: 'Failed to parse JSON', body };
+  }
+  
+  const logFile = join(process.cwd(), 'vapi-webhook-capture.json');
+  const logEntry = JSON.stringify(logData, null, 2) + '\n\n---\n\n';
+  
+  try {
+    appendFileSync(logFile, logEntry);
+    console.log('Webhook data saved to:', logFile);
+  } catch (error) {
+    console.error('Failed to save webhook data:', error);
+  }
+}
+
+// Verify VAPI webhook signature
+function verifySignature(
+  payload: string, 
+  signature: string, 
+  timestamp: string, 
+  secret: string,
+  messageId?: string
+): boolean {
+  try {
+    // Remove signature prefix if present (e.g., "sha256=")
+    const cleanSignature = signature.replace(/^sha256=/, '');
+    
+    // Create the message to sign: timestamp + payload (+ messageId if provided)
+    let messageToSign = timestamp + payload;
+    if (messageId) {
+      messageToSign += messageId;
+    }
+    
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(messageToSign, 'utf8')
+      .digest('hex');
+    
+    // Check if signatures have the same length before comparing
+    if (cleanSignature.length !== expectedSignature.length) {
+      return false;
+    }
+    
+    return crypto.timingSafeEqual(
+      Buffer.from(cleanSignature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+  } catch (error) {
+    console.error('Signature verification error:', error);
+    return false;
+  }
+}
+
+// Verify timestamp to prevent replay attacks (optional but recommended)
+function verifyTimestamp(timestamp: string, toleranceInSeconds: number = 300): boolean {
+  const now = Math.floor(Date.now() / 1000);
+  const webhookTime = parseInt(timestamp, 10);
+  
+  if (isNaN(webhookTime)) {
+    return false;
+  }
+  
+  return Math.abs(now - webhookTime) <= toleranceInSeconds;
 }
 
 // Generate interview questions using Gemini AI
@@ -64,20 +131,111 @@ async function generateInterviewQuestions(params: any): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
+    // COMPREHENSIVE LOGGING FOR WEBHOOK ANALYSIS
+    console.log('\n=== VAPI WEBHOOK REQUEST CAPTURED ===');
+    console.log('Timestamp:', new Date().toISOString());
+    
+    // Log ALL headers
+    console.log('\n--- ALL HEADERS ---');
+    const allHeaders: { [key: string]: string } = {};
+    request.headers.forEach((value, key) => {
+      allHeaders[key] = value;
+      console.log(`${key}: ${value}`);
+    });
+    
     // Get raw body for signature verification
     const body = await request.text();
+    
+    // Log the raw body
+    console.log('\n--- RAW BODY ---');
+    console.log('Body length:', body.length);
+    console.log('Raw body:', body);
+    
+    // Parse and log the JSON payload
+    let parsedPayload;
+    try {
+      parsedPayload = JSON.parse(body);
+      console.log('\n--- PARSED JSON PAYLOAD ---');
+      console.log(JSON.stringify(parsedPayload, null, 2));
+    } catch (parseError) {
+      console.log('\n--- BODY PARSE ERROR ---');
+      console.log('Error parsing JSON:', parseError);
+    }
+    
+    // Extract specific auth-related headers
     const signature = request.headers.get('x-vapi-signature');
+    const timestamp = request.headers.get('x-vapi-timestamp');
+    const messageId = request.headers.get('x-vapi-message-id'); // optional
+    const authorization = request.headers.get('authorization');
+    const userAgent = request.headers.get('user-agent');
+    const contentType = request.headers.get('content-type');
+    
+    console.log('\n--- KEY AUTH HEADERS ---');
+    console.log('x-vapi-signature:', signature);
+    console.log('x-vapi-timestamp:', timestamp);
+    console.log('x-vapi-message-id:', messageId);
+    console.log('authorization:', authorization);
+    console.log('user-agent:', userAgent);
+    console.log('content-type:', contentType);
+    
+    // Save webhook data to file for analysis
+    saveWebhookData(allHeaders, body, timestamp || 'no-timestamp');
+    console.log('\n--- WEBHOOK DATA SAVED TO FILE ---');
     
     if (!signature) {
       console.error('Missing signature header');
       return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
     }
+    
+    if (!timestamp) {
+      console.error('Missing timestamp header');
+      return NextResponse.json({ error: 'Missing timestamp' }, { status: 401 });
+    }
 
+    // Verify timestamp to prevent replay attacks
+    if (!verifyTimestamp(timestamp)) {
+      console.error('Invalid or expired timestamp');
+      return NextResponse.json({ error: 'Invalid timestamp' }, { status: 401 });
+    }
+
+    // Log signature verification details
+    console.log('\n--- SIGNATURE VERIFICATION ---');
+    console.log('Expected signature calculation:');
+    console.log('- Payload length:', body.length);
+    console.log('- Timestamp:', timestamp);
+    console.log('- Message ID:', messageId || 'not provided');
+    console.log('- Webhook secret available:', !!process.env.VAPI_WEBHOOK_SECRET);
+    
+    // Create verification message for logging
+    let messageToSign = timestamp + body;
+    if (messageId) {
+      messageToSign += messageId;
+    }
+    console.log('- Message to sign length:', messageToSign.length);
+    
+    // Calculate expected signature for logging
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.VAPI_WEBHOOK_SECRET!)
+      .update(messageToSign, 'utf8')
+      .digest('hex');
+    console.log('- Expected signature:', expectedSignature);
+    console.log('- Received signature:', signature);
+    console.log('- Signatures match:', signature?.replace(/^sha256=/, '') === expectedSignature);
+    
     // Verify webhook signature
-    if (!verifySignature(body, signature, process.env.VAPI_WEBHOOK_SECRET!)) {
-      console.error('Invalid signature');
+    const signatureValid = verifySignature(body, signature, timestamp, process.env.VAPI_WEBHOOK_SECRET!, messageId || undefined);
+    console.log('- Signature verification result:', signatureValid);
+    
+    if (!signatureValid) {
+      console.error('\n--- SIGNATURE VERIFICATION FAILED ---');
+      console.error('This indicates either:');
+      console.error('1. Wrong webhook secret');
+      console.error('2. Payload modification');
+      console.error('3. Incorrect signature format');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
+    
+    console.log('\n--- SIGNATURE VERIFICATION PASSED ---');
 
     const data = JSON.parse(body);
     const { message } = data;

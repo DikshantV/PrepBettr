@@ -1,0 +1,75 @@
+{
+  "id": "155abac6-01a7-4004-b3c7-5fc4cfcdeea7",
+  "orgId": "5b2c94a0-942e-48cd-99f6-8b7fb55b3e65",
+  "name": "PrepBettr Interview Assistant",
+  "voice": {
+    "voiceId": "Elliot",
+    "provider": "vapi"
+  },
+  "createdAt": "2025-07-29T08:42:16.402Z",
+  "updatedAt": "2025-08-01T05:08:18.716Z",
+  "model": {
+    "model": "gpt-4",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "generate_interview_questions",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "role",
+              "interview_type",
+              "experience_level",
+              "question_count",
+              "technologies"
+            ],
+            "properties": {
+              "role": {
+                "type": "string"
+              },
+              "technologies": {
+                "type": "string"
+              },
+              "interview_type": {
+                "type": "string"
+              },
+              "question_count": {
+                "type": "integer"
+              },
+              "experience_level": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Generate interview questions via Gemini API"
+        }
+      }
+    ],
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are PrepBettr, an AI interview assistant. Follow this EXACT flow:\n1. Greet: ask for job role\n2. Collect sequentially: interview type, experience level, question count, technologies/skills\n3. Confirm details and await 'yes'\n4. Call generate_interview_questions function with collected data\n5. Ask each generated question, transcribe user answers, give feedback\n6. Summarize performance at end.\nNever skip steps."
+      }
+    ],
+    "provider": "openai",
+    "maxTokens": 200,
+    "temperature": 0.7
+  },
+  "firstMessage": "Hi there! I'm PrepBettr—your interview prep assistant. Let's start with your job role.",
+  "voicemailMessage": "Please call back when you're available.",
+  "endCallMessage": "Goodbye.",
+  "transcriber": {
+    "model": "nova-2",
+    "language": "en",
+    "provider": "deepgram"
+  },
+  "serverUrl": "https://www.prepbettr.com/api/vapi/webhook",
+  "firstMessageMode": "assistant-speaks-first",
+  "backgroundDenoisingEnabled": true,
+  "server": {
+    "url": "https://www.prepbettr.com/api/vapi/webhook",
+    "timeoutSeconds": 20
+  },
+  "isServerUrlSecretSet": true
+}
