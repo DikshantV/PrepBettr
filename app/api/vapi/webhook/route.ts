@@ -249,11 +249,27 @@ export async function POST(request: NextRequest) {
       if (functionCall.name === 'generate_interview_questions') {
         try {
           console.log('Function call parameters:', JSON.stringify(functionCall.parameters, null, 2));
-          const questions = await generateInterviewQuestions(functionCall.parameters);
+          const questionsText = await generateInterviewQuestions(functionCall.parameters);
           
-          // Return the function result
+          // Parse the JSON string returned by Gemini into an array
+          let questionsArray: string[];
+          try {
+            questionsArray = JSON.parse(questionsText);
+            console.log('Successfully parsed questions array:', questionsArray);
+          } catch (parseError) {
+            console.error('Failed to parse questions JSON:', parseError);
+            console.error('Raw questions text:', questionsText);
+            // Return a fallback error message as an array
+            questionsArray = [
+              "I apologize, but I'm experiencing technical difficulties generating interview questions at the moment.",
+              "Please try again in a few moments.",
+              "In the meantime, I can still conduct a general interview discussion with you."
+            ];
+          }
+          
+          // Return the function result as an array
           return NextResponse.json({
-            result: questions
+            result: questionsArray
           });
           
         } catch (error) {

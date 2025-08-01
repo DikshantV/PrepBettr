@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
-import { useFeedback } from "@/lib/hooks/useFirestore";
+import { useServerFeedback } from "@/lib/hooks/useServerFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
@@ -29,7 +29,7 @@ const InterviewCardClient = ({
     const { user } = useAuth();
     const userId = user?.id;
     
-    const { feedback, loading: feedbackLoading } = useFeedback(
+    const { feedback, loading: feedbackLoading } = useServerFeedback(
         userId && interviewId ? interviewId : null
     );
 

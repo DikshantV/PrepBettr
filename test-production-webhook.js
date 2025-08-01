@@ -23,22 +23,25 @@ const testPayload = {
 // Create signature like VAPI would
 const secret = process.env.VAPI_WEBHOOK_SECRET;
 const body = JSON.stringify(testPayload);
-const signature = crypto.createHmac('sha256', secret).update(body, 'utf8').digest('hex');
+const timestamp = Math.floor(Date.now() / 1000).toString();
+const messageToSign = timestamp + body;
+const signature = crypto.createHmac('sha256', secret).update(messageToSign, 'utf8').digest('hex');
 
 console.log('Test payload:', JSON.stringify(testPayload, null, 2));
 console.log('Expected signature:', signature);
 console.log('Webhook secret configured:', !!secret);
 
-// Test the webhook on production
+// Test the webhook locally
 async function testWebhook() {
-  const url = 'https://www.prepbettr.com/api/vapi/webhook';
+  const url = 'http://localhost:3000/api/vapi/webhook';
   
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-vapi-signature': signature
+        'x-vapi-signature': signature,
+        'x-vapi-timestamp': timestamp
       },
       body: body
     });

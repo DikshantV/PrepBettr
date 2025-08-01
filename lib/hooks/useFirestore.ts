@@ -13,6 +13,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/firebase/client';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Hook for fetching user's own interviews
 export function useUserInterviews() {
@@ -172,7 +174,21 @@ export function useFeedback(interviewId: string | null) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [localLoading, setLocalLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [firebaseReady, setFirebaseReady] = useState(false);
   const { user, loading: authLoading } = useAuth();
+
+  // Wait for Firebase Auth to be ready
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setFirebaseReady(true);
+      if (!firebaseUser && user) {
+        // Firebase auth is not ready but we have a user from server context
+        console.log('Firebase auth state not ready, but user exists from server');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -182,7 +198,7 @@ export function useFeedback(interviewId: string | null) {
         return;
       }
       
-      if (authLoading) return; // Wait for auth to resolve
+      if (authLoading || !firebaseReady) return; // Wait for both auth and Firebase to resolve
       
       if (!user) {
         setFeedback(null);
@@ -190,9 +206,20 @@ export function useFeedback(interviewId: string | null) {
         return;
       }
 
+      // Check if Firebase user is authenticated
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.error('Firebase Auth user not found, but user context exists');
+        setError('Authentication required. Please sign in again.');
+        setLocalLoading(false);
+        return;
+      }
+
       try {
         setLocalLoading(true);
         setError(null);
+
+        console.log(`Fetching feedback for interview ${interviewId} by user ${user.id}`);
 
         const feedbackQuery = query(
           collection(db, 'feedback'),
@@ -206,19 +233,29 @@ export function useFeedback(interviewId: string | null) {
         if (!querySnapshot.empty) {
           const feedbackDoc = querySnapshot.docs[0];
           setFeedback({ id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback);
+          console.log('Feedback fetched successfully');
         } else {
           setFeedback(null);
+          console.log('No feedback found for this interview');
         }
       } catch (err) {
         console.error('Error fetching feedback:', err);
-        setError('Failed to load feedback');
+        
+        // Check for specific Firebase errors
+        if (err.code === 'permission-denied') {
+          setError('Permission denied. Please check your authentication.');
+        } else if (err.message?.includes('Missing or insufficient permissions')) {
+          setError('Insufficient permissions to access feedback data.');
+        } else {
+          setError('Failed to load feedback');
+        }
       } finally {
         setLocalLoading(false);
       }
     };
 
     fetchFeedback();
-  }, [interviewId, user, authLoading]);
+  }, [interviewId, user, authLoading, firebaseReady]);
 
-  return { feedback, loading: authLoading || localLoading, error };
+  return { feedback, loading: authLoading || localLoading || !firebaseReady, error };
 }
