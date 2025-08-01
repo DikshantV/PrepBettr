@@ -1,0 +1,49 @@
+PREPBETTR VAPI CONFIGURATION SUMMARY
+====================================
+Generated: August 1, 2025
+
+🔑 KEY CONFIGURATION VALUES
+--------------------------
+Assistant ID: 155abac6-01a7-4004-b3c7-5fc4cfcdeea7
+Organization ID: 5b2c94a0-942e-48cd-99f6-8b7fb55b3e65
+
+🌐 SERVER SETTINGS (CURRENT)
+---------------------------
+serverUrl: https://www.prepbettr.com/api/vapi/webhook
+serverUrlSecret: 5bb0210b0eb58895fc76c7a06746336a84960769a0b1dba36eacda39b1311767
+isServerUrlSecretSet: true
+
+🔐 AUTHENTICATION METHOD
+------------------------
+✅ HMAC (Server URL Secret) - ENABLED
+❌ OAuth2 - NOT ENABLED
+
+📝 ENVIRONMENT VARIABLES STATUS
+------------------------------
+✅ VAPI_API_KEY: Set
+✅ NEXT_PUBLIC_VAPI_WEB_TOKEN: Set  
+✅ NEXT_PUBLIC_VAPI_ASSISTANT_ID: Set
+✅ VAPI_WEBHOOK_URL: Set (https://prepbettr.com/api/vapi/webhook)
+✅ VAPI_WEBHOOK_SECRET: Set
+
+🚀 DEPLOYMENT STATUS
+-------------------
+✅ Firebase: Fully configured
+✅ AWS SES: Configured
+✅ GitHub Actions: Basic CI setup
+❌ Vercel: Not detected locally
+❌ Some DODO Payment keys: Placeholder values
+
+📋 NEXT STEPS NEEDED
+-------------------
+1. Verify Vercel environment variables match .env.local
+2. Check GitHub repository secrets for deployment
+3. Complete DODO Payments configuration
+4. Test webhook authentication with current secret
+
+🔍 CRITICAL FINDINGS
+-------------------
+- VAPI is using HMAC authentication (NOT OAuth2)
+- Webhook URL points to www.prepbettr.com domain
+- Server URL secret is properly configured
+- All core VAPI credentials are present and configured
