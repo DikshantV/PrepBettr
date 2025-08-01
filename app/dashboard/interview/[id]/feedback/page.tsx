@@ -4,7 +4,8 @@ import dayjs from "dayjs";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect, useParams } from "next/navigation";
-import { useFeedback, useInterview } from "@/lib/hooks/useFirestore";
+import { useInterview } from "@/lib/hooks/useFirestore";
+import { useServerFeedback } from "@/lib/hooks/useServerFeedback";
 import { Button } from "@/components/ui/button";
 import { useLoading } from "@/contexts/LoadingContext";
 import { useEffect } from "react";
@@ -12,10 +13,37 @@ import { useEffect } from "react";
 const Feedback = () => {
     const params = useParams();
     const id = params?.id as string;
-    const { feedback, loading: feedbackLoading, error: feedbackError } = useFeedback(id);
+    const { feedback, loading: feedbackLoading, error: feedbackError } = useServerFeedback(id);
     const { interview, loading: interviewLoading, error: interviewError } = useInterview(id);
 
     if (!interviewLoading && !interview) redirect("/");
+
+    // Show error message if feedback loading failed
+    if (feedbackError) {
+        return (
+            <section className="section-feedback">
+                <div className="flex flex-row justify-center">
+                    <h1 className="text-4xl font-semibold text-white">
+                        Error Loading Feedback
+                    </h1>
+                </div>
+                <div className="feedback-content">
+                    <p className="text-red-400 text-center">
+                        {feedbackError}
+                    </p>
+                    <div className="buttons mt-8">
+                        <Button asChild className="btn-secondary flex-1">
+                            <Link href="/dashboard" className="flex w-full justify-center">
+                                <p className="text-sm font-semibold text-primary-200 text-center">
+                                    Back to dashboard
+                                </p>
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="section-feedback">
