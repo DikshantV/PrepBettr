@@ -17,21 +17,50 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-typescript: {
+  typescript: {
     ignoreBuildErrors: true,
   },
   env: {
     NEXT_PUBLIC_VOICE_PROVIDER: process.env.NEXT_PUBLIC_VOICE_PROVIDER || 'vocode',
   },
+  serverExternalPackages: [
+    'microsoft-cognitiveservices-speech-sdk',
+    '@azure/identity',
+    '@azure/keyvault-secrets'
+  ],
   webpack: (config, { isServer }) => {
+    // Disable minification to avoid webpack plugin errors in Next.js 15
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+    };
+
+    // Remove problematic plugins
+    if (config.plugins) {
+      config.plugins = config.plugins.filter((plugin) => {
+        return !(
+          plugin.constructor.name === 'MinifyWebpackPlugin' ||
+          plugin.constructor.name === 'TerserPlugin'
+        );
+      });
+    }
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
         os: false,
+        crypto: false,
+        stream: false,
+        util: false,
+        buffer: false,
+        events: false,
+        net: false,
+        tls: false,
       };
     }
+
     return config;
   },
 };

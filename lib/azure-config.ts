@@ -85,31 +85,6 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
   }
 }
 
-/**
- * Initialize environment variables from Azure Key Vault
- * This should be called at application startup
- */
-export async function initializeAzureEnvironment(): Promise<void> {
-  try {
-    const secrets = await fetchAzureSecrets();
-    
-    // Set environment variables for the application
-    process.env.NEXT_PUBLIC_SPEECH_KEY = secrets.speechKey;
-    process.env.NEXT_PUBLIC_SPEECH_ENDPOINT = secrets.speechEndpoint;
-    process.env.AZURE_OPENAI_KEY = secrets.azureOpenAIKey;
-    process.env.AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-    process.env.AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
-
-    // Also set the Azure OpenAI key for the public environment (used by Vocode)
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY = secrets.azureOpenAIKey;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-
-    console.log('🌟 Azure environment initialized successfully');
-  } catch (error) {
-    console.error('❌ Failed to initialize Azure environment:', error);
-    throw error;
-  }
-}
 
 /**
  * Get current Azure configuration (for debugging)

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm, File } from 'formidable';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 import { updateUserResume } from '../../lib/services/firebase-resume-service';
 import { parseResumeText, generateInterviewQuestions } from '../../lib/utils/resume-parser';
 import { verifyIdToken } from '../../lib/firebase/admin';
@@ -13,8 +13,7 @@ export const config = {
   },
 };
 
-// Initialize Google's Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
+// Azure OpenAI Service will be initialized in the handler
 
 async function parsePDF(filePath: string): Promise<string> {
   try {
@@ -62,12 +61,13 @@ export default async function handler(
   }
 
   try {
-    // Check if Google API key is available
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      console.error('Google Generative AI API key is not configured');
+    // Initialize Azure OpenAI Service
+    const isAzureInitialized = await azureOpenAIService.initialize();
+    if (!isAzureInitialized) {
+      console.error('Azure OpenAI service initialization failed');
       return res.status(500).json({ 
         error: 'Server configuration error',
-        details: process.env.NODE_ENV === 'development' ? 'Google AI API key not configured' : undefined
+        details: process.env.NODE_ENV === 'development' ? 'Azure OpenAI service not configured' : undefined
       });
     }
 
@@ -120,17 +120,8 @@ export default async function handler(
     }
     // Extract key info
     const resumeInfo = extractResumeInfo(text);
-    // Generate questions using Gemini, sending only key info
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Given the following resume information, generate 5 relevant interview questions. Format each question on a new line. Only return the questions, no additional text.\n\nName: ${resumeInfo.name}\nExperience: ${resumeInfo.experience}\nEducation: ${resumeInfo.education}\nSkills: ${resumeInfo.skills}`;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const questionsText = response.text();
-    const questions = questionsText
-      .split('\n')
-      .map(q => q.trim())
-      .filter(q => q.length > 0)
-      .slice(0, 5);
+    // Generate questions using Azure OpenAI
+    const questions = await azureOpenAIService.generateQuestions(resumeInfo);
     // Respond with structured info and questions
     return res.status(200).json({
       success: true,

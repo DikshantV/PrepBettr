@@ -378,6 +378,40 @@ Core Interview Principles:
   }
 
   /**
+   * Generate questions based on resume information
+   */
+  async generateQuestions(resumeInfo: {name: string, experience: string, education: string, skills: string}): Promise<string[]> {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    const prompt = `Given the following resume information, generate 5 relevant interview questions. Format each question on a new line. Only return the questions, no additional text.
+
+Name: ${resumeInfo.name}
+Experience: ${resumeInfo.experience}
+Education: ${resumeInfo.education}
+Skills: ${resumeInfo.skills}`;
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        messages: [{role: 'system', content: prompt}],
+        temperature: 0.5,
+        max_tokens: 150
+      });
+
+      const response = completion.choices[0]?.message?.content || '';
+      return response
+        .split('\n')
+        .map(q => q.trim())
+        .filter(q => q.length > 0)
+        .slice(0, 5);
+    } catch (error) {
+      console.error('❌ Error generating questions:', error);
+      throw new Error('Failed to generate questions');
+    }
+  }
+
+  /**
    * Check if service is ready
    */
   isReady(): boolean {
