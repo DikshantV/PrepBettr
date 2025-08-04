@@ -83,48 +83,27 @@ FIRESTORE_PREFER_REST="true"
 
 **Current Status**: ✅ **Fully Functional** - Authentication works reliably with REST API fallback
 
-## VAPI Workflow Variable Contract
+## Voice Session Management
 
 ### Overview
-This section documents the variable contract between VAPI workflows and the front-end application to prevent drift between the two systems.
+The application uses Vocode for voice session management and AI-powered interview conversations. The system supports both hosted Vocode service and open-source implementation as a fallback.
 
-### Generate Assistant Variables
-**Assistant ID**: `NEXT_PUBLIC_VAPI_ASSISTANT_ID` environment variable
+### Voice Configuration
+**Primary**: Hosted Vocode service (when `NEXT_PUBLIC_VOCODE_API_KEY` and `NEXT_PUBLIC_VOCODE_ASSISTANT_ID` are available)
+**Fallback**: Open-source Vocode implementation with Azure OpenAI integration
 
-| VAPI Placeholder | Front-end Variable Key | Description | Source |
-|------------------|------------------------|-------------|--------|
-| `{{username}}`   | `username`             | User's first name for personalized greeting | Extracted from `userName.split(' ')[0]` |
+### Variable Placeholders
+The voice assistant uses dynamic variables for personalized interactions:
 
-**Usage Example in VAPI Assistant:**
-```
-Hello {{username}}, welcome to PrepBettr!
-```
-
-### Interview Workflow Variables
-**Workflow ID**: Defined in `constants/index.ts` as `interviewer`
-
-| VAPI Placeholder | Front-end Variable Key | Description | Source |
-|------------------|------------------------|-------------|--------|
-| `{{candidateName}}` | `candidateName` | Candidate's first name for personalized interaction | Extracted from `userName.split(' ')[0]` |
-| `{{questions}}` | `questions` | Formatted list of interview questions | Array of questions formatted as `"- Question1\n- Question2"` |
-
-**Usage Examples in VAPI Workflow:**
-```
-Hi {{candidateName}}, I'm your AI interviewer today.
-Let's start with these questions: {{questions}}
-```
+| Placeholder | Description | Source |
+|-------------|-------------|--------|
+| `{{candidateName}}` | Candidate's first name | Extracted from `userName.split(' ')[0]` |
+| `{{questions}}` | Formatted interview questions | Array formatted as `"- Question1\n- Question2"` |
 
 ### Implementation Details
-- **File**: `components/Agent.tsx` (lines 148-198)
-- **Types**: Defined in `types/vapi.d.ts` as `GenerateAssistantVariables` and `InterviewWorkflowVariables`
-- **Variable Extraction**: Both `username` and `candidateName` use the same logic: `userName.split(' ')[0]`
-
-### Important Notes
-⚠️ **Critical**: Any changes to variable names in VAPI assistants/workflows must be reflected in the TypeScript interfaces and vice versa.
-
-⚠️ **Naming Convention**: 
-- Use `username` for generate assistant (sends firstName as username value)
-- Use `candidateName` for interview workflows (both reference the same extracted value)
+- **File**: `components/Agent.tsx` - Main voice session handler
+- **Configuration**: `constants/index.ts` - Voice assistant configuration
+- **Types**: `types/vocode.ts` - Voice session type definitions
 
 ## Deploy on Vercel
 

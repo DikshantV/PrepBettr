@@ -37,9 +37,14 @@ interface InterviewContentProps {
 
 export default function InterviewContent({ interview, user }: InterviewContentProps) {
     const [isEditorExpanded, setIsEditorExpanded] = useState(false);
+    const [sessionStarted, setSessionStarted] = useState(false);
 
     const toggleEditor = () => {
         setIsEditorExpanded(!isEditorExpanded);
+    };
+
+    const handleStartInterview = () => {
+        setSessionStarted(true);
     };
 
     return (
@@ -56,19 +61,33 @@ export default function InterviewContent({ interview, user }: InterviewContentPr
             
             {/* Main Content Section */}
             <div className="space-y-6">
-                {/* Agent Section */}
-                <div className="p-2">
-                    <h3 className="text-lg font-semibold text-white mb-4">Interview Session</h3>
-                    <div className="space-y-4">
-                        <Agent 
-                            interviewId={interview.id}
-                            type={interview.type}
-                            questions={interview.questions.map(q => q.content)}
-                            userName={user.name}
-                            userId={user.id}
-                        />
+                {/* Start Interview Button */}
+                {!sessionStarted && (
+                    <div className="flex justify-center p-4">
+                        <button 
+                            onClick={handleStartInterview} 
+                            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                            Start Interview
+                        </button>
                     </div>
-                </div>
+                )}
+
+                {/* Agent Section */}
+                {sessionStarted && (
+                    <div className="p-2">
+                        <h3 className="text-lg font-semibold text-white mb-4">Interview Session</h3>
+                        <div className="space-y-4">
+                            <Agent 
+                                interviewId={interview.id}
+                                type={interview.type}
+                                questions={interview.questions.map(q => q.content)}
+                                userName={user.name}
+                                userId={user.id}
+                            />
+                        </div>
+                    </div>
+                )}
                 
                 {/* Code Editor Section */}
                 {isEditorExpanded && (

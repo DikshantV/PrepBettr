@@ -1,0 +1,25 @@
+{
+  "name": "prepbettr-voice-functions",
+  "version": "1.0.0",
+  "description": "Azure Functions for PrepBettr Voice Agent backend orchestration",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build needed for JavaScript functions'",
+    "watch": "tsc -w",
+    "start": "func start",
+    "test": "echo \"No tests yet...\"",
+    "deploy": "func azure functionapp publish PrepBettr-VoiceAgent-Functions"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@azure/identity": "^4.10.2",
+    "@azure/keyvault-secrets": "^4.10.0",
+    "microsoft-cognitiveservices-speech-sdk": "^1.45.0",
+    "openai": "^4.71.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

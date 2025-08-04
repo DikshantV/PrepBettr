@@ -5,8 +5,21 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { RouterLoadingHandler } from "@/components/RouterLoadingHandler";
 import Providers from "./providers";
+import { initializeAzureServices } from '@/lib/azure-startup';
+import { ApplicationInsights } from '@microsoft/applicationinsights-web';
 
 import "./globals.css";
+
+// Initialize Azure services on server-side
+initializeAzureServices();
+
+// Initialize Application Insights
+const appInsights = new ApplicationInsights({
+  config: {
+    instrumentationKey: process.env.NEXT_PUBLIC_APP_INSIGHTS_INSTRUMENTATION_KEY || '',
+  }
+});
+appInsights.loadAppInsights();
 
 const monaSans = Mona_Sans({
     variable: "--font-mona-sans",
