@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { VocodeAssistantConfig } from '@/types/vocode';
+import { azureSpeechService } from '@/lib/services/azure-speech-service';
 
 interface ConversationConfig {
   transcriber: {
@@ -395,20 +396,12 @@ export class VocodeOpenSource extends EventEmitter {
   /**
    * Synthesize speech with Azure Using Azure SDK
    */
-  private async synthesizeWithAzure(text: string): PromisecBlobe {
-   const audioArrayBuffer = await azureSpeechService.synthesizeSpeech(text);
-   return new Blob([audioArrayBuffer!], { type: 'audio/mpeg' });
-    const response = await fetch(`https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
-      method: 'POST',
-      headers: {
-        'Ocp-Apim-Subscription-Key': this.currentConfig!.synthesizer.api_key!,
-        'Content-Type': 'application/ssml+xml',
-        'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3'
-      },
-      body: `<speak version='1.0' xml:lang='en-US'><voice xml:lang='en-US' xml:gender='Female' name='en-US-SaraNeural'>${text}</voice></speak>`
-    });
-
-    return await response.blob();
+  private async synthesizeWithAzure(text: string): Promise<Blob> {
+    const audioArrayBuffer = await azureSpeechService.synthesizeSpeech(text);
+    if (audioArrayBuffer) {
+      return new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
+    }
+    throw new Error('Failed to synthesize audio');
   }
 
   /**
