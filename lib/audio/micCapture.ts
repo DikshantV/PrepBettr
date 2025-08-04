@@ -1,3 +1,5 @@
+import { azureSpeechService } from '@/lib/services/azure-speech-service';
+
 export class MicCapture {
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
@@ -79,7 +81,7 @@ export class MicCapture {
   }
   
   /**
-   * Start capturing audio
+   * Start capturing audio and transcribe using Azure Speech Service
    */
   async startCapture(): Promise<void> {
     if (!this.audioContext || !this.workletNode) {
@@ -88,6 +90,14 @@ export class MicCapture {
     
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
+      // Start Azure continuous recognition
+      await azureSpeechService.startContinuousRecognition((result) => {
+        console.log('Recognized Text:', result.text);
+        // TODO: Handle recognized text
+      }, (error) => {
+        console.error('Recognition Error:', error);
+      });
+
     }
     
     this.isCapturing = true;

@@ -134,7 +134,6 @@ class VocodeSDK extends EventEmitter {
 
     /**
      * Start a Vocode conversation
-     * Replicates VAPI's start method
      */
     async start(assistantId: string, options: VocodeStartOptions): Promise<any> {
         try {
@@ -143,7 +142,7 @@ class VocodeSDK extends EventEmitter {
 
             // Initialize media stream for audio input
             await this.initializeAudioStream();
-            
+
             // Create conversation session
             const sessionResponse = await fetch(`${this.baseUrl}/conversations`, {
                 method: 'POST',
@@ -169,12 +168,12 @@ class VocodeSDK extends EventEmitter {
 
             // Establish WebSocket connection for real-time communication
             await this.connectWebSocket(sessionData.websocket_url || `${this.baseUrl.replace('http', 'ws')}/conversations/${this.currentCall}/ws`);
-            
+
             // Start audio recording and streaming
             this.startAudioStreaming();
 
             this.emit('call-start');
-            
+
             return sessionData;
         } catch (error) {
             console.error('❌ Failed to start Vocode conversation:', error);
@@ -185,7 +184,6 @@ class VocodeSDK extends EventEmitter {
 
     /**
      * Stop the current Vocode conversation
-     * Replicates VAPI's stop method
      */
     async stop(): Promise<void> {
         try {
@@ -391,44 +389,44 @@ class VocodeSDK extends EventEmitter {
                 source.start();
             }
         } catch (error) {
-            console.error('❌ Error playing audio:', error);
-        }
+        console.error('❌ Error playing audio:', error);
+    }
+}
+
+/**
+ * Get current call status
+ */
+isActive(): boolean {
+    return this.isConnected && this.currentCall !== null;
+}
+
+/**
+ * Send a text message to the conversation
+ */
+async sendMessage(text: string): Promise<void> {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket not connected');
     }
 
-    /**
-     * Get current call status
-     */
-    isActive(): boolean {
-        return this.isConnected && this.currentCall !== null;
-    }
+    this.websocket.send(JSON.stringify({
+        type: 'text',
+        content: text
+    }));
+}
 
-    /**
-     * Send a text message to the conversation
-     */
-    async sendMessage(text: string): Promise<void> {
-        if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
-            throw new Error('WebSocket not connected');
-        }
+/**
+ * Add event listener
+ */
+on(event: string, listener: (...args: any[]) => void): this {
+    return super.on(event, listener);
+}
 
-        this.websocket.send(JSON.stringify({
-            type: 'text',
-            content: text
-        }));
-    }
-
-    /**
-     * Add event listener (replicates VAPI's on method)
-     */
-    on(event: string, listener: (...args: any[]) => void): this {
-        return super.on(event, listener);
-    }
-
-    /**
-     * Remove event listener (replicates VAPI's off method)
-     */
-    off(event: string, listener: (...args: any[]) => void): this {
-        return super.off(event, listener);
-    }
+/**
+ * Remove event listener
+ */
+off(event: string, listener: (...args: any[]) => void): this {
+    return super.off(event, listener);
+}
 }
 
 // Export singleton instance

@@ -335,7 +335,7 @@ export class VocodeOpenSource extends EventEmitter {
    * Synthesize speech and play audio
    */
   private async synthesizeAndPlay(text: string): Promise<void> {
-    if (!this.currentConfig?.synthesizer.api_key) {
+    if (!this.currentConfig?.synthesizer.api_key || this.currentConfig.synthesizer.provider === 'azure') {
       console.warn('⚠️ No TTS API key - skipping audio synthesis');
       return;
     }
@@ -393,9 +393,11 @@ export class VocodeOpenSource extends EventEmitter {
   }
 
   /**
-   * Synthesize speech with Azure
+   * Synthesize speech with Azure Using Azure SDK
    */
-  private async synthesizeWithAzure(text: string): Promise<Blob> {
+  private async synthesizeWithAzure(text: string): PromisecBlobe {
+   const audioArrayBuffer = await azureSpeechService.synthesizeSpeech(text);
+   return new Blob([audioArrayBuffer!], { type: 'audio/mpeg' });
     const response = await fetch(`https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
       method: 'POST',
       headers: {

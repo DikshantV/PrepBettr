@@ -7,9 +7,10 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vocode } from "@/lib/vocode.sdk";
 import { vocodeOpenSource } from "@/lib/vocode-opensource";
-// import { vapi } from "@/lib/vapi.sdk"; // Commented out for Vocode testing
 import { vocodeInterviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
+import { azureSpeechService } from "@/lib/services/azure-speech-service";
+import { azureOpenAIService, type InterviewContext } from "@/lib/services/azure-openai-service";
 
 // Import Vocode types
 import type { Message, FunctionCallMessage, GenerateAssistantVariables, InterviewWorkflowVariables } from "@/types/vocode";
@@ -52,6 +53,9 @@ const Agent = ({
     const [userImage, setUserImage] = useState<string>("");
     const [feedbackGenerated, setFeedbackGenerated] = useState(false);
     const [generatedFeedbackId, setGeneratedFeedbackId] = useState<string | null>(null);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
+    const [questionNumber, setQuestionNumber] = useState(0);
+    const [interviewComplete, setInterviewComplete] = useState(false);
 
     useEffect(() => {
         fetch("/api/profile/me")
@@ -183,87 +187,99 @@ const Agent = ({
         setCallStatus(CallStatus.CONNECTING);
         console.log('🚀 Starting call with type:', type);
 
-        // Get the active SDK based on configuration
-        const voiceProvider = process.env.NEXT_PUBLIC_VOICE_PROVIDER;
-        const hasVocodeHostedKeys = process.env.NEXT_PUBLIC_VOCODE_API_KEY && process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
-        
-        let activeSDK;
-        if (hasVocodeHostedKeys) {
-            activeSDK = vocode; // Use hosted Vocode service
-        } else {
-            activeSDK = vocodeOpenSource; // Use open source implementation
-        }
-
-        // Extract first name for workflow placeholders
-        const firstName = userName.split(' ')[0];
-
         try {
-            if (type === "generate") {
-                // Generate Interview Assistant
-                if (activeSDK === vocodeOpenSource) {
-                    // Use open source Vocode with interviewer config for generation
-                    await activeSDK.start(vocodeInterviewer, {
-                        variableValues: {
-                            username: firstName,
-                            candidateName: firstName
-                        },
-                        clientMessages: [],
-                        serverMessages: [],
-                    });
-                } else {
-                    // Use hosted Vocode assistant
-                    const assistantId = process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
-                    if (!assistantId) {
-                        console.error('❌ NEXT_PUBLIC_VOCODE_ASSISTANT_ID is not set');
-                        setCallStatus(CallStatus.INACTIVE);
-                        return;
-                    }
-                    
-                    await activeSDK.start(assistantId, {
-                        variableValues: {
-                            username: firstName,
-                        } as GenerateAssistantVariables,
-                        clientMessages: [],
-                        serverMessages: [],
-                    });
-                }
-            } else {
-                // Regular Interview
-                let formattedQuestions = "";
-                if (questions) {
-                    formattedQuestions = questions
-                        .map((question) => `- ${question}`)
-                        .join("\n");
-                }
+            // Initialize Azure Speech Service
+            const isInitialized = await azureSpeechService.initialize();
+            if (!isInitialized) {
+                console.error('❌ Failed to initialize Azure Speech Service');
+                return;
+            }
 
-                if (activeSDK === vocodeOpenSource) {
-                    // Open source Vocode
-                    await activeSDK.start(vocodeInterviewer, {
-                        variableValues: {
-                            questions: formattedQuestions,
-                            candidateName: firstName,
-                        },
-                        clientMessages: [],
-                        serverMessages: [],
-                    });
-                } else {
-                    // Hosted Vocode or VAPI
-                    await activeSDK.start(vocodeInterviewer, {
-                        variableValues: {
-                            questions: formattedQuestions,
-                            candidateName: firstName,
-                        } as InterviewWorkflowVariables,
-                        clientMessages: [],
-                        serverMessages: [],
-                    });
+            // Start continuous recognition
+            const recognitionSuccess = await azureSpeechService.startContinuousRecognition(
+                async (result) => {
+                    console.log(`RECOGNIZED: Text=${result.text}`);
+                    if (result.text) {
+                        setIsProcessingAI(true);
+                        setMessages((prev) => [...prev, { role: 'user', content: result.text }]);
+
+                        try {
+                            // Process the user response with OpenAI
+                            const processResult = await fetch('/api/voice/conversation', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'process', userTranscript: result.text })
+                            });
+
+                            const processResponse = await processResult.json();
+
+                            if (processResponse.success) {
+                                setMessages((prev) => [...prev, { role: 'assistant', content: processResponse.message }]);
+                                setQuestionNumber(processResponse.questionNumber);
+                                setInterviewComplete(processResponse.isComplete);
+
+                                // Play the audio of the AI response
+                                if (processResponse.hasAudio && processResponse.audioData) {
+                                    const audioBlob = new Blob([new Uint8Array(processResponse.audioData)], { type: 'audio/wav' });
+                                    const audioUrl = URL.createObjectURL(audioBlob);
+                                    const audio = new Audio(audioUrl);
+                                    audio.play();
+                                }
+                            } else {
+                                console.error('Failed to process user response:', processResponse.error);
+                            }
+                        } catch (error) {
+                            console.error('Error processing user response:', error);
+                        } finally {
+                            setIsProcessingAI(false);
+                        }
+                    }
+                },
+                (error) => {
+                    console.error('Recognition error:', error);
+                }
+            );
+
+            if (!recognitionSuccess) {
+                console.error('❌ Failed to start speech recognition');
+                return;
+            }
+
+            // Initialize conversation with OpenAI
+            console.log('🤖 Starting OpenAI conversation...');
+            const startResult = await fetch('/api/voice/conversation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'start', 
+                    interviewContext: { 
+                        type: type === 'technical' ? 'technical' : type === 'behavioral' ? 'behavioral' : 'general',
+                        maxQuestions: 5 
+                    } 
+                })
+            });
+
+            const startResponse = await startResult.json();
+            if (startResponse.success) {
+                setMessages((prev) => [...prev, { role: 'assistant', content: startResponse.message }]);
+                setQuestionNumber(startResponse.questionNumber || 1);
+                
+                // Play the opening audio
+                if (startResponse.hasAudio && startResponse.audioData) {
+                    const audioBlob = new Blob([new Uint8Array(startResponse.audioData)], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
                 }
             }
-            
-            console.log('✅ Call started successfully');
+
+            setCallStatus(CallStatus.ACTIVE);
+            console.log('✅ Speech recognition and conversation started');
+
         } catch (error) {
-            console.error('❌ Failed to start call:', error);
+            console.error('❌ Error during Azure setup or call start:', error);
             setCallStatus(CallStatus.INACTIVE);
-            alert(`Failed to start interview: ${error.message}`);
+            alert(`Error: ${error.message}`);
         }
     };
 
@@ -306,6 +322,16 @@ const handleDisconnect = async () => {
                         {isSpeaking && <span className="animate-speak" />}
                     </div>
                     <h3>AI Interviewer</h3>
+                    {isProcessingAI && (
+                        <div className="mt-2">
+                            <span className="text-xs text-blue-600 dark:text-blue-400">Processing...</span>
+                        </div>
+                    )}
+                    {questionNumber > 0 && (
+                        <div className="mt-1">
+                            <span className="text-xs text-gray-500">Question {questionNumber}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* User Profile Card */}
