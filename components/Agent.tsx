@@ -59,6 +59,7 @@ const Agent = ({
     const [isRecording, setIsRecording] = useState(false);
     const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
     const [isWaitingForUser, setIsWaitingForUser] = useState(false);
+    const [hasUserSpoken, setHasUserSpoken] = useState(false);
     const [useMediaRecorderFallback, setUseMediaRecorderFallback] = useState(false);
 
     useEffect(() => {
@@ -145,6 +146,13 @@ const Agent = ({
 
             if (result.success) {
                 console.log('✅ Speech recognition successful:', result.text);
+                
+                // Mark that user has spoken - this enables stopping recording after AI response
+                if (!hasUserSpoken) {
+                    setHasUserSpoken(true);
+                    console.log('🎙️ First user speech detected - microphone will stop after AI response');
+                }
+                
                 setMessages((prev) => [...prev, { role: 'user', content: result.text }]);
                 
                 // Process the user transcript with the conversation API
@@ -175,15 +183,19 @@ const Agent = ({
                             setIsSpeaking(false);
                             setIsWaitingForUser(true);
                             
-                            // Wait a brief moment for user to start speaking, then start recording
-                            setTimeout(() => {
-                                if (isWaitingForUser && callStatus === CallStatus.ACTIVE) {
-                                    console.log('🎙️ Ready for user input - starting recording');
-                                    setIsWaitingForUser(false);
-                                    // Start AudioContext recording
-                                    startAudioContextRecording();
-                                }
-                            }, 500);
+                            // Only start recording again if user has spoken before
+                            // For first interaction, keep microphone open continuously
+                            if (hasUserSpoken) {
+                                setTimeout(() => {
+                                    if (isWaitingForUser && callStatus === CallStatus.ACTIVE) {
+                                        console.log('🎙️ Ready for user input - starting recording');
+                                        setIsWaitingForUser(false);
+                                        startAudioContextRecording();
+                                    }
+                                }, 500);
+                            } else {
+                                console.log('🎙️ Microphone remains open - waiting for first user speech');
+                            }
                         };
                         
                         audio.onerror = () => {
@@ -254,7 +266,10 @@ const Agent = ({
                     audio.onended = () => {
                         console.log('Introduction complete');
                         setIsWaitingForUser(true);
-                        console.log('🎙️ User input can begin once ready.');
+                        setHasUserSpoken(false);
+                        console.log('🎙️ Microphone remains open - listening for first user speech');
+                        // Keep recording active - will be stopped when hasUserSpoken becomes true
+                        // and continuous recognition delivers first result
                     };
 
                     audio.onerror = () => {
@@ -513,7 +528,7 @@ const Agent = ({
             (window as any).startAudioContextRecording = startAudioContextRecording;
             (window as any).stopAudioContextRecording = stopAudioContextRecording;
             
-            // Start first recording
+            // Start first recording - this will remain active until first user speech
             startAudioContextRecording();
             
             // Set up continuous recording cycle
@@ -562,6 +577,7 @@ const Agent = ({
             
             setIsRecording(false);
             setIsWaitingForUser(false);
+            setHasUserSpoken(false);
 
             console.log('✅ Voice interview ended');
         } catch (error) {
@@ -706,7 +722,14 @@ const Agent = ({
                     )}
                     {isWaitingForUser && (
                         <div className="mt-2">
-                            <span className="text-xs text-green-600 dark:text-green-400 animate-pulse">🎤 Listening...</span>
+                            <span className="text-xs text-green-600 dark:text-green-400 animate-pulse">
+                                {hasUserSpoken ? '🎤 Listening...' : '🎙️ Microphone open - speak anytime'}
+                            </span>
+                        </div>
+                    )}
+                    {isRecording && !isWaitingForUser && (
+                        <div className="mt-2">
+                            <span className="text-xs text-red-600 dark:text-red-400 animate-pulse">🔴 Recording...</span>
                         </div>
                     )}
                     {questionNumber > 0 && (
