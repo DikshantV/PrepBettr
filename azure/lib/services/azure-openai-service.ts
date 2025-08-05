@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { fetchAzureSecrets } from '../azure-config';
+import { fetchAzureSecrets } from '../../lib/azure-config-browser';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';

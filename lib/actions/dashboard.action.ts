@@ -10,12 +10,19 @@ export async function getUserInterviews(): Promise<Interview[]> {
     const user = await getCurrentUser();
     if (!user) return [];
 
+    // Add timeout and better error handling for Firestore operations
     const interviewsRef = db.collection('interviews');
     const query = interviewsRef
       .where('userId', '==', user.id)
       .orderBy('createdAt', 'desc');
     
-    const snapshot = await query.get();
+    // Add timeout wrapper to prevent hanging requests
+    const snapshotPromise = query.get();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), 10000); // 10 second timeout
+    });
+    
+    const snapshot = await Promise.race([snapshotPromise, timeoutPromise]) as FirebaseFirestore.QuerySnapshot;
     
     return snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
       id: doc.id,
@@ -24,6 +31,7 @@ export async function getUserInterviews(): Promise<Interview[]> {
     
   } catch (error) {
     console.error('Error fetching user interviews:', error);
+    // Return empty array on any error to prevent page crash
     return [];
   }
 }

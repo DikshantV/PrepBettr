@@ -27,9 +27,22 @@ function createKeyVaultClient(): SecretClient {
 }
 
 /**
+ * Clear cached secrets (useful when Azure keys are renewed)
+ */
+export function clearAzureSecretsCache(): void {
+  console.log('🔄 Clearing Azure secrets cache...');
+  cachedSecrets = null;
+}
+
+/**
  * Fetch secrets from Azure Key Vault
  */
-export async function fetchAzureSecrets(): Promise<AzureSecrets> {
+export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<AzureSecrets> {
+  // Clear cache if force refresh is requested
+  if (forceRefresh) {
+    clearAzureSecretsCache();
+  }
+  
   // Return cached secrets if available
   if (cachedSecrets) {
     return cachedSecrets;
@@ -69,9 +82,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     // Fallback to environment variables if Key Vault fails
     console.log('🔄 Falling back to environment variables...');
     const fallbackSecrets = {
-      speechKey: process.env.NEXT_PUBLIC_SPEECH_KEY || '',
-      speechEndpoint: process.env.NEXT_PUBLIC_SPEECH_ENDPOINT || '',
-      azureOpenAIKey: process.env.AZURE_OPENAI_KEY || '',
+      speechKey: process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY || '',
+      speechEndpoint: process.env.SPEECH_ENDPOINT || 'https://eastus2.api.cognitive.microsoft.com/',
+      azureOpenAIKey: process.env.AZURE_OPENAI_API_KEY || '',
       azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
       azureOpenAIDeployment: process.env.AZURE_OPENAI_DEPLOYMENT || ''
     };

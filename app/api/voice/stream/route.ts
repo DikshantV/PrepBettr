@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
+import { azureSpeechService } from '@/lib/services/azure-speech-service';
 import { fetchAzureSecrets } from '@/lib/azure-config';
 import { spawn } from 'child_process';
 import { writeFile, unlink } from 'fs/promises';
@@ -146,39 +146,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Azure Speech Service credentials (force refresh to get updated keys)
-    const secrets = await fetchAzureSecrets(true);
-    console.log('🔑 Azure secrets status:', {
-      speechKey: secrets.speechKey ? 'SET' : 'MISSING',
-      speechEndpoint: secrets.speechEndpoint ? 'SET' : 'MISSING'
-    });
-    
-    if (!secrets.speechKey || !secrets.speechEndpoint) {
-      console.error('❌ Azure Speech Service configuration missing');
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Azure Speech Service not configured',
-          details: {
-            speechKey: !!secrets.speechKey,
-            speechEndpoint: !!secrets.speechEndpoint
-          }
-        },
-        { status: 500 }
-      );
+    // Initialize Azure Speech Service if needed
+    if (!azureSpeechService.isReady()) {
+      const speechInitialized = await azureSpeechService.initialize();
+      if (!speechInitialized) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Failed to initialize Azure Speech service'
+          },
+          { status: 500 }
+        );
+      }
     }
-
-    // Extract region from endpoint
-    const region = secrets.speechEndpoint.match(/https:\/\/([^.]+)/)?.[1] || 'eastus2';
-    
-    // Configure Azure Speech Service
-    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(secrets.speechKey, region);
-    speechConfig.setProperty(
-      SpeechSDK.PropertyId.Speech_SegmentationSilenceTimeoutMs,
-      "60000"   // 60 s before service thinks user is silent
-    );
-    speechConfig.speechRecognitionLanguage = 'en-US';
-    speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse, 'true');
 
     // Validate audio format
     const audioMimeType = audioFile.type.toLowerCase();
@@ -248,73 +228,32 @@ export async function POST(request: NextRequest) {
     // Create audio config with explicit format specification
     let audioConfig;
     
-    if (sampleRate === 16000 && numChannels === 1 && bitsPerSample === 16) {
-      // Perfect format for Azure Speech Service
-      console.log('✅ Audio format is optimal for Azure Speech Service');
-      const pushStream = SpeechSDK.AudioInputStream.createPushStream();
-      pushStream.write(Buffer.from(audioBuffer));
-      pushStream.close();
-      audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
-    } else {
-      console.log('⚠️ Suboptimal audio format, creating with explicit format');
-      const pushStream = SpeechSDK.AudioInputStream.createPushStream(
-        SpeechSDK.AudioStreamFormat.getWaveFormatPCM(sampleRate, bitsPerSample, numChannels)
-      );
-      pushStream.write(Buffer.from(audioBuffer));
-      pushStream.close();
-      audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+    // Process audio with the new helper
+    try {
+      const recognitionResult = await azureSpeechService.processAudioWithAzureSpeech(audioBuffer);
+      
+      if (recognitionResult) {
+        console.log('✅ Speech processed successfully');
+        return NextResponse.json({
+          success: true,
+          text: recognitionResult.text,
+          confidence: recognitionResult.confidence
+        });
+      } else {
+        console.log('❌ No speech recognized');
+        return NextResponse.json({
+          success: false,
+          error: 'No speech recognized'
+        }, { status: 400 });
+      }
+    } catch (error) {
+      console.error('❌ Error processing audio:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Error processing audio',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
     }
-    
-    // Create speech recognizer
-    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
-
-    return new Promise((resolve) => {
-      console.log('Starting speech recognition...');
-      recognizer.recognizeOnceAsync(
-        (result) => {
-          // Create full result object for logging and response
-          const fullResult = {
-            success: result.reason === SpeechSDK.ResultReason.RecognizedSpeech,
-            text: result.text || '',
-            reason: result.reason,
-            errorDetails: result.errorDetails || null,
-            confidence: result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ? 1.0 : 0.8,
-            resultId: result.resultId || null,
-            duration: result.duration || null,
-            offset: result.offset || null,
-            properties: result.properties ? {
-              requestDetailedResult: result.properties.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestDetailedResultTrueFalse),
-              jsonResult: result.properties.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)
-            } : null
-          };
-          
-          // Log full result on server-side
-          console.debug('Full Azure Speech SDK Result:', JSON.stringify(fullResult, null, 2));
-          
-          if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-            console.log(`✅ Speech recognized: ${result.text}`);
-          } else {
-            console.log(`❌ Speech recognition failed: ${result.reason}`);
-          }
-          
-          // Always return 200 with full result
-          const response = NextResponse.json(fullResult);
-          
-          recognizer.close();
-          resolve(response);
-          console.log('Response sent to client with status 200');
-        },
-        (error) => {
-          console.error('❌ Speech recognition error:', error);
-          recognizer.close();
-          resolve(NextResponse.json({
-            success: false,
-            error: 'Speech recognition failed',
-            details: error.toString()
-          }, { status: 500 }));
-        }
-      );
-    });
 
   } catch (error) {
     console.error('❌ Error in voice streaming API:', error);

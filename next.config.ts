@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Server-side only configuration (not exposed to browser)
+  serverRuntimeConfig: {
+    azureSpeechKey: process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY,
+    azureSpeechRegion: process.env.AZURE_SPEECH_REGION || 'eastus2',
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

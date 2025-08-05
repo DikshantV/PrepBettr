@@ -297,6 +297,15 @@ export default function HomePage() {
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                   The most advanced AI-powered interview preparation platform.
                 </p>
+                <div className="mb-6">
+                  <Image 
+                    src="/MFS Banner.png" 
+                    alt="MFS Banner" 
+                    width={1200}
+                    height={600}
+                    className="w-full max-w-sm mx-auto h-auto"
+                  />
+                </div>
                 <div className="flex space-x-4">
                   <a 
                     href="https://twitter.com/prepbettr"

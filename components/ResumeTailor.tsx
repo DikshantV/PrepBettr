@@ -27,6 +27,9 @@ async function generateTailoredResume(resumeText: string, jobDescription: string
     return data.tailoredResume;
   } catch (error) {
     console.error('Resume tailoring API Error:', error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to the server. Please check your connection and try again.');
+    }
     if (error instanceof Error) {
       throw error;
     }
@@ -57,11 +60,31 @@ async function parseDocxFile(file: File): Promise<string> {
 // Function to extract text from URL (basic web scraping)
 async function extractTextFromUrl(url: string): Promise<string> {
   try {
-    // This would need to be implemented with a backend API call
-    // For now, return an error message
-    throw new Error('URL extraction requires backend implementation. Please copy and paste the job description instead.');
+    const response = await fetch('/api/resume/extract-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to extract content from URL');
+    }
+
+    // Return the description field or concatenated structured fields
+    return data.description || data.jobDescription || '';
   } catch (error) {
-    throw new Error('Unable to extract content from URL. Please copy and paste the job description instead.');
+    console.error('URL extraction API Error:', error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Could not fetch job description from the provided URL. Please check your network connection and try again.');
+    }
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Could not fetch job description from the provided URL. Please try again.');
   }
 }
 
@@ -127,7 +150,7 @@ const ResumeTailorSection = () => {
       const text = await extractTextFromUrl(jobDescriptionUrl);
       setJobDescription(text);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to extract content from URL.';
+      const errorMessage = error instanceof Error ? error.message : 'Could not fetch job description from the provided URL. Please check your network connection and try again.';
       setError(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -153,7 +176,7 @@ const ResumeTailorSection = () => {
       const tailoredContent = await generateTailoredResume(resumeText, jobDescription);
       setTailoredResume(tailoredContent);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred while tailoring your resume.';
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while tailoring your resume. Please check your network connection and try again.';
       setError(errorMessage);
       
       // Fallback: Simple keyword highlighting
@@ -346,9 +369,6 @@ const ResumeTailorSection = () => {
                     <Link className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  Note: URL extraction requires backend implementation. Please use paste method for now.
-                </p>
               </div>
             )}
           </div>
