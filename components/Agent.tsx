@@ -46,7 +46,8 @@ const Agent = ({
     const router = useRouter();
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
-    const [isSpeaking, setIsSpeaking] = useState(false);
+const [isSpeaking, setIsSpeaking] = useState(false);
+const [introductionComplete, setIntroductionComplete] = useState(false);
     const [lastMessage, setLastMessage] = useState<string>("");
     const [userImage, setUserImage] = useState<string>("");
     const [feedbackGenerated, setFeedbackGenerated] = useState(false);
@@ -115,6 +116,61 @@ const Agent = ({
         return { recorder, mimeType: mimeType || 'audio/webm' };
     };
 
+    /**
+     * Maintain a ring-buffer of raw Float32 PCM chunks
+     */
+    let ringBuffer: Float32Array[] = [];
+    const ringBufferSize = 32; // Capacity to hold multiple chunks
+    let hasDetectedNonSilence = false;
+
+    const trimInitialSilence = (audioChunks: Float32Array[], sampleRate: number): Float32Array[] => {
+        const thresholdRMS = 0.01; // -40 dB ≈ 0.01 linear
+        const windowSamples = Math.floor(sampleRate * 0.2); // 200ms window
+        
+        // Concatenate all chunks for analysis
+        const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const combinedAudio = new Float32Array(totalLength);
+        let offset = 0;
+        for (const chunk of audioChunks) {
+            combinedAudio.set(chunk, offset);
+            offset += chunk.length;
+        }
+        
+        let startIndex = 0;
+        for (let i = 0; i <= combinedAudio.length - windowSamples; i += windowSamples / 4) { // 25% overlap
+            let windowRMS = 0;
+            for (let j = 0; j < windowSamples && (i + j) < combinedAudio.length; j++) {
+                windowRMS += combinedAudio[i + j] * combinedAudio[i + j];
+            }
+            windowRMS = Math.sqrt(windowRMS / windowSamples);
+
+            if (windowRMS > thresholdRMS) {
+                startIndex = i;
+                console.log(`🎤 Non-silence detected at sample ${startIndex}, RMS: ${windowRMS.toFixed(4)}`);
+                
+                // Set hasUserSpoken flag when non-silence is detected
+                if (!hasUserSpoken) {
+                    setHasUserSpoken(true);
+                    hasDetectedNonSilence = true;
+                    console.log('🎙️ First user speech detected - microphone will stop after AI response');
+                }
+                break;
+            }
+        }
+
+        console.log(`Silence trimmed. Starting at sample: ${startIndex} of ${combinedAudio.length}`);
+        const trimmedAudio = combinedAudio.slice(startIndex);
+        
+        // Split back into chunks for consistent processing
+        const chunkSize = 4096;
+        const trimmedChunks: Float32Array[] = [];
+        for (let i = 0; i < trimmedAudio.length; i += chunkSize) {
+            trimmedChunks.push(trimmedAudio.slice(i, i + chunkSize));
+        }
+        
+        return trimmedChunks;
+    };
+
     const sendAudioToBackend = async (audioBlob: Blob) => {
         console.log('Uploading audio to the backend', audioBlob);    
         console.log('Audio Blob size:', audioBlob.size);    
@@ -173,7 +229,11 @@ const Agent = ({
                     if (processResponse.hasAudio && processResponse.audioData) {
                         const audioBlob = new Blob([new Uint8Array(processResponse.audioData)], { type: 'audio/wav' });
                         const audioUrl = URL.createObjectURL(audioBlob);
-                        const audio = new Audio(audioUrl);
+const audio = new Audio(audioUrl);
+                        if (ttsAudioContext && ttsAudioContext.state !== 'closed') {
+                            ttsSource = ttsAudioContext.createMediaElementSource(audio);
+                            ttsSource.connect(ttsAudioContext.destination);
+                        }
                         
                         // Set flag to indicate AI is speaking
                         setIsSpeaking(true);
@@ -263,13 +323,17 @@ const Agent = ({
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audio = new Audio(audioUrl);
                     
-                    audio.onended = () => {
+audio.onended = () => {
+                        setIntroductionComplete(true);
                         console.log('Introduction complete');
                         setIsWaitingForUser(true);
                         setHasUserSpoken(false);
-                        console.log('🎙️ Microphone remains open - listening for first user speech');
-                        // Keep recording active - will be stopped when hasUserSpoken becomes true
-                        // and continuous recognition delivers first result
+                        console.log('🎙️ Starting recording now that introduction is complete');
+                        
+                        // Now start the first recording after introduction completes
+                        setTimeout(() => {
+                            startAudioContextRecording();
+                        }, 500);
                     };
 
                     audio.onerror = () => {
@@ -295,20 +359,23 @@ const Agent = ({
             
             // Create AudioContext with 16kHz sample rate for Azure compatibility
             let context: AudioContext | null = null;
-            let source: MediaStreamAudioSourceNode | null = null;
+let micSource: MediaStreamAudioSourceNode | null = null;
+let ttsAudioContext: AudioContext | null = null;
+let ttsSource: MediaElementAudioSourceNode | null = null;
             let workletNode: AudioWorkletNode | null = null;
             let audioSamples: Float32Array[] = [];
             let isCurrentlyRecording = false;
             let recordingTimeoutId: NodeJS.Timeout | null = null;
             
             try {
-                context = new AudioContext({ sampleRate: 16000 });
+context = new AudioContext({ sampleRate: 16000 });
+ttsAudioContext = new AudioContext();
                 setAudioContext(context);
                 
                 // Load the AudioWorklet module
                 await context.audioWorklet.addModule('/audio-processor.js');
                 
-                source = context.createMediaStreamSource(stream);
+micSource = context.createMediaStreamSource(stream);
                 workletNode = new AudioWorkletNode(context, 'audio-processor');
                 
                 console.log('AudioContext created with sample rate:', context.sampleRate);
@@ -367,18 +434,48 @@ const Agent = ({
                 if (workletNode) {
                     workletNode.port.onmessage = (event) => {
                         if (!isCurrentlyRecording) return;
+                        
                         if (event.data.type === 'audiodata') {
-                            audioSamples.push(event.data.audioData);
+                            const audioData = event.data.audioData;
+                            audioSamples.push(audioData);
+                            
+                            // Maintain ring buffer
+                            ringBuffer.push(audioData);
+                            if (ringBuffer.length > ringBufferSize) {
+                                ringBuffer.shift(); // Remove oldest chunk
+                            }
+                        } else if (event.data.type === 'level') {
+                            // Handle RMS level updates if needed for real-time feedback
+                            const rms = event.data.rms;
+if (rms > 0.01 && !hasDetectedNonSilence && !hasUserSpoken && introductionComplete) {
+                                console.log(`🎤 Real-time speech detected, RMS: ${rms.toFixed(4)}`);
+                                hasDetectedNonSilence = true;
+                                
+                                // Require minimum 300ms of continuous speech before stopping
+                                setTimeout(() => {
+                                    if (hasDetectedNonSilence && introductionComplete) {
+                                        stopAudioContextRecording();
+                                    }
+                                }, 300);
+                            }
                         }
                     };
                 }
 
-                source?.connect(workletNode!);
+micSource?.connect(workletNode!);
                 // Note: AudioWorkletNode doesn't need to connect to destination for processing
 
                 recordingTimeoutId = setTimeout(() => {
-                    stopAudioContextRecording();
-                }, 8000); // Record for 8 seconds
+                    // Only stop if we have detected speech
+                    // For initial silence without user speech, keep recording open beyond timeout
+                    if (hasDetectedNonSilence) {
+                        stopAudioContextRecording();
+                    } else {
+                        console.log('🎙️ Recording timeout reached but no speech detected - keeping microphone open');
+                        // Optionally extend timeout or keep recording indefinitely
+                        // For now, we'll just log and let it continue
+                    }
+                }, 60000); // Record for up to 60 seconds to test silence handling
             };
 
             const stopAudioContextRecording = async () => {
@@ -387,7 +484,7 @@ const Agent = ({
                 setIsRecording(false);
 
                 // Disconnect worklet node instead of processor
-                source?.disconnect();
+                micSource?.disconnect();
                 if (workletNode) {
                     workletNode.port.onmessage = null;
                 }
@@ -397,8 +494,13 @@ const Agent = ({
                     recordingTimeoutId = null;
                 }
 
-                // Convert samples to WAV blob
-                const audioBlob = createWAVBlob(audioSamples, context?.sampleRate!);
+                // Trim initial silence from captured audio chunks before WAV encoding
+                console.log('Audio samples before trimming:', audioSamples.length, 'chunks');
+                const trimmedAudioChunks = trimInitialSilence(audioSamples, context?.sampleRate!);
+                console.log('Audio samples after trimming:', trimmedAudioChunks.length, 'chunks');
+                
+                // Convert trimmed samples to WAV blob
+                const audioBlob = createWAVBlob(trimmedAudioChunks, context?.sampleRate!);
                 console.log('Created WAV Blob:', audioBlob.size, 'bytes');
 
                 // Validate WAV format
@@ -510,7 +612,7 @@ const Agent = ({
                     clearTimeout(recordingTimeoutId);
                     recordingTimeoutId = null;
                 }
-                source?.disconnect();
+                micSource?.disconnect();
                 if (workletNode) {
                     workletNode.port.onmessage = null;
                 }
@@ -528,18 +630,8 @@ const Agent = ({
             (window as any).startAudioContextRecording = startAudioContextRecording;
             (window as any).stopAudioContextRecording = stopAudioContextRecording;
             
-            // Start first recording - this will remain active until first user speech
-            startAudioContextRecording();
-            
-            // Set up continuous recording cycle
-            const recordingInterval = setInterval(() => {
-                if (callStatus === CallStatus.ACTIVE && !isCurrentlyRecording) {
-                    startAudioContextRecording();
-                } else if (callStatus !== CallStatus.ACTIVE) {
-                    clearInterval(recordingInterval);
-                    cleanup();
-                }
-            }, 9000); // Allow 8 second recording + 1 second buffer
+            // Don't start recording immediately - wait for introduction to complete
+            // Recording will be started by the introduction audio completion handler
 
             setCallStatus(CallStatus.ACTIVE);
             console.log('✅ Voice interview started successfully');
