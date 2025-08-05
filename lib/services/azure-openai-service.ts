@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { fetchAzureSecrets } from '@/lib/azure-config';
+import { fetchAzureSecrets } from '@/lib/azure-config-browser';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -167,14 +167,8 @@ Core Interview Principles:
       greeting += `We'll be discussing the ${position} position. `;
     }
     
-    switch (type) {
-      case 'technical':
-        return greeting + "Let's start with a technical question. Can you tell me about a challenging programming problem you've solved recently and walk me through your approach?";
-      case 'behavioral':
-        return greeting + "Let's begin with a behavioral question. Can you tell me about a time when you had to work with a difficult team member and how you handled the situation?";
-      default:
-        return greeting + "Let's start by having you tell me about yourself and what interests you about this opportunity.";
-    }
+    // Always start with preliminary questions regardless of interview type
+    return greeting + "Before we dive into the main interview, I'd like to get to know you better. Could you please tell me about your current role, your years of experience, and the main technologies or skills you work with?";
   }
 
   /**

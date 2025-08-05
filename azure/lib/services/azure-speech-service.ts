@@ -1,5 +1,5 @@
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
-import { fetchAzureSecrets } from '../azure-config';
+import { fetchAzureSecrets } from '../../lib/azure-config-browser';
 
 export interface SpeechRecognitionResult {
   text: string;

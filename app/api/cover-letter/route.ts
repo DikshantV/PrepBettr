@@ -2,48 +2,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
+import { 
+  createErrorResponse, 
+  logServerError, 
+  ServerErrorContext 
+} from '@/lib/errors';
 
 // Initialize Google Generative AI with server-side environment variable
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
+  let verificationResult: any = null;
+  
   try {
     // Extract session cookie and verify user authentication
     const sessionCookie = request.cookies.get('session')?.value;
     
     if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return createErrorResponse('Authentication required', 401);
     }
     
     // Verify the session token
-    const verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
+    verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
     
     if (!verificationResult.success || !verificationResult.decodedToken) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
+      return createErrorResponse('Invalid session', 401);
     }
     
     const { resumeText, jobDescription } = await request.json();
 
     // Validate input
     if (!resumeText || !jobDescription) {
-      return NextResponse.json(
-        { error: 'Both resume text and job description are required' },
-        { status: 400 }
-      );
+      return createErrorResponse('Both resume text and job description are required', 400);
     }
 
     // Check for reasonable length limits
     if (resumeText.length > 50000 || jobDescription.length > 50000) {
-      return NextResponse.json(
-        { error: 'Text length exceeds maximum limit (50,000 characters)' },
-        { status: 400 }
-      );
+      return createErrorResponse('Text length exceeds maximum limit (50,000 characters)', 400);
     }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
@@ -73,28 +68,23 @@ Return ONLY the cover letter content with no additional commentary or explanatio
     });
 
   } catch (error) {
-    console.error('Cover letter generation API error:', error);
+    const context: ServerErrorContext = { 
+      userId: verificationResult?.decodedToken?.uid || 'unknown', 
+      url: request.url 
+    };
+    logServerError('Cover letter generation API error', error, context);
     
     // Return appropriate error messages
     if (error instanceof Error) {
       if (error.message.includes('API key')) {
-        return NextResponse.json(
-          { error: 'API configuration error. Please contact support.' },
-          { status: 500 }
-        );
+        return createErrorResponse('API configuration error. Please contact support.', 500);
       }
       if (error.message.includes('quota') || error.message.includes('limit')) {
-        return NextResponse.json(
-          { error: 'Service temporarily unavailable due to usage limits. Please try again later.' },
-          { status: 429 }
-        );
+        return createErrorResponse('Service temporarily unavailable due to usage limits. Please try again later.', 429);
       }
     }
 
-    return NextResponse.json(
-      { error: 'Failed to generate cover letter. Please try again.' },
-      { status: 500 }
-    );
+    return createErrorResponse('Failed to generate cover letter. Please try again.', 500);
   }
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { JobAnalysisRequest, RelevancyAnalysis, ApiResponse, UserProfile, JobListing } from '@/types/auto-apply';
+import { logServerError, ServerErrorContext } from '@/lib/errors';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 
@@ -208,8 +209,10 @@ function generateLocationAnalysis(userLocation?: string, jobLocation?: string, w
 }
 
 export async function POST(request: NextRequest) {
+  let body: JobAnalysisRequest | undefined;
+  
   try {
-    const body: JobAnalysisRequest = await request.json();
+    body = await request.json();
     const { userId, jobId, userProfile, jobListing } = body;
 
     // TODO: Add authentication check
@@ -239,7 +242,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Job analysis error:', error);
+    const context: ServerErrorContext = { 
+      userId: body?.userId || 'unknown', 
+      url: request.url 
+    };
+    logServerError('Job analysis error', error, context);
+    
     return NextResponse.json(
       { 
         success: false, 

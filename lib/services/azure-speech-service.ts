@@ -193,17 +193,110 @@ export class AzureSpeechService {
     return text
       // Remove or replace emojis and special unicode characters
       .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-      // Escape XML special characters
+      // Escape XML special characters (but NOT apostrophes - they cause TTS to say "apos")
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;')
+      // NOTE: We intentionally do NOT escape apostrophes with &apos; as TTS reads it as "apos"
+      // Single quotes/apostrophes are safe in SSML content and will be pronounced correctly
+      // .replace(/'/g, '&apos;')  // REMOVED - causes "apos" pronunciation
       // Remove problematic symbols that might cause parsing issues
       .replace(/[@#$%^&*()]/g, ' ')
       // Clean up multiple spaces
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  /**
+   * Process audio with Azure Speech using continuous recognition for better silence handling
+   */
+  async processAudioWithAzureSpeech(audioBuffer: ArrayBuffer): Promise<SpeechRecognitionResult | null> {
+    if (!this.isInitialized || !this.speechConfig) {
+      console.error('❌ Azure Speech Service not initialized');
+      return null;
+    }
+
+    try {
+      // Create push stream for the audio
+      const pushStream = SpeechSDK.AudioInputStream.createPushStream();
+      pushStream.write(Buffer.from(audioBuffer));
+      pushStream.close();
+      
+      const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
+      const recognizer = new SpeechSDK.SpeechRecognizer(this.speechConfig, audioConfig);
+
+      // Use continuous recognition instead of recognizeOnceAsync
+      return new Promise((resolve, reject) => {
+        let hasRecognizedSpeech = false;
+        let finalResult: SpeechRecognitionResult | null = null;
+        
+        // Set maximum duration (65 seconds) to prevent hanging
+        const maxDurationTimer = setTimeout(() => {
+          console.log('⏱️ Maximum recognition duration reached, stopping...');
+          recognizer.stopContinuousRecognitionAsync();
+          if (!hasRecognizedSpeech) {
+            resolve(null);
+          }
+        }, 65000);
+
+        // Handle final recognized results
+        recognizer.recognized = (sender, event) => {
+          if (event.result.reason === SpeechSDK.ResultReason.RecognizedSpeech && event.result.text) {
+            console.log(`✅ Speech recognized: ${event.result.text}`);
+            hasRecognizedSpeech = true;
+            
+            finalResult = {
+              text: event.result.text,
+              confidence: event.result.properties?.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult) ? 1.0 : 0.8,
+              reason: 'RecognizedSpeech'
+            };
+            
+            // Stop recognition after first meaningful result
+            clearTimeout(maxDurationTimer);
+            recognizer.stopContinuousRecognitionAsync();
+          }
+        };
+
+        // Handle session stopped
+        recognizer.sessionStopped = (sender, event) => {
+          console.log('🛑 Recognition session stopped');
+          clearTimeout(maxDurationTimer);
+          recognizer.close();
+          resolve(finalResult);
+        };
+
+        // Handle cancellation/errors
+        recognizer.canceled = (sender, event) => {
+          console.log(`❌ Recognition canceled: ${event.reason}`);
+          clearTimeout(maxDurationTimer);
+          recognizer.stopContinuousRecognitionAsync();
+          
+          if (event.reason === SpeechSDK.CancellationReason.Error) {
+            console.error('Recognition error:', event.errorDetails);
+            reject(new Error(event.errorDetails || 'Unknown recognition error'));
+          } else {
+            resolve(finalResult);
+          }
+        };
+
+        // Start continuous recognition
+        recognizer.startContinuousRecognitionAsync(
+          () => {
+            console.log('🎤 Started continuous recognition for audio processing');
+          },
+          (error) => {
+            console.error('❌ Failed to start continuous recognition:', error);
+            clearTimeout(maxDurationTimer);
+            recognizer.close();
+            reject(new Error(error));
+          }
+        );
+      });
+    } catch (error) {
+      console.error('❌ Failed to process audio with Azure Speech:', error);
+      return null;
+    }
   }
 
   /**

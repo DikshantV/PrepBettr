@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { azureSpeechService } from '@/lib/services/azure-speech-service';
-import { fetchAzureSecrets } from '@/lib/azure-config';
+import { fetchAzureSecrets } from '@/lib/azure-config-browser';
 
 export async function GET() {
   try {
