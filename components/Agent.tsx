@@ -450,6 +450,12 @@ micSource = context.createMediaStreamSource(stream);
                         } else if (event.data.type === 'level') {
                             // Handle RMS level updates if needed for real-time feedback
                             const rms = event.data.rms;
+                            
+                            // Debug: Log all RMS levels to see if audio is being captured
+                            if (rms > 0.001) { // Very low threshold for debugging
+                                console.log(`🔊 Audio level detected: RMS=${rms.toFixed(6)}, threshold=0.01, introComplete=${introductionComplete}, hasDetected=${hasDetectedNonSilence}`);
+                            }
+                            
 if (rms > 0.01 && !hasDetectedNonSilence && introductionComplete) {
                                 console.log(`🎤 Real-time speech detected, RMS: ${rms.toFixed(4)}`);
                                 hasDetectedNonSilence = true;
@@ -457,6 +463,7 @@ if (rms > 0.01 && !hasDetectedNonSilence && introductionComplete) {
                                 // Require minimum 300ms of continuous speech before stopping
                                 setTimeout(() => {
                                     if (hasDetectedNonSilence && introductionComplete) {
+                                        console.log('🛑 Stopping recording due to speech detection');
                                         stopAudioContextRecording();
                                     }
                                 }, 300);
@@ -939,9 +946,25 @@ micSource?.connect(workletNode!);
                         )}
                     </>
                 ) : (
-                    <button className="btn-disconnect" onClick={() => handleDisconnect()}>
-                        End Interview
-                    </button>
+                    <>
+                        <button className="btn-disconnect" onClick={() => handleDisconnect()}>
+                            End Interview
+                        </button>
+                        {/* Debug button to manually stop recording */}
+                        {isRecording && (
+                            <button 
+                                className="btn-secondary" 
+                                onClick={() => {
+                                    console.log('🔧 Manual recording stop triggered');
+                                    if ((window as any).stopAudioContextRecording) {
+                                        (window as any).stopAudioContextRecording();
+                                    }
+                                }}
+                            >
+                                Stop & Process Audio
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
         </>
