@@ -31,7 +31,8 @@
     "test:all": "npm run test:unit && npm run test:e2e:quota && npm run test:webhook:emulator",
     "test:ci": "npm run test:coverage && npm run test:e2e:quota",
     "build:test": "npm run build && npm run test:hydration",
-    "test:audio": "jest lib/audio/__tests__/micCapture.simple.test.js --testEnvironment=jsdom"
+    "test:audio": "jest lib/audio/__tests__/micCapture.simple.test.js --testEnvironment=jsdom",
+    "test:azure-function": "node scripts/test-azure-function.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.17",

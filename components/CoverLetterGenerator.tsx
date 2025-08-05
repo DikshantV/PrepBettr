@@ -223,20 +223,6 @@ const CoverLetterGeneratorSection = () => {
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Or paste your resume text
-              </label>
-              <textarea
-                value={resumeText}
-                onChange={(e) => {
-                  setResumeText(e.target.value);
-                  setError(null);
-                }}
-                placeholder="Paste your resume content here..."
-                className="w-full h-40 p-3 bg-gray-800 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              />
-            </div>
           </div>
 
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 shadow-md">

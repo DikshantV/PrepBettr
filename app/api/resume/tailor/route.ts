@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 
-// Initialize Google Generative AI with server-side environment variable
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
+// Initialize Azure OpenAI service
+let azureInitialized = false;
+const initializeAzure = async () => {
+  if (!azureInitialized) {
+    azureInitialized = await azureOpenAIService.initialize();
+  }
+  return azureInitialized;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,46 +51,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    const prompt = `You are an expert resume writer and ATS optimization specialist. Please tailor this resume to better match the following job description for maximum ATS compatibility and relevance.
+    // Initialize Azure OpenAI service
+    const isAzureReady = await initializeAzure();
+    if (!isAzureReady) {
+      return NextResponse.json(
+        { error: 'Azure OpenAI service is not available. Please try again later.' },
+        { status: 503 }
+      );
+    }
 
-JOB DESCRIPTION:
-${jobDescription}
-
-CURRENT RESUME:
-${resumeText}
-
-Please provide a tailored version of the resume that:
-1. Uses keywords and phrases directly from the job description
-2. Highlights relevant skills and experiences that match the job requirements
-3. Maintains professional formatting and ATS-friendly structure
-4. Uses strong action verbs and quantifiable achievements
-5. Keeps the same overall length and format structure
-6. Optimizes for Applicant Tracking Systems (ATS)
-7. Ensures keyword density without keyword stuffing
-
-Return ONLY the tailored resume content with no additional commentary or explanations.`;
-
-    const result = await model.generateContent(prompt);
-    const tailoredContent = result.response.text();
+    // Generate tailored resume using Azure OpenAI
+    const tailoredContent = await azureOpenAIService.tailorResume(resumeText, jobDescription);
 
     return NextResponse.json({ 
       tailoredResume: tailoredContent,
       success: true 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Resume tailoring API error:', error);
     
-    // Return appropriate error messages
+    // Handle Azure OpenAI specific errors
+    if (error.status) {
+      switch (error.status) {
+        case 401:
+          return NextResponse.json(
+            { error: 'Authentication failed with Azure OpenAI service.' },
+            { status: 401 }
+          );
+        case 400:
+          return NextResponse.json(
+            { error: 'Invalid request format. Please check your input and try again.' },
+            { status: 400 }
+          );
+        case 429:
+          return NextResponse.json(
+            { error: 'Service temporarily unavailable due to usage limits. Please try again later.' },
+            { status: 429 }
+          );
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          return NextResponse.json(
+            { error: 'Azure OpenAI service is temporarily unavailable. Please try again later.' },
+            { status: 500 }
+          );
+      }
+    }
+    
+    // Handle general error scenarios
     if (error instanceof Error) {
-      if (error.message.includes('API key')) {
+      if (error.message.includes('not initialized')) {
+        return NextResponse.json(
+          { error: 'Service is not properly configured. Please contact support.' },
+          { status: 500 }
+        );
+      }
+      if (error.message.includes('API key') || error.message.includes('credentials')) {
         return NextResponse.json(
           { error: 'API configuration error. Please contact support.' },
           { status: 500 }
         );
       }
-      if (error.message.includes('quota') || error.message.includes('limit')) {
+      if (error.message.includes('quota') || error.message.includes('limit') || error.message.includes('rate')) {
         return NextResponse.json(
           { error: 'Service temporarily unavailable due to usage limits. Please try again later.' },
           { status: 429 }
