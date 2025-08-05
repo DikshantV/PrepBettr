@@ -2,7 +2,14 @@ const https = require('https');
 
 // Azure Function URLs
 const BASE_URL = 'https://prepbettr-voiceagent-functions.azurewebsites.net/api';
-const VOICE_SERVICE_URL = `${BASE_URL}/httptrigger1?code=T2PTEZsRjSdoEBtdmZQd6U7q56PCiZ7WEkrh5fhh1nrmAzFuKJTx6g==`;
+const AZURE_FUNCTION_KEY = process.env.AZURE_FUNCTION_KEY;
+
+if (!AZURE_FUNCTION_KEY) {
+    console.error('❌ AZURE_FUNCTION_KEY environment variable is not set');
+    process.exit(1);
+}
+
+const VOICE_SERVICE_URL = `${BASE_URL}/httptrigger1?code=${AZURE_FUNCTION_KEY}`;
 
 // Test data
 const testData = {

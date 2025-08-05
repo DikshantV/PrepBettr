@@ -412,6 +412,57 @@ Skills: ${resumeInfo.skills}`;
   }
 
   /**
+   * Tailor resume based on job description using Azure OpenAI
+   */
+  async tailorResume(resumeText: string, jobDescription: string): Promise<string> {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    const prompt = `You are an expert resume writer and ATS optimization specialist. Please tailor this resume to better match the following job description for maximum ATS compatibility and relevance.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CURRENT RESUME:
+${resumeText}
+
+Please provide a tailored version of the resume that:
+1. Uses keywords and phrases directly from the job description
+2. Highlights relevant skills and experiences that match the job requirements
+3. Maintains professional formatting and ATS-friendly structure
+4. Uses strong action verbs and quantifiable achievements
+5. Keeps the same overall length and format structure
+6. Optimizes for Applicant Tracking Systems (ATS)
+7. Ensures keyword density without keyword stuffing
+
+Return ONLY the tailored resume content with no additional commentary or explanations.`;
+
+    try {
+      const completion = await this.retryWithBackoff(async () => {
+        return await this.client!.chat.completions.create({
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.3,
+          max_tokens: 2000,
+          top_p: 0.9,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.1,
+        });
+      });
+
+      const tailoredResume = completion.choices[0]?.message?.content;
+      if (!tailoredResume) {
+        throw new Error('No response generated');
+      }
+
+      return tailoredResume;
+    } catch (error) {
+      console.error('❌ Error tailoring resume:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check if service is ready
    */
   isReady(): boolean {
