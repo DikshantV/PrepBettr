@@ -429,6 +429,9 @@ micSource = context.createMediaStreamSource(stream);
                 audioSamples = [];
                 isCurrentlyRecording = true;
                 setIsRecording(true);
+                
+                // Reset speech detection flag for this recording session
+                hasDetectedNonSilence = false;
 
                 // Set up message handler for AudioWorklet
                 if (workletNode) {
@@ -447,7 +450,7 @@ micSource = context.createMediaStreamSource(stream);
                         } else if (event.data.type === 'level') {
                             // Handle RMS level updates if needed for real-time feedback
                             const rms = event.data.rms;
-if (rms > 0.01 && !hasDetectedNonSilence && !hasUserSpoken && introductionComplete) {
+if (rms > 0.01 && !hasDetectedNonSilence && introductionComplete) {
                                 console.log(`🎤 Real-time speech detected, RMS: ${rms.toFixed(4)}`);
                                 hasDetectedNonSilence = true;
                                 
