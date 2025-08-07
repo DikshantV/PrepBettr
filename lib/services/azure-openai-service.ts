@@ -1,18 +1,10 @@
 import OpenAI from 'openai';
 import { fetchAzureSecrets } from '@/lib/azure-config-browser';
+import { InterviewContext } from '@/lib/types/voice';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
-}
-
-export interface InterviewContext {
-  type: 'technical' | 'behavioral' | 'general';
-  position?: string;
-  company?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  currentQuestionCount?: number;
-  maxQuestions?: number;
 }
 
 export interface GenerationResponse {

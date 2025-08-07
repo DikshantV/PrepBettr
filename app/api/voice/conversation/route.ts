@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 import { azureSpeechService } from '@/lib/services/azure-speech-service';
+import { 
+  ConversationStartResponse, 
+  ConversationProcessResponse, 
+  VoiceConversationRequest 
+} from '@/lib/types/voice';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,14 +44,16 @@ export async function POST(request: NextRequest) {
         // Generate speech audio for the opening message
         const openingAudio = await azureSpeechService.synthesizeSpeech(startResponse.content);
         
-        return NextResponse.json({
+        const response: ConversationStartResponse = {
           success: true,
           message: startResponse.content,
-          questionNumber: startResponse.questionNumber,
-          isComplete: startResponse.isComplete,
+          questionNumber: startResponse.questionNumber || 1,
+          isComplete: startResponse.isComplete || false,
           hasAudio: !!openingAudio,
           audioData: openingAudio ? Array.from(new Uint8Array(openingAudio)) : null,
-        });
+        };
+        
+        return NextResponse.json(response);
 
       case 'process':
         if (!userTranscript) {
@@ -62,15 +69,17 @@ export async function POST(request: NextRequest) {
         // Generate speech audio for the AI response
         const responseAudio = await azureSpeechService.synthesizeSpeech(processResponse.content);
         
-        return NextResponse.json({
+        const processResponseData: ConversationProcessResponse = {
           success: true,
           message: processResponse.content,
-          questionNumber: processResponse.questionNumber,
-          isComplete: processResponse.isComplete,
+          questionNumber: processResponse.questionNumber || 1,
+          isComplete: processResponse.isComplete || false,
           followUpSuggestions: processResponse.followUpSuggestions,
           hasAudio: !!responseAudio,
           audioData: responseAudio ? Array.from(new Uint8Array(responseAudio)) : null,
-        });
+        };
+        
+        return NextResponse.json(processResponseData);
 
       case 'summary':
         // Generate interview summary

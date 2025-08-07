@@ -11,8 +11,7 @@ import {
 } from "@/lib/hooks/useRealtimeFirestore";
 import { 
   DataSuspense, 
-  FeedbackSkeleton,
-  RealtimeStatusIndicator 
+  FeedbackSkeleton
 } from "@/components/ui/LoadingStates";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
 import Link from "next/link";
@@ -132,12 +131,6 @@ export default function FeedbackClientRealtime({
           
           <div>
             <h1 className="text-2xl font-bold">Interview Feedback</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <RealtimeStatusIndicator 
-                isConnected={!feedbackLoading && !feedbackError}
-                lastUpdate={currentFeedback ? new Date() : undefined}
-              />
-            </div>
           </div>
         </div>
 

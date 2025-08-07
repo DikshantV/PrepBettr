@@ -7,16 +7,17 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { azureInterviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
+import { 
+    SavedMessage, 
+    ConversationStartResponse, 
+    ConversationProcessResponse 
+} from "@/lib/types/voice";
+import { playAudioBuffer, validateAudioBuffer } from "@/lib/utils/audio-helpers";
 
 enum InterviewState {
     READY = "READY",
     ACTIVE = "ACTIVE",
     FINISHED = "FINISHED",
-}
-
-interface SavedMessage {
-    role: "user" | "system" | "assistant";
-    content: string;
 }
 
 interface AgentProps {
@@ -49,6 +50,8 @@ const Agent = ({
     const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
     const [isWaitingForUser, setIsWaitingForUser] = useState(false);
     const [hasUserSpoken, setHasUserSpoken] = useState(false);
+    const [questionNumber, setQuestionNumber] = useState(0);
+    const [isInterviewComplete, setIsInterviewComplete] = useState(false);
     
     // Use useRef to persist audio nodes and prevent garbage collection
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -279,13 +282,9 @@ const Agent = ({
 
             console.log('✅ Transcript received:', transcript);
 
-            // Add user message to conversation
-            const userMessage: SavedMessage = { role: "user", content: transcript };
-            setMessages(prev => [...prev, userMessage]);
-
-            // Process with AI
+            // Process with AI (handleAIProcess will add both user and AI messages)
             setIsProcessingAI(true);
-            await processWithAI([...messages, userMessage]);
+            await handleAIProcess(transcript);
 
         } catch (error) {
             console.error('❌ Error sending audio to backend:', error);
@@ -295,9 +294,9 @@ const Agent = ({
     };
 
     /**
-     * Process conversation with Azure OpenAI and get response
+     * Process user transcript with AI and get response
      */
-    const processWithAI = async (conversationHistory: SavedMessage[]): Promise<void> => {
+    const handleAIProcess = async (userTranscript: string): Promise<void> => {
         try {
             const response = await fetch('/api/voice/conversation', {
                 method: 'POST',
@@ -305,30 +304,62 @@ const Agent = ({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    messages: conversationHistory,
-                    userName,
-                    questions,
-                    type,
+                    action: "process",
+                    userTranscript,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const errorData = await response.json().catch(() => ({ error: response.statusText }));
+                throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
             }
 
             const data = await response.json();
             console.log('🤖 AI response received:', data);
 
-            const aiMessage: SavedMessage = { role: "assistant", content: data.response };
-            setMessages(prev => [...prev, aiMessage]);
+            // Append userTranscript to messages
+            const userMessage: SavedMessage = { role: "user", content: userTranscript };
+            
+            // Append AI reply to messages
+            const aiMessage: SavedMessage = { role: "assistant", content: data.message };
+            setMessages(prev => [...prev, userMessage, aiMessage]);
 
-            // Convert AI response to speech and play it
-            await playAIResponse(data.response);
+            // Update questionNumber and isComplete
+            if (data.questionNumber !== undefined) {
+                setQuestionNumber(data.questionNumber);
+            }
+            if (data.isComplete !== undefined) {
+                setIsInterviewComplete(data.isComplete);
+            }
+
+            // Play reply audio if supplied, else TTS fallback
+            if (data.hasAudio && validateAudioBuffer(data.audioData)) {
+                try {
+                    setIsSpeaking(true);
+                    await playAudioBuffer(data.audioData!);
+                    setIsSpeaking(false);
+                    setIsProcessingAI(false);
+                    setIsWaitingForUser(true);
+                } catch (audioError) {
+                    console.error('❌ Error playing direct audio, falling back to TTS:', audioError);
+                    setIsSpeaking(false);
+                    setIsProcessingAI(false);
+                    // TTS fallback
+                    await playAIResponse(data.message);
+                }
+            } else {
+                // TTS fallback
+                await playAIResponse(data.message);
+            }
 
         } catch (error) {
             console.error('❌ Error processing with AI:', error);
             setIsProcessingAI(false);
             setIsWaitingForUser(true);
+            
+            // Show user-friendly error message
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            alert(`Error processing your response: ${errorMessage}`);
         }
     };
 
@@ -388,7 +419,8 @@ const Agent = ({
             setInterviewState(InterviewState.ACTIVE);
             console.log('🎙️ Starting Azure-powered voice interview...');
 
-            // Request microphone permission
+            // Step 1: Get microphone stream (permission already granted by parent)
+            console.log('🎤 Getting microphone stream...');
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
@@ -398,11 +430,12 @@ const Agent = ({
                     channelCount: 1,
                 }
             });
-
+            
             audioStreamRef.current = stream;
             setAudioStream(stream);
+            console.log('✅ Microphone stream obtained');
 
-            // Create AudioContext for recording
+            // Step 2: Setup audio context and worklet for recording
             const context = new (window.AudioContext || (window as any).webkitAudioContext)({
                 sampleRate: 16000
             });
@@ -418,6 +451,60 @@ const Agent = ({
             workletNodeRef.current = workletNode;
 
             micSource.connect(workletNode);
+
+            // Step 3: Build interview context and get AI intro
+            const interviewContext = {
+                userName,
+                questions,
+                type,
+                userId,
+                interviewId,
+                feedbackId
+            };
+
+            const response = await fetch('/api/voice/conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: "start",
+                    interviewContext
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('🤖 AI start response received:', data);
+
+            const openingMessage = data.message;
+            setQuestionNumber(data.questionNumber || 0);
+            setIsInterviewComplete(data.isComplete || false);
+
+            // Add AI opening message to conversation
+            const aiMessage: SavedMessage = { role: "assistant", content: openingMessage };
+            setMessages(prev => [...prev, aiMessage]);
+
+            // Step 4: Play AI opening message and setup recording functions
+            if (data.hasAudio && validateAudioBuffer(data.audioData)) {
+                try {
+                    setIsSpeaking(true);
+                    await playAudioBuffer(data.audioData!);
+                    setIsSpeaking(false);
+                    setIsWaitingForUser(true);
+                } catch (audioError) {
+                    console.error('❌ Error playing direct audio, falling back to playAIResponse:', audioError);
+                    setIsSpeaking(false);
+                    // Fallback to existing playAIResponse
+                    await playAIResponse(openingMessage);
+                }
+            } else {
+                // Fallback to existing playAIResponse
+                await playAIResponse(openingMessage);
+            }
 
             let recordingTimeoutId: NodeJS.Timeout | null = null;
 
@@ -499,10 +586,6 @@ const Agent = ({
             (window as any).startAudioContextRecording = startAudioContextRecording;
             (window as any).stopAudioContextRecording = stopAudioContextRecording;
             
-            // Start with AI introduction
-            const introMessage = azureInterviewer.first_message.replace('{{candidateName}}', userName);
-            await playAIResponse(introMessage);
-            
             console.log('✅ Voice interview started successfully');
 
         } catch (error) {
@@ -515,6 +598,30 @@ const Agent = ({
     const endInterview = async () => {
         try {
             setInterviewState(InterviewState.FINISHED);
+            
+            // Call summary action (optional for future use)
+            try {
+                const summaryResponse = await fetch('/api/voice/conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: "summary",
+                    }),
+                });
+                
+                if (summaryResponse.ok) {
+                    const summaryData = await summaryResponse.json();
+                    console.log('📋 Interview summary generated:', summaryData.summary);
+                    // Summary is available in summaryData.summary if needed in the future
+                } else {
+                    console.warn('⚠️ Failed to generate interview summary:', summaryResponse.statusText);
+                }
+            } catch (summaryError) {
+                console.warn('⚠️ Error generating interview summary:', summaryError);
+                // Continue with cleanup even if summary fails
+            }
             
             // Handle AudioContext cleanup
             if ((window as any).audioRecorderCleanup) {
