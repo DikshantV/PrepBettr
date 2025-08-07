@@ -43,7 +43,7 @@ export class AzureOpenAIService {
       this.client = new OpenAI({
         apiKey: secrets.azureOpenAIKey,
         baseURL: `${secrets.azureOpenAIEndpoint}/openai/deployments/${secrets.azureOpenAIDeployment}`,
-        defaultQuery: { 'api-version': '2024-08-01-preview' },
+        defaultQuery: { 'api-version': '2024-08-01-preview' }, // Latest stable API version with gpt-4o support
         defaultHeaders: {
           'api-key': secrets.azureOpenAIKey,
         },
@@ -136,6 +136,13 @@ Core Interview Principles:
    * Start a new interview conversation
    */
   async startInterviewConversation(): Promise<GenerationResponse> {
+    console.log('🚀 [TRACE] startInterviewConversation called', {
+      timestamp: new Date().toISOString(),
+      interviewContext: this.interviewContext,
+      isInitialized: this.isInitialized,
+      callStack: new Error().stack?.split('\n').slice(0, 5).join('\n')
+    });
+    
     if (!this.isInitialized || !this.client) {
       throw new Error('Azure OpenAI Service not initialized');
     }
@@ -146,6 +153,14 @@ Core Interview Principles:
     ];
 
     const openingMessage = this.getOpeningMessage();
+    
+    console.log('📢 [TRACE] Opening message generated', {
+      message: openingMessage,
+      interviewType: this.interviewContext.type,
+      isPreliminaryQuestion: openingMessage.includes('tell me about your current role'),
+      timestamp: new Date().toISOString()
+    });
+    
     this.conversationHistory.push({ role: 'assistant', content: openingMessage });
 
     return {
@@ -161,11 +176,21 @@ Core Interview Principles:
   private getOpeningMessage(): string {
     const { type, position } = this.interviewContext;
     
+    console.log('🎯 [TRACE] getOpeningMessage called', {
+      type,
+      position,
+      timestamp: new Date().toISOString(),
+      callStack: new Error().stack?.split('\n').slice(0, 5).join('\n')
+    });
+    
     let greeting = "Hello! I'm excited to interview you today. ";
     
     if (position) {
       greeting += `We'll be discussing the ${position} position. `;
     }
+    
+    // TODO: [BUG] This always returns preliminary questions - should check context
+    console.warn('⚠️ [BUG] Always returning preliminary questions regardless of interview type');
     
     // Always start with preliminary questions regardless of interview type
     return greeting + "Before we dive into the main interview, I'd like to get to know you better. Could you please tell me about your current role, your years of experience, and the main technologies or skills you work with?";
@@ -175,18 +200,32 @@ Core Interview Principles:
    * Process user response and generate next question or comment
    */
   async processUserResponse(userResponse: string): Promise<GenerationResponse> {
+    console.log('💬 [TRACE] processUserResponse called', {
+      userResponse: userResponse.substring(0, 100) + '...',
+      historyLength: this.conversationHistory.length,
+      currentQuestionCount: this.interviewContext.currentQuestionCount,
+      maxQuestions: this.interviewContext.maxQuestions,
+      timestamp: new Date().toISOString(),
+      callStack: new Error().stack?.split('\n').slice(0, 5).join('\n')
+    });
+    
     if (!this.isInitialized || !this.client) {
       throw new Error('Azure OpenAI Service not initialized');
     }
 
     // Add user response to conversation history
     this.conversationHistory.push({ role: 'user', content: userResponse });
+    
+    console.log('📝 [TRACE] User response added to history', {
+      historyLength: this.conversationHistory.length,
+      timestamp: new Date().toISOString()
+    });
 
     try {
       const completion = await this.retryWithBackoff(async () => {
         return await this.client!.chat.completions.create({
           messages: this.conversationHistory,
-          temperature: 0.7,
+          temperature: 0.7, // Match Gemini default
           max_tokens: 200,
           top_p: 0.9,
           frequency_penalty: 0.1,
@@ -196,11 +235,25 @@ Core Interview Principles:
 
       const assistantResponse = completion.choices[0]?.message?.content || 'I\'m sorry, I didn\'t catch that. Could you repeat your answer?';
       
+      console.log('🤖 [TRACE] OpenAI response received', {
+        response: assistantResponse.substring(0, 100) + '...',
+        questionCount: this.interviewContext.currentQuestionCount,
+        timestamp: new Date().toISOString()
+      });
+      
       // Add assistant response to conversation history
       this.conversationHistory.push({ role: 'assistant', content: assistantResponse });
 
       const currentQuestionCount = (this.interviewContext.currentQuestionCount || 0) + 1;
       const maxQuestions = this.interviewContext.maxQuestions || 10;
+      
+      console.log('📊 [TRACE] Question progression', {
+        currentQuestionCount,
+        maxQuestions,
+        isComplete: currentQuestionCount >= maxQuestions,
+        willContinue: currentQuestionCount < maxQuestions,
+        timestamp: new Date().toISOString()
+      });
       
       // Update question count
       this.interviewContext.currentQuestionCount = currentQuestionCount;
@@ -461,6 +514,44 @@ Return ONLY the tailored resume content with no additional commentary or explana
    */
   isReady(): boolean {
     return this.isInitialized && this.client !== null;
+  }
+
+  /**
+   * Create a chat completion with custom parameters
+   * Public method for use by adapters
+   */
+  async createCompletion(
+    messages: Array<{ role: 'user' | 'system' | 'assistant'; content: string }>,
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+    } = {}
+  ) {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    const {
+      temperature = 0.7,     // Default matching Gemini for prompt parity
+      maxTokens = 1500,      // Default matching Gemini for prompt parity
+      topP = 0.9,            // Maintain creativity balance
+      frequencyPenalty = 0.1, // Reduce repetition
+      presencePenalty = 0.1   // Encourage diverse content
+    } = options;
+
+    return await this.retryWithBackoff(async () => {
+      return await this.client!.chat.completions.create({
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        top_p: topP,
+        frequency_penalty: frequencyPenalty,
+        presence_penalty: presencePenalty,
+      });
+    });
   }
 
   /**

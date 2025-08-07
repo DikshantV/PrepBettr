@@ -1,10 +1,8 @@
 "use server";
 
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
-
 import { getDBService } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
+import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 
 export async function createFeedback(params: CreateFeedbackParams) {
     const { interviewId, userId, transcript, feedbackId } = params;
@@ -17,26 +15,43 @@ export async function createFeedback(params: CreateFeedbackParams) {
             )
             .join("");
 
-        const { object } = await generateObject({
-            model: google("gemini-2.0-flash-001", {
-                structuredOutputs: false,
-            }),
-            schema: feedbackSchema,
-            prompt: `
-        You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
-        Transcript:
-        ${formattedTranscript}
+        // Initialize Azure OpenAI service
+        await azureOpenAIService.initialize();
+        
+        const prompt = `
+You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
 
-        Please score the candidate from 0 to 100 in the following areas. Do not add categories other than the ones provided:
-        - **Communication Skills**: Clarity, articulation, structured responses.
-        - **Technical Knowledge**: Understanding of key concepts for the role.
-        - **Problem-Solving**: Ability to analyze problems and propose solutions.
-        - **Cultural & Role Fit**: Alignment with company values and job role.
-        - **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
-        `,
-            system:
-                "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
-        });
+Transcript:
+${formattedTranscript}
+
+Please score the candidate from 0 to 100 in the following areas and provide feedback in JSON format:
+
+{
+  "totalScore": <average of all category scores>,
+  "categoryScores": {
+    "communicationSkills": <score 0-100>,
+    "technicalKnowledge": <score 0-100>,
+    "problemSolving": <score 0-100>,
+    "culturalRoleFit": <score 0-100>,
+    "confidenceClarity": <score 0-100>
+  },
+  "strengths": ["strength1", "strength2", "strength3"],
+  "areasForImprovement": ["area1", "area2", "area3"],
+  "finalAssessment": "Overall assessment of the candidate's performance"
+}
+
+Score categories:
+- **Communication Skills**: Clarity, articulation, structured responses.
+- **Technical Knowledge**: Understanding of key concepts for the role.
+- **Problem-Solving**: Ability to analyze problems and propose solutions.
+- **Cultural & Role Fit**: Alignment with company values and job role.
+- **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
+
+Return only valid JSON, no additional text.
+`;
+        
+        const response = await azureOpenAIService.generateCompletion(prompt);
+        const object = JSON.parse(response);
 
         const feedback = {
             interviewId: interviewId,

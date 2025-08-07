@@ -1,0 +1,25 @@
+{
+  "bindings": [
+    {
+      "name": "myTimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 */15 * * * *",
+      "runOnStartup": false,
+      "useMonitor": true
+    },
+    {
+      "name": "httpTrigger",
+      "type": "httpTrigger",
+      "direction": "in",
+      "authLevel": "function",
+      "methods": ["post"]
+    },
+    {
+      "name": "$return",
+      "type": "http",
+      "direction": "out"
+    }
+  ],
+  "scriptFile": "index.js"
+}

@@ -7,6 +7,8 @@ interface AzureSecrets {
   azureOpenAIKey: string;
   azureOpenAIEndpoint: string;
   azureOpenAIDeployment: string;
+  azureOpenAIGpt35Deployment?: string; // gpt-35-turbo deployment
+  azureOpenAIGpt4oDeployment?: string; // gpt-4o deployment
 }
 
 let cachedSecrets: AzureSecrets | null = null;
@@ -29,7 +31,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       speechEndpoint: process.env.NEXT_PUBLIC_SPEECH_ENDPOINT || '',
       azureOpenAIKey: process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY || '',
       azureOpenAIEndpoint: process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT || '',
-      azureOpenAIDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT || 'gpt-4'
+      azureOpenAIDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o',
+      azureOpenAIGpt35Deployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      azureOpenAIGpt4oDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
     };
 
     // Validate that required secrets are available
@@ -54,7 +58,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       speechEndpoint: '',
       azureOpenAIKey: '',
       azureOpenAIEndpoint: '',
-      azureOpenAIDeployment: 'gpt-4'
+      azureOpenAIDeployment: 'gpt-4o',
+      azureOpenAIGpt35Deployment: 'gpt-35-turbo',
+      azureOpenAIGpt4oDeployment: 'gpt-4o'
     };
     
     cachedSecrets = fallbackSecrets;
@@ -74,7 +80,14 @@ export function getAzureConfig() {
       speechEndpoint: !!process.env.NEXT_PUBLIC_SPEECH_ENDPOINT,
       azureOpenAIKey: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY,
       azureOpenAIEndpoint: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT,
-      azureOpenAIDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT
+      azureOpenAIDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT,
+      azureOpenAIGpt35Deployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT,
+      azureOpenAIGpt4oDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT
+    },
+    deployments: {
+      default: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT,
+      gpt35Turbo: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      gpt4o: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
     }
   };
 }

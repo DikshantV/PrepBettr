@@ -1,0 +1,119 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "East US",
+      "allowedValues": [
+        "East US",
+        "South Central US",
+        "West Europe",
+        "France Central",
+        "UK South",
+        "Australia East",
+        "Japan East"
+      ],
+      "metadata": {
+        "description": "Location for the Azure OpenAI resource"
+      }
+    },
+    "resourceName": {
+      "type": "string",
+      "defaultValue": "prepbettr-openai",
+      "metadata": {
+        "description": "Name for the Azure OpenAI resource"
+      }
+    },
+    "deployments": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "gpt-35-turbo",
+          "model": {
+            "format": "OpenAI",
+            "name": "gpt-35-turbo",
+            "version": "0125"
+          },
+          "sku": {
+            "name": "Standard",
+            "capacity": 120
+          }
+        },
+        {
+          "name": "gpt-4o",
+          "model": {
+            "format": "OpenAI",
+            "name": "gpt-4o",
+            "version": "2024-08-06"
+          },
+          "sku": {
+            "name": "Standard",
+            "capacity": 30
+          }
+        }
+      ],
+      "metadata": {
+        "description": "Array of model deployments"
+      }
+    }
+  },
+  "variables": {
+    "cognitiveServicesAccountName": "[parameters('resourceName')]",
+    "cognitiveServicesAccountId": "[resourceId('Microsoft.CognitiveServices/accounts', variables('cognitiveServicesAccountName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('cognitiveServicesAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S0"
+      },
+      "kind": "OpenAI",
+      "properties": {
+        "customSubDomainName": "[variables('cognitiveServicesAccountName')]",
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "virtualNetworkRules": [],
+          "ipRules": []
+        },
+        "publicNetworkAccess": "Enabled",
+        "disableLocalAuth": false
+      }
+    },
+    {
+      "copy": {
+        "name": "deploymentLoop",
+        "count": "[length(parameters('deployments'))]"
+      },
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(variables('cognitiveServicesAccountName'), '/', parameters('deployments')[copyIndex()].name)]",
+      "dependsOn": [
+        "[variables('cognitiveServicesAccountId')]"
+      ],
+      "sku": "[parameters('deployments')[copyIndex()].sku]",
+      "properties": {
+        "model": "[parameters('deployments')[copyIndex()].model]",
+        "versionUpgradeOption": "OnceCurrentVersionExpired",
+        "raiPolicyName": "Microsoft.Default"
+      }
+    }
+  ],
+  "outputs": {
+    "endpoint": {
+      "type": "string",
+      "value": "[reference(variables('cognitiveServicesAccountId'), '2023-05-01').endpoint]"
+    },
+    "resourceId": {
+      "type": "string",
+      "value": "[variables('cognitiveServicesAccountId')]"
+    },
+    "deploymentNames": {
+      "type": "array",
+      "value": "[array(parameters('deployments')[*].name)]"
+    }
+  }
+}

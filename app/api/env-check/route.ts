@@ -3,8 +3,6 @@ import { getAzureHealthStatus } from '@/lib/azure-startup';
 
 export async function GET() {
   const envCheck = {
-    GOOGLE_GENERATIVE_AI_API_KEY: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'SET' : 'MISSING',
-    GOOGLE_GENERATIVE_AI_API_KEY_LENGTH: process.env.GOOGLE_GENERATIVE_AI_API_KEY?.length || 0,
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: !!process.env.VERCEL ? 'YES' : 'NO',
     // Azure environment variables

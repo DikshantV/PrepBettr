@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "workspaceName": {
+      "type": "string",
+      "defaultValue": "prepbettr-log-analytics",
+      "metadata": {
+        "description": "Name for the Log Analytics workspace"
+      }
+    },
+    "appInsightsName": {
+      "type": "string",
+      "defaultValue": "prepbettr-app-insights",
+      "metadata": {
+        "description": "Name for the Application Insights resource"
+      }
+    },
+    "retentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "allowedValues": [
+        30,
+        60,
+        90,
+        120,
+        180,
+        270,
+        365,
+        550,
+        730
+      ],
+      "metadata": {
+        "description": "Number of days to retain data in workspace"
+      }
+    }
+  },
+  "variables": {
+    "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+    "appInsightsResourceId": "[resourceId('Microsoft.Insights/components', parameters('appInsightsName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[parameters('workspaceName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "pergb2018"
+        },
+        "retentionInDays": "[parameters('retentionInDays')]",
+        "features": {
+          "enableLogAccessUsingOnlyResourcePermissions": true
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[parameters('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "dependsOn": [
+        "[variables('workspaceResourceId')]"
+      ],
+      "properties": {
+        "Application_Type": "web",
+        "Flow_Type": "Redfield",
+        "Request_Source": "CustomDeployment",
+        "RetentionInDays": "[parameters('retentionInDays')]",
+        "WorkspaceResourceId": "[variables('workspaceResourceId')]"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/workbooks",
+      "apiVersion": "2021-03-08",
+      "name": "prepbettr-observability-workbook",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[variables('appInsightsResourceId')]"
+      ],
+      "properties": {
+        "displayName": "PrepBettr Observability Dashboard",
+        "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":1,\"content\":{\"json\":\"## PrepBettr Application Monitoring\\n\\nThis workbook provides comprehensive monitoring for the PrepBettr application, including AI services, portal integrations, and user activities.\"},\"name\":\"text - 0\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"requests\\n| where timestamp > ago(24h)\\n| summarize RequestCount = count() by bin(timestamp, 1h), resultCode\\n| render timechart\",\"size\":0,\"title\":\"API Request Volume (24h)\",\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.insights/components\"},\"name\":\"query - 1\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"exceptions\\n| where timestamp > ago(24h)\\n| summarize ErrorCount = count() by bin(timestamp, 1h), type\\n| render timechart\",\"size\":0,\"title\":\"Error Rates (24h)\",\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.insights/components\"},\"name\":\"query - 2\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"traces\\n| where message contains \\\"AUTOMATION_LOG\\\"\\n| extend logData = parse_json(message)\\n| where timestamp > ago(24h)\\n| summarize count() by tostring(logData.properties.action), tostring(logData.properties.status)\\n| render columnchart\",\"size\":0,\"title\":\"Automation Actions (24h)\",\"timeContext\":{\"durationMs\":86400000},\"queryType\":0,\"resourceType\":\"microsoft.insights/components\"},\"name\":\"query - 3\"}],\"isLocked\":false,\"fallbackResourceIds\":[\"/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/prepbettr-app-insights\"]}",
+        "category": "workbook",
+        "kind": "shared",
+        "sourceId": "[variables('appInsightsResourceId')]",
+        "tags": [
+          "PrepBettr",
+          "Monitoring",
+          "Observability"
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "workspaceId": {
+      "type": "string",
+      "value": "[reference(variables('workspaceResourceId')).customerId]"
+    },
+    "workspaceKey": {
+      "type": "string",
+      "value": "[listKeys(variables('workspaceResourceId'), '2021-12-01-preview').primarySharedKey]"
+    },
+    "appInsightsInstrumentationKey": {
+      "type": "string",
+      "value": "[reference(variables('appInsightsResourceId')).InstrumentationKey]"
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference(variables('appInsightsResourceId')).ConnectionString]"
+    },
+    "appInsightsResourceId": {
+      "type": "string",
+      "value": "[variables('appInsightsResourceId')]"
+    }
+  }
+}

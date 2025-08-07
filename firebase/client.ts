@@ -3,6 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getRemoteConfig } from "firebase/remote-config";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -33,4 +34,4 @@ if (typeof window !== 'undefined') {
 
 const googleProvider = new GoogleAuthProvider();
 
-export { auth, db, storage, analytics, googleProvider };
+export { auth, db, storage, analytics, googleProvider, app };

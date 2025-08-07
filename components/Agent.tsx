@@ -1,21 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { vocode } from "@/lib/vocode.sdk";
-import { vocodeOpenSource } from "@/lib/vocode-opensource";
-import { vocodeInterviewer } from "@/constants";
+import { azureInterviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
-// Import Vocode types
-import type { Message, FunctionCallMessage, GenerateAssistantVariables, InterviewWorkflowVariables } from "@/types/vocode";
-
-enum CallStatus {
-    INACTIVE = "INACTIVE",
-    CONNECTING = "CONNECTING",
+enum InterviewState {
+    READY = "READY",
     ACTIVE = "ACTIVE",
     FINISHED = "FINISHED",
 }
@@ -36,32 +30,36 @@ interface AgentProps {
 }
 
 const Agent = ({
-                   userName,
-                   userId,
-                   interviewId,
-                   feedbackId,
-                   type,
-                   questions,
-               }: AgentProps) => {
+    userName,
+    userId,
+    interviewId,
+    feedbackId,
+    type,
+    questions,
+}: AgentProps) => {
     const router = useRouter();
-    const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
+    const [interviewState, setInterviewState] = useState<InterviewState>(InterviewState.READY);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
-const [isSpeaking, setIsSpeaking] = useState(false);
-const [introductionComplete, setIntroductionComplete] = useState(false);
-    const [lastMessage, setLastMessage] = useState<string>("");
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const [userImage, setUserImage] = useState<string>("");
     const [feedbackGenerated, setFeedbackGenerated] = useState(false);
     const [generatedFeedbackId, setGeneratedFeedbackId] = useState<string | null>(null);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
-    const [questionNumber, setQuestionNumber] = useState(0);
-    const [interviewComplete, setInterviewComplete] = useState(false);
-    const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-    const [audioWorkletNode, setAudioWorkletNode] = useState<AudioWorkletNode | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
     const [isWaitingForUser, setIsWaitingForUser] = useState(false);
     const [hasUserSpoken, setHasUserSpoken] = useState(false);
-    const [useMediaRecorderFallback, setUseMediaRecorderFallback] = useState(false);
+    
+    // Use useRef to persist audio nodes and prevent garbage collection
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+    const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+    const audioStreamRef = useRef<MediaStream | null>(null);
+    const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const audioSamplesRef = useRef<Float32Array[]>([]);
+    const isCurrentlyRecordingRef = useRef<boolean>(false);
+    const hasDetectedNonSilenceRef = useRef<boolean>(false);
+    const ringBufferRef = useRef<Float32Array[]>([]);
 
     useEffect(() => {
         fetch("/api/profile/me")
@@ -74,6 +72,28 @@ const [introductionComplete, setIntroductionComplete] = useState(false);
                 }
             })
             .catch(console.error);
+    }, []);
+    
+    // Add visibility change listener to handle tab switches
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && audioContextRef.current) {
+                // Resume AudioContext when tab becomes visible
+                if (audioContextRef.current.state === 'suspended') {
+                    audioContextRef.current.resume().then(() => {
+                        console.log('✅ AudioContext resumed after tab became visible');
+                    }).catch(error => {
+                        console.error('❌ Failed to resume AudioContext:', error);
+                    });
+                }
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     /**
@@ -98,22 +118,6 @@ const [introductionComplete, setIntroductionComplete] = useState(false);
         
         console.warn('⚠️ No preferred MIME types supported, using default');
         return null;
-    };
-    
-    /**
-     * Create MediaRecorder with optimal settings
-     */
-    const createMediaRecorder = (stream: MediaStream): { recorder: MediaRecorder; mimeType: string } => {
-        const mimeType = getSupportedMimeType();
-        let recorder: MediaRecorder;
-        
-        if (mimeType) {
-            recorder = new MediaRecorder(stream, { mimeType });
-        } else {
-            recorder = new MediaRecorder(stream);
-        }
-        
-        return { recorder, mimeType: mimeType || 'audio/webm' };
     };
 
     /**
@@ -165,459 +169,315 @@ const [introductionComplete, setIntroductionComplete] = useState(false);
         const chunkSize = 4096;
         const trimmedChunks: Float32Array[] = [];
         for (let i = 0; i < trimmedAudio.length; i += chunkSize) {
-            trimmedChunks.push(trimmedAudio.slice(i, i + chunkSize));
+            const chunk = trimmedAudio.slice(i, i + chunkSize);
+            trimmedChunks.push(chunk);
         }
         
         return trimmedChunks;
     };
 
-    const sendAudioToBackend = async (audioBlob: Blob) => {
-        console.log('Uploading audio to the backend', audioBlob);    
-        console.log('Audio Blob size:', audioBlob.size);    
-        console.log('Audio Blob type:', audioBlob.type);
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'audio.wav');
+    /**
+     * Convert Float32Array chunks to WAV blob
+     */
+    const convertToWav = (audioChunks: Float32Array[], sampleRate: number): Blob => {
+        const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const combinedAudio = new Float32Array(totalLength);
+        let offset = 0;
+        for (const chunk of audioChunks) {
+            combinedAudio.set(chunk, offset);
+            offset += chunk.length;
+        }
 
+        // Convert float samples to 16-bit PCM
+        const pcmData = new Int16Array(combinedAudio.length);
+        for (let i = 0; i < combinedAudio.length; i++) {
+            const sample = Math.max(-1, Math.min(1, combinedAudio[i]));
+            pcmData[i] = sample * 32767;
+        }
+
+        // Create WAV header
+        const wavHeader = new ArrayBuffer(44);
+        const view = new DataView(wavHeader);
+
+        const writeString = (offset: number, string: string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + pcmData.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, pcmData.length * 2, true);
+
+        return new Blob([wavHeader, pcmData], { type: 'audio/wav' });
+    };
+
+    /**
+     * Send audio to backend for speech-to-text processing
+     */
+    const sendAudioToBackend = async (audioBlob: Blob): Promise<void> => {
         try {
-            setIsProcessingAI(true);
-            const response = await fetch('/api/voice/stream', {
-                method: 'POST',
-                body: formData
-            });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.wav');
 
-            console.log('Backend response status:', response.status);
-            console.log('Backend response headers:', Object.fromEntries(response.headers.entries()));
+            console.log('📤 Uploading audio to speech-to-text service...');
             
+            // Retry logic with exponential backoff
+            let attempt = 0;
+            const maxAttempts = 3;
             let result;
-            try {
-                result = await response.json();
-                console.log('Backend response data:', JSON.stringify(result, null, 2));
-            } catch (parseError) {
-                console.error('Failed to parse JSON response:', parseError);
-                const responseClone = response.clone();
-                const rawText = await responseClone.text();
-                console.log('Raw response text:', rawText);
-                throw new Error('Invalid JSON response from server');
-            }
 
-            if (result.success) {
-                console.log('✅ Speech recognition successful:', result.text);
-                
-                // Mark that user has spoken - this enables stopping recording after AI response
-                if (!hasUserSpoken) {
-                    setHasUserSpoken(true);
-                    console.log('🎙️ First user speech detected - microphone will stop after AI response');
-                }
-                
-                setMessages((prev) => [...prev, { role: 'user', content: result.text }]);
-                
-                // Process the user transcript with the conversation API
-                const processResult = await fetch('/api/voice/conversation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'process', userTranscript: result.text })
-                });
+            while (attempt < maxAttempts) {
+                try {
+                    const response = await fetch('/api/voice/stream', {
+                        method: 'POST',
+                        body: formData,
+                    });
 
-                const processResponse = await processResult.json();
-
-                if (processResponse.success) {
-                    setMessages((prev) => [...prev, { role: 'assistant', content: processResponse.message }]);
-                    setQuestionNumber(processResponse.questionNumber);
-                    setInterviewComplete(processResponse.isComplete);
-
-                    // Play the AI response audio and wait for completion
-                    if (processResponse.hasAudio && processResponse.audioData) {
-                        const audioBlob = new Blob([new Uint8Array(processResponse.audioData)], { type: 'audio/wav' });
-                        const audioUrl = URL.createObjectURL(audioBlob);
-const audio = new Audio(audioUrl);
-                        if (ttsAudioContext && ttsAudioContext.state !== 'closed') {
-                            ttsSource = ttsAudioContext.createMediaElementSource(audio);
-                            ttsSource.connect(ttsAudioContext.destination);
-                        }
-                        
-                        // Set flag to indicate AI is speaking
-                        setIsSpeaking(true);
-                        
-                        audio.onended = () => {
-                            console.log('✅ AI audio playback finished');
-                            setIsSpeaking(false);
-                            setIsWaitingForUser(true);
-                            
-                            // Only start recording again if user has spoken before
-                            // For first interaction, keep microphone open continuously
-                            if (hasUserSpoken) {
-                                setTimeout(() => {
-                                    if (isWaitingForUser && callStatus === CallStatus.ACTIVE) {
-                                        console.log('🎙️ Ready for user input - starting recording');
-                                        setIsWaitingForUser(false);
-                                        startAudioContextRecording();
-                                    }
-                                }, 500);
-                            } else {
-                                console.log('🎙️ Microphone remains open - waiting for first user speech');
-                            }
-                        };
-                        
-                        audio.onerror = () => {
-                            console.error('❌ Error playing AI audio');
-                            setIsSpeaking(false);
-                        };
-                        
-                        audio.play().catch(error => {
-                            console.error('❌ Failed to play AI audio:', error);
-                            setIsSpeaking(false);
-                        });
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                } else {
-                    console.error('Failed to process user response:', processResponse.error);
+
+                    result = await response.json();
+                    console.log('📥 Speech-to-text result:', result);
+                    break;
+                } catch (error) {
+                    attempt++;
+                    console.error(`❌ Attempt ${attempt} failed:`, error);
+                    
+                    if (attempt < maxAttempts) {
+                        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+                        console.log(`⏳ Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        throw error;
+                    }
                 }
-            } else {
-                console.error('❌ Speech recognition failed:', {
-                    success: result.success,
-                    error: result.error,
-                    reason: result.reason,
-                    errorDetails: result.errorDetails,
-                    fullResult: result
-                });
             }
+
+            // Hard failure if text is undefined to prevent silent drops
+            if (result.text === undefined) {
+                throw new Error('Speech-to-text response missing text field - preventing silent drop');
+            }
+
+            const transcript = result.text;
+            if (!transcript || transcript.trim().length === 0) {
+                console.log('⚠️ Empty transcript received');
+                setIsWaitingForUser(true);
+                return;
+            }
+
+            console.log('✅ Transcript received:', transcript);
+
+            // Add user message to conversation
+            const userMessage: SavedMessage = { role: "user", content: transcript };
+            setMessages(prev => [...prev, userMessage]);
+
+            // Process with AI
+            setIsProcessingAI(true);
+            await processWithAI([...messages, userMessage]);
+
         } catch (error) {
-            console.error('Error sending audio to backend:', error);
-        } finally {
-            setIsProcessingAI(false);
+            console.error('❌ Error sending audio to backend:', error);
+            setIsWaitingForUser(true);
+            alert(`Error processing audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
-    const handleCall = async () => {
-        setCallStatus(CallStatus.CONNECTING);
-        console.log('🚀 Starting voice interview with type:', type);
-
-        if (!navigator.mediaDevices || !window.AudioContext) { 
-            console.error('Media devices API or AudioContext not supported');
-            setCallStatus(CallStatus.INACTIVE);
-            alert('Your browser does not support audio recording.');
-            return;
-        }
-
+    /**
+     * Process conversation with Azure OpenAI and get response
+     */
+    const processWithAI = async (conversationHistory: SavedMessage[]): Promise<void> => {
         try {
-            // Start the conversation first
-            const startResult = await fetch('/api/voice/conversation', {
+            const response = await fetch('/api/voice/conversation', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: 'start', 
-                    interviewContext: { 
-                        type: type === 'technical' ? 'technical' : type === 'behavioral' ? 'behavioral' : 'general',
-                        maxQuestions: 5 
-                    } 
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    messages: conversationHistory,
+                    userName,
+                    questions,
+                    type,
+                }),
             });
 
-            const startResponse = await startResult.json();
-            if (startResponse.success) {
-                setMessages((prev) => [...prev, { role: 'assistant', content: startResponse.message }]);
-                setQuestionNumber(startResponse.questionNumber || 1);
-                
-                // Play the opening audio
-                if (startResponse.hasAudio && startResponse.audioData) {
-                    const audioBlob = new Blob([new Uint8Array(startResponse.audioData)], { type: 'audio/wav' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(audioUrl);
-                    
-audio.onended = () => {
-                        setIntroductionComplete(true);
-                        console.log('Introduction complete');
-                        setIsWaitingForUser(true);
-                        setHasUserSpoken(false);
-                        console.log('🎙️ Starting recording now that introduction is complete');
-                        
-                        // Now start the first recording after introduction completes
-                        setTimeout(() => {
-                            startAudioContextRecording();
-                        }, 500);
-                    };
-
-                    audio.onerror = () => {
-                        console.error('❌ Error playing introduction audio');
-                    };
-
-                    audio.play();
-                }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            // Start audio recording with AudioContext and manual WAV encoding (with MediaRecorder fallback)
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            const data = await response.json();
+            console.log('🤖 AI response received:', data);
+
+            const aiMessage: SavedMessage = { role: "assistant", content: data.response };
+            setMessages(prev => [...prev, aiMessage]);
+
+            // Convert AI response to speech and play it
+            await playAIResponse(data.response);
+
+        } catch (error) {
+            console.error('❌ Error processing with AI:', error);
+            setIsProcessingAI(false);
+            setIsWaitingForUser(true);
+        }
+    };
+
+    /**
+     * Convert text to speech using Azure Speech Services and play it
+     */
+    const playAIResponse = async (text: string): Promise<void> => {
+        try {
+            setIsSpeaking(true);
+            
+            const response = await fetch('/api/voice/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`TTS failed: ${response.statusText}`);
+            }
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+
+            audio.onended = () => {
+                console.log('🔊 AI response playback completed');
+                setIsSpeaking(false);
+                setIsProcessingAI(false);
+                setIsWaitingForUser(true);
+                
+                // Clean up the object URL
+                URL.revokeObjectURL(audioUrl);
+            };
+
+            audio.onerror = (error) => {
+                console.error('❌ Audio playback error:', error);
+                setIsSpeaking(false);
+                setIsProcessingAI(false);
+                setIsWaitingForUser(true);
+                URL.revokeObjectURL(audioUrl);
+            };
+
+            await audio.play();
+            
+        } catch (error) {
+            console.error('❌ Error playing AI response:', error);
+            setIsSpeaking(false);
+            setIsProcessingAI(false);
+            setIsWaitingForUser(true);
+        }
+    };
+
+    const startInterview = async () => {
+        try {
+            setInterviewState(InterviewState.ACTIVE);
+            console.log('🎙️ Starting Azure-powered voice interview...');
+
+            // Request microphone permission
+            const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: false,
                     sampleRate: 16000,
                     channelCount: 1,
-                    echoCancellation: true,
-                    noiseSuppression: true
-                },
+                }
             });
-            
-            console.log('✅ Microphone access granted');
+
+            audioStreamRef.current = stream;
             setAudioStream(stream);
+
+            // Create AudioContext for recording
+            const context = new (window.AudioContext || (window as any).webkitAudioContext)({
+                sampleRate: 16000
+            });
+            audioContextRef.current = context;
+
+            // Load the audio processor worklet
+            await context.audioWorklet.addModule('/audio-processor.js');
+
+            const micSource = context.createMediaStreamSource(stream);
+            const workletNode = new AudioWorkletNode(context, 'audio-processor');
             
-            // Create AudioContext with 16kHz sample rate for Azure compatibility
-            let context: AudioContext | null = null;
-let micSource: MediaStreamAudioSourceNode | null = null;
-let ttsAudioContext: AudioContext | null = null;
-let ttsSource: MediaElementAudioSourceNode | null = null;
-            let workletNode: AudioWorkletNode | null = null;
-            let audioSamples: Float32Array[] = [];
-            let isCurrentlyRecording = false;
+            micSourceRef.current = micSource;
+            workletNodeRef.current = workletNode;
+
+            micSource.connect(workletNode);
+
             let recordingTimeoutId: NodeJS.Timeout | null = null;
-            
-            try {
-context = new AudioContext({ sampleRate: 16000 });
-ttsAudioContext = new AudioContext();
-                setAudioContext(context);
-                
-                // Load the AudioWorklet module
-                await context.audioWorklet.addModule('/audio-processor.js');
-                
-micSource = context.createMediaStreamSource(stream);
-                workletNode = new AudioWorkletNode(context, 'audio-processor');
-                
-                console.log('AudioContext created with sample rate:', context.sampleRate);
-            } catch (error) {
-                console.error('Failed to create AudioContext or AudioWorklet:', error);
-                throw error;
-            }
-            
-            // Convert Float32Array to WAV blob
-            const createWAVBlob = (audioData: Float32Array[], sampleRate: number) => {
-                const length = audioData.reduce((acc, chunk) => acc + chunk.length, 0);
-                const buffer = new ArrayBuffer(44 + length * 2);
-                const view = new DataView(buffer);
-                
-                // WAV header
-                const writeString = (offset: number, string: string) => {
-                    for (let i = 0; i < string.length; i++) {
-                        view.setUint8(offset + i, string.charCodeAt(i));
-                    }
-                };
-                
-                writeString(0, 'RIFF');
-                view.setUint32(4, 36 + length * 2, true);
-                writeString(8, 'WAVE');
-                writeString(12, 'fmt ');
-                view.setUint32(16, 16, true);
-                view.setUint16(20, 1, true);
-                view.setUint16(22, 1, true);
-                view.setUint32(24, sampleRate, true);
-                view.setUint32(28, sampleRate * 2, true);
-                view.setUint16(32, 2, true);
-                view.setUint16(34, 16, true);
-                writeString(36, 'data');
-                view.setUint32(40, length * 2, true);
-                
-                // Convert Float32 to Int16 and write to buffer
-                let offset = 44;
-                for (const chunk of audioData) {
-                    for (let i = 0; i < chunk.length; i++) {
-                        const sample = Math.max(-1, Math.min(1, chunk[i]));
-                        view.setInt16(offset, sample * 0x7FFF, true);
-                        offset += 2;
+
+            // Handle audio data from worklet
+            workletNode.port.onmessage = (event) => {
+                if (event.data.type === 'audio') {
+                    const audioData = event.data.audioData as Float32Array;
+                    
+                    if (isCurrentlyRecordingRef.current) {
+                        audioSamplesRef.current.push(new Float32Array(audioData));
                     }
                 }
-                
-                return new Blob([buffer], { type: 'audio/wav' });
             };
-            
+
             const startAudioContextRecording = () => {
-                console.log('Starting AudioContext recording...');
-                audioSamples = [];
-                isCurrentlyRecording = true;
+                console.log('🎤 Starting recording...');
+                audioSamplesRef.current = [];
+                isCurrentlyRecordingRef.current = true;
                 setIsRecording(true);
-                
-                // Reset speech detection flag for this recording session
-                hasDetectedNonSilence = false;
+                setIsWaitingForUser(false);
 
-                // Set up message handler for AudioWorklet
-                if (workletNode) {
-                    workletNode.port.onmessage = (event) => {
-                        if (!isCurrentlyRecording) return;
-                        
-                        if (event.data.type === 'audiodata') {
-                            const audioData = event.data.audioData;
-                            audioSamples.push(audioData);
-                            
-                            // Maintain ring buffer
-                            ringBuffer.push(audioData);
-                            if (ringBuffer.length > ringBufferSize) {
-                                ringBuffer.shift(); // Remove oldest chunk
-                            }
-                        } else if (event.data.type === 'level') {
-                            // Handle RMS level updates if needed for real-time feedback
-                            const rms = event.data.rms;
-                            
-                            // Debug: Log all RMS levels to see if audio is being captured
-                            if (rms > 0.001) { // Very low threshold for debugging
-                                console.log(`🔊 Audio level detected: RMS=${rms.toFixed(6)}, threshold=0.01, introComplete=${introductionComplete}, hasDetected=${hasDetectedNonSilence}`);
-                            }
-                            
-if (rms > 0.01 && !hasDetectedNonSilence && introductionComplete) {
-                                console.log(`🎤 Real-time speech detected, RMS: ${rms.toFixed(4)}`);
-                                hasDetectedNonSilence = true;
-                                
-                                // Require minimum 300ms of continuous speech before stopping
-                                setTimeout(() => {
-                                    if (hasDetectedNonSilence && introductionComplete) {
-                                        console.log('🛑 Stopping recording due to speech detection');
-                                        stopAudioContextRecording();
-                                    }
-                                }, 300);
-                            }
-                        }
-                    };
-                }
-
-micSource?.connect(workletNode!);
-                // Note: AudioWorkletNode doesn't need to connect to destination for processing
-
+                // Set a timeout to stop recording after 30 seconds
                 recordingTimeoutId = setTimeout(() => {
-                    // Only stop if we have detected speech
-                    // For initial silence without user speech, keep recording open beyond timeout
-                    if (hasDetectedNonSilence) {
-                        stopAudioContextRecording();
-                    } else {
-                        console.log('🎙️ Recording timeout reached but no speech detected - keeping microphone open');
-                        // Optionally extend timeout or keep recording indefinitely
-                        // For now, we'll just log and let it continue
-                    }
-                }, 60000); // Record for up to 60 seconds to test silence handling
+                    console.log('⏱️ Recording timeout reached');
+                    stopAudioContextRecording();
+                }, 30000);
             };
 
-            const stopAudioContextRecording = async () => {
-                console.log('Stopping AudioContext recording...');
-                isCurrentlyRecording = false;
-                setIsRecording(false);
-
-                // Disconnect worklet node instead of processor
-                micSource?.disconnect();
-                if (workletNode) {
-                    workletNode.port.onmessage = null;
+            const stopAudioContextRecording = () => {
+                if (!isCurrentlyRecordingRef.current) {
+                    console.log('⚠️ Recording already stopped');
+                    return;
                 }
+
+                console.log('⏹️ Stopping recording...');
+                isCurrentlyRecordingRef.current = false;
+                setIsRecording(false);
 
                 if (recordingTimeoutId) {
                     clearTimeout(recordingTimeoutId);
                     recordingTimeoutId = null;
                 }
 
-                // Trim initial silence from captured audio chunks before WAV encoding
-                console.log('Audio samples before trimming:', audioSamples.length, 'chunks');
-                const trimmedAudioChunks = trimInitialSilence(audioSamples, context?.sampleRate!);
-                console.log('Audio samples after trimming:', trimmedAudioChunks.length, 'chunks');
-                
-                // Convert trimmed samples to WAV blob
-                const audioBlob = createWAVBlob(trimmedAudioChunks, context?.sampleRate!);
-                console.log('Created WAV Blob:', audioBlob.size, 'bytes');
-
-                // Validate WAV format
-                try {
-                    const buffer = await audioBlob.arrayBuffer();
-                    const header = new DataView(buffer).getUint32(0, false);
-                    if (header !== 0x52494646 /* "RIFF" */) {
-                        throw new Error('Invalid RIFF header');
-                    }
+                if (audioSamplesRef.current.length > 0) {
+                    console.log(`📊 Processing ${audioSamplesRef.current.length} audio chunks`);
                     
-                    // Verify sample rate and channels
-                    const view = new DataView(buffer);
-                    const fileSampleRate = view.getUint32(24, true);
-                    const fileChannels = view.getUint16(22, true);
+                    // Trim silence and convert to WAV
+                    const trimmedChunks = trimInitialSilence(audioSamplesRef.current, context.sampleRate);
+                    const audioBlob = convertToWav(trimmedChunks, context.sampleRate);
                     
-                    console.log('WAV validation:', {
-                        sampleRate: fileSampleRate,
-                        channels: fileChannels,
-                        expectedSampleRate: context?.sampleRate,
-                        expectedChannels: 1
-                    });
-                    
-                    if (fileSampleRate !== context?.sampleRate) {
-                        console.warn('Sample rate mismatch in WAV file');
-                    }
-                    if (fileChannels !== 1) {
-                        console.warn('Channel count mismatch in WAV file');
-                    }
-                } catch (validationError) {
-                    console.error('WAV validation failed:', validationError);
-                    return;
-                }
-
-                // Safety check for audio data
-                if (!audioBlob || audioBlob.size === 0) {
-                    console.error('No audio data captured or audio data is empty');
-                    return;
-                }
-
-                // Process audio with backend API
-                await sendAudioToBackend(audioBlob);
-            };
-            
-            // Note: Azure Speech processing is now handled server-side via /api/voice/stream
-            // This ensures credentials are secure and not exposed to the browser
-            
-            // Function to process user transcript
-            const processUserTranscript = async (transcript: string) => {
-                try {
-                    const processResult = await fetch('/api/voice/conversation', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'process', userTranscript: transcript })
-                    });
-
-                    const processResponse = await processResult.json();
-
-                    if (processResponse.success) {
-                        setMessages((prev) => [...prev, { role: 'assistant', content: processResponse.message }]);
-                        setQuestionNumber(processResponse.questionNumber);
-                        setInterviewComplete(processResponse.isComplete);
-
-                        // Play the AI response audio
-                        if (processResponse.hasAudio && processResponse.audioData) {
-                            const audioBlob = new Blob([new Uint8Array(processResponse.audioData)], { type: 'audio/wav' });
-                            const audioUrl = URL.createObjectURL(audioBlob);
-                            const audio = new Audio(audioUrl);
-                            
-                            setIsSpeaking(true);
-                            
-                            audio.onended = () => {
-                                console.log('✅ AI audio playback finished');
-                                setIsSpeaking(false);
-                                setIsWaitingForUser(true);
-                                
-                                // Wait before starting next recording
-                                setTimeout(() => {
-                                    if (isWaitingForUser && callStatus === CallStatus.ACTIVE) {
-                                        console.log('🎙️ Ready for user input - starting recording');
-                                        setIsWaitingForUser(false);
-                                        startAudioContextRecording();
-                                    }
-                                }, 500);
-                            };
-                            
-                            audio.onerror = () => {
-                                console.error('❌ Error playing AI audio');
-                                setIsSpeaking(false);
-                            };
-                            
-                            audio.play().catch(error => {
-                                console.error('❌ Failed to play AI audio:', error);
-                                setIsSpeaking(false);
-                            });
-                        }
-                    } else {
-                        console.error('Failed to process user response:', processResponse.error);
-                    }
-                } catch (error) {
-                    console.error('Error processing user transcript:', error);
+                    // Send to backend for processing
+                    sendAudioToBackend(audioBlob);
+                } else {
+                    console.log('⚠️ No audio data recorded');
+                    setIsWaitingForUser(true);
                 }
             };
-            
-            // Store cleanup function for AudioContext
+
             const cleanup = async () => {
-                isCurrentlyRecording = false;
-                setIsRecording(false);
+                console.log('🧹 Cleaning up audio resources...');
                 if (recordingTimeoutId) {
                     clearTimeout(recordingTimeoutId);
                     recordingTimeoutId = null;
@@ -631,31 +491,30 @@ micSource?.connect(workletNode!);
                     await context.close();
                 }
                 stream.getTracks().forEach(track => track.stop());
-                setAudioContext(null);
                 setAudioStream(null);
             };
             
-            // Store functions in a custom object for later cleanup
+            // Store functions for later cleanup
             (window as any).audioRecorderCleanup = cleanup;
             (window as any).startAudioContextRecording = startAudioContextRecording;
             (window as any).stopAudioContextRecording = stopAudioContextRecording;
             
-            // Don't start recording immediately - wait for introduction to complete
-            // Recording will be started by the introduction audio completion handler
-
-            setCallStatus(CallStatus.ACTIVE);
+            // Start with AI introduction
+            const introMessage = azureInterviewer.first_message.replace('{{candidateName}}', userName);
+            await playAIResponse(introMessage);
+            
             console.log('✅ Voice interview started successfully');
 
         } catch (error) {
             console.error('❌ Error during voice interview start:', error);
-            setCallStatus(CallStatus.INACTIVE);
+            setInterviewState(InterviewState.READY);
             alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
-    const handleDisconnect = async () => {
+    const endInterview = async () => {
         try {
-            setCallStatus(CallStatus.FINISHED);
+            setInterviewState(InterviewState.FINISHED);
             
             // Handle AudioContext cleanup
             if ((window as any).audioRecorderCleanup) {
@@ -672,9 +531,9 @@ micSource?.connect(workletNode!);
             }
             
             // Clean up AudioContext with guard
-            if (audioContext && audioContext.state !== 'closed') {
-                await audioContext.close();
-                setAudioContext(null);
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                await audioContextRef.current.close();
+                audioContextRef.current = null;
             }
             
             setIsRecording(false);
@@ -683,93 +542,12 @@ micSource?.connect(workletNode!);
 
             console.log('✅ Voice interview ended');
         } catch (error) {
-            console.error('Error ending call:', error);
-            setCallStatus(CallStatus.FINISHED);
+            console.error('Error ending interview:', error);
+            setInterviewState(InterviewState.FINISHED);
         }
     };
 
-    const handleFunctionCall = useCallback(async (message: FunctionCallMessage) => {
-        // This function is now a placeholder as Vocode directly calls the webhook.
-        // We can add client-side logic here if needed, but for now, we just log it.
-        console.log('Vocode Function Call received on client:', message.functionCall);
-    }, []);
-
     useEffect(() => {
-        const onCallStart = () => {
-            setCallStatus(CallStatus.ACTIVE);
-        };
-
-        const onCallEnd = () => {
-            setCallStatus(CallStatus.FINISHED);
-        };
-
-        const onMessage = (message: Message) => {
-            console.log('📨 Vocode Message received:', message);
-            if (message.type === "transcript" && message.transcriptType === "final") {
-                const newMessage = { role: message.role, content: message.transcript };
-                console.log('📝 Adding transcript message:', newMessage);
-                setMessages((prev) => [...prev, newMessage]);
-            } else if (message.type === "function-call") {
-                console.log('🔧 Vocode Function call received:', message);
-                // Handle Vocode function calls for interview generation
-                handleFunctionCall(message);
-            } else {
-                console.log('🔍 Other message type:', message.type, message);
-            }
-        };
-
-        const onSpeechStart = () => {
-            console.log("🎤 Speech start");
-            setIsSpeaking(true);
-        };
-
-        const onSpeechEnd = () => {
-            console.log("🎤 Speech end");
-            setIsSpeaking(false);
-        };
-
-        const onError = (error: Error) => {
-            console.error("❌ Vocode Error:", error);
-            console.error("❌ Error details:", JSON.stringify(error, null, 2));
-            setCallStatus(CallStatus.INACTIVE);
-            alert(`Vocode Error: ${error.message}`);
-        };
-
-        // Use Vocode and select between hosted or open source
-        const hasVocodeHostedKeys = process.env.NEXT_PUBLIC_VOCODE_API_KEY && process.env.NEXT_PUBLIC_VOCODE_ASSISTANT_ID;
-        const activeSDK = hasVocodeHostedKeys ? vocode : vocodeOpenSource;
-
-        activeSDK.on("call-start", onCallStart);
-        activeSDK.on("call-end", onCallEnd);
-        activeSDK.on("message", onMessage);
-        activeSDK.on("speech-start", onSpeechStart);
-        activeSDK.on("speech-end", onSpeechEnd);
-        activeSDK.on("error", onError);
-
-        return () => {
-            // Clean up event listeners based on which SDK is active
-            if (activeSDK === vocodeOpenSource) {
-                activeSDK.off("call-start", onCallStart);
-                activeSDK.off("call-end", onCallEnd);
-                activeSDK.off("message", onMessage);
-                activeSDK.off("speech-start", onSpeechStart);
-                activeSDK.off("speech-end", onSpeechEnd);
-                activeSDK.off("error", onError);
-            } else {
-                activeSDK.off("conversation-start", onCallStart);
-                activeSDK.off("conversation-end", onCallEnd);
-                activeSDK.off("message", onMessage);
-                activeSDK.off("speech-start", onSpeechStart);
-                activeSDK.off("speech-end", onSpeechEnd);
-                activeSDK.off("error", onError);
-            }
-        };
-    }, [handleFunctionCall]);
-
-    useEffect(() => {
-        if (messages.length > 0) {
-            setLastMessage(messages[messages.length - 1].content);
-        }
 
         const handleGenerateFeedback = async (messages: SavedMessage[]) => {
             console.log("handleGenerateFeedback");
@@ -790,7 +568,7 @@ micSource?.connect(workletNode!);
             }
         };
 
-        if (callStatus === CallStatus.FINISHED) {
+        if (interviewState === InterviewState.FINISHED) {
             if (type === "generate") {
                 // For generate type, don't redirect anywhere - stay on current page
                 console.log("Interview generation completed");
@@ -799,7 +577,7 @@ micSource?.connect(workletNode!);
                 handleGenerateFeedback(messages);
             }
         }
-    }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
+    }, [messages, interviewState, feedbackId, interviewId, router, type, userId]);
 
     return (
         <>
@@ -832,11 +610,6 @@ micSource?.connect(workletNode!);
                     {isRecording && !isWaitingForUser && (
                         <div className="mt-2">
                             <span className="text-xs text-red-600 dark:text-red-400 animate-pulse">🔴 Recording...</span>
-                        </div>
-                    )}
-                    {questionNumber > 0 && (
-                        <div className="mt-1">
-                            <span className="text-xs text-gray-500">Question {questionNumber}</span>
                         </div>
                     )}
                 </div>
@@ -921,19 +694,11 @@ micSource?.connect(workletNode!);
             )}
 
             <div className="w-full flex justify-center gap-4">
-                {callStatus !== "ACTIVE" ? (
+                {interviewState !== InterviewState.ACTIVE ? (
                     <>
-                        <button className="relative btn-call" onClick={() => handleCall()}>
-                            <span
-                                className={cn(
-                                    "absolute animate-ping rounded-full opacity-75",
-                                    callStatus !== "CONNECTING" && "hidden"
-                                )}
-                            />
+                        <button className="relative btn-call" onClick={() => startInterview()}>
                             <span className="relative">
-                                {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                                    ? "Start Interview"
-                                    : ". . ."}
+                                Start Interview
                             </span>
                         </button>
                         {feedbackGenerated && generatedFeedbackId && (
@@ -947,7 +712,7 @@ micSource?.connect(workletNode!);
                     </>
                 ) : (
                     <>
-                        <button className="btn-disconnect" onClick={() => handleDisconnect()}>
+                        <button className="btn-disconnect" onClick={() => endInterview()}>
                             End Interview
                         </button>
                         {/* Debug button to manually stop recording */}

@@ -1,0 +1,262 @@
+const queueService = require('./queue-service');
+const { v4: uuidv4 } = require('uuid');
+
+class AutomationLogger {
+    constructor() {
+        this.logQueue = 'automation-logs';
+    }
+
+    /**
+     * Create a new automation log entry
+     */
+    createLogEntry(action, status, message, details = {}) {
+        return {
+            id: uuidv4(),
+            timestamp: new Date().toISOString(),
+            action: action,
+            status: status,
+            message: message,
+            details: details,
+            functionName: process.env.AZURE_FUNCTIONS_NAME || 'unknown',
+            invocationId: process.env.INVOCATION_ID || uuidv4()
+        };
+    }
+
+    /**
+     * Log a job discovery event
+     */
+    async logJobDiscovered(userId, jobId, jobDetails) {
+        const entry = this.createLogEntry(
+            'job_discovered',
+            'info',
+            `New job discovered: ${jobDetails.title} at ${jobDetails.company}`,
+            {
+                userId,
+                jobId,
+                company: jobDetails.company,
+                title: jobDetails.title,
+                portal: jobDetails.jobPortal?.name,
+                relevancyScore: jobDetails.relevancyScore
+            }
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log a job search operation
+     */
+    async logJobSearch(userId, filters, results) {
+        const entry = this.createLogEntry(
+            'job_search_completed',
+            'success',
+            `Job search completed: Found ${results.jobs.length} jobs`,
+            {
+                userId,
+                filters,
+                resultsCount: results.jobs.length,
+                searchedPortals: filters.portals
+            }
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log an application submission
+     */
+    async logApplicationSubmitted(userId, jobId, applicationResult) {
+        const entry = this.createLogEntry(
+            'application_submitted',
+            applicationResult.success ? 'success' : 'error',
+            applicationResult.message || 'Application processing completed',
+            {
+                userId,
+                jobId,
+                applicationId: applicationResult.applicationId,
+                success: applicationResult.success
+            }
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log a follow-up action
+     */
+    async logFollowUpSent(userId, applicationId, followUpType) {
+        const entry = this.createLogEntry(
+            'follow_up_sent',
+            'success',
+            `Follow-up sent: ${followUpType}`,
+            {
+                userId,
+                applicationId,
+                followUpType
+            }
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log an error
+     */
+    async logError(action, error, details = {}) {
+        const entry = this.createLogEntry(
+            action,
+            'error',
+            error.message || 'An error occurred',
+            {
+                ...details,
+                errorName: error.name,
+                errorStack: error.stack,
+                errorCode: error.code
+            }
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log a warning
+     */
+    async logWarning(action, message, details = {}) {
+        const entry = this.createLogEntry(
+            action,
+            'warning',
+            message,
+            details
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Log general information
+     */
+    async logInfo(action, message, details = {}) {
+        const entry = this.createLogEntry(
+            action,
+            'info',
+            message,
+            details
+        );
+
+        await this.writeLog(entry);
+        return entry;
+    }
+
+    /**
+     * Write log entry to queue
+     */
+    async writeLog(logEntry) {
+        try {
+            await queueService.addMessage(this.logQueue, logEntry, {
+                timeToLive: 2592000 // 30 days
+            });
+
+            // Also write to console for immediate visibility
+            const level = this.getConsoleLogLevel(logEntry.status);
+            console[level](`[${logEntry.timestamp}] ${logEntry.action}: ${logEntry.message}`, logEntry.details);
+
+            // Send to Application Insights if available
+            if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+                this.sendToApplicationInsights(logEntry);
+            }
+
+        } catch (error) {
+            console.error('Failed to write automation log:', error);
+            // Fallback to console only
+            console.error(`[${logEntry.timestamp}] ${logEntry.action}: ${logEntry.message}`, logEntry.details);
+        }
+    }
+
+    /**
+     * Get appropriate console log level
+     */
+    getConsoleLogLevel(status) {
+        switch (status) {
+            case 'error':
+                return 'error';
+            case 'warning':
+                return 'warn';
+            case 'info':
+            case 'success':
+            default:
+                return 'log';
+        }
+    }
+
+    /**
+     * Send log entry to Application Insights
+     */
+    sendToApplicationInsights(logEntry) {
+        try {
+            // Using console methods that Application Insights can capture
+            const telemetry = {
+                name: logEntry.action,
+                properties: {
+                    status: logEntry.status,
+                    message: logEntry.message,
+                    functionName: logEntry.functionName,
+                    invocationId: logEntry.invocationId,
+                    ...logEntry.details
+                },
+                timestamp: logEntry.timestamp
+            };
+
+            // Application Insights will automatically capture console output
+            if (logEntry.status === 'error') {
+                console.error('AUTOMATION_LOG', JSON.stringify(telemetry));
+            } else {
+                console.log('AUTOMATION_LOG', JSON.stringify(telemetry));
+            }
+        } catch (error) {
+            console.error('Failed to send to Application Insights:', error);
+        }
+    }
+
+    /**
+     * Retrieve recent logs for a user
+     */
+    async getRecentLogs(userId, limit = 50) {
+        try {
+            // This would typically query a database or storage
+            // For now, we'll return empty array as queue messages are consumed
+            console.log(`Retrieving recent logs for user ${userId}`);
+            return [];
+        } catch (error) {
+            console.error('Failed to retrieve recent logs:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get log statistics
+     */
+    async getLogStats(userId, timeRange = '24h') {
+        try {
+            console.log(`Getting log statistics for user ${userId} (${timeRange})`);
+            // This would typically aggregate from stored logs
+            return {
+                totalLogs: 0,
+                errorCount: 0,
+                successCount: 0,
+                warningCount: 0,
+                topActions: []
+            };
+        } catch (error) {
+            console.error('Failed to get log statistics:', error);
+            return null;
+        }
+    }
+}
+
+module.exports = new AutomationLogger();

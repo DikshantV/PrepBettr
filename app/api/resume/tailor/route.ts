@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { 
   createErrorResponse, 
@@ -7,15 +6,17 @@ import {
   mapErrorToResponse,
   ServerErrorContext 
 } from '@/lib/errors';
+import { tailorResume } from '@/lib/ai';
 
-// Initialize Azure OpenAI service
-let azureInitialized = false;
-const initializeAzure = async () => {
-  if (!azureInitialized) {
-    azureInitialized = await azureOpenAIService.initialize();
-  }
-  return azureInitialized;
-};
+// Legacy Azure OpenAI service for fallback if needed
+// import { azureOpenAIService } from '@/lib/services/azure-openai-service';
+// let azureInitialized = false;
+// const initializeAzure = async () => {
+//   if (!azureInitialized) {
+//     azureInitialized = await azureOpenAIService.initialize();
+//   }
+//   return azureInitialized;
+// };
 
 export async function POST(request: NextRequest) {
   let verificationResult: any = null;
@@ -47,18 +48,17 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('Text length exceeds maximum limit (50,000 characters)', 400);
     }
 
-    // Initialize Azure OpenAI service
-    const isAzureReady = await initializeAzure();
-    if (!isAzureReady) {
-      return createErrorResponse('Azure OpenAI service is not available. Please try again later.', 503);
+    // Use the new AI service layer for resume tailoring
+    const aiResponse = await tailorResume(resumeText, jobDescription);
+    
+    if (!aiResponse.success) {
+      throw new Error(aiResponse.error || 'Failed to tailor resume');
     }
 
-    // Generate tailored resume using Azure OpenAI
-    const tailoredContent = await azureOpenAIService.tailorResume(resumeText, jobDescription);
-
     return NextResponse.json({ 
-      tailoredResume: tailoredContent,
-      success: true 
+      tailoredResume: aiResponse.data,
+      success: true,
+      provider: aiResponse.provider
     });
 
   } catch (error: any) {

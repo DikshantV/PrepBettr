@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { JobSearchRequest, JobListing, ApiResponse, JobSearchFilters } from '@/types/auto-apply';
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+import { getLinkedInPortal } from '../../../../portals/linkedin';
+import { getWellfoundPortal } from '../../../../portals/wellfound';
+import { calculateRelevancy } from '@/lib/ai';
 
 // Mock job data for demonstration
 const mockJobs: JobListing[] = [
@@ -145,32 +145,27 @@ const mockJobs: JobListing[] = [
 
 async function calculateJobRelevancy(jobListing: JobListing, userSkills: string[], targetRoles: string[]): Promise<number> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Create a resume-like text from user profile
+    const resumeText = `
+Skills: ${userSkills.join(', ')}
+Target Roles: ${targetRoles.join(', ')}
+`;
     
-    const prompt = `
-      Analyze the relevancy between this job posting and the candidate's profile:
-      
-      JOB TITLE: ${jobListing.title}
-      JOB DESCRIPTION: ${jobListing.description}
-      REQUIREMENTS: ${jobListing.requirements.join(', ')}
-      
-      CANDIDATE SKILLS: ${userSkills.join(', ')}
-      TARGET ROLES: ${targetRoles.join(', ')}
-      
-      Calculate a relevancy score from 0-100 based on:
-      1. Skills match (40% weight)
-      2. Role alignment (30% weight) 
-      3. Experience level match (20% weight)
-      4. Job requirements match (10% weight)
-      
-      Return only a number between 0-100.
-    `;
-
-    const result = await model.generateContent(prompt);
-    const scoreText = result.response.text().trim();
-    const score = parseInt(scoreText);
+    // Create job description text
+    const jobDescription = `
+Title: ${jobListing.title}
+Description: ${jobListing.description}
+Requirements: ${jobListing.requirements.join(', ')}
+`;
     
-    return isNaN(score) ? 50 : Math.max(0, Math.min(100, score));
+    // Use the AI service layer for relevancy calculation
+    const aiResponse = await calculateRelevancy(resumeText, jobDescription);
+    
+    if (aiResponse.success && typeof aiResponse.data === 'number') {
+      return Math.max(0, Math.min(100, aiResponse.data));
+    }
+    
+    throw new Error(aiResponse.error || 'Failed to calculate relevancy');
   } catch (error) {
     console.error('Error calculating job relevancy:', error);
     // Fallback: Simple keyword matching
@@ -233,6 +228,63 @@ function filterJobs(jobs: JobListing[], filters: JobSearchFilters): JobListing[]
   });
 }
 
+/**
+ * Search jobs across multiple portals (LinkedIn, Wellfound)
+ */
+async function searchJobsAcrossPortals(userId: string, filters: JobSearchFilters): Promise<JobListing[]> {
+  const allJobs: JobListing[] = [];
+  const portalJobs: { [portal: string]: JobListing[] } = {};
+
+  // Search LinkedIn if enabled and configured
+  if (filters.portals.includes('LinkedIn')) {
+    try {
+      const linkedinPortal = getLinkedInPortal();
+      await linkedinPortal.initialize();
+      
+      const isConnected = await linkedinPortal.isConnected(userId);
+      if (isConnected) {
+        console.log('Searching LinkedIn for jobs...');
+        const linkedinJobs = await linkedinPortal.searchJobs(userId, filters);
+        portalJobs['LinkedIn'] = linkedinJobs;
+        allJobs.push(...linkedinJobs);
+      } else {
+        console.log(`User ${userId} not connected to LinkedIn`);
+      }
+    } catch (error) {
+      console.error('LinkedIn search error:', error);
+    }
+  }
+
+  // Search Wellfound if enabled and configured
+  if (filters.portals.includes('AngelList')) {
+    try {
+      const wellfoundPortal = getWellfoundPortal();
+      await wellfoundPortal.initialize();
+      
+      const isConnected = await wellfoundPortal.isConnected(userId);
+      if (isConnected) {
+        console.log('Searching Wellfound for jobs...');
+        const wellfoundJobs = await wellfoundPortal.searchJobs(userId, filters);
+        portalJobs['Wellfound'] = wellfoundJobs;
+        allJobs.push(...wellfoundJobs);
+      } else {
+        console.log(`User ${userId} not connected to Wellfound`);
+      }
+    } catch (error) {
+      console.error('Wellfound search error:', error);
+    }
+  }
+
+  // If no portal connections or results, fallback to mock data
+  if (allJobs.length === 0) {
+    console.log('No portal results found, using mock data');
+    allJobs.push(...mockJobs);
+  }
+
+  console.log(`Found ${allJobs.length} total jobs across all portals`);
+  return allJobs;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: JobSearchRequest = await request.json();
@@ -246,9 +298,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: In production, implement actual job search across multiple portals
-    // For now, filter mock data
-    let filteredJobs = filterJobs(mockJobs, filters);
+    // Search jobs across configured portals
+    const allJobs = await searchJobsAcrossPortals(userId, filters);
+    
+    // Filter jobs based on search criteria
+    let filteredJobs = filterJobs(allJobs, filters);
 
     // TODO: Get user profile for relevancy calculation
     const mockUserSkills = ['JavaScript', 'React', 'TypeScript', 'Node.js', 'Python'];

@@ -38,7 +38,7 @@ export class AzureSpeechService {
       
       // Enhanced Speech Recognition Configuration
       this.speechConfig.speechRecognitionLanguage = 'en-US';
-      this.speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, '5000');
+      this.speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, '15000'); // Extended to 15s
       this.speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '2000');
       this.speechConfig.setProperty(SpeechSDK.PropertyId.Speech_SegmentationSilenceTimeoutMs, '2000');
       this.speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_DiarizeIntermediateResults, 'true');

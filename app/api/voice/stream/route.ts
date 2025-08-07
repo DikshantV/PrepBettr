@@ -118,16 +118,28 @@ function isValidWAV(audioBuffer: ArrayBuffer): boolean {
  * Handle streaming audio data to Azure Speech Service for transcription
  */
 export async function POST(request: NextRequest) {
+  const requestId = randomUUID();
+  
   try {
-    console.log('📤 Received audio upload request');
+    console.log('📤 [TRACE] /api/voice/stream POST request received', {
+      requestId,
+      timestamp: new Date().toISOString(),
+      headers: Object.fromEntries(request.headers.entries()),
+      url: request.url
+    });
+    
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
     
     if (!audioFile) {
       console.error('❌ No audio file provided');
       return NextResponse.json(
-        { success: false, error: 'No audio file provided' },
-        { status: 400 }
+        { 
+          success: true,
+          text: '',
+          confidence: 0,
+          error: 'No audio file provided'
+        }
       );
     }
 
@@ -141,8 +153,12 @@ export async function POST(request: NextRequest) {
     if (audioFile.size === 0) {
       console.error('❌ Empty audio file received');
       return NextResponse.json(
-        { success: false, error: 'Empty audio file received' },
-        { status: 400 }
+        { 
+          success: true,
+          text: '',
+          confidence: 0,
+          error: 'Empty audio file received'
+        }
       );
     }
 
@@ -152,10 +168,11 @@ export async function POST(request: NextRequest) {
       if (!speechInitialized) {
         return NextResponse.json(
           { 
-            success: false,
+            success: true,
+            text: '',
+            confidence: 0,
             error: 'Failed to initialize Azure Speech service'
-          },
-          { status: 500 }
+          }
         );
       }
     }
@@ -170,11 +187,12 @@ export async function POST(request: NextRequest) {
       console.error('❌ Unsupported audio format:', audioMimeType);
       return NextResponse.json(
         { 
-          success: false, 
+          success: true,
+          text: '',
+          confidence: 0, 
           error: `Unsupported audio format: ${audioMimeType}. Supported formats: ${SUPPORTED_AUDIO_TYPES.join(', ')}`,
           details: { receivedType: audioMimeType, supportedTypes: SUPPORTED_AUDIO_TYPES }
-        },
-        { status: 400 }
+        }
       );
     }
 
@@ -199,11 +217,12 @@ export async function POST(request: NextRequest) {
         console.error('❌ Transcoding failed:', transcodeError);
         return NextResponse.json(
           { 
-            success: false, 
+            success: true,
+            text: '',
+            confidence: 0, 
             error: 'Failed to transcode audio to WAV format',
             details: transcodeError instanceof Error ? transcodeError.message : 'Unknown transcoding error'
-          },
-          { status: 500 }
+          }
         );
       }
     } else {
@@ -230,39 +249,73 @@ export async function POST(request: NextRequest) {
     
     // Process audio with the new helper
     try {
+      console.log('🎙️ [TRACE] Sending audio to Azure Speech Service', {
+        requestId,
+        audioSize: audioBuffer.byteLength,
+        timestamp: new Date().toISOString()
+      });
+      
       const recognitionResult = await azureSpeechService.processAudioWithAzureSpeech(audioBuffer);
       
       if (recognitionResult) {
-        console.log('✅ Speech processed successfully');
+        console.log('✅ [TRACE] Speech processed successfully', {
+          requestId,
+          text: recognitionResult.text,
+          confidence: recognitionResult.confidence,
+          timestamp: new Date().toISOString()
+        });
+        
         return NextResponse.json({
           success: true,
           text: recognitionResult.text,
           confidence: recognitionResult.confidence
         });
       } else {
-        console.log('❌ No speech recognized');
+        console.log('⚠️ [TRACE] No speech recognized, returning empty text', {
+          requestId,
+          audioSize: audioBuffer.byteLength,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Always return success with empty text if no speech detected
+        // Surface error separately for monitoring
         return NextResponse.json({
-          success: false,
-          error: 'No speech recognized'
-        }, { status: 400 });
+          success: true,
+          text: '',
+          confidence: 0,
+          warning: 'No speech recognized in audio',
+          requestId
+        });
       }
     } catch (error) {
-      console.error('❌ Error processing audio:', error);
+      console.error('❌ [TRACE] Error processing audio', {
+        requestId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Return success with empty text and surface error separately
       return NextResponse.json({
-        success: false,
+        success: true,
+        text: '',
+        confidence: 0,
         error: 'Error processing audio',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
+        errorDetails: error instanceof Error ? error.message : 'Unknown error',
+        requestId
+      });
     }
 
   } catch (error) {
     console.error('❌ Error in voice streaming API:', error);
     return NextResponse.json(
       { 
+        success: true,
+        text: '',
+        confidence: 0,
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
+      }
     );
   }
 }
