@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Clock, LogOut } from 'lucide-react';
+import { Clock, LogOut, Zap, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   Tabs,
@@ -15,11 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { useFeatureFlags } from '@/lib/hooks/useFeatureFlags';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SettingsPage() {
   const [reminderTime, setReminderTime] = useState('08:00');
   const timeInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { flags, loading, refreshFlags, isAutoApplyAzureEnabled, isPortalIntegrationEnabled } = useFeatureFlags();
 
   const handleLogout = async () => {
     try {
@@ -41,10 +44,11 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold mb-6 text-white dark:text-white">Settings</h1>
 
       <Tabs defaultValue="interview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="interview">Interview</TabsTrigger>
           <TabsTrigger value="ai">AI</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
@@ -82,17 +86,95 @@ export default function SettingsPage() {
 
         {/* AI Personalization */}
         <TabsContent value="ai" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
-          <div className="flex items-center justify-between">
-            <Label className="text-white">Enable Smart Feedback</Label>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-white">Adaptive Difficulty</Label>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-white">Use Past Performance</Label>
-            <Switch />
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-blue-400" />
+                New AI Engine (Beta)
+              </h3>
+              
+              {loading ? (
+                <div className="animate-pulse bg-gray-800 h-4 w-full rounded mb-2"></div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {/* Azure Auto-Apply Feature */}
+                    <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
+                      <div className="flex-1">
+                        <Label className="text-white font-medium">Auto-Apply with Azure AI</Label>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Automatically apply to jobs using advanced Azure OpenAI integration
+                        </p>
+                        {flags?.rolloutStatus?.autoApplyAzure && (
+                          <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-900 text-blue-200 rounded">
+                            You're in the beta rollout!
+                          </span>
+                        )}
+                      </div>
+                      <Switch 
+                        checked={isAutoApplyAzureEnabled()} 
+                        disabled={!flags?.rolloutStatus?.autoApplyAzure}
+                      />
+                    </div>
+
+                    {/* Portal Integration Feature */}
+                    <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
+                      <div className="flex-1">
+                        <Label className="text-white font-medium">Enhanced Portal Integration</Label>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Seamless integration with LinkedIn, Indeed, and other job portals
+                        </p>
+                        {flags?.rolloutStatus?.portalIntegration && (
+                          <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-900 text-blue-200 rounded">
+                            You're in the beta rollout!
+                          </span>
+                        )}
+                      </div>
+                      <Switch 
+                        checked={isPortalIntegrationEnabled()} 
+                        disabled={!flags?.rolloutStatus?.portalIntegration}
+                      />
+                    </div>
+                  </div>
+
+                  {(!flags?.rolloutStatus?.autoApplyAzure && !flags?.rolloutStatus?.portalIntegration) && (
+                    <Alert className="mt-4 border-blue-600 bg-blue-900/20">
+                      <AlertCircle className="h-4 w-4 text-blue-400" />
+                      <AlertDescription className="text-blue-200">
+                        These features are currently in beta rollout. You'll be automatically included as we expand to more users.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={refreshFlags}
+                    className="mt-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    Check for Updates
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <Separator className="border-gray-600" />
+
+            <div className="space-y-3">
+              <h4 className="text-white font-medium">General AI Settings</h4>
+              <div className="flex items-center justify-between">
+                <Label className="text-white">Enable Smart Feedback</Label>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-white">Adaptive Difficulty</Label>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-white">Use Past Performance</Label>
+                <Switch />
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <Label className="text-gray-300">Preferred Language</Label>
@@ -156,6 +238,108 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <Label className="text-white">Email Notifications</Label>
             <Switch />
+          </div>
+        </TabsContent>
+
+        {/* Privacy & GDPR */}
+        <TabsContent value="privacy" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Data Consent Preferences</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-white">Analytics & Performance</Label>
+                    <p className="text-sm text-gray-400">Help us improve the platform by sharing usage analytics</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-white">Marketing Communications</Label>
+                    <p className="text-sm text-gray-400">Receive updates about new features and tips</p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-white">Functional Cookies</Label>
+                    <p className="text-sm text-gray-400">Essential for the platform to work properly</p>
+                  </div>
+                  <Switch defaultChecked disabled />
+                </div>
+              </div>
+            </div>
+
+            <Separator className="border-gray-600" />
+
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Data Management</h3>
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    Download My Data
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    View Data Usage
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-400">
+                  You can export all your personal data or view how your data is being used.
+                </p>
+              </div>
+            </div>
+
+            <Separator className="border-gray-600" />
+
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Right to be Forgotten</h3>
+              <div className="space-y-3">
+                <Button 
+                  variant="destructive" 
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Request Data Deletion
+                </Button>
+                <p className="text-sm text-gray-400">
+                  Permanently delete all your personal data within 30 days. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <Separator className="border-gray-600" />
+
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Privacy Information</h3>
+              <div className="space-y-2">
+                <a 
+                  href="/marketing/privacy" 
+                  className="text-blue-400 hover:text-blue-300 text-sm underline"
+                >
+                  Privacy Policy
+                </a>
+                <br />
+                <a 
+                  href="/marketing/cookies" 
+                  className="text-blue-400 hover:text-blue-300 text-sm underline"
+                >
+                  Cookie Policy
+                </a>
+                <br />
+                <a 
+                  href="/marketing/terms" 
+                  className="text-blue-400 hover:text-blue-300 text-sm underline"
+                >
+                  Terms of Service
+                </a>
+              </div>
+            </div>
           </div>
         </TabsContent>
 

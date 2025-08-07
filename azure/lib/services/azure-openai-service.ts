@@ -1,9 +1,17 @@
-import OpenAI from 'openai';
-import { fetchAzureSecrets } from '../../lib/azure-config-browser';
+import { AzureOpenAI } from 'openai';
+import { fetchAzureSecrets } from '../../../lib/azure-config-browser';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
+}
+
+export interface CandidateProfile {
+  currentRole?: string;
+  techStack?: string;
+  yearsExperience?: string;
+  keySkills?: string;
+  questionCount?: string;
 }
 
 export interface InterviewContext {
@@ -23,10 +31,21 @@ export interface GenerationResponse {
 }
 
 export class AzureOpenAIService {
-  private client: OpenAI | null = null;
+  private client: AzureOpenAI | null = null;
   private isInitialized = false;
   private conversationHistory: ConversationMessage[] = [];
   private interviewContext: InterviewContext = { type: 'general' };
+  
+  // Preliminary questions for gathering candidate profile
+  private prelimQuestions = [
+    'What is your current role?',
+    'What primary tech stack do you use?',
+    'How many years of experience do you have?',
+    'What are your key skills?',
+    'How many interview questions would you like?'
+  ];
+  private prelimIndex = 0;
+  private candidateProfile: Record<string, string> = {};
 
   /**
    * Initialize the Azure OpenAI service
@@ -35,18 +54,17 @@ export class AzureOpenAIService {
     try {
       const secrets = await fetchAzureSecrets();
       
-      if (!secrets.azureOpenAIKey || !secrets.azureOpenAIEndpoint) {
+      if (!secrets.azureOpenAIKey || !secrets.azureOpenAIEndpoint || !secrets.azureOpenAIDeployment) {
         console.warn('⚠️ Azure OpenAI credentials not available');
         return false;
       }
 
-      this.client = new OpenAI({
+      this.client = new AzureOpenAI({
         apiKey: secrets.azureOpenAIKey,
-        baseURL: `${secrets.azureOpenAIEndpoint}/openai/deployments/${secrets.azureOpenAIDeployment}`,
-        defaultQuery: { 'api-version': '2024-08-01-preview' },
-        defaultHeaders: {
-          'api-key': secrets.azureOpenAIKey,
-        },
+        endpoint: secrets.azureOpenAIEndpoint,
+        deployment: secrets.azureOpenAIDeployment,
+        apiVersion: '2024-02-15-preview', // Using stable API version
+        dangerouslyAllowBrowser: true
       });
 
       this.isInitialized = true;
@@ -64,6 +82,52 @@ export class AzureOpenAIService {
   setInterviewContext(context: Partial<InterviewContext>): void {
     this.interviewContext = { ...this.interviewContext, ...context };
     console.log('📋 Interview context updated:', this.interviewContext);
+  }
+
+  /**
+   * Build system context from candidate profile
+   */
+  private buildSystemContext(): string {
+    const { currentRole, techStack, yearsExperience, keySkills } = this.candidateProfile;
+    const { type, position, company, difficulty } = this.interviewContext;
+    
+    let systemPrompt = `You are an AI interviewer conducting a ${type} interview with a candidate.\n\n`;
+    systemPrompt += `Candidate Profile:\n`;
+    systemPrompt += `- Current Role: ${currentRole}\n`;
+    systemPrompt += `- Tech Stack: ${techStack}\n`;
+    systemPrompt += `- Years of Experience: ${yearsExperience}\n`;
+    systemPrompt += `- Key Skills: ${keySkills}\n\n`;
+    
+    systemPrompt += `Interview Guidelines:\n`;
+    systemPrompt += `1. Ask relevant, engaging questions tailored to their experience level\n`;
+    systemPrompt += `2. Follow up on answers with clarifying questions\n`;
+    systemPrompt += `3. Maintain a professional but friendly tone\n`;
+    systemPrompt += `4. Keep responses concise and focused\n`;
+    systemPrompt += `5. Adapt difficulty based on their experience and responses\n\n`;
+    
+    if (position) {
+      systemPrompt += `Position: ${position}\n`;
+    }
+    if (company) {
+      systemPrompt += `Company: ${company}\n`;
+    }
+    if (difficulty) {
+      systemPrompt += `Difficulty Level: ${difficulty}\n`;
+    }
+    
+    switch (type) {
+      case 'technical':
+        systemPrompt += `\nFocus on technical skills relevant to their tech stack (${techStack}), problem-solving, coding concepts, and system design appropriate for someone with ${yearsExperience} years of experience.`;
+        break;
+      case 'behavioral':
+        systemPrompt += `\nFocus on behavioral questions about teamwork, leadership, conflict resolution, and past experiences relevant to someone in a ${currentRole} role.`;
+        break;
+      default:
+        systemPrompt += `\nAsk a mix of questions about background, experience, goals, and general fit for the role, considering their ${yearsExperience} years of experience in ${currentRole}.`;
+    }
+    
+    systemPrompt += `\n\nKeep your responses under 100 words and ask one question at a time.`;
+    return systemPrompt;
   }
 
   /**
@@ -107,17 +171,19 @@ export class AzureOpenAIService {
       throw new Error('Azure OpenAI Service not initialized');
     }
 
-    // Reset conversation history
-    this.conversationHistory = [
-      { role: 'system', content: this.getSystemPrompt() }
-    ];
+    // Reset conversation history and preliminary questions state
+    this.conversationHistory = [];
+    this.prelimIndex = 0;
+    this.candidateProfile = {};
 
-    const openingMessage = this.getOpeningMessage();
-    this.conversationHistory.push({ role: 'assistant', content: openingMessage });
+    // Send greeting + first preliminary question
+    const greeting = "Hello! Welcome to your interview practice session. Before we begin, I'd like to learn a bit about you.";
+    const firstQuestion = this.prelimQuestions[0];
+    const openingMessage = `${greeting}\n\n${firstQuestion}`;
 
     return {
       content: openingMessage,
-      questionNumber: 1,
+      questionNumber: 0, // 0 indicates preliminary questions
       isComplete: false
     };
   }
@@ -127,20 +193,28 @@ export class AzureOpenAIService {
    */
   private getOpeningMessage(): string {
     const { type, position } = this.interviewContext;
+    const { currentRole, techStack, yearsExperience } = this.candidateProfile;
     
-    let greeting = "Hello! I'm excited to interview you today. ";
+    let greeting = "";
     
     if (position) {
-      greeting += `We'll be discussing the ${position} position. `;
+      greeting += `Let's discuss the ${position} position. `;
     }
     
     switch (type) {
       case 'technical':
-        return greeting + "Let's start with a technical question. Can you tell me about a challenging programming problem you've solved recently and walk me through your approach?";
+        // Tailor technical question to their tech stack and experience
+        if (parseInt(yearsExperience) < 3) {
+          return greeting + `As someone with ${yearsExperience} years of experience in ${techStack}, can you explain a recent project where you used ${techStack.split(',')[0]?.trim() || 'your primary technology'} and what you learned from it?`;
+        } else if (parseInt(yearsExperience) < 7) {
+          return greeting + `With your ${yearsExperience} years of experience in ${currentRole}, can you describe a challenging technical problem you've solved using ${techStack.split(',')[0]?.trim() || 'your tech stack'} and walk me through your approach?`;
+        } else {
+          return greeting + `As a senior ${currentRole} with ${yearsExperience} years of experience, can you discuss a complex system design decision you've made and how your experience with ${techStack} influenced your approach?`;
+        }
       case 'behavioral':
-        return greeting + "Let's begin with a behavioral question. Can you tell me about a time when you had to work with a difficult team member and how you handled the situation?";
+        return greeting + `As a ${currentRole}, can you tell me about a time when you had to lead a challenging project or initiative and how you handled any obstacles?`;
       default:
-        return greeting + "Let's start by having you tell me about yourself and what interests you about this opportunity.";
+        return greeting + `Tell me about your journey as a ${currentRole} and what aspects of your work with ${techStack} you find most rewarding.`;
     }
   }
 
@@ -152,12 +226,53 @@ export class AzureOpenAIService {
       throw new Error('Azure OpenAI Service not initialized');
     }
 
-    // Add user response to conversation history
+    // Check if we're still in preliminary questions phase
+    if (this.prelimIndex < this.prelimQuestions.length) {
+      // Store the user's answer to the current preliminary question
+      const questionKeys = ['currentRole', 'techStack', 'yearsExperience', 'keySkills', 'questionCount'];
+      this.candidateProfile[questionKeys[this.prelimIndex]] = userResponse;
+      
+      // Increment to next preliminary question
+      this.prelimIndex++;
+      
+      // If there are more preliminary questions, return the next one
+      if (this.prelimIndex < this.prelimQuestions.length) {
+        const nextQuestion = this.prelimQuestions[this.prelimIndex];
+        return {
+          content: `Thank you! ${nextQuestion}`,
+          questionNumber: 0, // Still in preliminary phase
+          isComplete: false
+        };
+      } else {
+        // Preliminary questions complete, build system context
+        const systemContext = this.buildSystemContext();
+        
+        // Initialize conversation history with system context
+        this.conversationHistory = [
+          { role: 'system', content: systemContext }
+        ];
+        
+        // Set max questions from user's response
+        const requestedQuestions = parseInt(this.candidateProfile.questionCount) || 10;
+        this.interviewContext.maxQuestions = Math.min(Math.max(requestedQuestions, 5), 20); // Between 5 and 20
+        
+        // Generate the first real interview question
+        const openingMessage = this.getOpeningMessage();
+        this.conversationHistory.push({ role: 'assistant', content: openingMessage });
+        
+        return {
+          content: `Great! I now have a better understanding of your background. Let's begin the interview.\n\n${openingMessage}`,
+          questionNumber: 1,
+          isComplete: false
+        };
+      }
+    }
+
+    // Normal interview flow - add user response to conversation history
     this.conversationHistory.push({ role: 'user', content: userResponse });
 
     try {
       const completion = await this.client.chat.completions.create({
-        model: 'gpt-4o',
         messages: this.conversationHistory,
         temperature: 0.7,
         max_tokens: 200,
@@ -232,7 +347,6 @@ export class AzureOpenAIService {
 
     try {
       const completion = await this.client.chat.completions.create({
-        model: 'gpt-4o',
         messages: [...this.conversationHistory, summaryPrompt],
         temperature: 0.3,
         max_tokens: 300,
@@ -258,6 +372,8 @@ export class AzureOpenAIService {
   clearConversation(): void {
     this.conversationHistory = [];
     this.interviewContext.currentQuestionCount = 0;
+    this.prelimIndex = 0;
+    this.candidateProfile = {};
     console.log('🧹 Conversation history cleared');
   }
 

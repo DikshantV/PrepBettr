@@ -1,15 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { 
   createErrorResponse, 
   logServerError, 
   ServerErrorContext 
 } from '@/lib/errors';
+import { generateCoverLetter } from '@/lib/ai';
 
-// Initialize Google Generative AI with server-side environment variable
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   let verificationResult: any = null;
@@ -41,30 +39,17 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('Text length exceeds maximum limit (50,000 characters)', 400);
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    const prompt = `You are an expert career coach and professional writer. Please generate a compelling cover letter based on the provided resume and job description.
-
-JOB DESCRIPTION:
-${jobDescription}
-
-RESUME:
-${resumeText}
-
-Please generate a cover letter that:
-1.  Is tailored to the specific job description.
-2.  Highlights the most relevant skills and experiences from the resume.
-3.  Has a professional and engaging tone.
-4.  Is well-structured and easy to read.
-5.  Is approximately 3-4 paragraphs long.
-
-Return ONLY the cover letter content with no additional commentary or explanations.`;
-
-    const result = await model.generateContent(prompt);
-    const coverLetter = result.response.text();
+    // Use the new AI service layer for cover letter generation
+    const aiResponse = await generateCoverLetter(resumeText, jobDescription);
+    
+    if (!aiResponse.success) {
+      throw new Error(aiResponse.error || 'Failed to generate cover letter');
+    }
 
     return NextResponse.json({ 
-      coverLetter,
-      success: true 
+      coverLetter: aiResponse.data,
+      success: true,
+      provider: aiResponse.provider
     });
 
   } catch (error) {

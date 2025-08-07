@@ -5,18 +5,36 @@
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
-      }
+      },
+      "enableLiveMetrics": true
+    },
+    "logLevel": {
+      "default": "Information",
+      "Host.Aggregator": "Trace"
     }
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[3.*, 4.0.0)"
   },
-  "functionTimeout": "00:05:00",
+  "functionTimeout": "00:10:00",
   "http": {
     "routePrefix": "api",
-    "maxOutstandingRequests": 200,
-    "maxConcurrentRequests": 100,
+    "maxOutstandingRequests": 500,
+    "maxConcurrentRequests": 200,
     "dynamicThrottlesEnabled": true
+  },
+  "queues": {
+    "maxPollingInterval": "00:00:02",
+    "visibilityTimeout": "00:00:30",
+    "batchSize": 16,
+    "maxDequeueCount": 5,
+    "newBatchThreshold": 8
+  },
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": 3,
+    "minimumInterval": "00:00:05",
+    "maximumInterval": "00:05:00"
   }
 }

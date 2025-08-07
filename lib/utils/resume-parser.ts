@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { WorkExperience, Education, Project } from '../services/firebase-resume-service';
-
-// Initialize Google's Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
+import { azureOpenAIService } from '../services/azure-openai-service';
 
 export interface ParsedResumeData {
   name?: string;
@@ -137,11 +134,12 @@ function extractBasicInfo(text: string): ParsedResumeData {
 }
 
 /**
- * AI-powered extraction using Gemini
+ * AI-powered extraction using Azure OpenAI
  */
 async function extractWithAI(text: string): Promise<ParsedResumeData> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Ensure Azure OpenAI service is initialized
+    await azureOpenAIService.initialize();
     
     const prompt = `
 Extract structured information from this resume text and return it in valid JSON format. Follow this exact structure:
@@ -198,9 +196,8 @@ Resume text:
 ${text}
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const jsonText = response.text().trim();
+    const response = await azureOpenAIService.generateCompletion(prompt);
+    const jsonText = response.trim();
     
     // Try to parse the JSON response
     const parsedData = JSON.parse(jsonText);
@@ -268,10 +265,9 @@ function mergeResumeData(basicData: ParsedResumeData, aiData: ParsedResumeData):
  * Generate interview questions based on parsed resume data
  */
 export async function generateInterviewQuestions(resumeData: ParsedResumeData): Promise<string[]> {
-  // Stub test case
-  return ['Test question'];
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Ensure Azure OpenAI service is initialized
+    await azureOpenAIService.initialize();
     
     const prompt = `
 Based on the following resume information, generate 8-10 relevant interview questions that would be appropriate for this candidate. 
@@ -293,9 +289,7 @@ Projects: ${resumeData.projects?.map(proj => proj.name).join(', ') || 'None ment
 Return only the questions, one per line, numbered 1-10. No additional text or explanations.
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const questionsText = response.text();
+    const questionsText = await azureOpenAIService.generateCompletion(prompt);
     
     const questions = questionsText
       .split('\n')

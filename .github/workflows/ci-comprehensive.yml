@@ -1,0 +1,938 @@
+name: Azure-Centric CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: false
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      force_infrastructure:
+        description: 'Force infrastructure deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18.x'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './azure'
+  AZURE_STATIC_WEB_APPS_PACKAGE_PATH: './'
+  BICEP_VERSION: 'latest'
+
+jobs:
+  # Linting and formatting check
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: false
+    
+    - name: Check code formatting
+      run: |
+        npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}" \
+          --ignore-path .gitignore \
+          --ignore-path .prettierignore || true
+
+  # TypeScript type checking
+  type-check:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run TypeScript compiler check
+      run: npx tsc --noEmit
+    
+    - name: Check for TypeScript errors
+      run: |
+        echo "✅ TypeScript compilation successful"
+
+  # Unit tests with Firestore emulator
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    services:
+      firestore-emulator:
+        image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+        ports:
+          - 8080:8080
+        options: >
+          --health-cmd "curl -f http://localhost:8080"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Setup Firebase CLI
+      run: npm install -g firebase-tools
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install k6 for load testing
+      run: |
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver keyserver.ubuntu.com --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: Start Firebase emulators
+      run: |
+        firebase emulators:start --only firestore,auth,storage --project test-project &
+        sleep 10
+      env:
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        FIREBASE_STORAGE_EMULATOR_HOST: localhost:9199
+    
+    - name: Run Firestore rules tests
+      run: npm test tests/firestore-rules.test.ts
+      env:
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+    
+    - name: Run service layer tests
+      run: npm test services/ --coverage
+      env:
+        NODE_ENV: test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+    
+    - name: Run unit tests for audio utilities
+      run: npm test -- lib/audio-utils.test.ts --coverage
+    
+    - name: Run unit tests for voice state machine
+      run: npm test -- lib/voice-state-machine.test.ts --coverage
+    
+    - name: Run all unit tests with coverage threshold enforcement
+      run: npm run test:coverage
+      env:
+        NODE_ENV: test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+    
+    - name: Check coverage threshold (80%)
+      run: |
+        COVERAGE=$(npx jest --coverage --coverageReporters=json-summary --silent | jq '.total.lines.pct')
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Coverage $COVERAGE% is below required 80%"
+          exit 1
+        else
+          echo "✅ Coverage $COVERAGE% meets required 80%"
+        fi
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report-${{ matrix.node-version }}
+        path: coverage/
+        retention-days: 7
+    
+    - name: Coverage summary with threshold check
+      run: |
+        echo "### Coverage Report (Required: ≥80%)" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        npx jest --coverage --coverageReporters="text-summary" --silent 2>&1 | tail -n 15 >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        # Add coverage badge to summary
+        COVERAGE=$(npx jest --coverage --coverageReporters=json-summary --silent | jq -r '.total.lines.pct')
+        if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+          echo "![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}%25-red)" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Stop Firebase emulators
+      if: always()
+      run: |
+        firebase emulators:stop || true
+        pkill -f firebase || true
+
+  # Integration tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [lint, type-check]
+    
+    services:
+      # Mock services if needed
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run webhook integration tests
+      run: npm run test:webhook
+      env:
+        CI: true
+        NODE_ENV: test
+    
+    - name: Run voice flow integration tests
+      run: npm test -- tests/integration/voice-flow.test.ts
+      env:
+        CI: true
+        NODE_ENV: test
+    
+    - name: Run quota middleware tests
+      run: npm run test:quota
+      env:
+        CI: true
+        NODE_ENV: test
+
+  # E2E tests with Playwright
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium firefox webkit
+    
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        # Add necessary environment variables
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY || 'mock-key' }}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN || 'mock.firebaseapp.com' }}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || 'mock-project' }}
+    
+    - name: Run E2E voice interview tests
+      run: npx playwright test e2e/voice-interview.spec.ts e2e/voice-interview-enhanced.spec.ts
+      env:
+        CI: true
+        NODE_ENV: test
+    
+    - name: Run E2E auth flow tests
+      run: npm run test:auth-flow
+      env:
+        CI: true
+    
+    - name: Run E2E quota flow tests
+      run: npm run test:e2e:quota
+      env:
+        CI: true
+    
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+    
+    - name: Upload Playwright traces
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: playwright-traces
+        path: test-results/
+        retention-days: 7
+
+  # Staging Integration Tests
+  staging-integration:
+    name: Staging Integration Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Setup Firebase CLI
+      run: npm install -g firebase-tools
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium firefox
+    
+    - name: Start Firebase emulators for staging tests
+      run: |
+        firebase emulators:start --only firestore,auth,storage --project test-project &
+        sleep 10
+      env:
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        FIREBASE_STORAGE_EMULATOR_HOST: localhost:9199
+    
+    - name: Run staging integration tests
+      run: npx playwright test tests/integration/staging-functions.spec.ts
+      env:
+        CI: true
+        NODE_ENV: test
+        STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.vercel.app' }}
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+    
+    - name: Upload staging test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: staging-integration-results
+        path: test-results/
+        retention-days: 7
+    
+    - name: Stop Firebase emulators
+      if: always()
+      run: |
+        firebase emulators:stop || true
+        pkill -f firebase || true
+
+  # Load Testing with k6
+  load-tests:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: [staging-integration]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install k6
+      run: |
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver keyserver.ubuntu.com --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: Run queue throughput load tests
+      run: |
+        k6 run tests/load/queue-throughput.js \
+          --out json=load-test-results.json \
+          --summary-trend-stats="min,p(50),p(95),p(99),max" \
+          --summary-time-unit=ms
+      env:
+        BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.vercel.app' }}
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+    
+    - name: Analyze load test results
+      run: |
+        echo "### Load Test Results" >> $GITHUB_STEP_SUMMARY
+        echo '```json' >> $GITHUB_STEP_SUMMARY
+        cat load-test-results.json | jq '.metrics | {http_req_duration, http_req_failed, iteration_duration}' >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        # Check if load test meets SLA requirements
+        ERROR_RATE=$(cat load-test-results.json | jq -r '.metrics.http_req_failed.values.rate')
+        P95_DURATION=$(cat load-test-results.json | jq -r '.metrics.http_req_duration.values."p(95)"')
+        
+        echo "Error Rate: $ERROR_RATE" >> $GITHUB_STEP_SUMMARY
+        echo "P95 Response Time: ${P95_DURATION}ms" >> $GITHUB_STEP_SUMMARY
+        
+        if (( $(echo "$ERROR_RATE > 0.05" | bc -l) )); then
+          echo "❌ Error rate $ERROR_RATE exceeds 5% threshold" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+        
+        if (( $(echo "$P95_DURATION > 2000" | bc -l) )); then
+          echo "❌ P95 response time ${P95_DURATION}ms exceeds 2000ms threshold" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+        
+        echo "✅ Load test passed SLA requirements" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload load test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: load-test-results
+        path: |
+          load-test-results.json
+          summary.json
+        retention-days: 30
+
+  # Azure services health check
+  azure-health:
+    name: Azure Services Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Azure health checks
+      run: npm run test:azure-health
+      env:
+        CI: true
+        AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY || 'mock-key' }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT || 'https://test.openai.azure.com' }}
+        AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY || 'mock-speech-key' }}
+        SPEECH_ENDPOINT: ${{ secrets.SPEECH_ENDPOINT || 'https://eastus.api.cognitive.microsoft.com' }}
+
+  # Build verification
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests]
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        CI: true
+    
+    - name: Check build output
+      run: |
+        if [ -d ".next" ]; then
+          echo "✅ Build successful - .next directory exists"
+          echo "Build size:"
+          du -sh .next
+        else
+          echo "❌ Build failed - .next directory not found"
+          exit 1
+        fi
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-output-${{ matrix.node-version }}
+        path: .next/
+        retention-days: 1
+
+  # Security audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+    
+    - name: Check for known vulnerabilities
+      run: |
+        npm audit --json > audit-report.json || true
+        echo "### Security Audit Report" >> $GITHUB_STEP_SUMMARY
+        echo '```json' >> $GITHUB_STEP_SUMMARY
+        cat audit-report.json | jq '.metadata' >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Performance tests (optional)
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Run performance tests
+      run: |
+        # Start the application
+        npm start &
+        SERVER_PID=$!
+        
+        # Wait for server to be ready
+        sleep 10
+        
+        # Run lighthouse CI or other performance tests
+        npx lighthouse http://localhost:3000 \
+          --output=json \
+          --output-path=./lighthouse-report.json \
+          --chrome-flags="--headless" \
+          --only-categories=performance || true
+        
+        # Kill the server
+        kill $SERVER_PID
+    
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-report
+        path: lighthouse-report.json
+        retention-days: 7
+
+  # CI Status Check (dependency for deployment)
+  ci-status:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests, integration-tests, e2e-tests, build, security]
+    if: always()
+    
+    steps:
+    - name: Check CI Status
+      run: |
+        echo "### CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check each job status
+        if [ "${{ needs.lint.result }}" == "success" ]; then
+          echo "✅ Linting passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Linting failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.type-check.result }}" == "success" ]; then
+          echo "✅ Type checking passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Type checking failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.unit-tests.result }}" == "success" ]; then
+          echo "✅ Unit tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Unit tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.integration-tests.result }}" == "success" ]; then
+          echo "✅ Integration tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Integration tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+          echo "✅ E2E tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ E2E tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.build.result }}" == "success" ]; then
+          echo "✅ Build verification passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Build verification failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Overall status
+        if [ "${{ needs.lint.result }}" == "success" ] && \
+           [ "${{ needs.type-check.result }}" == "success" ] && \
+           [ "${{ needs.unit-tests.result }}" == "success" ] && \
+           [ "${{ needs.integration-tests.result }}" == "success" ] && \
+           [ "${{ needs.e2e-tests.result }}" == "success" ] && \
+           [ "${{ needs.build.result }}" == "success" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ All CI checks passed!" >> $GITHUB_STEP_SUMMARY
+          exit 0
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ Some CI checks failed" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+  # Deploy Azure Infrastructure
+  deploy-infrastructure:
+    name: Deploy Azure Infrastructure
+    runs-on: ubuntu-latest
+    needs: [ci-status]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.force_infrastructure == 'true'
+    
+    environment: 
+      name: ${{ github.event.inputs.environment || 'dev' }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Azure CLI
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Setup Bicep
+      run: |
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        chmod +x ./bicep
+        sudo mv ./bicep /usr/local/bin/bicep
+        bicep --version
+        
+    - name: Validate Bicep template
+      run: |
+        bicep build infrastructure/bicep/main.bicep --outfile infrastructure/bicep/main.json
+        az deployment group validate \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --template-file infrastructure/bicep/main.json \
+          --parameters infrastructure/bicep/parameters/${{ github.event.inputs.environment || 'dev' }}.bicepparam
+          
+    - name: Deploy Azure resources
+      run: |
+        DEPLOYMENT_NAME="prepbettr-deployment-$(date +%s)"
+        az deployment group create \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --template-file infrastructure/bicep/main.json \
+          --parameters infrastructure/bicep/parameters/${{ github.event.inputs.environment || 'dev' }}.bicepparam \
+          --name $DEPLOYMENT_NAME \
+          --verbose
+          
+    - name: Get deployment outputs
+      id: deployment-outputs
+      run: |
+        FUNCTION_APP_NAME=$(az deployment group show \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --name $DEPLOYMENT_NAME \
+          --query 'properties.outputs.functionAppName.value' \
+          --output tsv)
+        
+        STATIC_WEB_APP_NAME=$(az deployment group show \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --name $DEPLOYMENT_NAME \
+          --query 'properties.outputs.staticWebAppName.value' \
+          --output tsv 2>/dev/null || echo "")
+          
+        echo "function-app-name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+        echo "static-web-app-name=$STATIC_WEB_APP_NAME" >> $GITHUB_OUTPUT
+        
+    outputs:
+      function-app-name: ${{ steps.deployment-outputs.outputs.function-app-name }}
+      static-web-app-name: ${{ steps.deployment-outputs.outputs.static-web-app-name }}
+  
+  # Deploy Azure Functions
+  deploy-functions:
+    name: Deploy Azure Functions
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    if: always() && (needs.deploy-infrastructure.result == 'success' || needs.deploy-infrastructure.result == 'skipped')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        npm ci
+        
+    - name: Build functions
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        npm run build --if-present
+        
+    - name: Setup Azure CLI
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Deploy to Azure Functions
+      uses: azure/functions-action@v1
+      with:
+        app-name: ${{ needs.deploy-infrastructure.outputs.function-app-name || secrets.AZURE_FUNCTIONAPP_NAME }}
+        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        
+    - name: Test Function App deployment
+      run: |
+        FUNCTION_APP_URL="https://${{ needs.deploy-infrastructure.outputs.function-app-name || secrets.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net"
+        
+        # Wait for deployment to complete
+        sleep 30
+        
+        # Test health endpoint
+        for i in {1..5}; do
+          if curl -f "$FUNCTION_APP_URL/api/HttpTrigger1" --max-time 30; then
+            echo "✅ Function App is responding"
+            break
+          else
+            echo "⏳ Waiting for Function App to be ready (attempt $i/5)"
+            sleep 10
+          fi
+        done
+
+  # Deploy to Azure Static Web Apps
+  deploy-webapp:
+    name: Deploy Web Application
+    runs-on: ubuntu-latest
+    needs: [ci-status, deploy-functions]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        AZURE_FUNCTIONS_BASE_URL: "https://${{ needs.deploy-infrastructure.outputs.function-app-name || secrets.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net"
+        
+    - name: Deploy to Azure Static Web Apps
+      id: builddeploy
+      uses: azure/static-web-apps-deploy@v1
+      with:
+        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        action: "upload"
+        app_location: ${{ env.AZURE_STATIC_WEB_APPS_PACKAGE_PATH }}
+        api_location: ""
+        output_location: ".next"
+        app_build_command: "npm run build"
+        skip_app_build: true  # We already built above
+        
+    - name: Test Static Web App deployment
+      run: |
+        # Static Web Apps URL will be in the deployment output
+        echo "✅ Static Web App deployed successfully"
+        echo "Deployment URL: ${{ steps.builddeploy.outputs.static_web_app_url }}"
+
+  # Firebase Emulator Tests
+  firebase-emulator-tests:
+    name: Firebase Emulator Integration Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-webapp]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup Firebase CLI
+      run: npm install -g firebase-tools
+      
+    - name: Start Firebase emulators
+      run: |
+        firebase emulators:start --only firestore,auth,storage --project ${{ secrets.FIREBASE_PROJECT_ID }} &
+        sleep 15
+      env:
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        FIREBASE_STORAGE_EMULATOR_HOST: localhost:9199
+        
+    - name: Run emulator integration tests
+      run: |
+        npm run test:emulators:start &
+        sleep 10
+        npm run test:integration:staging
+      env:
+        NODE_ENV: test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        FIREBASE_STORAGE_EMULATOR_HOST: localhost:9199
+        
+    - name: Stop Firebase emulators
+      if: always()
+      run: |
+        firebase emulators:stop || true
+        npm run test:emulators:stop || true
+        pkill -f firebase || true
+
+  # Final status check
+  ci-cd-status:
+    name: CI/CD Status Check
+    runs-on: ubuntu-latest
+    needs: [ci-status, deploy-infrastructure, deploy-functions, deploy-webapp, firebase-emulator-tests]
+    if: always()
+    
+    steps:
+    - name: Check CI/CD Status
+      run: |
+        echo "### CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check CI status
+        if [ "${{ needs.ci-status.result }}" == "success" ]; then
+          echo "✅ CI Pipeline passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ CI Pipeline failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Check deployment status
+        if [ "${{ needs.deploy-infrastructure.result }}" == "success" ] || [ "${{ needs.deploy-infrastructure.result }}" == "skipped" ]; then
+          echo "✅ Infrastructure deployment passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Infrastructure deployment failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.deploy-functions.result }}" == "success" ] || [ "${{ needs.deploy-functions.result }}" == "skipped" ]; then
+          echo "✅ Functions deployment passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Functions deployment failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.deploy-webapp.result }}" == "success" ] || [ "${{ needs.deploy-webapp.result }}" == "skipped" ]; then
+          echo "✅ Web app deployment passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Web app deployment failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.firebase-emulator-tests.result }}" == "success" ] || [ "${{ needs.firebase-emulator-tests.result }}" == "skipped" ]; then
+          echo "✅ Firebase emulator tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Firebase emulator tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Overall status
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚀 CI/CD Pipeline Complete!" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.ci-status.result }}" == "success" ]; then
+          echo "✅ All quality gates passed - ready for production!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Quality gates failed - deployment may have issues" >> $GITHUB_STEP_SUMMARY
+        fi

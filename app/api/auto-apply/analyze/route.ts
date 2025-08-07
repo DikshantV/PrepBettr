@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { JobAnalysisRequest, RelevancyAnalysis, ApiResponse, UserProfile, JobListing } from '@/types/auto-apply';
 import { logServerError, ServerErrorContext } from '@/lib/errors';
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 
 async function performJobAnalysis(userProfile: UserProfile, jobListing: JobListing): Promise<RelevancyAnalysis> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Initialize Azure OpenAI service
+    await azureOpenAIService.initialize();
     
     const prompt = `
       Analyze the compatibility between this candidate profile and job posting. Provide a detailed analysis in JSON format.
@@ -78,8 +77,7 @@ async function performJobAnalysis(userProfile: UserProfile, jobListing: JobListi
       Return only the JSON object, no additional text.
     `;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text().trim();
+    const responseText = await azureOpenAIService.generateCompletion(prompt);
     
     try {
       const analysis = JSON.parse(responseText) as RelevancyAnalysis;

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ApplyToJobRequest, ApiResponse, JobApplication, AutomationLogEntry } from '@/types/auto-apply';
 import { v4 as uuidv4 } from 'uuid';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
+import { featureFlagsService } from '@/lib/services/feature-flags';
+import { errorBudgetMonitor } from '@/lib/services/error-budget-monitor';
+import { userTargetingService } from '@/lib/services/user-targeting';
+import { generateCoverLetter as generateCL, tailorResume as tailorRS } from '@/lib/ai';
 
 async function generateCoverLetter(
   jobTitle: string, 
@@ -14,37 +15,29 @@ async function generateCoverLetter(
   template?: string
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Create resume text from user profile
+    const resumeText = `
+Name: ${userProfile.name}
+Skills: ${userProfile.skills?.join(', ')}
+Experience: ${userProfile.experience?.map((exp: any) => `${exp.position} at ${exp.company}`).join(', ')}
+Summary: ${userProfile.summary}
+`;
     
-    const prompt = `
-      Generate a professional cover letter for this job application:
-      
-      JOB DETAILS:
-      Position: ${jobTitle}
-      Company: ${companyName}
-      Description: ${jobDescription}
-      
-      CANDIDATE PROFILE:
-      Name: ${userProfile.name}
-      Skills: ${userProfile.skills?.join(', ')}
-      Experience: ${userProfile.experience?.map((exp: any) => `${exp.position} at ${exp.company}`).join(', ')}
-      Summary: ${userProfile.summary}
-      
-      ${template ? `TEMPLATE TO FOLLOW: ${template}` : ''}
-      
-      Requirements:
-      1. Professional tone and format
-      2. Highlight relevant skills and experience
-      3. Show enthusiasm for the role and company
-      4. Keep it concise (3-4 paragraphs)
-      5. Include specific examples when possible
-      6. Address any skill gaps positively
-      
-      Return only the cover letter text, no additional formatting or explanations.
-    `;
-
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
+    // Create job description with company info
+    const fullJobDescription = `
+Position: ${jobTitle}
+Company: ${companyName}
+Description: ${jobDescription}
+`;
+    
+    // Use the AI service layer
+    const response = await generateCL(resumeText, fullJobDescription);
+    
+    if (response.success) {
+      return response.data || '';
+    }
+    
+    throw new Error(response.error || 'Failed to generate cover letter');
 
   } catch (error) {
     console.error('Error generating cover letter:', error);
@@ -65,30 +58,14 @@ ${userProfile.name}`;
 
 async function tailorResume(originalResume: string, jobDescription: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    // Use the AI service layer
+    const response = await tailorRS(originalResume, jobDescription);
     
-    const prompt = `
-      Tailor this resume for the specific job posting to maximize ATS compatibility and relevance:
-      
-      JOB DESCRIPTION:
-      ${jobDescription}
-      
-      ORIGINAL RESUME:
-      ${originalResume}
-      
-      Instructions:
-      1. Optimize keywords for ATS systems
-      2. Highlight most relevant experience first
-      3. Include specific skills mentioned in job description
-      4. Quantify achievements where possible
-      5. Maintain professional formatting
-      6. Keep same overall structure and length
-      
-      Return only the tailored resume content.
-    `;
-
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
+    if (response.success) {
+      return response.data || originalResume;
+    }
+    
+    throw new Error(response.error || 'Failed to tailor resume');
 
   } catch (error) {
     console.error('Error tailoring resume:', error);
@@ -181,6 +158,35 @@ async function handleJobApplication(request: NextRequest) {
     }
     
     const userId = verificationResult.decodedToken.uid;
+    
+    // Check if Auto Apply Azure feature is enabled for this user
+    try {
+      const isAutoApplyEnabled = await featureFlagsService.isAutoApplyAzureEnabled();
+      
+      if (!isAutoApplyEnabled) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Auto-apply feature is not available for your account', 
+            timestamp: new Date().toISOString() 
+          } as ApiResponse<null>,
+          { status: 403 }
+        );
+      }
+      
+      // Log successful feature access for monitoring
+      console.log(`Auto-apply feature accessed by user ${userId}`);
+      
+    } catch (featureFlagError) {
+      // Log error for monitoring but don't block the feature if flags fail to load
+      await errorBudgetMonitor.logAutoApplyAzureError(
+        'Feature flag check failed',
+        'medium',
+        { userId, error: featureFlagError instanceof Error ? featureFlagError.message : 'Unknown error' }
+      );
+      
+      console.warn('Feature flag check failed, proceeding with caution:', featureFlagError);
+    }
 
     if (!jobId) {
       return NextResponse.json(

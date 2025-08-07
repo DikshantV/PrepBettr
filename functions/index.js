@@ -319,3 +319,9 @@ exports.setCustomClaims = functions.https.onCall(async (data, context) => {
     );
   }
 });
+
+// GDPR Compliance Functions
+const gdprFunctions = require('./gdpr-functions');
+exports.deleteUserData = gdprFunctions.deleteUserData;
+exports.processScheduledDeletions = gdprFunctions.processScheduledDeletions;
+exports.exportUserData = gdprFunctions.exportUserData;

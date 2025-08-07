@@ -31,7 +31,7 @@ function getOpenAIClient(): OpenAI {
   openAIClient = new OpenAI({
     apiKey: AZURE_OPENAI_KEY,
     baseURL: `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT}`,
-    defaultQuery: { 'api-version': '2024-08-01-preview' },
+    defaultQuery: { 'api-version': '2024-02-15-preview' }, // Using stable API version
     defaultHeaders: {
       'api-key': AZURE_OPENAI_KEY,
     },

@@ -230,3 +230,4 @@ describe('MicCapture', () => {
       expect(micCapture.capturing).toBe(false);
     });
   });
+});
