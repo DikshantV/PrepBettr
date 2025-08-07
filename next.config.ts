@@ -50,6 +50,12 @@ const nextConfig: NextConfig = {
       });
     }
 
+    // Ignore canvas dependency warnings from linkedom/article-extractor
+    config.ignoreWarnings = [
+      { module: /node_modules\/linkedom\/commonjs\/canvas\.cjs/ },
+      { message: /Can't resolve 'canvas'/ },
+    ];
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -63,6 +69,7 @@ const nextConfig: NextConfig = {
         events: false,
         net: false,
         tls: false,
+        canvas: false, // Explicitly ignore canvas dependency
       };
     }
 
