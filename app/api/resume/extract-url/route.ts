@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { azureOpenAIService } from '@/lib/services/azure-openai-service';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
-import { extract } from '@extractus/article-extractor';
+// Custom HTML text extraction without external dependencies
 import fetch from 'node-fetch';
 import { 
   createErrorResponse, 
@@ -9,6 +9,38 @@ import {
   mapErrorToResponse,
   ServerErrorContext 
 } from '@/lib/errors';
+
+/**
+ * Extract readable text from HTML content using pure regex approach
+ * @param html - HTML string to extract text from
+ * @returns Clean text content
+ */
+function extractTextFromHtml(html: string): string {
+  return html
+    // Remove script tags and their content
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    // Remove style tags and their content
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    // Remove noscript tags and their content
+    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+    // Remove comments
+    .replace(/<!--[\s\S]*?-->/gi, '')
+    // Remove all remaining HTML tags but preserve their spacing
+    .replace(/<[^>]*>/g, ' ')
+    // Decode common HTML entities
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    // Remove excessive newlines
+    .replace(/\n\s*\n/g, '\n')
+    // Trim the result
+    .trim();
+}
 
 export async function POST(request: NextRequest) {
   const requestUrl = request.url;
@@ -59,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: errorResponse.status });
     }
 
-    const rawText = extract(html)?.text || '';
+    const rawText = extractTextFromHtml(html);
 
     if (!azureOpenAIService.isReady()) {
       const errorResponse = createErrorResponse('Service temporarily unavailable. Please try again later.', 503);
