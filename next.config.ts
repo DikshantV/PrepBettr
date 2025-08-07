@@ -34,20 +34,13 @@ const nextConfig: NextConfig = {
     '@azure/keyvault-secrets'
   ],
   webpack: (config, { isServer }) => {
-    // Disable minification to avoid webpack plugin errors in Next.js 15
-    config.optimization = {
-      ...config.optimization,
-      minimize: false,
-    };
-
-    // Remove problematic plugins
-    if (config.plugins) {
-      config.plugins = config.plugins.filter((plugin) => {
-        return !(
-          plugin.constructor.name === 'MinifyWebpackPlugin' ||
-          plugin.constructor.name === 'TerserPlugin'
-        );
-      });
+    // Enable production optimizations
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        minimize: true, // Enable minification for production builds
+        minimizer: config.optimization.minimizer || [], // Keep default minimizers
+      };
     }
 
     // Ignore canvas dependency warnings from linkedom/article-extractor
