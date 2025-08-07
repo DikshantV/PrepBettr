@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle, Clock, XCircle, RefreshCw } from "lucide-react";
 import { useRealtimeApplicationStatus } from "@/lib/hooks/useRealtimeFirestore";
-import { RealtimeStatusIndicator, OptimisticUpdateIndicator } from "@/components/ui/LoadingStates";
+import { OptimisticUpdateIndicator } from "@/components/ui/LoadingStates";
 import { ApplicationStatus } from "@/types/realtime";
 import { toast } from "sonner";
 
@@ -196,10 +196,6 @@ export default function ResumeProcessingStatus({
                 <Badge className={`text-xs ${getStatusColor()}`}>
                   {getStatusText()}
                 </Badge>
-                <RealtimeStatusIndicator 
-                  isConnected={!isLoading && !error}
-                  lastUpdate={lastUpdateTime}
-                />
               </div>
             </div>
           </div>

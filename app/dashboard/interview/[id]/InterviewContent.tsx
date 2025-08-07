@@ -38,13 +38,40 @@ interface InterviewContentProps {
 export default function InterviewContent({ interview, user }: InterviewContentProps) {
     const [isEditorExpanded, setIsEditorExpanded] = useState(false);
     const [sessionStarted, setSessionStarted] = useState(false);
+    const [micPermissionGranted, setMicPermissionGranted] = useState(false);
+    const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
     const toggleEditor = () => {
         setIsEditorExpanded(!isEditorExpanded);
     };
 
-    const handleStartInterview = () => {
-        setSessionStarted(true);
+    const handleStartInterview = async () => {
+        try {
+            setIsRequestingPermission(true);
+            
+            // Request microphone permission first
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: false,
+                    sampleRate: 16000,
+                    channelCount: 1,
+                }
+            });
+            
+            // Stop the stream immediately as we only needed to check permission
+            stream.getTracks().forEach(track => track.stop());
+            
+            setMicPermissionGranted(true);
+            setSessionStarted(true);
+            
+        } catch (error) {
+            console.error('Microphone permission denied:', error);
+            alert('Microphone permission is required for the voice interview. Please allow microphone access and try again.');
+        } finally {
+            setIsRequestingPermission(false);
+        }
     };
 
     return (

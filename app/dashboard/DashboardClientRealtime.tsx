@@ -14,8 +14,7 @@ import {
 import {
   DataSuspense,
   DashboardSkeleton,
-  InterviewCardSkeleton,
-  RealtimeStatusIndicator
+  InterviewCardSkeleton
 } from "@/components/ui/LoadingStates";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -95,10 +94,6 @@ export default function DashboardClientRealtime({
         <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-white dark:text-white">Your Recent Interviews</h2>
-            <RealtimeStatusIndicator 
-              isConnected={!userInterviewsLoading && !userInterviewsError}
-              lastUpdate={hasUserInterviews ? new Date() : undefined}
-            />
           </div>
 
           <DataSuspense
@@ -143,10 +138,6 @@ export default function DashboardClientRealtime({
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-white dark:text-white">Community Mock Interviews</h2>
-          <RealtimeStatusIndicator 
-            isConnected={!publicInterviewsLoading && !publicInterviewsError}
-            lastUpdate={hasPublicInterviews ? new Date() : undefined}
-          />
         </div>
 
         <DataSuspense
