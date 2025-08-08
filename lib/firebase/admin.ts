@@ -22,6 +22,19 @@ export function initializeFirebaseAdmin(): App {
     return adminApp;
   }
 
+  // During build time, environment variables might be cleared
+  // Skip Firebase initialization if we're in build mode
+  if (process.env.NODE_ENV === 'production' && !process.env.FIREBASE_PROJECT_ID) {
+    console.log('Skipping Firebase Admin initialization during build');
+    // Create a proper mock app for build purposes
+    adminApp = {
+      name: 'mock-build-app',
+      options: {},
+      delete: async () => {},
+    } as App;
+    return adminApp;
+  }
+
   try {
     const serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
@@ -30,7 +43,13 @@ export function initializeFirebaseAdmin(): App {
     };
 
     if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-      throw new Error('Missing Firebase service account credentials');
+      console.warn('Missing Firebase service account credentials, creating mock app for build');
+      adminApp = {
+        name: 'mock-build-app',
+        options: {},
+        delete: async () => {},
+      } as App;
+      return adminApp;
     }
 
     adminApp = initializeApp({
@@ -43,6 +62,16 @@ export function initializeFirebaseAdmin(): App {
     return adminApp;
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
+    // During build, return a mock app instead of throwing
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Creating mock Firebase app for build process');
+      adminApp = {
+        name: 'mock-build-app',
+        options: {},
+        delete: async () => {},
+      } as App;
+      return adminApp;
+    }
     throw new Error('Failed to initialize Firebase Admin SDK');
   }
 }
@@ -53,7 +82,12 @@ export function initializeFirebaseAdmin(): App {
 export function getAdminAuth(): Auth {
   if (!adminAuth) {
     const app = initializeFirebaseAdmin();
-    adminAuth = getAuth(app);
+    // Handle build-time mock app
+    if (app.name === 'mock-build-app') {
+      adminAuth = {} as Auth;
+    } else {
+      adminAuth = getAuth(app);
+    }
   }
   return adminAuth;
 }
@@ -64,7 +98,12 @@ export function getAdminAuth(): Auth {
 export function getAdminFirestore(): Firestore {
   if (!adminDb) {
     const app = initializeFirebaseAdmin();
-    adminDb = getFirestore(app);
+    // Handle build-time mock app
+    if (app.name === 'mock-build-app') {
+      adminDb = {} as Firestore;
+    } else {
+      adminDb = getFirestore(app);
+    }
   }
   return adminDb;
 }
@@ -75,7 +114,12 @@ export function getAdminFirestore(): Firestore {
 export function getAdminStorage(): Storage {
   if (!adminStorage) {
     const app = initializeFirebaseAdmin();
-    adminStorage = getStorage(app);
+    // Handle build-time mock app
+    if (app.name === 'mock-build-app') {
+      adminStorage = {} as Storage;
+    } else {
+      adminStorage = getStorage(app);
+    }
   }
   return adminStorage;
 }

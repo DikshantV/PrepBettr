@@ -60,7 +60,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     console.log('✅ Azure secrets loaded successfully');
     console.log('🌟 Azure environment initialized successfully');
     console.log('🔍 Azure configuration status:', {
-      keyVaultUri: 'https://pbVoiceVaultProd.vault.azure.net/',
+      keyVaultUri: 'https://prepbettr-keyvault-083.vault.azure.net/',
       hasSecretsCache: true,
       environmentVariables: {
         speechKey: secrets.speechKey ? 'SET' : 'MISSING',
@@ -121,7 +121,7 @@ export async function initializeAzureEnvironment(): Promise<void> {
  */
 export function getAzureConfig() {
   return {
-    keyVaultUri: 'https://pbVoiceVaultProd.vault.azure.net/',
+    keyVaultUri: 'https://prepbettr-keyvault-083.vault.azure.net/',
     hasSecretsCache: !!cachedSecrets,
     environmentVariables: {
       speechKey: process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY ? 'SET' : 'MISSING',

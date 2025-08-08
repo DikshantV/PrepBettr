@@ -7,7 +7,14 @@ import { randomBytes } from 'crypto';
 import { awsSESService } from './aws-ses-service';
 
 export class EmailVerificationService {
-  private db = getAdminFirestore();
+  private _db: ReturnType<typeof getAdminFirestore> | null = null;
+  
+  private get db() {
+    if (!this._db) {
+      this._db = getAdminFirestore();
+    }
+    return this._db;
+  }
 
   /**
    * Generate and send email verification token

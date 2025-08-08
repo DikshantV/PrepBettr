@@ -2,7 +2,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { SecretClient } from '@azure/keyvault-secrets';
 
 // Azure Key Vault configuration
-const AZURE_KEY_VAULT_URI = process.env.AZURE_KEY_VAULT_URI || 'https://pbVoiceVaultProd.vault.azure.net/';
+const AZURE_KEY_VAULT_URI = process.env.AZURE_KEY_VAULT_URI || 'https://prepbettr-keyvault-083.vault.azure.net/';
 
 interface AzureSecrets {
   speechKey: string;

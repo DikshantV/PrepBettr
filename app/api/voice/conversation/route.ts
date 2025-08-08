@@ -83,13 +83,28 @@ export async function POST(request: NextRequest) {
 
       case 'summary':
         // Generate interview summary
-        const summary = await azureOpenAIService.generateInterviewSummary();
-        
-        return NextResponse.json({
-          success: true,
-          summary,
-          conversationHistory: azureOpenAIService.getConversationHistory(),
-        });
+        try {
+          const summary = await azureOpenAIService.generateInterviewSummary();
+          
+          return NextResponse.json({
+            success: true,
+            summary,
+            conversationHistory: azureOpenAIService.getConversationHistory(),
+          });
+        } catch (summaryError) {
+          console.error('❌ Failed to generate summary:', summaryError);
+          
+          // Provide a basic fallback summary if Azure OpenAI fails
+          const conversationHistory = azureOpenAIService.getConversationHistory();
+          const fallbackSummary = `Interview Summary:\n\nThe candidate participated in an interview session with ${conversationHistory.length} exchanges. Due to a technical issue with the AI summary service, a detailed analysis is not available at this time.\n\nNext Steps:\n• Review the conversation history for detailed insights\n• Consider scheduling a follow-up if needed\n• The interview responses are preserved for manual review`;
+          
+          return NextResponse.json({
+            success: true,
+            summary: fallbackSummary,
+            conversationHistory,
+            note: 'Summary generated using fallback due to AI service unavailability'
+          });
+        }
 
       case 'clear':
         // Clear conversation history

@@ -14,11 +14,11 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-RESOURCE_GROUP="PrepBettr-VoiceAgent"
-FUNCTION_APP_NAME="PrepBettr-VoiceAgent-Functions" 
-LOCATION="eastus2"
-STORAGE_ACCOUNT="pbvoiceagentstorage001"
-APP_INSIGHTS_NAME="pbVoiceAI-Insights"
+RESOURCE_GROUP="PrepBettr_group"
+FUNCTION_APP_NAME="PrepBettr" 
+LOCATION="centralus"
+STORAGE_ACCOUNT="prepbettrstorage639"
+APP_INSIGHTS_NAME="PrepBettr"
 
 echo -e "${BLUE}📋 Configuration:${NC}"
 echo "  Resource Group: $RESOURCE_GROUP"
@@ -105,7 +105,7 @@ az functionapp config appsettings set \
     --resource-group $RESOURCE_GROUP \
     --settings \
     "APPINSIGHTS_INSTRUMENTATIONKEY=$APP_INSIGHTS_KEY" \
-    "AZURE_KEY_VAULT_URI=https://pbVoiceVaultProd.vault.azure.net/" \
+    "AZURE_KEY_VAULT_URI=https://prepbettr-keyvault-083.vault.azure.net/" \
     "FUNCTIONS_WORKER_RUNTIME=node" \
     "WEBSITE_NODE_DEFAULT_VERSION=~18" \
     "SCM_DO_BUILD_DURING_DEPLOYMENT=true"
