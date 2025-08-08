@@ -14,7 +14,25 @@ class FirebaseVerificationService {
    */
   async verifyWithAdminSDK(idToken: string): Promise<VerificationResult> {
     try {
-      const adminAuth = getAuthService();
+      // Safely get auth service with better error handling
+      let adminAuth;
+      try {
+        adminAuth = getAuthService();
+      } catch (initError) {
+        // If Firebase Admin can't initialize, skip to REST API immediately
+        if (!process.env.FIREBASE_INIT_ERROR_LOGGED) {
+          console.warn('⚠️ Firebase Admin initialization failed, using REST API fallback:', 
+                      initError instanceof Error ? initError.message.split(':')[0] : 'Unknown error');
+          process.env.FIREBASE_INIT_ERROR_LOGGED = 'true';
+        }
+        
+        return {
+          success: false,
+          decodedToken: null,
+          method: 'admin-sdk',
+          error: initError instanceof Error ? initError.message : 'Firebase initialization failed'
+        };
+      }
       
       // Add timeout to avoid hanging on SSL issues
       const verificationPromise = adminAuth.verifyIdToken(idToken, true);
@@ -36,15 +54,16 @@ class FirebaseVerificationService {
         error.message.includes('DECODER routines::unsupported') ||
         error.message.includes('SSL') ||
         error.message.includes('GRPC') ||
-        error.message.includes('Getting metadata from plugin failed')
+        error.message.includes('Getting metadata from plugin failed') ||
+        error.message.includes('Private key must be in PEM format')
       );
       
       // Only log the error once per session to reduce noise
       if (!process.env.FIREBASE_SDK_ERROR_LOGGED) {
         if (isSSLError) {
-          console.warn('Firebase Admin SDK has OpenSSL/gRPC compatibility issues, using REST API fallback');
+          console.warn('⚠️ Firebase Admin SDK has compatibility issues, using REST API fallback');
         } else {
-          console.warn('Firebase Admin SDK verification failed:', 
+          console.warn('⚠️ Firebase Admin SDK verification failed:', 
                       error instanceof Error ? error.message.split(':')[0] : 'Unknown error');
         }
         process.env.FIREBASE_SDK_ERROR_LOGGED = 'true';
@@ -215,7 +234,25 @@ class FirebaseVerificationService {
    */
   async createSessionCookie(idToken: string, expiresIn: number = 5 * 24 * 60 * 60 * 1000): Promise<SessionCookieResult> {
     try {
-      const adminAuth = getAuthService();
+      // Safely get auth service with better error handling
+      let adminAuth;
+      try {
+        adminAuth = getAuthService();
+      } catch (initError) {
+        // If Firebase Admin can't initialize, fallback gracefully
+        if (!process.env.SESSION_COOKIE_INIT_ERROR_LOGGED) {
+          console.warn('⚠️ Firebase Admin not available for session cookies:', 
+                      initError instanceof Error ? initError.message.split(':')[0] : 'Unknown error');
+          process.env.SESSION_COOKIE_INIT_ERROR_LOGGED = 'true';
+        }
+        
+        return {
+          success: false,
+          sessionCookie: null,
+          error: 'Firebase Admin not available'
+        };
+      }
+      
       const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
       
       return {

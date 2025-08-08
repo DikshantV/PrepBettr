@@ -42,15 +42,58 @@ export class AzureOpenAIService {
       this.client = new OpenAI({
         apiKey: secrets.azureOpenAIKey,
         baseURL: `${secrets.azureOpenAIEndpoint}/openai/deployments/${secrets.azureOpenAIDeployment}`,
-        defaultQuery: { 'api-version': '2024-08-01-preview' }, // Latest stable API version with gpt-4o support
+        defaultQuery: { 'api-version': '2025-01-01-preview' }, // Latest API version for gpt-4o support
         defaultHeaders: {
           'api-key': secrets.azureOpenAIKey,
         },
       });
 
-      this.isInitialized = true;
-      console.log('✅ Azure OpenAI Service initialized');
-      return true;
+      // Test the connection with a simple request
+      try {
+        console.log(`🔄 Testing Azure OpenAI connection with deployment: ${this.deployment}`);
+        await this.client.chat.completions.create({
+          model: this.deployment,
+          messages: [{ role: 'user', content: 'Test' }],
+          max_tokens: 5,
+        });
+        
+        this.isInitialized = true;
+        console.log('✅ Azure OpenAI Service initialized and tested successfully');
+        return true;
+      } catch (testError: any) {
+        console.error('❌ Azure OpenAI connection test failed:', testError.message);
+        console.error('📋 Configuration details:', {
+          endpoint: secrets.azureOpenAIEndpoint,
+          deployment: this.deployment,
+          hasApiKey: !!secrets.azureOpenAIKey
+        });
+        
+        if (testError.status === 401) {
+          console.error('🔐 Authentication Error (401):');
+          console.error('   • Your API key might be invalid or expired');
+          console.error('   • Check your Azure OpenAI resource for the correct key');
+        } else if (testError.status === 404) {
+          console.error('📍 Resource Not Found (404):');
+          console.error('   • The deployment "' + this.deployment + '" does not exist');
+          console.error('   • Your endpoint URL might be incorrect');
+          console.error('   • No deployments might exist in your Azure OpenAI resource');
+          console.error('💡 To fix this:');
+          console.error('   1. Log into portal.azure.com');
+          console.error('   2. Navigate to your Azure OpenAI resource');
+          console.error('   3. Check the "Model deployments" or "Deployments" section');
+          console.error('   4. Create a deployment (e.g., gpt-35-turbo, gpt-4)');
+          console.error('   5. Update AZURE_OPENAI_DEPLOYMENT in your .env.local file');
+        } else if (testError.status === 403) {
+          console.error('🚫 Access Forbidden (403):');
+          console.error('   • Your API key might not have the right permissions');
+          console.error('   • Your Azure OpenAI resource might not be properly configured');
+        } else {
+          console.error(`❓ Unexpected error (${testError.status || 'Unknown'}):`);
+          console.error('   • Check your Azure OpenAI resource configuration');
+          console.error('   • Verify your subscription and resource status');
+        }
+        return false;
+      }
     } catch (error) {
       console.error('❌ Failed to initialize Azure OpenAI Service:', error);
       return false;
