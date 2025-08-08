@@ -242,9 +242,10 @@ export function useFeedback(interviewId: string | null) {
         console.error('Error fetching feedback:', err);
         
         // Check for specific Firebase errors
-        if (err.code === 'permission-denied') {
+        const error = err as any;
+        if (error.code === 'permission-denied') {
           setError('Permission denied. Please check your authentication.');
-        } else if (err.message?.includes('Missing or insufficient permissions')) {
+        } else if (error.message?.includes('Missing or insufficient permissions')) {
           setError('Insufficient permissions to access feedback data.');
         } else {
           setError('Failed to load feedback');

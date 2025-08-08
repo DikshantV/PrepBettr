@@ -1,0 +1,91 @@
+{
+  "timestamp": "2025-08-08T08:35:28.719Z",
+  "environment": "staging",
+  "summary": {
+    "passed": 3,
+    "warnings": 8,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "TypeScript Compilation",
+      "status": "warning",
+      "message": "TypeScript compilation completed with warnings",
+      "details": "app/account/layout.tsx(5,31): error TS2307: Cannot find module '@/contexts/UsageContext' or its corresponding type declarations.\napp/api/auto-apply/analyze/route.ts(80,51): error TS2551: Property 'generateCompletion' does not exist on type 'AzureOpenAIService'. Did you mean 'createCompletion'?\napp/a"
+    },
+    {
+      "name": "Environment Variables",
+      "status": "warning",
+      "message": "Missing 10 environment variables",
+      "details": [
+        "NEXT_PUBLIC_FIREBASE_API_KEY",
+        "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
+        "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
+        "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
+        "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
+        "NEXT_PUBLIC_FIREBASE_APP_ID",
+        "AZURE_OPENAI_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_SPEECH_KEY",
+        "SPEECH_ENDPOINT"
+      ]
+    },
+    {
+      "name": "Build Output",
+      "status": "pass",
+      "message": ".next directory exists",
+      "details": {
+        "approximate_size": "0.00 MB"
+      }
+    },
+    {
+      "name": "Field Migration - jobDescription",
+      "status": "warning",
+      "message": "Found 131 occurrences of old field name \"jobDescription\"",
+      "details": "Consider updating to new field names"
+    },
+    {
+      "name": "Field Migration - mockInterview",
+      "status": "warning",
+      "message": "Found 24 occurrences of old field name \"mockInterview\"",
+      "details": "Consider updating to new field names"
+    },
+    {
+      "name": "Field Migration - userAnswer",
+      "status": "warning",
+      "message": "Found 5 occurrences of old field name \"userAnswer\"",
+      "details": "Consider updating to new field names"
+    },
+    {
+      "name": "Field Migration",
+      "status": "pass",
+      "message": "Field migration check completed"
+    },
+    {
+      "name": "CI Workflows",
+      "status": "pass",
+      "message": "Found 2 workflow files",
+      "details": [
+        "ci-comprehensive.yml",
+        "hydration-tests.yml"
+      ]
+    },
+    {
+      "name": "Linting",
+      "status": "warning",
+      "message": "Linting warnings found",
+      "details": "\n> interview_saas_1.1@0.1.0 lint\n> next lint\n\n"
+    },
+    {
+      "name": "Azure OpenAI Connectivity",
+      "status": "warning",
+      "message": "Azure OpenAI credentials not configured"
+    },
+    {
+      "name": "Test Interview",
+      "status": "warning",
+      "message": "Could not reach application for testing",
+      "details": "fetch failed"
+    }
+  ]
+}

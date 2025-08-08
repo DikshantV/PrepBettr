@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
+import { TechIconName, techIconMap } from "./tech-icons";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
@@ -89,12 +90,20 @@ const InterviewCard = async ({
                 </div>
 
                 <div className="flex flex-row justify-between items-center">
-                    <DisplayTechIcons 
-                        techStack={techstack} 
-                        maxIcons={4}
-                        iconSize="sm"
-                        showTooltip={true}
-                    />
+                    <div className="flex flex-row gap-1">
+                        {Array.isArray(techstack) ? 
+                            techstack.slice(0, 4).map((tech, index) => {
+                                // Check if the tech string is a valid TechIconName
+                                const isValidTechIcon = tech in techIconMap;
+                                return isValidTechIcon ? (
+                                    <DisplayTechIcons key={index} name={tech as TechIconName} size={20} />
+                                ) : null;
+                            }).filter(Boolean)
+                            : typeof techstack === 'string' && techstack in techIconMap ?
+                                <DisplayTechIcons name={techstack as TechIconName} size={20} />
+                            : null
+                        }
+                    </div>
 
                     <Button className="btn-primary">
                         <Link

@@ -58,6 +58,7 @@ export async function generateContent(prompt: string, temperature: number = 0.7)
     const client = getOpenAIClient();
     
     const completion = await client.chat.completions.create({
+      model: AZURE_OPENAI_DEPLOYMENT!,
       messages: [{ role: 'user', content: prompt }],
       temperature,
       max_tokens: 1000,

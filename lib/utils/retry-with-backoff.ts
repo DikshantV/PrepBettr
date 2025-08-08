@@ -40,7 +40,7 @@ export class RetryWithBackoff {
    */
   static async execute<T>(
     fn: () => Promise<T>,
-    options: RetryOptions & { userId?: string; action: string } = {}
+    options: RetryOptions & { userId?: string; action?: string } = {}
   ): Promise<T> {
     const {
       maxRetries = 3,
@@ -50,7 +50,7 @@ export class RetryWithBackoff {
       retryCondition = this.defaultRetryCondition,
       onRetry,
       userId,
-      action
+      action = 'unknown'
     } = options;
 
     const startTime = Date.now();

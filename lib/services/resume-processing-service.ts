@@ -124,7 +124,8 @@ class ResumeProcessingService {
       logServerError(error as Error, {
         service: 'resume-processing',
         action: 'process',
-        userId,
+        userId
+      }, {
         fileName: fileName.substring(0, 50)
       });
 

@@ -27,6 +27,10 @@ export const useFeatureFlags = () => {
           setFlags({
             autoApplyAzure: false,
             portalIntegration: false,
+            rolloutStatus: {
+              autoApplyAzure: false,
+              portalIntegration: false,
+            },
           });
         }
       }

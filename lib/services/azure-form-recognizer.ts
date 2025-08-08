@@ -150,8 +150,9 @@ class AzureFormRecognizerService {
       console.error('Failed to extract resume data with Azure Form Recognizer:', error);
       logServerError(error as Error, { 
         service: 'azure-form-recognizer', 
-        action: 'extract', 
-        mimeType 
+        action: 'extract'
+      }, {
+        mimeType
       });
       throw error;
     }

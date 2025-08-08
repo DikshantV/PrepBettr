@@ -160,6 +160,11 @@ const Agent = ({
                     setHasUserSpoken(true);
                     hasDetectedNonSilence = true;
                     console.log('🎙️ First user speech detected - microphone will stop after AI response');
+                    console.debug('🔄 [USER_STATE] hasUserSpoken: false → true', {
+                        rmsValue: windowRMS.toFixed(4),
+                        threshold: thresholdRMS,
+                        timestamp: new Date().toISOString()
+                    });
                 }
                 break;
             }
@@ -340,6 +345,18 @@ const Agent = ({
                     setIsSpeaking(false);
                     setIsProcessingAI(false);
                     setIsWaitingForUser(true);
+                    
+                    // Auto-start recording if interview is not complete
+                    if (!isInterviewComplete && (window as any).startAudioContextRecording) {
+                        console.log('🎤 Auto-starting recording after AI response');
+                        console.debug('🔄 [AUTO_RECORD] Auto-starting recording', {
+                            isInterviewComplete,
+                            hasUserSpoken,
+                            questionNumber,
+                            timestamp: new Date().toISOString()
+                        });
+                        (window as any).startAudioContextRecording();
+                    }
                 } catch (audioError) {
                     console.error('❌ Error playing direct audio, falling back to TTS:', audioError);
                     setIsSpeaking(false);
@@ -394,6 +411,22 @@ const Agent = ({
                 
                 // Clean up the object URL
                 URL.revokeObjectURL(audioUrl);
+                
+                // Check for pending auto-start (from initial greeting)
+                if ((window as any).pendingAutoStart) {
+                    (window as any).pendingAutoStart();
+                    delete (window as any).pendingAutoStart;
+                } else if (!isInterviewComplete && (window as any).startAudioContextRecording) {
+                    // Auto-start recording if interview is not complete
+                    console.log('🎤 Auto-starting recording after AI response');
+                    console.debug('🔄 [AUTO_RECORD] Auto-starting recording after TTS', {
+                        isInterviewComplete,
+                        hasUserSpoken,
+                        questionNumber,
+                        timestamp: new Date().toISOString()
+                    });
+                    (window as any).startAudioContextRecording();
+                }
             };
 
             audio.onerror = (error) => {
@@ -402,6 +435,8 @@ const Agent = ({
                 setIsProcessingAI(false);
                 setIsWaitingForUser(true);
                 URL.revokeObjectURL(audioUrl);
+                
+                // Don't auto-start recording on error
             };
 
             await audio.play();
@@ -416,8 +451,17 @@ const Agent = ({
 
     const startInterview = async () => {
         try {
-            setInterviewState(InterviewState.ACTIVE);
             console.log('🎙️ Starting Azure-powered voice interview...');
+            console.debug('🔄 [INTERVIEW_STATE] Starting interview', {
+                previousState: interviewState,
+                newState: InterviewState.ACTIVE,
+                userName,
+                type,
+                interviewId,
+                timestamp: new Date().toISOString()
+            });
+            
+            setInterviewState(InterviewState.ACTIVE);
 
             // Step 1: Get microphone stream (permission already granted by parent)
             console.log('🎤 Getting microphone stream...');
@@ -489,20 +533,40 @@ const Agent = ({
             setMessages(prev => [...prev, aiMessage]);
 
             // Step 4: Play AI opening message and setup recording functions
+            // Store the function references for auto-start after playback
+            const autoStartAfterGreeting = () => {
+                if (data.questionNumber === 0 && (window as any).startAudioContextRecording) {
+                    console.log('🎤 Auto-starting recording after initial greeting');
+                    (window as any).startAudioContextRecording();
+                }
+            };
+
             if (data.hasAudio && validateAudioBuffer(data.audioData)) {
                 try {
                     setIsSpeaking(true);
                     await playAudioBuffer(data.audioData!);
                     setIsSpeaking(false);
                     setIsWaitingForUser(true);
+                    
+            // Auto-start recording after initial greeting (questionNumber === 0)
+            console.debug('🔄 [AUTO_RECORD] Checking for auto-start after greeting', {
+                questionNumber: data.questionNumber,
+                shouldAutoStart: data.questionNumber === 0,
+                timestamp: new Date().toISOString()
+            });
+            autoStartAfterGreeting();
                 } catch (audioError) {
                     console.error('❌ Error playing direct audio, falling back to playAIResponse:', audioError);
                     setIsSpeaking(false);
                     // Fallback to existing playAIResponse
+                    // Temporarily store the auto-start function to be called after TTS playback
+                    (window as any).pendingAutoStart = autoStartAfterGreeting;
                     await playAIResponse(openingMessage);
                 }
             } else {
                 // Fallback to existing playAIResponse
+                // Temporarily store the auto-start function to be called after TTS playback
+                (window as any).pendingAutoStart = autoStartAfterGreeting;
                 await playAIResponse(openingMessage);
             }
 
@@ -520,45 +584,106 @@ const Agent = ({
             };
 
             const startAudioContextRecording = () => {
-                console.log('🎤 Starting recording...');
-                audioSamplesRef.current = [];
-                isCurrentlyRecordingRef.current = true;
-                setIsRecording(true);
-                setIsWaitingForUser(false);
+                try {
+                    console.log('🎤 Starting recording...');
+                    console.debug('🔄 [RECORDING_STATE] Starting recording', {
+                        previousState: isCurrentlyRecordingRef.current,
+                        newState: true,
+                        isWaitingForUser: isWaitingForUser,
+                        hasUserSpoken: hasUserSpoken,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    audioSamplesRef.current = [];
+                    isCurrentlyRecordingRef.current = true;
+                    setIsRecording(true);
+                    setIsWaitingForUser(false);
 
-                // Set a timeout to stop recording after 30 seconds
-                recordingTimeoutId = setTimeout(() => {
-                    console.log('⏱️ Recording timeout reached');
-                    stopAudioContextRecording();
-                }, 30000);
+                    // Set a timeout to stop recording after 30 seconds
+                    recordingTimeoutId = setTimeout(() => {
+                        console.log('⏱️ Recording timeout reached');
+                        console.debug('⚠️ [RECORDING_TIMEOUT] 30 second timeout triggered', {
+                            samplesCollected: audioSamplesRef.current.length,
+                            timestamp: new Date().toISOString()
+                        });
+                        stopAudioContextRecording();
+                    }, 30000);
+                } catch (error) {
+                    console.error('❌ [ERROR] Failed to start recording:', error);
+                    console.debug('🔍 [ERROR_DETAILS]', {
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                        stack: error instanceof Error ? error.stack : undefined,
+                        timestamp: new Date().toISOString()
+                    });
+                    setIsRecording(false);
+                    setIsWaitingForUser(true);
+                }
             };
 
             const stopAudioContextRecording = () => {
                 if (!isCurrentlyRecordingRef.current) {
                     console.log('⚠️ Recording already stopped');
+                    console.debug('🔍 [RECORDING_STATE] Stop called but recording already stopped', {
+                        timestamp: new Date().toISOString()
+                    });
                     return;
                 }
 
-                console.log('⏹️ Stopping recording...');
-                isCurrentlyRecordingRef.current = false;
-                setIsRecording(false);
-
-                if (recordingTimeoutId) {
-                    clearTimeout(recordingTimeoutId);
-                    recordingTimeoutId = null;
-                }
-
-                if (audioSamplesRef.current.length > 0) {
-                    console.log(`📊 Processing ${audioSamplesRef.current.length} audio chunks`);
+                try {
+                    console.log('⏹️ Stopping recording...');
+                    console.debug('🔄 [RECORDING_STATE] Stopping recording', {
+                        previousState: isCurrentlyRecordingRef.current,
+                        newState: false,
+                        samplesCollected: audioSamplesRef.current.length,
+                        hasUserSpoken: hasUserSpoken,
+                        timestamp: new Date().toISOString()
+                    });
                     
-                    // Trim silence and convert to WAV
-                    const trimmedChunks = trimInitialSilence(audioSamplesRef.current, context.sampleRate);
-                    const audioBlob = convertToWav(trimmedChunks, context.sampleRate);
-                    
-                    // Send to backend for processing
-                    sendAudioToBackend(audioBlob);
-                } else {
-                    console.log('⚠️ No audio data recorded');
+                    isCurrentlyRecordingRef.current = false;
+                    setIsRecording(false);
+
+                    if (recordingTimeoutId) {
+                        clearTimeout(recordingTimeoutId);
+                        recordingTimeoutId = null;
+                    }
+
+                    if (audioSamplesRef.current.length > 0) {
+                        console.log(`📊 Processing ${audioSamplesRef.current.length} audio chunks`);
+                        console.debug('🎯 [AUDIO_PROCESSING] Starting audio processing', {
+                            chunks: audioSamplesRef.current.length,
+                            totalSamples: audioSamplesRef.current.reduce((acc, chunk) => acc + chunk.length, 0),
+                            sampleRate: context.sampleRate,
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        // Trim silence and convert to WAV
+                        const trimmedChunks = trimInitialSilence(audioSamplesRef.current, context.sampleRate);
+                        const audioBlob = convertToWav(trimmedChunks, context.sampleRate);
+                        
+                        console.debug('📤 [AUDIO_UPLOAD] Sending audio to backend', {
+                            blobSize: audioBlob.size,
+                            blobType: audioBlob.type,
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        // Send to backend for processing
+                        sendAudioToBackend(audioBlob);
+                    } else {
+                        console.log('⚠️ No audio data recorded');
+                        console.debug('🔍 [RECORDING_EMPTY] No audio samples collected', {
+                            timestamp: new Date().toISOString()
+                        });
+                        setIsWaitingForUser(true);
+                    }
+                } catch (error) {
+                    console.error('❌ [ERROR] Failed to stop recording:', error);
+                    console.debug('🔍 [ERROR_DETAILS]', {
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                        stack: error instanceof Error ? error.stack : undefined,
+                        samplesCollected: audioSamplesRef.current.length,
+                        timestamp: new Date().toISOString()
+                    });
+                    setIsRecording(false);
                     setIsWaitingForUser(true);
                 }
             };
@@ -597,6 +722,16 @@ const Agent = ({
 
     const endInterview = async () => {
         try {
+            console.log('🏁 Ending interview...');
+            console.debug('🔄 [INTERVIEW_STATE] Ending interview', {
+                previousState: interviewState,
+                newState: InterviewState.FINISHED,
+                totalMessages: messages.length,
+                hasUserSpoken,
+                questionNumber,
+                timestamp: new Date().toISOString()
+            });
+            
             setInterviewState(InterviewState.FINISHED);
             
             // Call summary action (optional for future use)
@@ -653,6 +788,17 @@ const Agent = ({
             setInterviewState(InterviewState.FINISHED);
         }
     };
+
+    // Auto-end interview when isInterviewComplete becomes true
+    useEffect(() => {
+        if (isInterviewComplete && interviewState === InterviewState.ACTIVE) {
+            console.log('🎉 Interview complete - auto-ending interview');
+            // Add a small delay to allow the final "thank you" message to play
+            setTimeout(() => {
+                endInterview();
+            }, 2000);
+        }
+    }, [isInterviewComplete, interviewState]);
 
     useEffect(() => {
 

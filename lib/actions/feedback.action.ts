@@ -61,7 +61,7 @@ export async function getUserInterviews() {
 
     const querySnapshot = await interviewsQuery.get();
     
-    const interviews = querySnapshot.docs.map(doc => ({
+    const interviews = querySnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }));

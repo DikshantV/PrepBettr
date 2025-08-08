@@ -100,7 +100,7 @@ export class AzureSpeechService {
       await this.recognizer.startContinuousRecognitionAsync();
       console.log('🎤 Started continuous speech recognition');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to start speech recognition:', error);
       if (onError) {
         onError(error.message || 'Failed to start speech recognition');
@@ -220,7 +220,8 @@ export class AzureSpeechService {
     try {
       // Create push stream for the audio
       const pushStream = SpeechSDK.AudioInputStream.createPushStream();
-      pushStream.write(Buffer.from(audioBuffer));
+      const buffer = new Uint8Array(audioBuffer);
+      pushStream.write(buffer as any); // Azure SDK expects ArrayBuffer but Uint8Array is compatible
       pushStream.close();
       
       const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);

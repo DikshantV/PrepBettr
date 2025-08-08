@@ -152,6 +152,7 @@ export class EnhancedAzureOpenAIService {
     try {
       const completion = await this.retryWithBackoff(async () => {
         return await client.chat.completions.create({
+          model: config.deployment,
           messages,
           temperature: config.temperature,
           max_tokens: config.maxTokens,

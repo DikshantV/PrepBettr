@@ -32,6 +32,7 @@ export interface NotificationEvent {
   status: 'pending' | 'sent' | 'failed' | 'bounced' | 'delivered';
   createdAt: Date;
   sentAt?: Date;
+  updatedAt?: Date;
   error?: string;
   messageId?: string;
   jobId?: string;

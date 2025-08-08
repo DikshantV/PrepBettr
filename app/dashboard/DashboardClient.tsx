@@ -87,7 +87,7 @@ export default function DashboardClient({ userInterviews, publicInterviews }: Da
                                 interviewId={interview.id}
                                 role={interview.role}
                                 type={interview.type}
-                                techstack={interview.techstack}
+                                techstack={Array.isArray(interview.techstack) ? interview.techstack : interview.techstack ? [interview.techstack] : []}
                                 createdAt={interview.createdAt}
                             />
                         ))

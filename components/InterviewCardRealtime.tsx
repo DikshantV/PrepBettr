@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
+import { TechIconName, techIconMap } from "@/components/tech-icons";
 import { useRealtimeInterview } from "@/lib/hooks/useRealtimeFirestore";
 import { OptimisticUpdateIndicator } from "@/components/ui/LoadingStates";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
+import { normalizeTechstack } from "@/lib/utils";
 
 interface InterviewCardRealtimeProps {
   interviewId: string;
@@ -38,13 +40,14 @@ export default function InterviewCardRealtime({
     error 
   } = useRealtimeInterview(interviewId);
 
-  // Use latest data from real-time hook or fall back to initial props
-  const role = interview?.role || initialRole || "Loading...";
-  const type = interview?.type || initialType || "";
-  const techstack = interview?.techstack || initialTechstack || "";
-  const createdAt = interview?.createdAt || initialCreatedAt;
-  const finalized = interview?.finalized || false;
-  const status = interview?.status || "draft";
+  // Cast interview to proper type and use latest data from real-time hook or fall back to initial props
+  const interviewData = interview as Interview | null;
+  const role = interviewData?.role || initialRole || "Loading...";
+  const type = interviewData?.type || initialType || "";
+  const techstack = interviewData?.techstack || initialTechstack || "";
+  const createdAt = interviewData?.createdAt || initialCreatedAt;
+  const finalized = interviewData?.finalized || false;
+  const status = interviewData?.status || "draft";
 
   // Show loading skeleton if we don't have any data
   if (isLoading && !interview && !initialRole) {
@@ -157,8 +160,14 @@ export default function InterviewCardRealtime({
       <CardContent className="space-y-4">
         {/* Tech Stack */}
         {techstack && (
-          <div className="flex flex-wrap gap-2">
-            <DisplayTechIcons techStack={techstack.split(',')} />
+          <div className="flex flex-wrap gap-1">
+            {normalizeTechstack(techstack).slice(0, 6).map((tech, index) => {
+              // Check if the tech string is a valid TechIconName
+              const isValidTechIcon = tech in techIconMap;
+              return isValidTechIcon ? (
+                <DisplayTechIcons key={index} name={tech as TechIconName} size={18} />
+              ) : null;
+            }).filter(Boolean)}
           </div>
         )}
 

@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     // Create synthesizer to generate speech audio for testing
     const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
     
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       const testText = "Hello, this is a test of the Azure Speech Service recognition system.";
       
       synthesizer.speakTextAsync(
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
             
             // Create push stream for recognition
             const pushStream = SpeechSDK.AudioInputStream.createPushStream();
-            pushStream.write(Buffer.from(audioBuffer));
+            pushStream.write(audioBuffer as any);
             pushStream.close();
             
               // Use the new helper to process speech

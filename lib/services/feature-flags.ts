@@ -61,7 +61,10 @@ class FeatureFlagsService {
       const enhancedFlags: EnhancedFeatureFlags = {
         autoApplyAzure: remoteFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
         portalIntegration: remoteFlags.portalIntegration && rolloutStatus.portalIntegration,
-        rolloutStatus,
+        rolloutStatus: {
+          autoApplyAzure: rolloutStatus.autoApplyAzure || false,
+          portalIntegration: rolloutStatus.portalIntegration || false,
+        },
       };
 
       return enhancedFlags;
@@ -136,4 +139,4 @@ class FeatureFlagsService {
 export const featureFlagsService = FeatureFlagsService.getInstance();
 
 // Export types
-export type { EnhancedFeatureFlags, FeatureFlags };
+export type { FeatureFlags };

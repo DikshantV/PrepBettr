@@ -19,8 +19,9 @@ export interface InterviewContext {
   position?: string;
   company?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  currentQuestionCount?: number;
-  maxQuestions?: number;
+  preliminaryCollected?: boolean; // Default: false - Indicates if preliminary info has been collected
+  currentQuestionCount?: number; // Current number of questions asked in the interview
+  maxQuestions?: number; // Default: 10 - Maximum number of questions for the interview
 }
 
 export interface GenerationResponse {
@@ -33,8 +34,14 @@ export interface GenerationResponse {
 export class AzureOpenAIService {
   private client: AzureOpenAI | null = null;
   private isInitialized = false;
+  private modelDeployment: string = 'gpt-4o'; // Store the deployment name as model
   private conversationHistory: ConversationMessage[] = [];
-  private interviewContext: InterviewContext = { type: 'general' };
+  private interviewContext: InterviewContext = { 
+    type: 'general',
+    preliminaryCollected: false,
+    currentQuestionCount: 0,
+    maxQuestions: 10
+  };
   
   // Preliminary questions for gathering candidate profile
   private prelimQuestions = [
@@ -66,6 +73,9 @@ export class AzureOpenAIService {
         apiVersion: '2024-02-15-preview', // Using stable API version
         dangerouslyAllowBrowser: true
       });
+      
+      // Store the deployment name for use as model in API calls
+      this.modelDeployment = secrets.azureOpenAIDeployment;
 
       this.isInitialized = true;
       console.log('✅ Azure OpenAI Service initialized');
@@ -80,7 +90,15 @@ export class AzureOpenAIService {
    * Set interview context for conversation management
    */
   setInterviewContext(context: Partial<InterviewContext>): void {
-    this.interviewContext = { ...this.interviewContext, ...context };
+    // Merge context while preserving defaults
+    this.interviewContext = { 
+      ...this.interviewContext, 
+      ...context,
+      // Ensure defaults are set if not provided
+      preliminaryCollected: context.preliminaryCollected ?? this.interviewContext.preliminaryCollected ?? false,
+      currentQuestionCount: context.currentQuestionCount ?? this.interviewContext.currentQuestionCount ?? 0,
+      maxQuestions: context.maxQuestions ?? this.interviewContext.maxQuestions ?? 10
+    };
     console.log('📋 Interview context updated:', this.interviewContext);
   }
 
@@ -89,7 +107,7 @@ export class AzureOpenAIService {
    */
   private buildSystemContext(): string {
     const { currentRole, techStack, yearsExperience, keySkills } = this.candidateProfile;
-    const { type, position, company, difficulty } = this.interviewContext;
+    const { type, position, company, difficulty, currentQuestionCount, maxQuestions } = this.interviewContext;
     
     let systemPrompt = `You are an AI interviewer conducting a ${type} interview with a candidate.\n\n`;
     systemPrompt += `Candidate Profile:\n`;
@@ -104,6 +122,13 @@ export class AzureOpenAIService {
     systemPrompt += `3. Maintain a professional but friendly tone\n`;
     systemPrompt += `4. Keep responses concise and focused\n`;
     systemPrompt += `5. Adapt difficulty based on their experience and responses\n\n`;
+    
+    systemPrompt += `Interview Flow Control:\n`;
+    systemPrompt += `• Preliminary questions have already been collected - do NOT ask them again\n`;
+    systemPrompt += `• You are currently on interview question ${(currentQuestionCount || 0) + 1} of ${maxQuestions}\n`;
+    systemPrompt += `• Continue with interview questions based on the candidate's profile\n`;
+    systemPrompt += `• After question ${maxQuestions}, conclude the interview and thank the candidate\n`;
+    systemPrompt += `• Do NOT exceed ${maxQuestions} interview questions\n\n`;
     
     if (position) {
       systemPrompt += `Position: ${position}\n`;
@@ -134,9 +159,9 @@ export class AzureOpenAIService {
    * Get system prompt based on interview context
    */
   private getSystemPrompt(): string {
-    const { type, position, company, difficulty } = this.interviewContext;
+    const { type, position, company, difficulty, preliminaryCollected, currentQuestionCount, maxQuestions } = this.interviewContext;
     
-    let basePrompt = `You are an AI interviewer conducting a ${type} interview. You should:\n\n1. Ask relevant, engaging questions\n2. Follow up on answers with clarifying questions\n3. Maintain a professional but friendly tone\n4. Keep responses concise and focused\n5. Adapt difficulty based on candidate responses\n\n`;
+    let basePrompt = `You are an AI interviewer conducting a ${type} interview. You should:\n\n1. Ask relevant, engaging questions\n2. Follow up on answers with clarifying questions\n3. Maintain a professional but friendly tone\n4. Keep responses concise and focused\n5. Adapt difficulty based on candidate responses\n\nInterview Flow Instructions:\n• Ask preliminary questions (role, tech stack, experience, skills) only once at the beginning\n• After preliminary data is collected (preliminaryCollected = ${preliminaryCollected}), switch to actual interview questions\n• Keep track of question numbers - you are currently on question ${(currentQuestionCount || 0) + 1} of ${maxQuestions}\n• Increment the question number each time you ask a new interview question\n• Stop asking questions after reaching ${maxQuestions} questions and thank the candidate for their time\n• Do NOT repeat preliminary questions once they have been collected\n• Do NOT exceed the maximum number of questions (${maxQuestions})\n\n`;
 
     if (position) {
       basePrompt += `Position: ${position}\n`;
@@ -175,6 +200,9 @@ export class AzureOpenAIService {
     this.conversationHistory = [];
     this.prelimIndex = 0;
     this.candidateProfile = {};
+    // Reset interview context flags
+    this.interviewContext.preliminaryCollected = false;
+    this.interviewContext.currentQuestionCount = 0;
 
     // Send greeting + first preliminary question
     const greeting = "Hello! Welcome to your interview practice session. Before we begin, I'd like to learn a bit about you.";
@@ -190,10 +218,10 @@ export class AzureOpenAIService {
 
   /**
    * Get opening message based on interview type
+   * Uses generateInterviewQuestion helper for domain-specific questions
    */
-  private getOpeningMessage(): string {
-    const { type, position } = this.interviewContext;
-    const { currentRole, techStack, yearsExperience } = this.candidateProfile;
+  private async getOpeningMessage(): Promise<string> {
+    const { position } = this.interviewContext;
     
     let greeting = "";
     
@@ -201,20 +229,14 @@ export class AzureOpenAIService {
       greeting += `Let's discuss the ${position} position. `;
     }
     
-    switch (type) {
-      case 'technical':
-        // Tailor technical question to their tech stack and experience
-        if (parseInt(yearsExperience) < 3) {
-          return greeting + `As someone with ${yearsExperience} years of experience in ${techStack}, can you explain a recent project where you used ${techStack.split(',')[0]?.trim() || 'your primary technology'} and what you learned from it?`;
-        } else if (parseInt(yearsExperience) < 7) {
-          return greeting + `With your ${yearsExperience} years of experience in ${currentRole}, can you describe a challenging technical problem you've solved using ${techStack.split(',')[0]?.trim() || 'your tech stack'} and walk me through your approach?`;
-        } else {
-          return greeting + `As a senior ${currentRole} with ${yearsExperience} years of experience, can you discuss a complex system design decision you've made and how your experience with ${techStack} influenced your approach?`;
-        }
-      case 'behavioral':
-        return greeting + `As a ${currentRole}, can you tell me about a time when you had to lead a challenging project or initiative and how you handled any obstacles?`;
-      default:
-        return greeting + `Tell me about your journey as a ${currentRole} and what aspects of your work with ${techStack} you find most rewarding.`;
+    try {
+      // Use the helper to generate a domain-specific opening question
+      const question = await this.generateInterviewQuestion();
+      return greeting + question;
+    } catch (error) {
+      console.warn('⚠️ Falling back to default opening question');
+      // Fallback to a simpler approach if generation fails
+      return greeting + this.getFallbackQuestion();
     }
   }
 
@@ -226,53 +248,66 @@ export class AzureOpenAIService {
       throw new Error('Azure OpenAI Service not initialized');
     }
 
-    // Check if we're still in preliminary questions phase
-    if (this.prelimIndex < this.prelimQuestions.length) {
-      // Store the user's answer to the current preliminary question
-      const questionKeys = ['currentRole', 'techStack', 'yearsExperience', 'keySkills', 'questionCount'];
-      this.candidateProfile[questionKeys[this.prelimIndex]] = userResponse;
-      
-      // Increment to next preliminary question
-      this.prelimIndex++;
-      
-      // If there are more preliminary questions, return the next one
+    // Check if we're still collecting preliminary information
+    if (!this.interviewContext.preliminaryCollected) {
+      // We're in preliminary phase - check if we still have questions to ask
       if (this.prelimIndex < this.prelimQuestions.length) {
-        const nextQuestion = this.prelimQuestions[this.prelimIndex];
-        return {
-          content: `Thank you! ${nextQuestion}`,
-          questionNumber: 0, // Still in preliminary phase
-          isComplete: false
-        };
-      } else {
-        // Preliminary questions complete, build system context
-        const systemContext = this.buildSystemContext();
+        // Store the user's answer to the current preliminary question
+        const questionKeys = ['currentRole', 'techStack', 'yearsExperience', 'keySkills', 'questionCount'];
+        this.candidateProfile[questionKeys[this.prelimIndex]] = userResponse;
         
-        // Initialize conversation history with system context
-        this.conversationHistory = [
-          { role: 'system', content: systemContext }
-        ];
+        // Increment to next preliminary question
+        this.prelimIndex++;
         
-        // Set max questions from user's response
-        const requestedQuestions = parseInt(this.candidateProfile.questionCount) || 10;
-        this.interviewContext.maxQuestions = Math.min(Math.max(requestedQuestions, 5), 20); // Between 5 and 20
-        
-        // Generate the first real interview question
-        const openingMessage = this.getOpeningMessage();
-        this.conversationHistory.push({ role: 'assistant', content: openingMessage });
-        
-        return {
-          content: `Great! I now have a better understanding of your background. Let's begin the interview.\n\n${openingMessage}`,
-          questionNumber: 1,
-          isComplete: false
-        };
+        // If there are more preliminary questions, return the next one
+        if (this.prelimIndex < this.prelimQuestions.length) {
+          const nextQuestion = this.prelimQuestions[this.prelimIndex];
+          return {
+            content: `Thank you! ${nextQuestion}`,
+            questionNumber: 0, // Still in preliminary phase - keep at 0
+            isComplete: false
+          };
+        } else {
+          // All preliminary questions collected - mark as complete
+          this.interviewContext.preliminaryCollected = true;
+          // Keep currentQuestionCount at 0 as we haven't asked real questions yet
+          this.interviewContext.currentQuestionCount = 0;
+          
+          // Build system context from collected profile
+          const systemContext = this.buildSystemContext();
+          
+          // Initialize conversation history with system context
+          this.conversationHistory = [
+            { role: 'system', content: systemContext }
+          ];
+          
+          // Set max questions from user's response
+          const requestedQuestions = parseInt(this.candidateProfile.questionCount) || 10;
+          this.interviewContext.maxQuestions = Math.min(Math.max(requestedQuestions, 5), 20); // Between 5 and 20
+          
+          // Generate the first real interview question
+          const openingMessage = await this.getOpeningMessage();
+          this.conversationHistory.push({ role: 'assistant', content: openingMessage });
+          
+          // Increment question count for the first real question
+          this.interviewContext.currentQuestionCount = 1;
+          
+          return {
+            content: `Great! I now have a better understanding of your background. Let's begin the interview.\n\n${openingMessage}`,
+            questionNumber: 1, // First real question
+            isComplete: false
+          };
+        }
       }
     }
 
-    // Normal interview flow - add user response to conversation history
+    // Normal interview flow - preliminary info has been collected
+    // Add user response to conversation history
     this.conversationHistory.push({ role: 'user', content: userResponse });
 
     try {
       const completion = await this.client.chat.completions.create({
+        model: this.modelDeployment,
         messages: this.conversationHistory,
         temperature: 0.7,
         max_tokens: 200,
@@ -286,10 +321,11 @@ export class AzureOpenAIService {
       // Add assistant response to conversation history
       this.conversationHistory.push({ role: 'assistant', content: assistantResponse });
 
+      // Increment question count for the next question
       const currentQuestionCount = (this.interviewContext.currentQuestionCount || 0) + 1;
       const maxQuestions = this.interviewContext.maxQuestions || 10;
       
-      // Update question count
+      // Update question count in context
       this.interviewContext.currentQuestionCount = currentQuestionCount;
 
       return {
@@ -333,6 +369,159 @@ export class AzureOpenAIService {
   }
 
   /**
+   * Generate a domain-specific interview question based on context and conversation history
+   * This helper generates a single, concise question tailored to the interview type and candidate profile
+   */
+  async generateInterviewQuestion(): Promise<string> {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    // Build the appropriate system prompt based on interview type and profile
+    const { type, difficulty, position } = this.interviewContext;
+    const { currentRole, techStack, yearsExperience, keySkills } = this.candidateProfile;
+    
+    let questionPrompt = `Generate one concise interview question. `;
+    
+    // Add context-specific instructions based on interview type
+    switch (type) {
+      case 'technical':
+        questionPrompt += `Focus on technical skills and problem-solving.\n`;
+        questionPrompt += `Consider the candidate's tech stack: ${techStack || 'various technologies'}.\n`;
+        questionPrompt += `Experience level: ${yearsExperience || 'mid-level'} years.\n`;
+        questionPrompt += `Include specific technical scenarios such as:\n`;
+        questionPrompt += `- Code/architecture design challenges\n`;
+        questionPrompt += `- Debugging or optimization problems\n`;
+        questionPrompt += `- Technology-specific best practices\n`;
+        questionPrompt += `- System scalability considerations\n`;
+        break;
+        
+      case 'behavioral':
+        questionPrompt += `Focus on behavioral assessment using STAR method.\n`;
+        questionPrompt += `Current role: ${currentRole || 'professional'}.\n`;
+        questionPrompt += `Experience: ${yearsExperience || 'several'} years.\n`;
+        questionPrompt += `Create STAR-format prompts about:\n`;
+        questionPrompt += `- Leadership and teamwork situations\n`;
+        questionPrompt += `- Conflict resolution examples\n`;
+        questionPrompt += `- Project management challenges\n`;
+        questionPrompt += `- Professional growth moments\n`;
+        break;
+        
+      default: // 'general'
+        questionPrompt += `Focus on overall experience and motivation.\n`;
+        questionPrompt += `Role: ${currentRole || 'professional'}.\n`;
+        questionPrompt += `Skills: ${keySkills || 'various competencies'}.\n`;
+        questionPrompt += `Cover aspects such as:\n`;
+        questionPrompt += `- Career journey and transitions\n`;
+        questionPrompt += `- Professional motivations and goals\n`;
+        questionPrompt += `- Work style and preferences\n`;
+        questionPrompt += `- Learning and adaptation experiences\n`;
+    }
+    
+    // Add difficulty adjustment
+    if (difficulty) {
+      questionPrompt += `\nDifficulty level: ${difficulty}.`;
+    }
+    
+    // Add position context if available
+    if (position) {
+      questionPrompt += `\nPosition being interviewed for: ${position}.`;
+    }
+    
+    // Add instruction for question format
+    questionPrompt += `\n\nRequirements:\n`;
+    questionPrompt += `- Make the question specific and actionable\n`;
+    questionPrompt += `- Keep it under 50 words\n`;
+    questionPrompt += `- Avoid yes/no questions\n`;
+    questionPrompt += `- Ensure it's appropriate for the experience level\n`;
+    
+    // Consider conversation history for context continuity
+    const recentContext = this.conversationHistory.slice(-4); // Last 2 exchanges
+    if (recentContext.length > 0) {
+      questionPrompt += `\n\nBuild upon but don't repeat topics from recent conversation.`;
+    }
+
+    try {
+      // Create the messages array with system context and the prompt
+      const messages: ConversationMessage[] = [
+        {
+          role: 'system',
+          content: this.buildSystemContext()
+        },
+        ...recentContext,
+        {
+          role: 'user',
+          content: questionPrompt
+        }
+      ];
+
+      const completion = await this.client.chat.completions.create({
+        model: this.modelDeployment,
+        messages,
+        temperature: 0.8, // Slightly higher for more variety
+        max_tokens: 100,
+        top_p: 0.9,
+        frequency_penalty: 0.3, // Reduce repetition
+        presence_penalty: 0.2,
+      });
+
+      const question = completion.choices[0]?.message?.content || 
+        this.getFallbackQuestion();
+      
+      return question.trim();
+    } catch (error) {
+      console.error('❌ Error generating interview question:', error);
+      // Return a fallback question based on type
+      return this.getFallbackQuestion();
+    }
+  }
+
+  /**
+   * Get a fallback question when generation fails
+   */
+  private getFallbackQuestion(): string {
+    const { type } = this.interviewContext;
+    const { currentRole, techStack, yearsExperience } = this.candidateProfile;
+    
+    switch (type) {
+      case 'technical':
+        return `Can you describe a technical challenge you've faced with ${techStack || 'your current tech stack'} and how you solved it?`;
+      case 'behavioral':
+        return `Tell me about a time when you had to work with a difficult team member. How did you handle the situation?`;
+      default:
+        return `What interests you most about this opportunity and how does it align with your career goals?`;
+    }
+  }
+
+  /**
+   * Generate a completion for a given prompt
+   */
+  async generateCompletion(prompt: string): Promise<string> {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: this.modelDeployment,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      return completion.choices[0]?.message?.content || 'Unable to generate completion.';
+    } catch (error) {
+      console.error('❌ Error generating completion:', error);
+      throw new Error('Failed to generate completion');
+    }
+  }
+
+  /**
    * Generate interview summary and feedback
    */
   async generateInterviewSummary(): Promise<string> {
@@ -347,6 +536,7 @@ export class AzureOpenAIService {
 
     try {
       const completion = await this.client.chat.completions.create({
+        model: this.modelDeployment,
         messages: [...this.conversationHistory, summaryPrompt],
         temperature: 0.3,
         max_tokens: 300,
@@ -372,6 +562,7 @@ export class AzureOpenAIService {
   clearConversation(): void {
     this.conversationHistory = [];
     this.interviewContext.currentQuestionCount = 0;
+    this.interviewContext.preliminaryCollected = false;
     this.prelimIndex = 0;
     this.candidateProfile = {};
     console.log('🧹 Conversation history cleared');

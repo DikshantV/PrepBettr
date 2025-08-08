@@ -49,13 +49,13 @@ class VoiceSystemTester {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.log(`❌ ${name} - ${duration}ms - ${error.message}`);
+      console.log(`❌ ${name} - ${duration}ms - ${(error as any).message}`);
       
       return {
         test: name,
         success: false,
         duration,
-        error: error.message
+        error: (error as any).message
       };
     }
   }
@@ -205,7 +205,7 @@ class VoiceSystemTester {
           return { handled: true, response: typeof response };
         } catch (error) {
           // Expected behavior for some error cases
-          return { handled: true, error: error.message };
+          return { handled: true, error: (error as any).message };
         }
       });
       this.results.push(result);

@@ -1,4 +1,3 @@
-import { Interview } from "@/types";
 import { z } from "zod";
 
 export const mappings = {
@@ -177,20 +176,36 @@ export const feedbackSchema = z.object({
   finalAssessment: z.string(),
 });
 
-export const interviewCovers = [
-  "/adobe.png",
-  "/amazon.png",
-  "/facebook.png",
-  "/hostinger.png",
-  "/pinterest.png",
-  "/quora.png",
-  "/reddit.png",
-  "/skype.png",
-  "/spotify.png",
-  "/telegram.png",
-  "/tiktok.png",
-  "/yahoo.png",
+// Company logos for interviews
+export const companyLogos = [
+  { name: "Apple", logo: "/apple.svg" },
+  { name: "Microsoft", logo: "/microsoft.svg" },
+  { name: "Google", logo: "/google.svg" },
+  { name: "OpenAI", logo: "/openai.svg" },
+  { name: "Instagram", logo: "/instagram.svg" },
+  { name: "IBM", logo: "/ibm.svg" },
+  { name: "LinkedIn", logo: "/linkedin.png" },
+  { name: "Tesla", logo: "/tesla.png" },
+  { name: "Netflix", logo: "/netflix.svg" },
+  { name: "Amazon", logo: "/amazon.png" },
+  { name: "Meta", logo: "/meta.png" },
+  { name: "Adobe", logo: "/adobe.png" },
+  { name: "Spotify", logo: "/spotify.png" },
+  { name: "Airbnb", logo: "/airbnb.svg" },
+  { name: "Uber", logo: "/uber.svg" },
+  { name: "Reddit", logo: "/reddit.png" },
+  { name: "Pinterest", logo: "/pinterest.png" },
+  { name: "Quora", logo: "/quora.png" },
+  { name: "Skype", logo: "/skype.png" },
+  { name: "TikTok", logo: "/tiktok.png" },
+  { name: "Yahoo", logo: "/yahoo.png" },
+  { name: "Telegram", logo: "/telegram.png" },
+  { name: "Facebook", logo: "/facebook.png" },
+  { name: "Hostinger", logo: "/hostinger.png" },
 ];
+
+// Legacy array for backward compatibility
+export const interviewCovers = companyLogos.map(c => c.logo);
 
 export const dummyInterviews: Interview[] = [
   {

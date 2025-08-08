@@ -31,9 +31,9 @@ function convertFirebaseUserToUser(firebaseUser: FirebaseUser): User {
   // Create a token-like object to use with initializeUser for consistency
   const tokenLikeObject = {
     uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    name: firebaseUser.displayName,
-    picture: firebaseUser.photoURL,
+    email: firebaseUser.email ?? undefined,
+    name: firebaseUser.displayName ?? undefined,
+    picture: firebaseUser.photoURL ?? undefined,
     email_verified: firebaseUser.emailVerified,
     // Required fields for DecodedToken interface (not used but needed for type compatibility)
     exp: Math.floor(Date.now() / 1000) + 3600, 

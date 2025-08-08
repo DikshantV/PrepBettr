@@ -5,7 +5,7 @@
  * that handle queue-based job processing, including job searches, applications, and follow-ups.
  */
 
-import { QueueServiceClient } from '@azure/storage-queue';
+// import { QueueServiceClient } from '@azure/storage-queue';
 
 interface SearchRequest {
   userId: string;
@@ -39,7 +39,7 @@ interface JobSearchFilters {
 }
 
 export class AzureFunctionsClient {
-  private queueServiceClient: QueueServiceClient;
+  private queueServiceClient: any; // QueueServiceClient;
   private functionAppUrl: string;
   private functionKey: string;
 
@@ -50,7 +50,7 @@ export class AzureFunctionsClient {
     // Initialize queue client for direct queue operations
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     if (storageConnectionString) {
-      this.queueServiceClient = QueueServiceClient.fromConnectionString(storageConnectionString);
+      // this.queueServiceClient = QueueServiceClient.fromConnectionString(storageConnectionString);
     }
   }
 

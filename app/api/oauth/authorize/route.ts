@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
       if (portal === 'linkedin') {
         const linkedinPortal = getLinkedInPortal();
         await linkedinPortal.initialize();
-        authUrl = linkedinPortal.generateAuthUrl(userId, state);
+        authUrl = linkedinPortal.generateAuthUrl(userId, state || undefined);
       } else if (portal === 'wellfound') {
         const wellfoundPortal = getWellfoundPortal();
         await wellfoundPortal.initialize();
-        authUrl = wellfoundPortal.generateAuthUrl(userId, state);
+        authUrl = wellfoundPortal.generateAuthUrl(userId, state || undefined);
       } else {
         throw new Error('Unsupported portal');
       }

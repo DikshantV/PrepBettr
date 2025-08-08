@@ -1,5 +1,5 @@
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
-import { fetchAzureSecrets } from '../../lib/azure-config-browser';
+import { fetchAzureSecrets } from '../../../lib/azure-config-browser';
 
 export interface SpeechRecognitionResult {
   text: string;
@@ -92,7 +92,8 @@ export class AzureSpeechService {
     } catch (error) {
       console.error('❌ Failed to start speech recognition:', error);
       if (onError) {
-        onError(error.message || 'Failed to start speech recognition');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        onError(errorMessage || 'Failed to start speech recognition');
       }
       return false;
     }

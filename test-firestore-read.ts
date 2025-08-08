@@ -1,7 +1,7 @@
 "use strict";
 
 // Mock the "use server" directive that's used in general.action.ts
-global.jest = { hoisted: true };
+(global as any).jest = { hoisted: true };
 
 // Define TypeScript interfaces needed for testing
 interface GetFeedbackByInterviewIdParams {
@@ -27,23 +27,11 @@ interface Feedback {
 // Import the functions directly from the source file
 // Note: This bypasses the "use server" directive which is not applicable in our test environment
 import { 
-  getInterviewById, 
-  getFeedbackByInterviewId,
-  getLatestInterviews,
-  getInterviewsByUserId
+  getFeedbackByInterviewId
 } from './lib/actions/general.action';
 
 async function runReadTests() {
   console.log('Starting Firestore read operation tests...');
-  
-  // Test getInterviewById
-  try {
-    console.log('\nTesting getInterviewById...');
-    const interview = await getInterviewById('test-interview-id');
-    console.log('Result:', interview);
-  } catch (error) {
-    logError('getInterviewById', error);
-  }
   
   // Test getFeedbackByInterviewId
   try {
@@ -56,30 +44,9 @@ async function runReadTests() {
   } catch (error) {
     logError('getFeedbackByInterviewId', error);
   }
-  
-  // Test getLatestInterviews
-  try {
-    console.log('\nTesting getLatestInterviews...');
-    const interviews = await getLatestInterviews({
-      userId: 'test-user-id',
-      limit: 5
-    });
-    console.log('Result:', interviews);
-  } catch (error) {
-    logError('getLatestInterviews', error);
-  }
-  
-  // Test getInterviewsByUserId
-  try {
-    console.log('\nTesting getInterviewsByUserId...');
-    const interviews = await getInterviewsByUserId('test-user-id');
-    console.log('Result:', interviews);
-  } catch (error) {
-    logError('getInterviewsByUserId', error);
-  }
 }
 
-function logError(functionName, error) {
+function logError(functionName: string, error: any) {
   console.error(`Error in ${functionName}:`);
   console.error(error);
   

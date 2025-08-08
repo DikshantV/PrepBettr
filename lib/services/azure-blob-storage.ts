@@ -140,7 +140,8 @@ class AzureBlobStorageService {
       logServerError(error as Error, { 
         service: 'azure-blob-storage', 
         action: 'upload', 
-        userId,
+        userId
+      }, {
         fileName: fileName.substring(0, 50) // Truncate for privacy
       });
       throw error;
@@ -184,7 +185,8 @@ class AzureBlobStorageService {
       console.error('Failed to generate SAS URL:', error);
       logServerError(error as Error, { 
         service: 'azure-blob-storage', 
-        action: 'generate-sas', 
+        action: 'generate-sas'
+      }, {
         blobName: blobName.substring(0, 50) 
       });
       throw error;
@@ -210,7 +212,8 @@ class AzureBlobStorageService {
       console.error('Failed to delete resume from Azure Blob Storage:', error);
       logServerError(error as Error, { 
         service: 'azure-blob-storage', 
-        action: 'delete', 
+        action: 'delete'
+      }, {
         blobName: blobName.substring(0, 50) 
       });
       // Don't throw - we don't want to block the operation if deletion fails

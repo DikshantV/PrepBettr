@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carousel Implementation Test</title>
+    <style>
+        /* CSS Helper Classes from globals.css */
+        .scroll-snap-x {
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .scroll-snap-start {
+            scroll-snap-align: start;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Test Styling */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            margin: 40px 0;
+        }
+
+        .carousel {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+        }
+
+        .card {
+            flex-shrink: 0;
+            width: 360px;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: background 0.3s;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .nav-button.prev {
+            left: -20px;
+        }
+
+        .nav-button.next {
+            right: -20px;
+        }
+
+        .nav-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+
+        .info h3 {
+            margin-top: 0;
+        }
+
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Community Mock Interviews - Carousel Test</h1>
+        
+        <div class="info">
+            <h3>Implementation Details:</h3>
+            <ul>
+                <li>Cards are wrapped in a horizontally scrollable container</li>
+                <li>Each card has a fixed width of 360px</li>
+                <li>Scroll snap is enabled for smooth alignment</li>
+                <li>Navigation buttons scroll by 400px with smooth behavior</li>
+                <li>Shows first 3 cards in viewport, can scroll to view up to 8</li>
+                <li>Scrollbar is hidden for cleaner appearance</li>
+            </ul>
+        </div>
+
+        <h2>Community Mock Interviews</h2>
+        
+        <div class="carousel-wrapper">
+            <ul class="carousel scroll-snap-x no-scrollbar" id="carousel">
+                <li class="card scroll-snap-start">Interview 1</li>
+                <li class="card scroll-snap-start">Interview 2</li>
+                <li class="card scroll-snap-start">Interview 3</li>
+                <li class="card scroll-snap-start">Interview 4</li>
+                <li class="card scroll-snap-start">Interview 5</li>
+                <li class="card scroll-snap-start">Interview 6</li>
+                <li class="card scroll-snap-start">Interview 7</li>
+                <li class="card scroll-snap-start">Interview 8</li>
+            </ul>
+
+            <button class="nav-button prev" onclick="scrollCarousel('left')" aria-label="Previous interviews">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <button class="nav-button next" onclick="scrollCarousel('right')" aria-label="Next interviews">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="info">
+            <h3>How it works in React:</h3>
+            <p>The React implementation uses <code>useRef</code> to get a reference to the carousel container and then calls <code>scrollBy</code> method with smooth behavior when navigation buttons are clicked.</p>
+            <pre style="background: #1a1a1a; padding: 10px; border-radius: 4px; overflow-x: auto;">
+const scrollCarousel = (direction: 'left' | 'right') => {
+  if (carouselRef.current) {
+    const scrollAmount = direction === 'left' ? -400 : 400;
+    carouselRef.current.scrollBy({ 
+      left: scrollAmount, 
+      behavior: 'smooth' 
+    });
+  }
+};</pre>
+        </div>
+    </div>
+
+    <script>
+        function scrollCarousel(direction) {
+            const carousel = document.getElementById('carousel');
+            const scrollAmount = direction === 'left' ? -400 : 400;
+            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

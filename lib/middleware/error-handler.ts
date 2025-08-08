@@ -272,7 +272,18 @@ export class ErrorHandler {
    * Create appropriate error response
    */
   private static createErrorResponse(error: ApiError, details: ErrorDetails): NextResponse {
-    const response = {
+    const response: {
+      error: {
+        message: string;
+        code: string;
+        timestamp: string;
+        requestId: string | undefined;
+        details?: {
+          stack?: string;
+          originalMessage: string;
+        };
+      };
+    } = {
       error: {
         message: error.isOperational ? error.message : 'An internal server error occurred',
         code: error.code || 'INTERNAL_ERROR',
@@ -283,7 +294,7 @@ export class ErrorHandler {
 
     // Don't expose internal error details in production
     if (process.env.NODE_ENV !== 'production' && !error.isOperational) {
-      response.error['details'] = {
+      response.error.details = {
         stack: error.stack,
         originalMessage: error.message
       };

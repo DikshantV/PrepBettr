@@ -362,7 +362,7 @@ export class ResumeExportService {
     const htmlBytes = encoder.encode(html);
     
     // Return HTML as bytes for now - in production, convert to proper DOCX format
-    return htmlBytes.buffer;
+    return htmlBytes.buffer as ArrayBuffer;
   }
 
   getAvailableTemplates(): Record<string, ATSTemplate> {

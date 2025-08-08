@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { 
-  createErrorResponse, 
+  createApiErrorResponse, 
   logServerError, 
   mapErrorToResponse,
   ServerErrorContext 
@@ -26,26 +26,26 @@ export async function POST(request: NextRequest) {
     const sessionCookie = request.cookies.get('session')?.value;
     
     if (!sessionCookie) {
-      return createErrorResponse('Authentication required', 401);
+      return createApiErrorResponse('Authentication required', 401);
     }
     
     // Verify the session token
     verificationResult = await firebaseVerification.verifyIdToken(sessionCookie);
     
     if (!verificationResult.success || !verificationResult.decodedToken) {
-      return createErrorResponse('Invalid session', 401);
+      return createApiErrorResponse('Invalid session', 401);
     }
     
     const { resumeText, jobDescription } = await request.json();
 
     // Validate input
     if (!resumeText || !jobDescription) {
-      return createErrorResponse('Both resume text and job description are required', 400);
+      return createApiErrorResponse('Both resume text and job description are required', 400);
     }
 
     // Check for reasonable length limits
     if (resumeText.length > 50000 || jobDescription.length > 50000) {
-      return createErrorResponse('Text length exceeds maximum limit (50,000 characters)', 400);
+      return createApiErrorResponse('Text length exceeds maximum limit (50,000 characters)', 400);
     }
 
     // Use the new AI service layer for resume tailoring
@@ -64,40 +64,42 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const context: ServerErrorContext = { 
       userId: verificationResult?.decodedToken?.uid || 'unknown', 
-      url: request.url 
+      url: request.url,
+      method: request.method,
+      timestamp: new Date().toISOString()
     };
-    logServerError('Resume tailoring API error', error, context);
+    logServerError(error, context);
     
     // Handle Azure OpenAI specific errors
     if (error.status) {
       switch (error.status) {
         case 401:
-          return createErrorResponse('Authentication failed with Azure OpenAI service.', 401);
+          return createApiErrorResponse('Authentication failed with Azure OpenAI service.', 401);
         case 400:
-          return createErrorResponse('Invalid request format. Please check your input and try again.', 400);
+          return createApiErrorResponse('Invalid request format. Please check your input and try again.', 400);
         case 429:
-          return createErrorResponse('Service temporarily unavailable due to usage limits. Please try again later.', 429);
+          return createApiErrorResponse('Service temporarily unavailable due to usage limits. Please try again later.', 429);
         case 500:
         case 502:
         case 503:
         case 504:
-          return createErrorResponse('Azure OpenAI service is temporarily unavailable. Please try again later.', 500);
+          return createApiErrorResponse('Azure OpenAI service is temporarily unavailable. Please try again later.', 500);
       }
     }
     
     // Handle general error scenarios
     if (error instanceof Error) {
       if (error.message.includes('not initialized')) {
-        return createErrorResponse('Service is not properly configured. Please contact support.', 500);
+        return createApiErrorResponse('Service is not properly configured. Please contact support.', 500);
       }
       if (error.message.includes('API key') || error.message.includes('credentials')) {
-        return createErrorResponse('API configuration error. Please contact support.', 500);
+        return createApiErrorResponse('API configuration error. Please contact support.', 500);
       }
       if (error.message.includes('quota') || error.message.includes('limit') || error.message.includes('rate')) {
-        return createErrorResponse('Service temporarily unavailable due to usage limits. Please try again later.', 429);
+        return createApiErrorResponse('Service temporarily unavailable due to usage limits. Please try again later.', 429);
       }
     }
 
-    return createErrorResponse('Failed to generate tailored resume. Please try again.', 500);
+    return createApiErrorResponse('Failed to generate tailored resume. Please try again.', 500);
   }
 }

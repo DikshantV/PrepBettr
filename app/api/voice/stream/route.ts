@@ -75,7 +75,7 @@ async function transcodeToWAV(audioBuffer: ArrayBuffer, sourceFormat: string): P
       transcodedSize: transcodedBuffer.byteLength
     });
     
-    return transcodedBuffer.buffer.slice(transcodedBuffer.byteOffset, transcodedBuffer.byteOffset + transcodedBuffer.byteLength);
+    return transcodedBuffer.buffer.slice(transcodedBuffer.byteOffset, transcodedBuffer.byteOffset + transcodedBuffer.byteLength) as ArrayBuffer;
     
   } finally {
     // Clean up temporary files

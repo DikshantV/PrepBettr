@@ -17,7 +17,7 @@
  * npx ts-node scripts/firebase/migrate-seed-data.ts
  */
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { initializeApp, cert, getApps, deleteApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import mockData from './mock-data';
 import dotenv from 'dotenv';
@@ -346,7 +346,7 @@ async function runMigration() {
     // Clean up admin app
     const app = getApps().find(app => app.name === 'migration-script');
     if (app) {
-      await app.delete();
+      await deleteApp(app);
     }
   }
 }

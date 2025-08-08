@@ -77,7 +77,11 @@ async function performJobAnalysis(userProfile: UserProfile, jobListing: JobListi
       Return only the JSON object, no additional text.
     `;
 
-    const responseText = await azureOpenAIService.generateCompletion(prompt);
+    const completion = await azureOpenAIService.createCompletion(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.3, maxTokens: 2000 }
+    );
+    const responseText = completion.choices[0]?.message?.content || '';
     
     try {
       const analysis = JSON.parse(responseText) as RelevancyAnalysis;
@@ -211,6 +215,14 @@ export async function POST(request: NextRequest) {
   
   try {
     body = await request.json();
+    
+    if (!body) {
+      return NextResponse.json(
+        { success: false, error: 'Request body is required', timestamp: new Date().toISOString() } as ApiResponse<null>,
+        { status: 400 }
+      );
+    }
+    
     const { userId, jobId, userProfile, jobListing } = body;
 
     // TODO: Add authentication check
@@ -242,9 +254,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const context: ServerErrorContext = { 
       userId: body?.userId || 'unknown', 
-      url: request.url 
+      url: request.url,
+      method: request.method,
+      timestamp: new Date().toISOString()
     };
-    logServerError('Job analysis error', error, context);
+    logServerError(error as Error | string, context);
     
     return NextResponse.json(
       { 
