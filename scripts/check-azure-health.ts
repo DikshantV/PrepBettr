@@ -75,7 +75,7 @@ async function checkApiVersions(): Promise<boolean> {
         }
       }
     } catch (error) {
-      log(`Could not check ${file}: ${error.message}`, 'warning');
+      log(`Could not check ${file}: ${(error as any).message}`, 'warning');
     }
   }
   
@@ -107,7 +107,7 @@ async function checkDeploymentNames(): Promise<boolean> {
       return false;
     }
   } catch (error) {
-    log(`Failed to check deployment names: ${error.message}`, 'error');
+    log(`Failed to check deployment names: ${(error as any).message}`, 'error');
     return false;
   }
 }
@@ -143,7 +143,7 @@ async function checkSpeechRegion(): Promise<boolean> {
       return true; // Still pass but with warning
     }
   } catch (error) {
-    log(`Failed to check Speech region: ${error.message}`, 'error');
+    log(`Failed to check Speech region: ${(error as any).message}`, 'error');
     return false;
   }
 }
@@ -164,7 +164,7 @@ async function checkServiceInitialization(): Promise<boolean> {
       log('Azure OpenAI Service initialization returned false', 'warning');
     }
   } catch (error) {
-    log(`Azure OpenAI Service initialization failed: ${error.message}`, 'error');
+    log(`Azure OpenAI Service initialization failed: ${(error as any).message}`, 'error');
   } finally {
     azureOpenAIService.dispose();
   }
@@ -179,7 +179,7 @@ async function checkServiceInitialization(): Promise<boolean> {
       log('Azure Speech Service initialization returned false', 'warning');
     }
   } catch (error) {
-    log(`Azure Speech Service initialization failed: ${error.message}`, 'error');
+    log(`Azure Speech Service initialization failed: ${(error as any).message}`, 'error');
   } finally {
     azureSpeechService.dispose();
   }
@@ -250,6 +250,6 @@ async function main() {
 
 // Run the health check
 main().catch(error => {
-  log(`Unexpected error: ${error.message}`, 'error');
+  log(`Unexpected error: ${(error as any).message}`, 'error');
   process.exit(1);
 });

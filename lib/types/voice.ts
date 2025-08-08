@@ -48,8 +48,9 @@ export interface InterviewContext {
   position?: string;
   company?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  currentQuestionCount?: number;
-  maxQuestions?: number;
+  preliminaryCollected?: boolean; // Default: false - Indicates if preliminary info has been collected
+  currentQuestionCount?: number; // Current number of questions asked in the interview
+  maxQuestions?: number; // Default: 10 - Maximum number of questions for the interview
   userName?: string;
   userId?: string;
   interviewId?: string;

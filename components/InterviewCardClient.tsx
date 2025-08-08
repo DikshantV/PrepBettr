@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
+import { TechIconName, techIconMap } from "./tech-icons";
 import { useServerFeedback } from "@/lib/hooks/useServerFeedback";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -17,6 +18,8 @@ interface InterviewCardClientProps {
     type: string;
     techstack: string[];
     createdAt?: string;
+    companyLogo?: string;
+    level?: string;
 }
 
 const InterviewCardClient = ({
@@ -25,6 +28,8 @@ const InterviewCardClient = ({
     type,
     techstack,
     createdAt,
+    companyLogo,
+    level,
 }: InterviewCardClientProps) => {
     const { user } = useAuth();
     const userId = user?.id;
@@ -47,7 +52,7 @@ const InterviewCardClient = ({
     ).format("MMM D, YYYY");
 
     return (
-        <div className="card-border w-[360px] max-sm:w-full min-h-96">
+        <div className="card-border w-[360px] max-sm:w-full h-96">
             <div className="card-interview">
                 <div>
                     {/* Type Badge */}
@@ -60,17 +65,19 @@ const InterviewCardClient = ({
                         <p className="badge-text ">{normalizedType}</p>
                     </div>
 
-                    {/* Cover Image */}
+                    {/* Cover Image - Company Logo or Fallback - Standardized Size */}
                     <Image
-                        src={getRandomInterviewCover(interviewId)}
+                        src={companyLogo || getRandomInterviewCover(interviewId)}
                         alt="cover-image"
-                        width={90}
-                        height={90}
-                        className="rounded-full object-fit size-[90px]"
+                        width={80}
+                        height={80}
+                        className="rounded-full object-cover size-[80px]"
                     />
 
-                    {/* Interview Role */}
-                    <h3 className="mt-5 capitalize text-white">{role} Interview</h3>
+                    {/* Interview Role with Level */}
+                    <h3 className="mt-5 capitalize text-white">
+                        {role}{level ? ` - ${level}` : ''} Interview
+                    </h3>
 
                     {/* Date & Score */}
                     <div className="flex flex-row gap-5 mt-3">
@@ -105,12 +112,15 @@ const InterviewCardClient = ({
                 </div>
 
                 <div className="flex flex-row justify-between items-center">
-                    <DisplayTechIcons 
-                        techStack={techstack} 
-                        maxIcons={4}
-                        iconSize="sm"
-                        showTooltip={true}
-                    />
+                    <div className="flex flex-row gap-1">
+                        {techstack.slice(0, 4).map((tech, index) => {
+                            // Check if the tech string is a valid TechIconName
+                            const isValidTechIcon = tech in techIconMap;
+                            return isValidTechIcon ? (
+                                <DisplayTechIcons key={index} name={tech as TechIconName} size={20} />
+                            ) : null;
+                        }).filter(Boolean)}
+                    </div>
 
                     {feedback ? (
                         <Button className="btn-primary">

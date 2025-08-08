@@ -278,7 +278,7 @@ class AzureOpenAITester {
     // Functional tests
     await this.runTest('Relevancy Calculation (gpt-35-turbo)', () => this.testRelevancyCalculation());
     await this.runTest('Cover Letter Generation (gpt-4o)', () => this.testCoverLetterGeneration());
-    await this.runTest('Resume Tailoring (gpt-4o)', () => this.testResumeailoring());
+    await this.runTest('Resume Tailoring (gpt-4o)', () => this.testResumetailoring());
     await this.runTest('Question Generation (gpt-35-turbo)', () => this.testQuestionGeneration());
     
     // Compatibility tests

@@ -42,6 +42,7 @@
     "check:azure": "tsx scripts/check-azure-health.ts",
     "test:azure-openai": "tsx scripts/test-azure-openai-integration.ts",
     "test:resume-processing": "tsx scripts/test-resume-processing.ts",
+    "test:voice-flow": "node scripts/test-voice-interview-flow.js",
     "health:azure": "npm run check:azure && npm run test:azure-health && npm run test:azure-openai",
     "seed-firestore": "tsx scripts/firebase/migrate-seed-data.ts",
     "firestore:migrate": "npm run seed-firestore",
@@ -51,7 +52,18 @@
     "test:load:k6": "k6 run tests/load/queue-throughput.js",
     "test:emulators:start": "firebase emulators:start --only firestore,auth,storage",
     "test:emulators:stop": "firebase emulators:stop",
-    "test:suite:full": "npm run test:coverage && npm run test:firestore-rules && npm run test:services && npm run test:e2e"
+    "test:suite:full": "npm run test:coverage && npm run test:firestore-rules && npm run test:services && npm run test:e2e",
+    "deploy:check": "tsx scripts/deployment-checklist.ts",
+    "deploy:check:staging": "tsx scripts/deployment-checklist.ts staging",
+    "deploy:check:production": "tsx scripts/deployment-checklist.ts production",
+    "deploy:staging": "npm run deploy:check:staging && npm run build",
+    "deploy:production": "npm run deploy:check:production && npm run build",
+    "env:check": "tsx scripts/compare-env-variables.ts",
+    "env:keyvault": "node scripts/test-key-vault.js",
+    "env:audit": "npm run env:check && npm run env:keyvault",
+    "backfill:mock-interviews": "tsx scripts/backfill-mock-interviews.ts",
+    "monitor:mock-interviews": "tsx scripts/monitor-mock-interview-usage.ts",
+    "monitor:historical": "tsx scripts/monitor-mock-interview-usage.ts --historical"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.857.0",

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Keyword optimization failed',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

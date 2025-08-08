@@ -17,8 +17,14 @@ export interface GenerationResponse {
 export class AzureOpenAIService {
   private client: OpenAI | null = null;
   private isInitialized = false;
+  private deployment: string = '';
   private conversationHistory: ConversationMessage[] = [];
-  private interviewContext: InterviewContext = { type: 'general' };
+  private interviewContext: InterviewContext = { 
+    type: 'general',
+    preliminaryCollected: false,
+    currentQuestionCount: 0,
+    maxQuestions: 10
+  };
 
   /**
    * Initialize the Azure OpenAI service
@@ -32,6 +38,7 @@ export class AzureOpenAIService {
         return false;
       }
 
+      this.deployment = secrets.azureOpenAIDeployment;
       this.client = new OpenAI({
         apiKey: secrets.azureOpenAIKey,
         baseURL: `${secrets.azureOpenAIEndpoint}/openai/deployments/${secrets.azureOpenAIDeployment}`,
@@ -54,8 +61,30 @@ export class AzureOpenAIService {
    * Set interview context for conversation management
    */
   setInterviewContext(context: Partial<InterviewContext>): void {
-    this.interviewContext = { ...this.interviewContext, ...context };
+    const previousState = { ...this.interviewContext };
+    
+    // Merge context while preserving defaults
+    this.interviewContext = { 
+      ...this.interviewContext, 
+      ...context,
+      // Ensure defaults are set if not provided
+      preliminaryCollected: context.preliminaryCollected ?? this.interviewContext.preliminaryCollected ?? false,
+      currentQuestionCount: context.currentQuestionCount ?? this.interviewContext.currentQuestionCount ?? 0,
+      maxQuestions: context.maxQuestions ?? this.interviewContext.maxQuestions ?? 10
+    };
+    
+    // Log state transition
     console.log('📋 Interview context updated:', this.interviewContext);
+    console.debug('🔄 [STATE_TRANSITION] Interview context changed', {
+      from: previousState,
+      to: this.interviewContext,
+      changes: {
+        preliminaryCollected: previousState.preliminaryCollected !== this.interviewContext.preliminaryCollected,
+        currentQuestionCount: previousState.currentQuestionCount !== this.interviewContext.currentQuestionCount,
+        maxQuestions: previousState.maxQuestions !== this.interviewContext.maxQuestions
+      },
+      timestamp: new Date().toISOString()
+    });
   }
 
   /**
@@ -166,26 +195,63 @@ Core Interview Principles:
    * Get opening message based on interview type
    */
   private getOpeningMessage(): string {
-    const { type, position } = this.interviewContext;
+    const { type, position, preliminaryCollected } = this.interviewContext;
     
     console.log('🎯 [TRACE] getOpeningMessage called', {
       type,
       position,
+      preliminaryCollected,
       timestamp: new Date().toISOString(),
       callStack: new Error().stack?.split('\n').slice(0, 5).join('\n')
     });
     
+    // Always greet user
     let greeting = "Hello! I'm excited to interview you today. ";
     
     if (position) {
       greeting += `We'll be discussing the ${position} position. `;
     }
     
-    // TODO: [BUG] This always returns preliminary questions - should check context
-    console.warn('⚠️ [BUG] Always returning preliminary questions regardless of interview type');
+    // Build opening message dynamically based on preliminaryCollected flag
+    if (!preliminaryCollected) {
+      // Append the single preliminary request
+      return greeting + "Before we dive into the main interview, I'd like to get to know you better. Could you please tell me about your current role, your years of experience, and the main technologies or skills you work with?";
+    } else {
+      // Immediately ask first domain-specific question
+      return greeting + this.generateFirstInterviewQuestion();
+    }
+  }
+
+  /**
+   * Generate the first interview question based on interview type
+   */
+  private generateFirstInterviewQuestion(): string {
+    const { type, position, company, difficulty } = this.interviewContext;
     
-    // Always start with preliminary questions regardless of interview type
-    return greeting + "Before we dive into the main interview, I'd like to get to know you better. Could you please tell me about your current role, your years of experience, and the main technologies or skills you work with?";
+    switch (type) {
+      case 'technical':
+        if (difficulty === 'easy') {
+          return "Let's start with some fundamentals. Can you explain the difference between an array and a linked list, and when you would choose one over the other?";
+        } else if (difficulty === 'hard') {
+          return "Let's dive into system design. How would you design a distributed caching system that can handle millions of requests per second with sub-millisecond latency?";
+        } else {
+          return "To get started, can you walk me through a recent technical challenge you faced and how you approached solving it?";
+        }
+        
+      case 'behavioral':
+        if (company) {
+          return `Tell me about a time when you had to work with a difficult team member. How did you handle the situation and what was the outcome?`;
+        } else {
+          return "Can you describe a situation where you had to lead a project or initiative? What was your approach and what did you learn from the experience?";
+        }
+        
+      default:
+        if (position) {
+          return `What specifically interests you about this ${position} role, and how does it align with your career goals?`;
+        } else {
+          return "What motivated you to pursue this opportunity, and what unique value do you think you can bring to our team?";
+        }
+    }
   }
 
   /**
@@ -195,6 +261,7 @@ Core Interview Principles:
     console.log('💬 [TRACE] processUserResponse called', {
       userResponse: userResponse.substring(0, 100) + '...',
       historyLength: this.conversationHistory.length,
+      preliminaryCollected: this.interviewContext.preliminaryCollected,
       currentQuestionCount: this.interviewContext.currentQuestionCount,
       maxQuestions: this.interviewContext.maxQuestions,
       timestamp: new Date().toISOString(),
@@ -205,7 +272,50 @@ Core Interview Principles:
       throw new Error('Azure OpenAI Service not initialized');
     }
 
-    // Add user response to conversation history
+    // Check if we're still collecting preliminary information
+    if (!this.interviewContext.preliminaryCollected) {
+      console.debug('🎯 [PRELIMINARY] Processing preliminary response', {
+        userResponseLength: userResponse.length,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Process the preliminary response and set flag
+      const previousPreliminaryState = this.interviewContext.preliminaryCollected;
+      this.interviewContext.preliminaryCollected = true;
+      
+      console.debug('🔄 [STATE_TRANSITION] preliminaryCollected: false → true', {
+        previousState: previousPreliminaryState,
+        newState: true,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Keep currentQuestionCount at 0 since we haven't asked real questions yet
+      this.interviewContext.currentQuestionCount = 0;
+      
+      // Generate first real interview question
+      const firstQuestion = this.generateFirstInterviewQuestion();
+      this.conversationHistory.push({ role: 'assistant', content: firstQuestion });
+      
+      // Increment to 1 for the first real question
+      const previousQuestionCount = this.interviewContext.currentQuestionCount;
+      this.interviewContext.currentQuestionCount = 1;
+      
+      console.debug('🔄 [STATE_TRANSITION] questionNumber: 0 → 1', {
+        previousCount: previousQuestionCount,
+        newCount: 1,
+        isFirstRealQuestion: true,
+        timestamp: new Date().toISOString()
+      });
+      
+      return {
+        content: `Thank you for that information! Now let's begin the interview.\n\n${firstQuestion}`,
+        questionNumber: 1,
+        isComplete: false,
+        followUpSuggestions: this.generateFollowUpSuggestions()
+      };
+    }
+
+    // Normal interview flow - add user response to conversation history
     this.conversationHistory.push({ role: 'user', content: userResponse });
     
     console.log('📝 [TRACE] User response added to history', {
@@ -216,6 +326,7 @@ Core Interview Principles:
     try {
       const completion = await this.retryWithBackoff(async () => {
         return await this.client!.chat.completions.create({
+          model: this.deployment,
           messages: this.conversationHistory,
           temperature: 0.7, // Match Gemini default
           max_tokens: 200,
@@ -236,7 +347,8 @@ Core Interview Principles:
       // Add assistant response to conversation history
       this.conversationHistory.push({ role: 'assistant', content: assistantResponse });
 
-      const currentQuestionCount = (this.interviewContext.currentQuestionCount || 0) + 1;
+      const previousQuestionCount = this.interviewContext.currentQuestionCount || 0;
+      const currentQuestionCount = previousQuestionCount + 1;
       const maxQuestions = this.interviewContext.maxQuestions || 10;
       
       console.log('📊 [TRACE] Question progression', {
@@ -247,6 +359,17 @@ Core Interview Principles:
         timestamp: new Date().toISOString()
       });
       
+      console.debug('🔄 [STATE_TRANSITION] questionNumber: %d → %d', 
+        previousQuestionCount, 
+        currentQuestionCount, 
+        {
+          maxQuestions,
+          progressPercentage: Math.round((currentQuestionCount / maxQuestions) * 100),
+          remainingQuestions: Math.max(0, maxQuestions - currentQuestionCount),
+          timestamp: new Date().toISOString()
+        }
+      );
+      
       // Update question count
       this.interviewContext.currentQuestionCount = currentQuestionCount;
 
@@ -256,7 +379,7 @@ Core Interview Principles:
         isComplete: currentQuestionCount >= maxQuestions,
         followUpSuggestions: this.generateFollowUpSuggestions()
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error generating OpenAI response:', error);
       
       // Provide fallback response for common errors
@@ -388,6 +511,7 @@ Core Interview Principles:
 
     try {
       const completion = await this.client.chat.completions.create({
+        model: this.deployment,
         messages: [...this.conversationHistory, summaryPrompt],
         temperature: 0.3,
         max_tokens: 300,
@@ -411,9 +535,26 @@ Core Interview Principles:
    * Clear conversation history
    */
   clearConversation(): void {
+    const previousState = {
+      historyLength: this.conversationHistory.length,
+      questionCount: this.interviewContext.currentQuestionCount,
+      preliminaryCollected: this.interviewContext.preliminaryCollected
+    };
+    
     this.conversationHistory = [];
     this.interviewContext.currentQuestionCount = 0;
+    this.interviewContext.preliminaryCollected = false;
+    
     console.log('🧹 Conversation history cleared');
+    console.debug('🔄 [STATE_RESET] Conversation state reset', {
+      previousState,
+      newState: {
+        historyLength: 0,
+        questionCount: 0,
+        preliminaryCollected: false
+      },
+      timestamp: new Date().toISOString()
+    });
   }
 
   /**
@@ -433,6 +574,7 @@ Skills: ${resumeInfo.skills}`;
 
     try {
       const completion = await this.client.chat.completions.create({
+        model: this.deployment,
         messages: [{role: 'system', content: prompt}],
         temperature: 0.5,
         max_tokens: 150
@@ -480,6 +622,7 @@ Return ONLY the tailored resume content with no additional commentary or explana
     try {
       const completion = await this.retryWithBackoff(async () => {
         return await this.client!.chat.completions.create({
+          model: this.deployment,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.3,
           max_tokens: 2000,
@@ -506,6 +649,32 @@ Return ONLY the tailored resume content with no additional commentary or explana
    */
   isReady(): boolean {
     return this.isInitialized && this.client !== null;
+  }
+
+  /**
+   * Generate a completion for a given prompt
+   */
+  async generateCompletion(prompt: string): Promise<string> {
+    if (!this.isInitialized || !this.client) {
+      throw new Error('Azure OpenAI Service not initialized');
+    }
+
+    try {
+      const completion = await this.createCompletion([
+        {
+          role: 'user',
+          content: prompt
+        }
+      ], {
+        temperature: 0.7,
+        maxTokens: 1000
+      });
+
+      return completion.choices[0]?.message?.content || 'Unable to generate completion.';
+    } catch (error) {
+      console.error('❌ Error generating completion:', error);
+      throw new Error('Failed to generate completion');
+    }
   }
 
   /**
@@ -536,6 +705,7 @@ Return ONLY the tailored resume content with no additional commentary or explana
 
     return await this.retryWithBackoff(async () => {
       return await this.client!.chat.completions.create({
+        model: this.deployment,
         messages,
         temperature,
         max_tokens: maxTokens,

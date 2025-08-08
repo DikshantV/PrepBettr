@@ -505,7 +505,7 @@ export const mockAutomationLogs: AutomationLogEntry[] = [
   {
     id: 'log_1',
     timestamp: '2024-01-15T08:00:00Z',
-    action: 'search_executed',
+    action: 'job_discovered',
     status: 'success',
     message: 'Job search executed for user_123',
     details: {
@@ -547,7 +547,7 @@ export const mockAutomationLogs: AutomationLogEntry[] = [
   {
     id: 'log_4',
     timestamp: '2024-01-14T15:28:00Z',
-    action: 'cover_letter_generated',
+    action: 'relevancy_calculated',
     status: 'success',
     message: 'Cover letter generated for Full Stack Engineer position',
     details: {

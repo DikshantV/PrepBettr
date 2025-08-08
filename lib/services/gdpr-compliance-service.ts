@@ -245,13 +245,13 @@ export class GDPRComplianceService {
       // Log completion for audit
       await this.logDataDeletion(request.userId, deletedData);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing data deletion:', error);
       
       // Update request status to failed
       await this.getDB().collection('dataDeletionRequests').doc(requestId).update({
         status: 'failed',
-        error: error.message
+        error: error.message || 'Unknown error'
       });
       
       throw error;

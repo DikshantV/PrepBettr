@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Suspense, useState } from "react";
+import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import InterviewCardClient from "@/components/InterviewCardClient";
@@ -16,29 +16,21 @@ import {
   DashboardSkeleton,
   InterviewCardSkeleton
 } from "@/components/ui/LoadingStates";
-import { Card, CardContent } from "@/components/ui/card";
+import { normalizeTechstack } from "@/lib/utils";
 
-interface DashboardClientRealtimeProps {
-  // We can still accept initial data as fallback
-  initialUserInterviews?: Interview[];
-  initialPublicInterviews?: Interview[];
-}
-
-export default function DashboardClientRealtime({ 
-  initialUserInterviews = [],
-  initialPublicInterviews = []
-}: DashboardClientRealtimeProps) {
+export default function DashboardClientRealtime() {
   const { user, loading: authLoading } = useAuth();
+  const carouselRef = useRef<HTMLUListElement>(null);
   
   // Real-time hooks with SWR caching
   const {
-    data: userInterviews,
+    data: userInterviews = [],
     isLoading: userInterviewsLoading,
     error: userInterviewsError
   } = useRealtimeUserInterviews();
 
   const {
-    data: publicInterviews,
+    data: publicInterviews = [],
     isLoading: publicInterviewsLoading,
     error: publicInterviewsError
   } = useRealtimePublicInterviews(8); // Load more for dashboard
@@ -64,6 +56,13 @@ export default function DashboardClientRealtime({
 
   const hasUserInterviews = userInterviews.length > 0;
   const hasPublicInterviews = publicInterviews.length > 0;
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = direction === 'left' ? -400 : 400;
+      carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -110,15 +109,14 @@ export default function DashboardClientRealtime({
             }
           >
             <div className="interviews-section">
-              {userInterviews.slice(0, 6).map((interview) => (
+              {(userInterviews as any[]).slice(0, 6).map((interview: any) => (
                 <InterviewCardClient
                   key={interview.id}
                   interviewId={interview.id}
                   role={interview.role}
                   type={interview.type}
-                  techstack={interview.techstack}
+                  techstack={normalizeTechstack(interview.techstack)}
                   createdAt={interview.createdAt}
-                  isOwner={true}
                 />
               ))}
             </div>
@@ -134,7 +132,7 @@ export default function DashboardClientRealtime({
         </section>
       )}
 
-      {/* Mock Interviews (Public) */}
+      {/* Mock Interviews (Public) - Horizontal Carousel */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-white dark:text-white">Community Mock Interviews</h2>
@@ -146,54 +144,89 @@ export default function DashboardClientRealtime({
           isEmpty={!hasPublicInterviews}
           emptyMessage="No public interviews available at the moment."
           fallback={
-            <div className="interviews-section">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <InterviewCardSkeleton key={i} />
-              ))}
+            <div className="relative">
+              <ul className="flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="flex-shrink-0 w-[360px] scroll-snap-start">
+                    <InterviewCardSkeleton />
+                  </li>
+                ))}
+              </ul>
             </div>
           }
         >
-          <div className="interviews-section">
-            {publicInterviews.slice(0, 8).map((interview) => (
-              <InterviewCardClient
-                key={interview.id}
-                interviewId={interview.id}
-                role={interview.role}
-                type={interview.type}
-                techstack={interview.techstack}
-                createdAt={interview.createdAt}
-                isOwner={false}
-              />
-            ))}
+          <div className="relative">
+            {/* Carousel Container */}
+            <ul 
+              ref={carouselRef}
+              className="flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar"
+            >
+              {(publicInterviews as any[]).slice(0, 8).map((interview: any) => (
+                <li key={interview.id} className="flex-shrink-0 w-[360px] scroll-snap-start">
+                  <InterviewCardClient
+                    interviewId={interview.id}
+                    role={interview.role}
+                    type={interview.type}
+                    techstack={normalizeTechstack(interview.techstack)}
+                    createdAt={interview.createdAt}
+                  />
+                </li>
+              ))}
+            </ul>
+
+            {/* Navigation Buttons - Positioned on the right side */}
+            {publicInterviews.length > 3 && (
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-10 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-background/80 backdrop-blur-sm"
+                  onClick={() => scrollCarousel('left')}
+                  aria-label="Previous interviews"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-background/80 backdrop-blur-sm"
+                  onClick={() => scrollCarousel('right')}
+                  aria-label="Next interviews"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Button>
+              </div>
+            )}
           </div>
         </DataSuspense>
       </section>
 
-      {/* Real-time Stats Card */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="text-2xl font-bold text-primary">
-                {userInterviewsLoading ? "..." : userInterviews.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Your Interviews</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary">
-                {publicInterviewsLoading ? "..." : publicInterviews.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Community Interviews</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary">
-                {userInterviewsLoading ? "..." : userInterviews.filter(i => i.finalized).length}
-              </div>
-              <div className="text-sm text-muted-foreground">Completed</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

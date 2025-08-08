@@ -18,6 +18,7 @@ import Link from "next/link";
 import { ArrowLeft, Download, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { normalizeTechstack } from "@/lib/utils";
 
 interface FeedbackClientRealtimeProps {
   interviewId: string;
@@ -187,7 +188,9 @@ export default function FeedbackClientRealtime({
               
               {currentInterview.techstack && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  <DisplayTechIcons techStack={currentInterview.techstack.split(',')} />
+                  {normalizeTechstack(currentInterview.techstack).map((tech) => (
+                    <DisplayTechIcons key={tech} name={tech as any} size={20} />
+                  ))}
                 </div>
               )}
             </CardHeader>

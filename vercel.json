@@ -1,0 +1,81 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "USE_AZURE_MOCK": "@use_azure_mock",
+    "AZURE_OPENAI_API_KEY": "@azure_openai_api_key",
+    "AZURE_OPENAI_ENDPOINT": "@azure_openai_endpoint",
+    "AZURE_OPENAI_DEPLOYMENT": "@azure_openai_deployment",
+    "AZURE_SPEECH_KEY": "@azure_speech_key",
+    "AZURE_SPEECH_REGION": "@azure_speech_region",
+    "AZURE_SPEECH_ENDPOINT": "@azure_speech_endpoint",
+    "AZURE_KEY_VAULT_URI": "@azure_key_vault_uri",
+    "FIREBASE_PROJECT_ID": "@firebase_project_id",
+    "FIREBASE_CLIENT_EMAIL": "@firebase_client_email",
+    "FIREBASE_PRIVATE_KEY": "@firebase_private_key",
+    "FIREBASE_STORAGE_BUCKET": "@firebase_storage_bucket",
+    "DODO_API_KEY": "@dodo_api_key",
+    "DODO_WEBHOOK_SECRET": "@dodo_webhook_secret",
+    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
+    "AWS_SECRET_ACCESS_KEY": "@aws_secret_access_key",
+    "AWS_SES_REGION": "@aws_ses_region",
+    "AWS_SES_FROM_EMAIL": "@aws_ses_from_email"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_FIREBASE_API_KEY": "@next_public_firebase_api_key",
+      "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN": "@next_public_firebase_auth_domain",
+      "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "@next_public_firebase_project_id",
+      "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET": "@next_public_firebase_storage_bucket",
+      "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "@next_public_firebase_messaging_sender_id",
+      "NEXT_PUBLIC_FIREBASE_APP_ID": "@next_public_firebase_app_id",
+      "NEXT_PUBLIC_AZURE_OPENAI_API_KEY": "@next_public_azure_openai_api_key",
+      "NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT": "@next_public_azure_openai_endpoint",
+      "NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT": "@next_public_azure_openai_deployment",
+      "NEXT_PUBLIC_SPEECH_KEY": "@next_public_speech_key",
+      "NEXT_PUBLIC_SPEECH_ENDPOINT": "@next_public_speech_endpoint"
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-Requested-With, Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/azure/:path*",
+      "destination": "https://:azure_function_app.azurewebsites.net/api/:path*"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-expired-sessions",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/monitor-azure-health",
+      "schedule": "0 */12 * * *"
+    }
+  ]
+}

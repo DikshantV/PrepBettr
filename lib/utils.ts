@@ -1,9 +1,27 @@
-import { interviewCovers } from "@/constants";
+import { companyLogos } from "@/constants";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * Normalizes techstack data to always return a string array
+ * Handles cases where techstack might be null, undefined, string, or already an array
+ */
+export function normalizeTechstack(techstack: string | string[] | null | undefined): string[] {
+  if (!techstack) return [];
+  
+  if (typeof techstack === 'string') {
+    return techstack.split(',').map(tech => tech.trim()).filter(Boolean);
+  }
+  
+  if (Array.isArray(techstack)) {
+    return techstack.filter(tech => typeof tech === 'string' && tech.trim());
+  }
+  
+  return [];
 }
 
 // Tech icon configuration using React Icons (primary) and DevIcons (fallback)
@@ -123,6 +141,96 @@ const techIconsMap: Record<string, { type: 'react-icon' | 'devicon'; icon: strin
   'strapi': { type: 'react-icon', icon: 'SiStrapi' },
   'contentful': { type: 'react-icon', icon: 'SiContentful' },
   'sanity': { type: 'react-icon', icon: 'SiSanity' },
+  
+  // Additional Frameworks & Libraries (20+ new entries)
+  'nuxt': { type: 'react-icon', icon: 'SiNuxtdotjs' },
+  'nuxtjs': { type: 'react-icon', icon: 'SiNuxtdotjs' },
+  'gatsby': { type: 'react-icon', icon: 'SiGatsby' },
+  'ember': { type: 'react-icon', icon: 'SiEmber' },
+  'backbone': { type: 'react-icon', icon: 'SiBackbonedotjs' },
+  'polymer': { type: 'react-icon', icon: 'SiPolymer' },
+  'astro': { type: 'react-icon', icon: 'SiAstro' },
+  
+  // Backend Frameworks
+  'fastapi': { type: 'react-icon', icon: 'SiFastapi' },
+  'nestjs': { type: 'react-icon', icon: 'SiNestjs' },
+  'koa': { type: 'react-icon', icon: 'SiKoa' },
+  'hapi': { type: 'react-icon', icon: 'SiHapi' },
+  'deno': { type: 'react-icon', icon: 'SiDeno' },
+  
+  // Cloud & Database
+  'supabase': { type: 'react-icon', icon: 'SiSupabase' },
+  'prisma': { type: 'react-icon', icon: 'SiPrisma' },
+  'sequelize': { type: 'react-icon', icon: 'SiSequelize' },
+  'mariadb': { type: 'react-icon', icon: 'SiMariadb' },
+  'cassandra': { type: 'react-icon', icon: 'SiCassandra' },
+  'couchdb': { type: 'react-icon', icon: 'SiCouchdb' },
+  'neo4j': { type: 'react-icon', icon: 'SiNeo4j' },
+  'influxdb': { type: 'react-icon', icon: 'SiInfluxdb' },
+  
+  // DevOps & Monitoring
+  'grafana': { type: 'react-icon', icon: 'SiGrafana' },
+  'prometheus': { type: 'react-icon', icon: 'SiPrometheus' },
+  'terraform': { type: 'react-icon', icon: 'SiTerraform' },
+  'ansible': { type: 'react-icon', icon: 'SiAnsible' },
+  'puppet': { type: 'react-icon', icon: 'SiPuppet' },
+  'helm': { type: 'react-icon', icon: 'SiHelm' },
+  'argo': { type: 'react-icon', icon: 'SiArgo' },
+  'rancher': { type: 'react-icon', icon: 'SiRancher' },
+  'datadog': { type: 'react-icon', icon: 'SiDatadog' },
+  'newrelic': { type: 'react-icon', icon: 'SiNewrelic' },
+  'sentry': { type: 'react-icon', icon: 'SiSentry' },
+  
+  // Data Processing & Analytics
+  'elastic': { type: 'react-icon', icon: 'SiElastic' },
+  'logstash': { type: 'react-icon', icon: 'SiLogstash' },
+  'kibana': { type: 'react-icon', icon: 'SiKibana' },
+  'kafka': { type: 'react-icon', icon: 'SiApachekafka' },
+  'rabbitmq': { type: 'react-icon', icon: 'SiRabbitmq' },
+  'spark': { type: 'react-icon', icon: 'SiApachespark' },
+  'hadoop': { type: 'react-icon', icon: 'SiHadoop' },
+  'databricks': { type: 'react-icon', icon: 'SiDatabricks' },
+  'snowflake': { type: 'react-icon', icon: 'SiSnowflake' },
+  'tableau': { type: 'react-icon', icon: 'SiTableau' },
+  'powerbi': { type: 'react-icon', icon: 'SiPowerbi' },
+  'qlik': { type: 'react-icon', icon: 'SiQlik' },
+  
+  // Data Visualization
+  'd3': { type: 'react-icon', icon: 'SiD3Dotjs' },
+  'd3js': { type: 'react-icon', icon: 'SiD3Dotjs' },
+  'chartjs': { type: 'react-icon', icon: 'SiChartdotjs' },
+  'plotly': { type: 'react-icon', icon: 'SiPlotly' },
+  'leaflet': { type: 'react-icon', icon: 'SiLeaflet' },
+  'mapbox': { type: 'react-icon', icon: 'SiMapbox' },
+  'threejs': { type: 'react-icon', icon: 'SiThreejs' },
+  
+  // Testing Frameworks
+  'playwright': { type: 'react-icon', icon: 'SiPlaywright' },
+  'selenium': { type: 'react-icon', icon: 'SiSelenium' },
+  'testinglibrary': { type: 'react-icon', icon: 'SiTestinglibrary' },
+  'vitest': { type: 'react-icon', icon: 'SiVitest' },
+  'storybook': { type: 'react-icon', icon: 'SiStorybook' },
+  'chromatic': { type: 'react-icon', icon: 'SiChromatic' },
+  
+  // Validation & Design
+  'zod': { type: 'react-icon', icon: 'SiZod' },
+  'yup': { type: 'react-icon', icon: 'SiYup' },
+  'figma': { type: 'react-icon', icon: 'SiFigma' },
+  'sketch': { type: 'react-icon', icon: 'SiSketch' },
+  'adobexd': { type: 'react-icon', icon: 'SiAdobexd' },
+  'framer': { type: 'react-icon', icon: 'SiFramer' },
+  
+  // Web3 & Blockchain
+  'solidity': { type: 'react-icon', icon: 'SiSolidity' },
+  'ethereum': { type: 'react-icon', icon: 'SiEthereum' },
+  'web3': { type: 'react-icon', icon: 'SiWeb3Dotjs' },
+  'web3js': { type: 'react-icon', icon: 'SiWeb3Dotjs' },
+  'ipfs': { type: 'react-icon', icon: 'SiIpfs' },
+  'chainlink': { type: 'react-icon', icon: 'SiChainlink' },
+  'alchemy': { type: 'react-icon', icon: 'SiAlchemy' },
+  
+  // Payment Processing
+  'stripe': { type: 'react-icon', icon: 'SiStripe' },
 };
 
 // DevIcon fallback URLs for technologies not available in React Icons
@@ -181,17 +289,28 @@ export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => 
 };
 
 
-export const getRandomInterviewCover = (id?: string) => {
-  // Use deterministic selection based on ID to avoid hydration mismatch
+/**
+ * Get company logo deterministically based on interview ID
+ * Returns both logo path and company name
+ */
+export const getCompanyLogoForInterview = (id?: string): { logo: string; company: string } => {
+  // Use deterministic selection based on ID to ensure consistency
   if (id) {
     const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const index = hash % interviewCovers.length;
-    const path = `/covers${interviewCovers[index]}`;
-    console.log('Generated cover path:', path, 'for ID:', id);
-    return path;
+    const index = hash % companyLogos.length;
+    const company = companyLogos[index];
+    const path = `/covers${company.logo}`;
+    console.log('Generated company logo:', path, 'Company:', company.name, 'for ID:', id);
+    return { logo: path, company: company.name };
   }
-  // Fallback to first cover if no ID provided
-  const path = `/covers${interviewCovers[0]}`;
-  console.log('Fallback cover path:', path);
-  return path;
+  // Fallback to first company if no ID provided
+  const fallback = companyLogos[0];
+  const path = `/covers${fallback.logo}`;
+  console.log('Fallback company logo:', path, 'Company:', fallback.name);
+  return { logo: path, company: fallback.name };
+};
+
+// Legacy function for backward compatibility
+export const getRandomInterviewCover = (id?: string) => {
+  return getCompanyLogoForInterview(id).logo;
 };

@@ -1,7 +1,7 @@
 "use strict";
 
 // Mock the "use server" directive that's used in general.action.ts
-global.jest = { hoisted: true };
+(global as any).jest = { hoisted: true };
 
 // Define TypeScript interfaces needed for testing
 interface CreateFeedbackParams {
@@ -36,16 +36,17 @@ async function runTest() {
     console.error(error);
     
     // Check for specific error types
-    if (error.message && error.message.includes('Missing or insufficient permissions')) {
+    const err = error as any;
+    if (err.message && err.message.includes('Missing or insufficient permissions')) {
       console.log('ERROR TYPE: FirebaseError: Missing or insufficient permissions');
-    } else if (error.message && error.message.includes('UNAVAILABLE: Metadata is empty')) {
+    } else if (err.message && err.message.includes('UNAVAILABLE: Metadata is empty')) {
       console.log('ERROR TYPE: UNAVAILABLE: Metadata is empty');
-    } else if (error.message && (error.message.includes('SSL') || error.message.includes('network'))) {
+    } else if (err.message && (err.message.includes('SSL') || err.message.includes('network'))) {
       console.log('ERROR TYPE: SSL / network plugin related message');
     }
     
     // Print stack trace
-    console.error('Stack trace:', error.stack);
+    console.error('Stack trace:', err.stack);
   }
 }
 

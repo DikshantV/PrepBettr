@@ -559,3 +559,27 @@ input[type="range"].slider-thumb::-moz-range-thumb {
     transform: rotate(660deg) translateX(145%) rotate(-660deg);
   }
 }
+
+/* Scroll snap utilities for carousel */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.scroll-snap-start {
+  scroll-snap-align: start;
+}
+
+.scroll-snap-center {
+  scroll-snap-align: center;
+}
+
+/* Hide scrollbar for carousel */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

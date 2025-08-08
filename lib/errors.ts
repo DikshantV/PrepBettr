@@ -7,11 +7,13 @@ export interface StandardErrorResponse {
 
 export interface ServerErrorContext {
   userId?: string;
-  url: string;
-  method: string;
-  timestamp: string;
+  url?: string;
+  method?: string;
+  timestamp?: string;
   userAgent?: string;
   ip?: string;
+  service?: string;
+  action?: string;
 }
 
 /**
@@ -25,6 +27,18 @@ export function createErrorResponse(
     error,
     status
   };
+}
+
+/**
+ * Creates a NextResponse error for API routes
+ */
+export function createApiErrorResponse(
+  error: string,
+  status: number
+) {
+  // Import NextResponse dynamically to avoid module issues
+  const { NextResponse } = require('next/server');
+  return NextResponse.json({ error }, { status });
 }
 
 /**

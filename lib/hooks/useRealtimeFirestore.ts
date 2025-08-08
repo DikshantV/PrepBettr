@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import useSWR from 'swr';
 import { ApplicationStatus, UserProfile } from '@/types/realtime';
 
+// Interview and Feedback types are defined globally in types/index.d.ts
+
 // Generic real-time document hook with SWR caching
 export function useRealtimeDocument<T>(
   collectionName: string, 
@@ -27,11 +29,11 @@ export function useRealtimeDocument<T>(
   const { user } = useAuth();
   const key = documentId ? `${collectionName}/${documentId}` : null;
 
-  const { data, error, mutate } = useSWR(
+  const { data, error, mutate } = useSWR<T | null>(
     key,
     () => null, // We'll handle data fetching via onSnapshot
     {
-      fallbackData,
+      fallbackData: fallbackData ?? null,
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
     }
@@ -82,7 +84,7 @@ export function useRealtimeUserInterviews() {
   const { user, loading: authLoading } = useAuth();
   const key = user ? `user-interviews/${user.id}` : null;
 
-  const { data, error, mutate } = useSWR(
+  const { data, error, mutate } = useSWR<Interview[]>(
     key,
     () => [], // We'll handle data fetching via onSnapshot
     {
@@ -140,10 +142,9 @@ export function useRealtimeUserInterviews() {
 
 // Real-time public interviews hook with SWR
 export function useRealtimePublicInterviews(limitCount: number = 20) {
-  const { user, loading: authLoading } = useAuth();
-  const key = user ? `public-interviews/${user.id}` : null;
+  const key = `public-interviews`;
 
-  const { data, error, mutate } = useSWR(
+  const { data, error, mutate } = useSWR<Interview[]>(
     key,
     () => [], // We'll handle data fetching via onSnapshot
     {
@@ -156,19 +157,10 @@ export function useRealtimePublicInterviews(limitCount: number = 20) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading || !user) {
-      if (!authLoading) {
-        setIsLoading(false);
-        mutate([]);
-      }
-      return;
-    }
-
     setIsLoading(true);
     const publicQuery = query(
       collection(db, 'interviews'),
       where('finalized', '==', true),
-      where('userId', '!=', user.id),
       orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
@@ -191,12 +183,12 @@ export function useRealtimePublicInterviews(limitCount: number = 20) {
     );
 
     return () => unsubscribe();
-  }, [user, authLoading, limitCount, mutate]);
+  }, [limitCount, mutate]);
 
   return {
     data: data || [],
     error,
-    isLoading: authLoading || isLoading,
+    isLoading,
     mutate
   };
 }
@@ -217,7 +209,7 @@ export function useRealtimeFeedback(interviewId: string | null) {
   const { user, loading: authLoading } = useAuth();
   const key = user && interviewId ? `feedback/${interviewId}/${user.id}` : null;
 
-  const { data, error, mutate } = useSWR(
+  const { data, error, mutate } = useSWR<Feedback | null>(
     key,
     () => null, // We'll handle data fetching via onSnapshot
     {

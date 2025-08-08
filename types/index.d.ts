@@ -11,6 +11,11 @@ interface Feedback {
   areasForImprovement: string[];
   finalAssessment: string;
   createdAt: string;
+  overallScore?: number;
+  categories?: Record<string, any>;
+  generalFeedback?: string;
+  nextSteps?: string[];
+  updatedAt?: string;
 }
 
 interface Interview {
@@ -18,11 +23,14 @@ interface Interview {
   role: string;
   level: string;
   questions: string[];
-  techstack: string[];
+  techstack: string | string[]; // Support both string (from Firestore) and string array
   createdAt: string;
   userId: string;
   type: string;
   finalized: boolean;
+  status?: string;
+  companyLogo?: string;
+  companyName?: string;
 }
 
 interface CreateFeedbackParams {

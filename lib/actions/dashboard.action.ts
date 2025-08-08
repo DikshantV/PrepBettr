@@ -3,6 +3,7 @@
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { db } from "@/firebase/admin";
 import { dummyInterviews } from "@/constants";
+import { createMockInterview } from "@/lib/services/mock-interview.service";
 
 // Get user's interviews
 export async function getUserInterviews(): Promise<Interview[]> {
@@ -36,52 +37,71 @@ export async function getUserInterviews(): Promise<Interview[]> {
   }
 }
 
-// Generate random mock interviews for dashboard display
-function generateMockInterviews(): Interview[] {
-  const roles = [
-    "Frontend Developer", "Backend Developer", "Full Stack Developer", 
-    "Software Engineer", "DevOps Engineer", "Data Scientist", 
-    "Mobile Developer", "UI/UX Designer", "Product Manager", "QA Engineer"
-  ];
-  
-  const types = ["Technical", "Behavioral", "Mixed"];
-  const levels = ["Junior", "Mid", "Senior"];
-  
-  const techStacks = [
-    ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-    ["Node.js", "Express", "MongoDB", "JavaScript"],
-    ["Python", "Django", "PostgreSQL", "Redis"],
-    ["Vue.js", "Nuxt.js", "Vuex", "SCSS"],
-    ["Angular", "TypeScript", "RxJS", "Material UI"],
-    ["React Native", "JavaScript", "Firebase", "Redux"],
-    ["Flutter", "Dart", "SQLite", "Provider"],
-    ["Java", "Spring Boot", "MySQL", "Docker"],
-    ["Go", "Gin", "PostgreSQL", "AWS"],
-    ["C#", "ASP.NET", "SQL Server", "Azure"]
-  ];
-  
-  const mockInterviews: Interview[] = [];
-  
-  for (let i = 0; i < 8; i++) {
-    const roleIndex = i % roles.length;
-    const typeIndex = i % types.length;
-    const levelIndex = i % levels.length;
-    const techStackIndex = i % techStacks.length;
+// Ensure mock interviews exist and return consistent data
+export async function ensureMockInterviews(count: number): Promise<Interview[]> {
+  try {
+    // Query for existing public interviews
+    const interviewsRef = db.collection('interviews');
+    const query = interviewsRef
+      .where('userId', '==', 'public')
+      .where('finalized', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(count);
     
-    mockInterviews.push({
-      id: `mock-interview-${i + 1}`,
-      userId: "public",
-      role: roles[roleIndex],
-      type: types[typeIndex],
-      level: levels[levelIndex],
-      techstack: techStacks[techStackIndex],
-      questions: ["Sample question for this interview"],
-      finalized: true,
-      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-    });
+    const snapshot = await query.get();
+    const existingInterviews = snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Interview[];
+    
+    // If we have enough interviews, return them
+    if (existingInterviews.length >= count) {
+      return existingInterviews.slice(0, count);
+    }
+    
+    // Calculate how many new interviews we need
+    const needed = count - existingInterviews.length;
+    console.log(`Creating ${needed} new mock interviews (existing: ${existingInterviews.length})`);
+    
+    // Create new mock interviews using batch write
+    const batch = db.batch();
+    const newInterviews: Interview[] = [];
+    
+    for (let i = 0; i < needed; i++) {
+      try {
+        // Generate a new mock interview
+        const mockInterview = await createMockInterview('public');
+        
+        // Add to batch
+        const docRef = db.collection('interviews').doc(mockInterview.id);
+        batch.set(docRef, mockInterview);
+        
+        newInterviews.push(mockInterview);
+      } catch (error) {
+        console.error(`Error creating mock interview ${i + 1}:`, error);
+        // Continue with other interviews even if one fails
+      }
+    }
+    
+    // Commit the batch write
+    if (newInterviews.length > 0) {
+      await batch.commit();
+      console.log(`Successfully created ${newInterviews.length} mock interviews`);
+    }
+    
+    // Combine existing and new interviews
+    const allInterviews = [...existingInterviews, ...newInterviews];
+    
+    // Return the latest interviews (sorted by createdAt desc)
+    return allInterviews
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, count);
+    
+  } catch (error) {
+    console.error('Error in ensureMockInterviews:', error);
+    // Return empty array on error to prevent page crash
+    return [];
   }
-  
-  return mockInterviews;
 }
 
 // Get public/finalized interviews (excluding user's own)
@@ -106,14 +126,14 @@ export async function getPublicInterviews(): Promise<Interview[]> {
     
     // Use mock data if no interviews found
     if (interviews.length === 0) {
-      return generateMockInterviews();
+      return await ensureMockInterviews(8);
     }
     return interviews;
     
   } catch (error) {
     console.error('Error fetching public interviews:', error);
     // Return mock data on error as fallback
-    return generateMockInterviews();
+    return await ensureMockInterviews(8);
   }
 }
 

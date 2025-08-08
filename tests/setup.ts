@@ -2,7 +2,7 @@
 // Global test setup and mocks
 
 // Set test environment
-process.env.NODE_ENV = 'test';
+(process.env as any).NODE_ENV = 'test';
 
 // Mock console methods if needed
 global.console = {

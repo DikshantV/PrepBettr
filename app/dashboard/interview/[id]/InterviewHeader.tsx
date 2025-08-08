@@ -34,7 +34,11 @@ export default function InterviewHeader({
                     <div>
                         <h2 className="text-2xl font-bold capitalize text-white">{role} Interview</h2>
                         <div className="flex items-center gap-2 mt-1">
-                            <DisplayTechIcons techStack={techstack} />
+                            <div className="flex gap-1">
+                              {techstack.map((tech) => (
+                                <DisplayTechIcons key={tech} name={tech as any} size={16} />
+                              ))}
+                            </div>
                             <span className="text-sm text-gray-400">•</span>
                             <span className="text-sm text-gray-300">{type} Interview</span>
                         </div>

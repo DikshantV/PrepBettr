@@ -80,6 +80,50 @@ describe('AzureOpenAIService - Preliminary Questions Flow', () => {
       expect(response5.questionNumber).toBe(1); // Now in actual interview phase
     });
 
+    it('should track preliminaryCollected flag correctly', async () => {
+      // Start the interview - preliminaryCollected should be false
+      await service.startInterviewConversation();
+      
+      // Complete all preliminary questions
+      await service.processUserResponse('Senior Software Engineer');
+      await service.processUserResponse('React, Node.js, TypeScript, AWS');
+      await service.processUserResponse('5');
+      await service.processUserResponse('Full-stack development, System design, Team leadership');
+      
+      // After last preliminary question, preliminaryCollected should be set to true
+      const response = await service.processUserResponse('10');
+      
+      // Verify the flag was set and we transitioned to real questions
+      expect(response.questionNumber).toBe(1); // First real question
+      expect(response.content).toContain("Great! I now have a better understanding");
+      
+      // Subsequent responses should increment question count normally
+      const response2 = await service.processUserResponse('I use SOLID principles in my daily work...');
+      expect(response2.questionNumber).toBe(2); // Second real question
+    });
+
+    it('should keep currentQuestionCount at 0 during preliminary phase', async () => {
+      // Start the interview
+      await service.startInterviewConversation();
+      
+      // During preliminary questions, questionNumber should always be 0
+      const response1 = await service.processUserResponse('Frontend Developer');
+      expect(response1.questionNumber).toBe(0);
+      
+      const response2 = await service.processUserResponse('Vue.js, Nuxt');
+      expect(response2.questionNumber).toBe(0);
+      
+      const response3 = await service.processUserResponse('3');
+      expect(response3.questionNumber).toBe(0);
+      
+      const response4 = await service.processUserResponse('UI/UX Design');
+      expect(response4.questionNumber).toBe(0);
+      
+      // After completing preliminary, should start at 1
+      const response5 = await service.processUserResponse('8');
+      expect(response5.questionNumber).toBe(1);
+    });
+
     it('should build proper system context after preliminary questions', async () => {
       // Set interview type
       service.setInterviewContext({ type: 'technical' });
