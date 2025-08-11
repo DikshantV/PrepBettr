@@ -111,10 +111,12 @@ export default function SettingsPage() {
                           </span>
                         )}
                       </div>
-                      <Switch 
-                        checked={isAutoApplyAzureEnabled()} 
-                        disabled={!flags?.rolloutStatus?.autoApplyAzure}
-                      />
+                      <div className="flex items-center ml-4">
+                        <Switch 
+                          checked={isAutoApplyAzureEnabled()} 
+                          disabled={!flags?.rolloutStatus?.autoApplyAzure}
+                        />
+                      </div>
                     </div>
 
                     {/* Portal Integration Feature */}
@@ -130,10 +132,12 @@ export default function SettingsPage() {
                           </span>
                         )}
                       </div>
-                      <Switch 
-                        checked={isPortalIntegrationEnabled()} 
-                        disabled={!flags?.rolloutStatus?.portalIntegration}
-                      />
+                      <div className="flex items-center ml-4">
+                        <Switch 
+                          checked={isPortalIntegrationEnabled()} 
+                          disabled={!flags?.rolloutStatus?.portalIntegration}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -164,15 +168,21 @@ export default function SettingsPage() {
               <h4 className="text-white font-medium">General AI Settings</h4>
               <div className="flex items-center justify-between">
                 <Label className="text-white">Enable Smart Feedback</Label>
-                <Switch defaultChecked />
+                <div className="flex items-center">
+                  <Switch defaultChecked />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-white">Adaptive Difficulty</Label>
-                <Switch defaultChecked />
+                <div className="flex items-center">
+                  <Switch defaultChecked />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-white">Use Past Performance</Label>
-                <Switch />
+                <div className="flex items-center">
+                  <Switch />
+                </div>
               </div>
             </div>
           </div>
@@ -212,7 +222,9 @@ export default function SettingsPage() {
         <TabsContent value="notifications" className="space-y-4 bg-gray-900 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
             <Label className="text-white">Daily Practice Reminder</Label>
-            <Switch defaultChecked />
+            <div className="flex items-center">
+              <Switch defaultChecked />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -237,7 +249,9 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <Label className="text-white">Email Notifications</Label>
-            <Switch />
+            <div className="flex items-center">
+              <Switch />
+            </div>
           </div>
         </TabsContent>
 
@@ -252,21 +266,27 @@ export default function SettingsPage() {
                     <Label className="text-white">Analytics & Performance</Label>
                     <p className="text-sm text-gray-400">Help us improve the platform by sharing usage analytics</p>
                   </div>
-                  <Switch defaultChecked />
+                  <div className="flex items-center">
+                    <Switch defaultChecked />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Marketing Communications</Label>
                     <p className="text-sm text-gray-400">Receive updates about new features and tips</p>
                   </div>
-                  <Switch />
+                  <div className="flex items-center">
+                    <Switch />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Functional Cookies</Label>
                     <p className="text-sm text-gray-400">Essential for the platform to work properly</p>
                   </div>
-                  <Switch defaultChecked disabled />
+                  <div className="flex items-center">
+                    <Switch defaultChecked disabled />
+                  </div>
                 </div>
               </div>
             </div>

@@ -145,7 +145,7 @@ export default function DashboardClientRealtime() {
           emptyMessage="No public interviews available at the moment."
           fallback={
             <div className="relative">
-              <ul className="flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar">
+              <ul className="no-list flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <li key={i} className="flex-shrink-0 w-[360px] scroll-snap-start">
                     <InterviewCardSkeleton />
@@ -159,7 +159,7 @@ export default function DashboardClientRealtime() {
             {/* Carousel Container */}
             <ul 
               ref={carouselRef}
-              className="flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar"
+              className="no-list flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar"
             >
               {(publicInterviews as any[]).slice(0, 8).map((interview: any) => (
                 <li key={interview.id} className="flex-shrink-0 w-[360px] scroll-snap-start">
@@ -174,55 +174,56 @@ export default function DashboardClientRealtime() {
               ))}
             </ul>
 
-            {/* Navigation Buttons - Positioned on the right side */}
-            {publicInterviews.length > 3 && (
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-10 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-background/80 backdrop-blur-sm"
-                  onClick={() => scrollCarousel('left')}
-                  aria-label="Previous interviews"
+            {/* Optional right-side fade overlay */}
+            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background/60 to-transparent pointer-events-none z-10" />
+
+            {/* Navigation Buttons - Always visible and prominently styled */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-20 flex gap-2 max-sm:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shadow-lg bg-background/80 backdrop-blur-sm text-white hover:bg-primary-200/90 border border-white/30 rounded-full bg-gradient-to-br from-white/20 to-transparent"
+                onClick={() => scrollCarousel('left')}
+                aria-label="Previous interviews"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-background/80 backdrop-blur-sm"
-                  onClick={() => scrollCarousel('right')}
-                  aria-label="Next interviews"
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shadow-lg bg-background/80 backdrop-blur-sm text-white hover:bg-primary-200/90 border border-white/30 rounded-full bg-gradient-to-br from-white/20 to-transparent"
+                onClick={() => scrollCarousel('right')}
+                aria-label="Next interviews"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Button>
-              </div>
-            )}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Button>
+            </div>
           </div>
         </DataSuspense>
       </section>
