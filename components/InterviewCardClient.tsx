@@ -66,13 +66,14 @@ const InterviewCardClient = ({
                     </div>
 
                     {/* Cover Image - Company Logo or Fallback - Standardized Size */}
-                    <Image
-                        src={companyLogo || getRandomInterviewCover(interviewId)}
-                        alt="cover-image"
-                        width={80}
-                        height={80}
-                        className="rounded-full object-cover size-[80px]"
-                    />
+                    <div className="size-20 relative">
+                        <Image
+                            src={companyLogo || getRandomInterviewCover(interviewId)}
+                            alt={`${role} logo`}
+                            fill
+                            className="object-contain rounded-full ring-1 ring-white/10"
+                        />
+                    </div>
 
                     {/* Interview Role with Level */}
                     <h3 className="mt-5 capitalize text-white">
