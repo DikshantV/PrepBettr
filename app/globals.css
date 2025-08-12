@@ -589,3 +589,60 @@ input[type="range"].slider-thumb::-moz-range-thumb {
 .no-scrollbar::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* Enhanced scroll button styles with blur effects */
+.scroll-btn {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.scroll-btn:hover {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Enhanced backdrop blur backgrounds */
+.backdrop-filter {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); /* Safari support */
+}
+
+.backdrop-blur-lg {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px); /* Safari support */
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+}
+
+/* Smooth transitions for scroll buttons */
+@keyframes scaleIn {
+  0% {
+    transform: translateY(-50%) scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.scroll-btn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Active state for scroll buttons */
+.scroll-btn:active {
+  transform: translateY(-50%) scale(0.95);
+  transition: transform 0.1s ease-out;
+}

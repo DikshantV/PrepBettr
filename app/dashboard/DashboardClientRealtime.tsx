@@ -155,73 +155,50 @@ export default function DashboardClientRealtime() {
             </div>
           }
         >
-          <div className="relative">
+          <div className="relative flex items-center">
             {/* Carousel Container */}
             <ul 
               ref={carouselRef}
-              className="no-list flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar"
+              className="no-list flex overflow-x-auto scroll-snap-x gap-4 no-scrollbar flex-1"
             >
-              {(publicInterviews as any[]).slice(0, 8).map((interview: any) => (
-                <li key={interview.id} className="flex-shrink-0 w-[360px] scroll-snap-start">
-                  <InterviewCardClient
-                    interviewId={interview.id}
-                    role={interview.role}
-                    type={interview.type}
-                    techstack={normalizeTechstack(interview.techstack)}
-                    createdAt={interview.createdAt}
-                  />
-                </li>
-              ))}
+              {(publicInterviews as any[]).slice(0, 8).map((interview: any) => {
+                const isCommunityCard = true;
+                return (
+                  <li key={interview.id} className="flex-shrink-0 w-[360px] scroll-snap-start">
+                    <InterviewCardClient
+                      interviewId={interview.id}
+                      role={interview.role}
+                      type={interview.type}
+                      techstack={normalizeTechstack(interview.techstack)}
+                      createdAt={interview.createdAt}
+                      context="community-mock-interview"
+                      isCommunityCard={isCommunityCard}
+                    />
+                  </li>
+                );
+              })}
             </ul>
 
-            {/* Optional right-side fade overlay */}
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background/60 to-transparent pointer-events-none z-10" />
-
-            {/* Navigation Buttons - Always visible and prominently styled */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-20 flex gap-2 max-sm:hidden">
+            {/* Navigation Buttons - Highly visible for debugging */}
+            <div className="flex flex-col gap-2 ml-4 shrink-0">
               <Button
-                variant="ghost"
-                size="icon"
-                className="shadow-lg bg-background/80 backdrop-blur-sm text-white hover:bg-primary-200/90 border border-white/30 rounded-full bg-gradient-to-br from-white/20 to-transparent"
+                variant="default"
+                size="lg"
+                className="bg-red-500 hover:bg-red-600 text-white h-12 w-12 rounded-full shadow-2xl border-4 border-white"
                 onClick={() => scrollCarousel('left')}
                 aria-label="Previous interviews"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
+                ←
               </Button>
+              
               <Button
-                variant="ghost"
-                size="icon"
-                className="shadow-lg bg-background/80 backdrop-blur-sm text-white hover:bg-primary-200/90 border border-white/30 rounded-full bg-gradient-to-br from-white/20 to-transparent"
+                variant="default"
+                size="lg"
+                className="bg-blue-500 hover:bg-blue-600 text-white h-12 w-12 rounded-full shadow-2xl border-4 border-white"
                 onClick={() => scrollCarousel('right')}
                 aria-label="Next interviews"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+                →
               </Button>
             </div>
           </div>

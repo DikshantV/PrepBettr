@@ -9,6 +9,7 @@ import DisplayTechIcons from "./DisplayTechIcons";
 import { TechIconName, techIconMap } from "./tech-icons";
 import { useServerFeedback } from "@/lib/hooks/useServerFeedback";
 import { useAuth } from "@/contexts/AuthContext";
+import { setCommunityInterviewInStorage } from "@/lib/utils/communityInterviewStorage";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 
@@ -20,6 +21,8 @@ interface InterviewCardClientProps {
     createdAt?: string;
     companyLogo?: string;
     level?: string;
+    context?: 'dashboard' | 'community-mock-interview';
+    isCommunityCard?: boolean;
 }
 
 const InterviewCardClient = ({
@@ -30,6 +33,8 @@ const InterviewCardClient = ({
     createdAt,
     companyLogo,
     level,
+    context = 'dashboard',
+    isCommunityCard = false,
 }: InterviewCardClientProps) => {
     const { user } = useAuth();
     const userId = user?.id;
@@ -50,6 +55,34 @@ const InterviewCardClient = ({
     const formattedDate = dayjs(
         feedback?.createdAt || createdAt || new Date('2024-01-01')
     ).format("MMM D, YYYY");
+
+    // Determine link URLs based on context
+    const getInterviewLink = () => {
+        if (context === 'community-mock-interview') {
+            // Store community interview data in localStorage for persistence
+            setCommunityInterviewInStorage({
+                id: interviewId || '',
+                role,
+                type,
+                techstack,
+                level,
+                createdAt,
+                companyLogo
+            });
+            
+            return `/community-mock-interview/interview?id=${interviewId}&role=${encodeURIComponent(role)}&type=${encodeURIComponent(type)}&level=${encodeURIComponent(level || '')}&techstack=${encodeURIComponent(techstack.join(','))}`;
+        }
+        return `/dashboard/interview/${interviewId}`;
+    };
+
+    const getFeedbackLink = () => {
+        if (context === 'community-mock-interview') {
+            // For community mock interviews, we might want different feedback behavior
+            // For now, keep the dashboard feedback link but this can be customized later
+            return `/dashboard/interview/${interviewId}/feedback`;
+        }
+        return `/dashboard/interview/${interviewId}/feedback`;
+    };
 
     return (
         <div className="card-border w-[360px] max-sm:w-full h-96">
@@ -92,24 +125,29 @@ const InterviewCardClient = ({
                             <p>{formattedDate}</p>
                         </div>
 
-                        <div className="flex flex-row gap-2 items-center">
-                            <Image src="/star.svg" width={22} height={22} alt="star" />
-                            <p>
-                                {feedbackLoading 
-                                    ? "..." 
-                                    : feedback?.totalScore || "---"
-                                }/100
-                            </p>
-                        </div>
+                        {/* Hide score for community cards */}
+                        {!isCommunityCard && (
+                            <div className="flex flex-row gap-2 items-center">
+                                <Image src="/star.svg" width={22} height={22} alt="star" />
+                                <p>
+                                    {feedbackLoading 
+                                        ? "..." 
+                                        : feedback?.totalScore || "---"
+                                    }/100
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Feedback or Placeholder Text */}
-                    <p className="line-clamp-2 mt-5">
-                        {feedbackLoading
-                            ? "Loading feedback..."
-                            : feedback?.finalAssessment ||
-                              "You haven't taken this interview yet. Take it now to improve your skills."}
-                    </p>
+                    {!isCommunityCard && (
+                        <p className="line-clamp-2 mt-5">
+                            {feedbackLoading
+                                ? "Loading feedback..."
+                                : feedback?.finalAssessment ||
+                                  "You haven't taken this interview yet. Take it now to improve your skills."}
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex flex-row justify-between items-center">
@@ -123,18 +161,28 @@ const InterviewCardClient = ({
                         }).filter(Boolean)}
                     </div>
 
-                    {feedback ? (
+                    {/* For community cards, always show "Take Interview" button */}
+                    {isCommunityCard ? (
                         <Button className="btn-primary">
-                            <Link href={`/dashboard/interview/${interviewId}/feedback`}>
-                                Check Feedback
-                            </Link>
-                        </Button>
-                    ) : (
-                        <Button className="btn-primary">
-                            <Link href={`/dashboard/interview/${interviewId}`}>
+                            <Link href={getInterviewLink()}>
                                 Take Interview
                             </Link>
                         </Button>
+                    ) : (
+                        /* For regular cards, show feedback or take interview based on feedback status */
+                        feedback ? (
+                            <Button className="btn-primary">
+                                <Link href={getFeedbackLink()}>
+                                    Check Feedback
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Button className="btn-primary">
+                                <Link href={getInterviewLink()}>
+                                    Take Interview
+                                </Link>
+                            </Button>
+                        )
                     )}
                 </div>
             </div>
