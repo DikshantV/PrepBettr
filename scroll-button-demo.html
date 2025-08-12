@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Scroll Button Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Enhanced scroll button styles with blur effects */
+        .scroll-btn {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); /* Safari support */
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.15),
+                0 2px 6px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .scroll-btn:hover {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 
+                0 6px 16px rgba(0, 0, 0, 0.2),
+                0 3px 8px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        /* Enhanced backdrop blur backgrounds */
+        .backdrop-blur-lg {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px); /* Safari support */
+        }
+
+        .backdrop-blur-md {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); /* Safari support */
+        }
+
+        /* Smooth transitions for scroll buttons */
+        @keyframes scaleIn {
+            0% {
+                transform: translateY(-50%) scale(0.95);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .scroll-btn {
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        /* Active state for scroll buttons */
+        .scroll-btn:active {
+            transform: translateY(-50%) scale(0.95);
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Hide scrollbar for demo */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <h1 class="text-3xl font-bold text-white text-center mb-8">Enhanced Scroll Button Demo</h1>
+        
+        <div class="bg-gray-900 p-6 rounded-lg">
+            <h2 class="text-xl font-semibold text-white mb-4">Community Mock Interviews</h2>
+            
+            <!-- Carousel Container -->
+            <div class="relative">
+                <!-- Scrollable Cards Container -->
+                <div id="carousel" class="flex overflow-x-auto scroll-snap-x-mandatory gap-4 no-scrollbar py-2">
+                    <!-- Demo Cards -->
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">JS</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">JavaScript Developer</h3>
+                                <p class="text-gray-400 text-sm">Frontend Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Practice modern JavaScript concepts including ES6+, async/await, and DOM manipulation.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">React</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Node.js</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">PY</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">Python Developer</h3>
+                                <p class="text-gray-400 text-sm">Backend Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Master Python frameworks, data structures, and backend development principles.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Django</span>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">FastAPI</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">FS</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">Full Stack Engineer</h3>
+                                <p class="text-gray-400 text-sm">Full Stack Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Complete full-stack development interview covering both frontend and backend skills.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">TypeScript</span>
+                            <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">GraphQL</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">DV</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">DevOps Engineer</h3>
+                                <p class="text-gray-400 text-sm">Infrastructure Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Focus on cloud infrastructure, CI/CD pipelines, and containerization technologies.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Docker</span>
+                            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">AWS</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">ML</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">ML Engineer</h3>
+                                <p class="text-gray-400 text-sm">AI/ML Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Machine learning algorithms, data preprocessing, and model deployment strategies.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded">TensorFlow</span>
+                            <span class="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded">PyTorch</span>
+                        </div>
+                    </div>
+
+                    <div class="card flex-shrink-0 w-80 h-64 rounded-xl p-6 scroll-snap-start">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold">PM</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-semibold">Product Manager</h3>
+                                <p class="text-gray-400 text-sm">Management Position</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm">Product strategy, user research, and cross-functional team leadership skills.</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Analytics</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Strategy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Left Scroll Button with Blur Background -->
+                <div class="absolute left-0 top-0 bottom-0 w-12 backdrop-blur-lg bg-gradient-to-r from-gray-900/60 via-gray-900/30 to-transparent pointer-events-none z-10"></div>
+                <button 
+                    class="scroll-btn absolute left-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 shadow-xl bg-gray-800/90 backdrop-blur-md text-white hover:bg-blue-600/30 hover:text-blue-300 hover:scale-110 border border-gray-600/50 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+                    onclick="scrollCarousel('left')"
+                    aria-label="Previous interviews">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Right Scroll Button with Blur Background -->
+                <div class="absolute right-0 top-0 bottom-0 w-12 backdrop-blur-lg bg-gradient-to-l from-gray-900/60 via-gray-900/30 to-transparent pointer-events-none z-10"></div>
+                <button 
+                    class="scroll-btn absolute right-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 shadow-xl bg-gray-800/90 backdrop-blur-md text-white hover:bg-blue-600/30 hover:text-blue-300 hover:scale-110 border border-gray-600/50 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+                    onclick="scrollCarousel('right')"
+                    aria-label="Next interviews">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-lg font-semibold text-white mb-4">Features Implemented</h2>
+            <ul class="space-y-2 text-gray-300">
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Enhanced blur effect with backdrop-filter: blur(12px)</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Smooth hover effects with scale transformation (110%)</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Multi-layered shadow effects for depth perception</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Gradient blur backgrounds for visual integration</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Smooth horizontal scrolling with 400px increments</span>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Cross-browser compatibility with -webkit-backdrop-filter</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function scrollCarousel(direction) {
+            const carousel = document.getElementById('carousel');
+            const scrollAmount = direction === 'left' ? -400 : 400;
+            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+
+        // Optional: Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                scrollCarousel('left');
+            } else if (e.key === 'ArrowRight') {
+                scrollCarousel('right');
+            }
+        });
+    </script>
+</body>
+</html>
