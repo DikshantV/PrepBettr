@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, db } from '@/firebase/admin';
+import { azureFunctionsClient } from '@/lib/services/azure-functions-client';
+import { firebaseVerification } from '@/lib/services/firebase-verification';
 import { emailVerificationService } from '@/lib/services/email-verification-service';
 
 export async function POST(request: Request) {
@@ -14,9 +16,37 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify the ID token
-    const decodedToken = await auth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
+    // Verify the ID token using Azure Functions first, fallback to Firebase
+    let decodedToken;
+    let uid;
+    
+    try {
+      // Try Azure Function verification first
+      const azureResult = await azureFunctionsClient.verifyToken(idToken);
+      
+      if (azureResult.valid && azureResult.decoded) {
+        decodedToken = azureResult.decoded;
+        uid = decodedToken.uid;
+        console.log('Token verified successfully via Azure Function for signup');
+      } else {
+        throw new Error(azureResult.error || 'Azure Function verification failed');
+      }
+    } catch (azureError) {
+      console.warn('Azure Function verification failed for signup, falling back to Firebase:', azureError);
+      
+      try {
+        // Fallback to Firebase Admin SDK
+        decodedToken = await auth.verifyIdToken(idToken);
+        uid = decodedToken.uid;
+        console.log('Token verified successfully via Firebase Admin SDK (fallback)');
+      } catch (firebaseError) {
+        console.error('Both Azure and Firebase token verification failed for signup:', firebaseError);
+        return NextResponse.json(
+          { error: 'Token verification failed' },
+          { status: 401 }
+        );
+      }
+    }
 
     // Check if user already exists
     const userDoc = await db.collection('users').doc(uid).get();

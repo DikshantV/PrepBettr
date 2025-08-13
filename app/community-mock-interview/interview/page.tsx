@@ -60,11 +60,11 @@ const InterviewPageContent = () => {
             if (interview && !firestoreLoading && !firestoreError) {
                 const firestoreData: CommunityInterviewData = {
                     id: interview.id,
-                    role: interview.role,
-                    type: interview.type,
-                    techstack: Array.isArray(interview.techstack) ? interview.techstack : [interview.techstack],
+                    role: interview.role || interview.jobTitle || 'Unknown Role',
+                    type: interview.type || 'technical',
+                    techstack: Array.isArray(interview.techstack) ? interview.techstack : (interview.techstack ? [interview.techstack] : ['General']),
                     level: interview.level,
-                    createdAt: interview.createdAt,
+                    createdAt: typeof interview.createdAt === 'string' ? interview.createdAt : interview.createdAt.toISOString(),
                     timestamp: Date.now()
                 };
                 setInterviewData(firestoreData);

@@ -233,14 +233,14 @@ export interface TailoringConfig {
   maxLength?: number; // in pages
 }
 
-// Gemini API interfaces
-export interface GeminiAnalysisPrompt {
+// Azure OpenAI API interfaces
+export interface AzureOpenAIAnalysisPrompt {
   resumeContent: string;
   jobDescription: string;
   config: TailoringConfig;
 }
 
-export interface GeminiResponse {
+export interface AzureOpenAIResponse {
   analysis: {
     matchScore: number;
     keywordAnalysis: {

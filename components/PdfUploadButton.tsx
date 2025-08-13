@@ -15,6 +15,7 @@ import Uploady, {
 import { asUploadButton } from '@rpldy/upload-button';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/firebase/client';
+import { useTelemetry } from '@/components/providers/TelemetryProvider';
 
 type UploadResponse = {
   success: boolean;
@@ -45,12 +46,21 @@ const PdfUploadButton = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const uploaderRef = useRef<HTMLButtonElement>(null);
+  const { trackResumeUpload, trackUserAction, trackError } = useTelemetry();
 
   // Handle upload start
-  useItemStartListener((item) => {
-    setFile(item.file as File);
+  useItemStartListener(async (item) => {
+    const uploadFile = item.file as File;
+    setFile(uploadFile);
     setIsUploading(true);
     onUploadStart?.();
+    
+    // Track upload start
+    await trackUserAction('resume_upload_start', 'resume_processing', {
+      fileName: uploadFile.name,
+      fileSize: uploadFile.size.toString(),
+      fileType: uploadFile.type
+    });
   });
 
   // Handle upload progress
@@ -59,12 +69,23 @@ const PdfUploadButton = ({
   });
 
   // Handle upload errors
-  useItemErrorListener((item) => {
+  useItemErrorListener(async (item) => {
     setIsUploading(false);
     const error = item.uploadResponse?.data?.error || 'Failed to upload file';
+    const errorMessage = typeof error === 'string' ? error : 'An unknown error occurred';
+    
     toast.error('Upload failed', {
-      description: typeof error === 'string' ? error : 'An unknown error occurred'
+      description: errorMessage
     });
+    
+    // Track upload error
+    await trackError(new Error(errorMessage), {
+      action: 'resume_upload_error',
+      fileName: file?.name || 'unknown',
+      fileSize: file?.size.toString() || '0',
+      uploadProgress: uploadProgress.toString()
+    });
+    
     setFile(null);
     setUploadProgress(0);
     onUploadEnd?.();
@@ -80,6 +101,11 @@ const PdfUploadButton = ({
 
   // Handle successful upload
   useItemFinalizeListener(async (item) => {
+    const endTime = Date.now();
+    // Extract start time from item data or use end time as fallback
+    const itemStartTime = (item as any).startTime || endTime;
+    const processingTime = endTime - itemStartTime;
+    
     try {
       const response = item.uploadResponse?.data as UploadResponse;
       
@@ -87,6 +113,22 @@ const PdfUploadButton = ({
         const questions = response.data?.questions;
         if (questions?.length) {
           toast.success('Document processed successfully!');
+          
+          // Track successful resume upload and processing
+          if (file) {
+            await trackResumeUpload(
+              file.size,
+              file.type,
+              processingTime
+            );
+            
+            await trackUserAction('resume_upload_success', 'resume_processing', {
+              fileName: file.name,
+              questionsGenerated: questions.length.toString(),
+              processingTimeMs: processingTime.toString()
+            });
+          }
+          
           onQuestionsGenerated?.({
             questions,
             fileUrl: response.data?.fileUrl || '',
@@ -96,14 +138,29 @@ const PdfUploadButton = ({
           toast.warning('No questions were generated', {
             description: 'The PDF might not contain enough content or the content might not be suitable for question generation.'
           });
+          
+          // Track upload with no questions generated
+          await trackUserAction('resume_upload_no_questions', 'resume_processing', {
+            fileName: file?.name || 'unknown',
+            processingTimeMs: processingTime.toString()
+          });
         }
       } else {
         throw new Error(response?.error || 'Failed to process PDF');
       }
     } catch (error) {
       console.error('Error processing PDF:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      
       toast.error('Failed to process PDF', {
-        description: error instanceof Error ? error.message : 'An unknown error occurred'
+        description: errorMessage
+      });
+      
+      // Track processing error
+      await trackError(error instanceof Error ? error : new Error(errorMessage), {
+        action: 'resume_processing_error',
+        fileName: file?.name || 'unknown',
+        processingTimeMs: processingTime.toString()
       });
     } finally {
       setIsUploading(false);

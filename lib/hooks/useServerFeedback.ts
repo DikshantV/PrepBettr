@@ -23,7 +23,7 @@ export function useServerFeedback(interviewId: string | null) {
         const result = await getFeedbackByInterviewId(interviewId);
 
         if (result.success) {
-          setFeedback(result.feedback);
+          setFeedback(result.feedback || null);
         } else {
           setError(result.error || 'Failed to load feedback');
           console.error('Server feedback fetch failed:', result.error, result.details);

@@ -20,14 +20,25 @@ interface Feedback {
 
 interface Interview {
   id: string;
-  role: string;
-  level: string;
-  questions: string[];
-  techstack: string | string[]; // Support both string (from Firestore) and string array
-  createdAt: string;
   userId: string;
-  type: string;
+  jobTitle: string;
+  company: string;
+  jobDescription?: string;
+  questions: Array<{
+    question: string;
+    answer?: string;
+    category: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+  }> | string[]; // Support both new structure and legacy string array
+  createdAt: string | Date;
+  updatedAt?: string | Date;
   finalized: boolean;
+  feedbackGenerated?: boolean;
+  // Legacy properties for backward compatibility
+  role?: string;
+  level?: string;
+  techstack?: string | string[];
+  type?: string;
   status?: string;
   companyLogo?: string;
   companyName?: string;
@@ -44,8 +55,13 @@ interface User {
   name: string;
   email: string;
   id: string;
+  uid: string; // Firebase UID (same as id for compatibility)
   image?: string;
   emailVerified?: boolean;
+  metadata?: {
+    creationTime?: string;
+    lastSignInTime?: string;
+  };
 }
 
 interface InterviewCardProps {

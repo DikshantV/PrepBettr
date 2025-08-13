@@ -1,12 +1,46 @@
 /**
- * Azure Functions Client for Job Automation
+ * Azure Functions Client
  * 
- * This service provides a client interface for interacting with the Azure Functions
- * that handle queue-based job processing, including job searches, applications, and follow-ups.
+ * This service provides a client interface for interacting with Azure Functions
+ * including job automation, Firebase replacements (auth, GDPR), and other services.
  */
 
 // import { QueueServiceClient } from '@azure/storage-queue';
 
+// Firebase-replacement interfaces
+interface TokenVerificationRequest {
+  token: string;
+}
+
+interface TokenVerificationResponse {
+  valid: boolean;
+  decoded?: any;
+  error?: string;
+}
+
+interface SessionCookieRequest {
+  idToken: string;
+  expiresIn?: number;
+}
+
+interface SessionCookieResponse {
+  sessionCookie: string;
+  error?: string;
+}
+
+interface GDPRDeletionRequest {
+  userId: string;
+  userEmail: string;
+  reason: string;
+}
+
+interface GDPRDeletionResponse {
+  requestId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  message: string;
+}
+
+// Job automation interfaces
 interface SearchRequest {
   userId: string;
   filters: JobSearchFilters;
@@ -271,6 +305,159 @@ export class AzureFunctionsClient {
   }
 
   /**
+   * Verify Firebase ID token using Azure Function
+   */
+  async verifyToken(token: string): Promise<TokenVerificationResponse> {
+    try {
+      const response = await fetch(`${this.functionAppUrl}/api/verifyToken`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-functions-key': this.functionKey
+        },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Create session cookie using Azure Function
+   */
+  async createSessionCookie(idToken: string, expiresIn?: number): Promise<SessionCookieResponse> {
+    try {
+      const response = await fetch(`${this.functionAppUrl}/api/createSessionCookie`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-functions-key': this.functionKey
+        },
+        body: JSON.stringify({ 
+          idToken,
+          expiresIn: expiresIn || 24 * 60 * 60 * 1000 // 24 hours default
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      console.error('Error creating session cookie:', error);
+      return {
+        sessionCookie: '',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Request GDPR data deletion using Azure Function
+   */
+  async requestGDPRDeletion(userId: string, userEmail: string, reason: string): Promise<GDPRDeletionResponse> {
+    try {
+      const response = await fetch(`${this.functionAppUrl}/api/deleteUserData`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-functions-key': this.functionKey
+        },
+        body: JSON.stringify({
+          userId,
+          userEmail,
+          reason
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      console.error('Error requesting GDPR deletion:', error);
+      return {
+        requestId: '',
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Check GDPR deletion status
+   */
+  async checkGDPRDeletionStatus(requestId: string) {
+    try {
+      const response = await fetch(`${this.functionAppUrl}/api/deleteUserData?requestId=${requestId}`, {
+        method: 'GET',
+        headers: {
+          'x-functions-key': this.functionKey
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+
+    } catch (error) {
+      console.error('Error checking GDPR deletion status:', error);
+      return {
+        status: 'unknown',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Trigger scheduled deletions manually (admin function)
+   */
+  async triggerScheduledDeletions() {
+    try {
+      const response = await fetch(`${this.functionAppUrl}/api/processScheduledDeletions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-functions-key': this.functionKey
+        },
+        body: JSON.stringify({ manual: true })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+
+    } catch (error) {
+      console.error('Error triggering scheduled deletions:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Generate a unique request ID
    */
   private generateRequestId(): string {
@@ -285,6 +472,28 @@ export const azureFunctionsClient = new AzureFunctionsClient();
 /*
 import { azureFunctionsClient } from '@/lib/services/azure-functions-client';
 
+// Firebase replacements
+// Verify token
+const tokenResult = await azureFunctionsClient.verifyToken(idToken);
+if (tokenResult.valid) {
+  console.log('User:', tokenResult.decoded);
+}
+
+// Create session cookie
+const sessionResult = await azureFunctionsClient.createSessionCookie(idToken, 24 * 60 * 60 * 1000);
+if (sessionResult.sessionCookie) {
+  // Set cookie in response
+  response.setHeader('Set-Cookie', `session=${sessionResult.sessionCookie}; HttpOnly; Secure`);
+}
+
+// Request GDPR deletion
+const deletionResult = await azureFunctionsClient.requestGDPRDeletion(
+  'user123',
+  'user@example.com',
+  'User requested account deletion'
+);
+
+// Job automation
 // Trigger manual job search
 await azureFunctionsClient.triggerJobSearch({
   userId: 'user123',

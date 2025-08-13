@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth as adminAuth, db as adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { withAuth, AuthenticatedUser } from '@/lib/middleware/authMiddleware';
 
 interface UpdateProfileRequest {
   name: string;
@@ -12,16 +13,14 @@ interface UpdateProfileRequest {
   skills?: string[];
   experience?: string;
   dateOfBirth?: string;
-  idToken: string;
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, user: AuthenticatedUser) => {
   try {
     const { 
       name, 
       password, 
       profilePic, 
-      idToken, 
       about, 
       phone, 
       workplace, 
@@ -30,13 +29,6 @@ export async function POST(req: NextRequest) {
       dateOfBirth 
     } = await req.json() as UpdateProfileRequest;
     
-    if (!idToken) {
-      return NextResponse.json(
-        { success: false, error: 'No ID token provided' }, 
-        { status: 401 }
-      );
-    }
-
     if (!name) {
       return NextResponse.json(
         { success: false, error: 'Name is required' },
@@ -44,9 +36,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify the ID token
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
+    // Use authenticated user's UID
+    const uid = user.uid;
 
     // Prepare update data for Firebase Auth
     const authUpdate: {
@@ -143,7 +134,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Error updating profile:', error);
+    console.error('Error updating profile for user:', user.uid, error);
     
     if (error instanceof Error) {
       if (error.message.includes('auth/weak-password')) {
@@ -156,11 +147,6 @@ export async function POST(req: NextRequest) {
           { error: 'Email already in use' },
           { status: 400 }
         );
-      } else if (error.message.includes('auth/invalid-id-token')) {
-        return NextResponse.json(
-          { error: 'Invalid or expired session. Please sign in again.' },
-          { status: 401 }
-        );
       }
     }
     
@@ -172,4 +158,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

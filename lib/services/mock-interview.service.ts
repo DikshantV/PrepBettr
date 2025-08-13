@@ -277,13 +277,16 @@ Return ONLY a valid JSON object in this exact format:
       const interview: Interview = {
         id: interviewId,
         userId: userId || 'mock-user',
+        jobTitle: role.jobTitle,
+        company: company,
+        questions: questions,
+        finalized: true, // Mock interviews are pre-finalized
+        createdAt: new Date().toISOString(),
+        // Legacy properties for backward compatibility
         role: `${role.jobTitle} at ${company}`,
         level: role.seniority,
         type: interviewType,
         techstack: techStack,
-        questions: questions,
-        finalized: true, // Mock interviews are pre-finalized
-        createdAt: new Date().toISOString(),
         companyLogo: logo,
         companyName: company
       };

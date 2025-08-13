@@ -1,0 +1,24 @@
+{
+  "bindings": [
+    {
+      "type": "cosmosDBTrigger",
+      "name": "documents",
+      "direction": "in",
+      "leaseContainerName": "leases",
+      "connectionStringSetting": "AZURE_COSMOS_DB_CONNECTION_STRING",
+      "databaseName": "PrepBettrDB",
+      "containerName": "users",
+      "createLeaseContainerIfNotExists": true,
+      "feedPollDelay": 1000,
+      "maxItemsPerInvocation": 100
+    },
+    {
+      "type": "cosmosDB",
+      "name": "usageContainer",
+      "direction": "out",
+      "connectionStringSetting": "AZURE_COSMOS_DB_CONNECTION_STRING",
+      "databaseName": "PrepBettrDB",
+      "containerName": "usage"
+    }
+  ]
+}

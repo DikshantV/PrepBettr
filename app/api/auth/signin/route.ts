@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { azureFunctionsClient } from '@/lib/services/azure-functions-client';
 import { firebaseVerification } from '@/lib/services/firebase-verification';
-import { cloudFunctionsVerification } from '@/lib/services/cloud-functions-verification';
 
 export async function POST(request: Request) {
   console.log('Starting sign in process...');
@@ -20,48 +20,91 @@ export async function POST(request: Request) {
 
     console.log('Verifying ID token on server-side...');
     
-    // Verify the token using our comprehensive verification service
-    const verificationResult = await firebaseVerification.verifyIdToken(idToken);
+    // Try Azure Function first, fallback to Firebase verification
+    let verificationResult;
+    let decodedToken;
+    let verificationMethod = 'azure-function';
     
-    if (!verificationResult.success) {
-      console.error('Token verification failed:', verificationResult.error);
-      return NextResponse.json(
-        { 
-          error: 'Token verification failed',
-          details: verificationResult.error 
-        },
-        { status: 401 }
-      );
+    try {
+      // Use Azure Function for token verification
+      const azureResult = await azureFunctionsClient.verifyToken(idToken);
+      
+      if (azureResult.valid && azureResult.decoded) {
+        verificationResult = { success: true, error: null };
+        decodedToken = azureResult.decoded;
+        console.log('Token verified successfully via Azure Function');
+      } else {
+        throw new Error(azureResult.error || 'Azure Function verification failed');
+      }
+    } catch (azureError) {
+      console.warn('Azure Function verification failed, falling back to Firebase:', azureError);
+      verificationMethod = 'firebase-fallback';
+      
+      // Fallback to Firebase verification
+      const firebaseResult = await firebaseVerification.verifyIdToken(idToken);
+      
+      if (!firebaseResult.success) {
+        console.error('Both Azure and Firebase token verification failed:', firebaseResult.error);
+        return NextResponse.json(
+          { 
+            error: 'Token verification failed',
+            details: firebaseResult.error 
+          },
+          { status: 401 }
+        );
+      }
+      
+      verificationResult = firebaseResult;
+      decodedToken = firebaseResult.decodedToken;
+      
+      // Additional server-side validation for Firebase tokens
+      const validationResult = await firebaseVerification.validateTokenClaims(decodedToken);
+      if (!validationResult.isValid) {
+        console.error('Token validation failed:', validationResult.errors);
+        return NextResponse.json(
+          { 
+            error: 'Invalid token claims',
+            details: validationResult.errors 
+          },
+          { status: 401 }
+        );
+      }
     }
     
-    const decodedToken = verificationResult.decodedToken;
+    console.log(`Token verified successfully for user: ${decodedToken.uid} (${verificationMethod})`);
     
-    // Additional server-side validation
-    const validationResult = await firebaseVerification.validateTokenClaims(decodedToken);
-    if (!validationResult.isValid) {
-      console.error('Token validation failed:', validationResult.errors);
-      return NextResponse.json(
-        { 
-          error: 'Invalid token claims',
-          details: validationResult.errors 
-        },
-        { status: 401 }
-      );
-    }
-    
-    console.log(`Token verified successfully for user: ${decodedToken.uid} (${verificationResult.method})`);
-    
-    // Try to create a proper session cookie if Admin SDK is available
-    const sessionCookieResult = await firebaseVerification.createSessionCookie(idToken);
+    // Try to create session cookie via Azure Function first, fallback to Firebase
     let sessionToken = idToken; // fallback to ID token
     let sessionType = 'id_token'; // default to ID token
     
-    if (sessionCookieResult.success && sessionCookieResult.sessionCookie) {
-      sessionToken = sessionCookieResult.sessionCookie;
-      sessionType = 'session_cookie';
-      console.log('Created Firebase session cookie');
-    } else {
-      console.log('Using ID token as session (Admin SDK unavailable):', sessionCookieResult.error);
+    try {
+      if (verificationMethod === 'azure-function') {
+        // Use Azure Function for session cookie creation
+        const azureSessionResult = await azureFunctionsClient.createSessionCookie(idToken);
+        
+        if (azureSessionResult.sessionCookie && !azureSessionResult.error) {
+          sessionToken = azureSessionResult.sessionCookie;
+          sessionType = 'session_cookie';
+          console.log('Created session cookie via Azure Function');
+        } else {
+          throw new Error(azureSessionResult.error || 'Azure session creation failed');
+        }
+      } else {
+        throw new Error('Using Firebase fallback for session creation');
+      }
+    } catch (azureSessionError) {
+      console.warn('Azure session creation failed, trying Firebase fallback:', azureSessionError);
+      
+      // Fallback to Firebase session cookie creation
+      const sessionCookieResult = await firebaseVerification.createSessionCookie(idToken);
+      
+      if (sessionCookieResult.success && sessionCookieResult.sessionCookie) {
+        sessionToken = sessionCookieResult.sessionCookie;
+        sessionType = 'session_cookie';
+        console.log('Created Firebase session cookie (fallback)');
+      } else {
+        console.log('Using ID token as session (both Azure and Firebase unavailable):', sessionCookieResult.error);
+      }
     }
     
     // Cookie options for both session and session_type cookies

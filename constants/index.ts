@@ -211,23 +211,41 @@ export const dummyInterviews: Interview[] = [
   {
     id: "1",
     userId: "user1",
+    jobTitle: "Frontend Developer",
+    company: "TechCorp",
+    jobDescription: "Frontend developer position working with React and TypeScript",
+    questions: [
+      { question: "What is React?", category: "technical", difficulty: "medium" },
+      { question: "Explain TypeScript benefits", category: "technical", difficulty: "medium" }
+    ],
+    finalized: false,
+    feedbackGenerated: false,
+    createdAt: "2024-03-15T10:00:00Z",
+    updatedAt: "2024-03-15T10:00:00Z",
+    // Legacy properties for backward compatibility
     role: "Frontend Developer",
     type: "Technical",
     techstack: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-    level: "Junior",
-    questions: ["What is React?"],
-    finalized: false,
-    createdAt: "2024-03-15T10:00:00Z",
+    level: "Junior"
   },
   {
     id: "2",
     userId: "user1",
+    jobTitle: "Full Stack Developer",
+    company: "StartupXYZ",
+    jobDescription: "Full stack developer position using Node.js and React",
+    questions: [
+      { question: "What is Node.js?", category: "technical", difficulty: "medium" },
+      { question: "Explain RESTful APIs", category: "technical", difficulty: "medium" }
+    ],
+    finalized: false,
+    feedbackGenerated: false,
+    createdAt: "2024-03-14T15:30:00Z",
+    updatedAt: "2024-03-14T15:30:00Z",
+    // Legacy properties for backward compatibility
     role: "Full Stack Developer",
     type: "Mixed",
     techstack: ["Node.js", "Express", "MongoDB", "React"],
-    level: "Senior",
-    questions: ["What is Node.js?"],
-    finalized: false,
-    createdAt: "2024-03-14T15:30:00Z",
+    level: "Senior"
   },
 ];

@@ -1,4 +1,4 @@
-import { remoteConfigService, FeatureFlags } from './firebase-remote-config';
+import { azureAppConfigService, FeatureFlags } from './azure-app-config';
 import { userTargetingService, UserTargetingService } from './user-targeting';
 
 export interface EnhancedFeatureFlags extends FeatureFlags {
@@ -24,10 +24,10 @@ class FeatureFlagsService {
    */
   async getFeatureFlag(flagName: keyof FeatureFlags): Promise<boolean> {
     try {
-      // First check if the feature is enabled globally via Remote Config
-      const remoteConfigValue = await remoteConfigService.getFeatureFlag(flagName);
+      // First check if the feature is enabled globally via Azure App Configuration
+      const azureConfigValue = await azureAppConfigService.getFeatureFlag(flagName);
       
-      if (!remoteConfigValue) {
+      if (!azureConfigValue) {
         // If disabled globally, return false
         return false;
       }
@@ -36,7 +36,7 @@ class FeatureFlagsService {
       const rolloutConfig = UserTargetingService.ROLLOUT_CONFIGS[flagName];
       if (!rolloutConfig) {
         // If no rollout config, default to global setting
-        return remoteConfigValue;
+        return azureConfigValue;
       }
 
       return userTargetingService.isCurrentUserInRollout(rolloutConfig);
@@ -51,16 +51,16 @@ class FeatureFlagsService {
    */
   async getAllFeatureFlags(): Promise<EnhancedFeatureFlags> {
     try {
-      // Get remote config flags
-      const remoteFlags = await remoteConfigService.getAllFeatureFlags();
+      // Get Azure App Configuration flags
+      const azureFlags = await azureAppConfigService.getAllFeatureFlags();
       
       // Get rollout status for current user
       const rolloutStatus = userTargetingService.getCurrentUserRolloutStatus();
       
       // Combine both: feature must be enabled globally AND user must be in rollout
       const enhancedFlags: EnhancedFeatureFlags = {
-        autoApplyAzure: remoteFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
-        portalIntegration: remoteFlags.portalIntegration && rolloutStatus.portalIntegration,
+        autoApplyAzure: azureFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
+        portalIntegration: azureFlags.portalIntegration && rolloutStatus.portalIntegration,
         rolloutStatus: {
           autoApplyAzure: rolloutStatus.autoApplyAzure || false,
           portalIntegration: rolloutStatus.portalIntegration || false,
@@ -103,19 +103,19 @@ class FeatureFlagsService {
    * Get debug information about feature flags
    */
   async getDebugInfo(): Promise<{
-    remoteConfig: FeatureFlags;
+    azureAppConfig: FeatureFlags;
     rolloutStatus: Record<string, boolean>;
     finalFlags: FeatureFlags;
     userId: string | null;
     rolloutConfigs: typeof UserTargetingService.ROLLOUT_CONFIGS;
   }> {
-    const remoteConfig = await remoteConfigService.getAllFeatureFlags();
+    const azureAppConfig = await azureAppConfigService.getAllFeatureFlags();
     const rolloutStatus = userTargetingService.getCurrentUserRolloutStatus();
     const finalFlags = await this.getAllFeatureFlags();
     const userId = userTargetingService.getCurrentUserId();
 
     return {
-      remoteConfig,
+      azureAppConfig,
       rolloutStatus,
       finalFlags: {
         autoApplyAzure: finalFlags.autoApplyAzure,
@@ -130,7 +130,7 @@ class FeatureFlagsService {
    * Force refresh all feature flags
    */
   async refreshFeatureFlags(): Promise<EnhancedFeatureFlags> {
-    await remoteConfigService.refreshFeatureFlags();
+    await azureAppConfigService.refreshFeatureFlags();
     return this.getAllFeatureFlags();
   }
 }

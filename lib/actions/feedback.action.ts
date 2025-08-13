@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from './auth.action';
-import { db } from '@/firebase/admin';
+import { azureCosmosService } from '@/lib/services/azure-cosmos-service';
 
 export async function getFeedbackByInterviewId(interviewId: string) {
   try {
@@ -15,27 +15,28 @@ export async function getFeedbackByInterviewId(interviewId: string) {
 
     console.log(`Fetching feedback for interview ${interviewId} by user ${user.id}`);
 
-    // Query feedback collection using server-side Firebase Admin
-    const feedbackQuery = db.collection('feedback')
-      .where('interviewId', '==', interviewId)
-      .where('userId', '==', user.id)
-      .limit(1);
+    // Query feedback using Azure Cosmos DB
+    const feedback = await azureCosmosService.getFeedbackByInterview(interviewId, user.id);
 
-    const querySnapshot = await feedbackQuery.get();
-
-    if (querySnapshot.empty) {
+    if (!feedback) {
       console.log('No feedback found for this interview');
       return { success: true, feedback: null };
     }
 
-    const feedbackDoc = querySnapshot.docs[0];
-    const feedback = {
-      id: feedbackDoc.id,
-      ...feedbackDoc.data()
+    // Convert FeedbackDocument to Feedback interface
+    const mappedFeedback: Feedback = {
+      id: feedback.id,
+      interviewId: feedback.interviewId,
+      totalScore: feedback.overallScore,
+      categoryScores: [],
+      strengths: feedback.strengths,
+      areasForImprovement: feedback.improvements,
+      finalAssessment: feedback.detailedFeedback,
+      createdAt: feedback.createdAt.toISOString()
     };
 
     console.log('Feedback fetched successfully via server action');
-    return { success: true, feedback };
+    return { success: true, feedback: mappedFeedback };
 
   } catch (error) {
     console.error('Error fetching feedback:', error);
@@ -55,16 +56,7 @@ export async function getUserInterviews() {
       return { success: false, error: 'Authentication required' };
     }
 
-    const interviewsQuery = db.collection('interviews')
-      .where('userId', '==', user.id)
-      .orderBy('createdAt', 'desc');
-
-    const querySnapshot = await interviewsQuery.get();
-    
-    const interviews = querySnapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const interviews = await azureCosmosService.getUserInterviews(user.id);
 
     return { success: true, interviews };
 
