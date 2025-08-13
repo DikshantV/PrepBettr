@@ -84,10 +84,15 @@ export function initializeUser(decodedToken: DecodedToken): User {
 
   return {
     id: userId,
+    uid: userId, // Set both for compatibility
     email: decodedToken.email || '',
     name: decodedToken.name || decodedToken.email?.split('@')[0] || 'User',
     image: decodedToken.picture || '/default-avatar.svg',
-    emailVerified: decodedToken.email_verified || false
+    emailVerified: decodedToken.email_verified || false,
+    metadata: {
+      creationTime: new Date().toISOString(),
+      lastSignInTime: new Date().toISOString()
+    }
   };
 }
 

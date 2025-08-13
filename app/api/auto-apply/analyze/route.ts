@@ -90,14 +90,14 @@ async function performJobAnalysis(userProfile: UserProfile, jobListing: JobListi
         jobId: jobListing.id
       };
     } catch (parseError) {
-      console.error('Error parsing Gemini analysis response:', parseError);
+      console.error('Error parsing Azure OpenAI analysis response:', parseError);
       
       // Fallback analysis
       return generateFallbackAnalysis(userProfile, jobListing);
     }
 
   } catch (error) {
-    console.error('Error in Gemini job analysis:', error);
+    console.error('Error in Azure OpenAI job analysis:', error);
     return generateFallbackAnalysis(userProfile, jobListing);
   }
 }

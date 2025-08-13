@@ -85,10 +85,10 @@ export default function DashboardClient({ userInterviews, publicInterviews }: Da
                             <InterviewCardClient
                                 key={interview.id}
                                 interviewId={interview.id}
-                                role={interview.role}
-                                type={interview.type}
+                                role={interview.role || interview.jobTitle || 'Unknown Role'}
+                                type={interview.type || 'technical'}
                                 techstack={Array.isArray(interview.techstack) ? interview.techstack : interview.techstack ? [interview.techstack] : []}
-                                createdAt={interview.createdAt}
+                                createdAt={typeof interview.createdAt === 'string' ? interview.createdAt : interview.createdAt.toISOString()}
                             />
                         ))
                     ) : (

@@ -371,7 +371,7 @@ Core Interview Principles:
         return await this.client!.chat.completions.create({
           model: this.deployment,
           messages: this.conversationHistory,
-          temperature: 0.7, // Match Gemini default
+          temperature: 0.7, // Standard temperature for balanced creativity
           max_tokens: 200,
           top_p: 0.9,
           frequency_penalty: 0.1,
@@ -739,8 +739,8 @@ Return ONLY the tailored resume content with no additional commentary or explana
     }
 
     const {
-      temperature = 0.7,     // Default matching Gemini for prompt parity
-      maxTokens = 1500,      // Default matching Gemini for prompt parity
+      temperature = 0.7,     // Default temperature for balanced responses
+      maxTokens = 1500,      // Default max tokens for comprehensive responses
       topP = 0.9,            // Maintain creativity balance
       frequencyPenalty = 0.1, // Reduce repetition
       presencePenalty = 0.1   // Encourage diverse content

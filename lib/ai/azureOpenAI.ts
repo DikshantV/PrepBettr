@@ -16,9 +16,9 @@ export class AzureOpenAIAdapter implements AIProvider {
   private isInitialized = false;
   private useEnhancedService = true; // Feature flag for enhanced multi-deployment service
   
-  // Default parameters matching Gemini's configuration
-  private readonly DEFAULT_TEMPERATURE = 0.7; // Match Gemini default
-  private readonly DEFAULT_MAX_TOKENS = 1500;  // Match Gemini default
+  // Default parameters for optimal Azure OpenAI performance
+  private readonly DEFAULT_TEMPERATURE = 0.7; // Balanced creativity
+  private readonly DEFAULT_MAX_TOKENS = 1500;  // Comprehensive responses
   private readonly RELEVANCY_TEMPERATURE = 0.1; // For precise scoring
   private readonly RELEVANCY_MAX_TOKENS = 50;   // Short numeric response
 
@@ -188,7 +188,7 @@ export class AzureOpenAIAdapter implements AIProvider {
 
   /**
    * Generate content using Azure OpenAI with retry logic
-   * Uses defaults matching Gemini's configuration for prompt parity
+   * Uses optimized parameters for consistent high-quality responses
    */
   private async generateWithAzureOpenAI(
     prompt: string, 
@@ -201,8 +201,8 @@ export class AzureOpenAIAdapter implements AIProvider {
       const completion = await azureOpenAIService.createCompletion(messages, {
         temperature,
         maxTokens,
-        topP: 0.9,           // Match Gemini's creativity settings
-        frequencyPenalty: 0.1, // Reduce repetition like Gemini
+        topP: 0.9,           // Balanced creativity settings
+        frequencyPenalty: 0.1, // Reduce repetition
         presencePenalty: 0.1   // Encourage diverse content
       });
       
@@ -219,7 +219,7 @@ export class AzureOpenAIAdapter implements AIProvider {
   }
 
   /**
-   * Get cover letter generation prompt (matched to Gemini's format for consistency)
+   * Get cover letter generation prompt with optimized structure
    */
   private getCoverLetterPrompt(resumeText: string, jobDescription: string): string {
     return `You are an expert career coach and professional writer. Please generate a compelling cover letter based on the provided resume and job description.
@@ -241,7 +241,7 @@ Return ONLY the cover letter content with no additional commentary or explanatio
   }
 
   /**
-   * Get relevancy analysis prompt (matched to Gemini's format for consistency)
+   * Get relevancy analysis prompt with structured requirements
    */
   private getRelevancyPrompt(resumeText: string, jobDescription: string): string {
     return `You are an expert ATS (Applicant Tracking System) analyzer. Please analyze the relevancy between this resume and job description.

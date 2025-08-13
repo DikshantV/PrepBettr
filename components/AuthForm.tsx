@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import { useTelemetry } from "@/components/providers/TelemetryProvider";
 
 import {
     createUserWithEmailAndPassword,
@@ -33,6 +34,7 @@ const authFormSchema = (type: FormType) => {
 const AuthForm = ({ type }: { type: FormType }) => {
     const router = useRouter();
     const [signInSuccess, setSignInSuccess] = useState(false);
+    const { trackFormSubmission, trackUserAction, trackError } = useTelemetry();
 
     const formSchema = authFormSchema(type);
     const form = useForm<z.infer<typeof formSchema>>({
@@ -45,6 +47,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
     });
 
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
+        const startTime = Date.now();
+        let success = false;
+
         try {
             if (type === "sign-up") {
                 const { name, email, password } = data;
@@ -64,10 +69,23 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
                 if (!result.success) {
                     toast.error(result.message);
+                    // Track failed sign up
+                    await trackFormSubmission('signup_form', false, {
+                        errorMessage: result.message,
+                        duration: (Date.now() - startTime).toString()
+                    });
                     return;
                 }
 
-toast.success("Account created successfully. You can now sign in.");
+                success = true;
+                toast.success("Account created successfully. You can now sign in.");
+                
+                // Track successful sign up
+                await trackUserAction('signup', 'auth', {
+                    method: 'email',
+                    hasName: (!!name).toString()
+                });
+                
                 router.push("/sign-in");
             } else {
                 const { email, password } = data;
@@ -81,6 +99,11 @@ toast.success("Account created successfully. You can now sign in.");
                 const idToken = await userCredential.user.getIdToken();
                 if (!idToken) {
                     toast.error("Sign in Failed. Please try again.");
+                    // Track failed sign in
+                    await trackFormSubmission('signin_form', false, {
+                        errorMessage: 'No ID token received',
+                        duration: (Date.now() - startTime).toString()
+                    });
                     return;
                 }
 
@@ -95,16 +118,45 @@ toast.success("Account created successfully. You can now sign in.");
 
                 if (response.ok) {
                     console.log('AuthForm: Sign in successful, redirecting to dashboard');
+                    success = true;
                     toast.success("Signed in successfully.");
+                    
+                    // Track successful sign in
+                    await trackUserAction('signin', 'auth', {
+                        method: 'email'
+                    });
+                    
                     setSignInSuccess(true);
                 } else {
                     const errorData = await response.json().catch(() => ({}));
-toast.error(errorData.error || 'Failed to sign in. Please check your credentials and try again.');
+                    const errorMessage = errorData.error || 'Failed to sign in. Please check your credentials and try again.';
+                    toast.error(errorMessage);
+                    
+                    // Track failed sign in
+                    await trackFormSubmission('signin_form', false, {
+                        errorMessage,
+                        duration: (Date.now() - startTime).toString()
+                    });
                 }
             }
         } catch (error) {
             console.log(error);
-            toast.error(`There was an error: ${error}`);
+            const errorMessage = `There was an error: ${error}`;
+            toast.error(errorMessage);
+            
+            // Track error
+            await trackError(error instanceof Error ? error : new Error(errorMessage), {
+                formType: type,
+                action: type === 'sign-up' ? 'signup' : 'signin',
+                duration: (Date.now() - startTime).toString()
+            });
+        } finally {
+            // Track form submission if not already tracked
+            if (success) {
+                await trackFormSubmission(type === 'sign-up' ? 'signup_form' : 'signin_form', true, {
+                    duration: (Date.now() - startTime).toString()
+                });
+            }
         }
     };
 

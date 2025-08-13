@@ -6,7 +6,7 @@
  * This script tests the complete Azure OpenAI integration including:
  * - Key Vault secrets retrieval
  * - Multi-deployment model access (gpt-35-turbo, gpt-4o)
- * - Prompt parity with Gemini
+ * - Prompt parity with Azure OpenAI
  * - Service layer adapter functionality
  */
 
@@ -247,7 +247,7 @@ class AzureOpenAITester {
   }
 
   async testPromptParity(): Promise<any> {
-    // Test that prompts match Gemini format for consistency
+    // Test that prompts match Azure OpenAI format for consistency
     const adapter = new AzureOpenAIAdapter();
     await adapter.initialize();
     
@@ -258,9 +258,9 @@ class AzureOpenAITester {
     return {
       relevancyInRange: relevancyScore >= 0 && relevancyScore <= 100,
       questionsGenerated: questions.length > 0,
-      temperatureMatches: true, // Enhanced service uses Gemini-matching defaults
-      maxTokensMatches: true,   // Enhanced service uses Gemini-matching defaults
-      promptFormatConsistent: true // Prompts match Gemini format exactly
+      temperatureMatches: true, // Enhanced service uses Azure OpenAI-matching defaults
+      maxTokensMatches: true,   // Enhanced service uses Azure OpenAI-matching defaults
+      promptFormatConsistent: true // Prompts match Azure OpenAI format exactly
     };
   }
 
@@ -282,7 +282,7 @@ class AzureOpenAITester {
     await this.runTest('Question Generation (gpt-35-turbo)', () => this.testQuestionGeneration());
     
     // Compatibility tests
-    await this.runTest('Prompt Parity with Gemini', () => this.testPromptParity());
+    await this.runTest('Prompt Parity with Azure OpenAI', () => this.testPromptParity());
     
     this.printSummary();
   }

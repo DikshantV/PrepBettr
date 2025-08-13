@@ -22,7 +22,13 @@ interface SASTokenResult {
 class AzureBlobStorageService {
   private blobServiceClient: BlobServiceClient | null = null;
   private config: AzureBlobConfig | null = null;
-  private containerName = 'user-resumes';
+  
+  // Container configurations
+  private readonly containers = {
+    resumes: 'user-resumes',
+    profilePictures: 'profile-pictures', 
+    documents: 'user-documents'
+  };
 
   /**
    * Initialize the Azure Blob Storage service
@@ -35,7 +41,7 @@ class AzureBlobStorageService {
       this.config = {
         accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME || secrets.azureStorageAccountName || '',
         accountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY || secrets.azureStorageAccountKey || '',
-        containerName: this.containerName
+        containerName: 'legacy' // Keeping for compatibility, but we use containers object now
       };
 
       if (!this.config.accountName || !this.config.accountKey) {
@@ -67,7 +73,7 @@ class AzureBlobStorageService {
   }
 
   /**
-   * Ensure the container exists
+   * Ensure all containers exist
    */
   private async ensureContainer(): Promise<void> {
     if (!this.blobServiceClient || !this.config) {
@@ -75,12 +81,15 @@ class AzureBlobStorageService {
     }
 
     try {
-      const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
-      await containerClient.createIfNotExists({
-        access: 'container' // Allow container-level access
-      });
+      // Ensure all containers exist
+      for (const containerName of Object.values(this.containers)) {
+        const containerClient = this.blobServiceClient.getContainerClient(containerName);
+        await containerClient.createIfNotExists({
+          access: 'container' // Allow container-level access
+        });
+      }
     } catch (error) {
-      console.error('Failed to ensure container exists:', error);
+      console.error('Failed to ensure containers exist:', error);
       throw error;
     }
   }
@@ -107,7 +116,8 @@ class AzureBlobStorageService {
 
     try {
       const blobName = `${userId}/${Date.now()}-${fileName}`;
-      const containerClient = this.blobServiceClient!.getContainerClient(this.containerName);
+      const containerName = this.containers.resumes;
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
       // Upload the file with metadata
@@ -126,7 +136,7 @@ class AzureBlobStorageService {
       const blobUrl = blockBlobClient.url;
       
       // Generate SAS URL for temporary access
-      const sasUrl = await this.generateSASUrl(blobName, 24); // 24 hours access
+      const sasUrl = await this.generateSASUrlForContainer(containerName, blobName, 24);
 
       console.log(`✅ Resume uploaded to Azure Blob Storage: ${blobName}`);
       
@@ -166,8 +176,10 @@ class AzureBlobStorageService {
         this.config.accountKey
       );
 
+      // This method is deprecated - use generateSASUrlForContainer instead
+      const containerName = this.containers.resumes; // Default to resumes container
       const sasOptions: BlobSASSignatureValues = {
-        containerName: this.containerName,
+        containerName,
         blobName,
         permissions,
         expiresOn,
@@ -175,7 +187,7 @@ class AzureBlobStorageService {
       };
 
       const sasToken = generateBlobSASQueryParameters(sasOptions, sharedKeyCredential);
-      const sasUrl = `https://${this.config.accountName}.blob.core.windows.net/${this.containerName}/${blobName}?${sasToken}`;
+      const sasUrl = `https://${this.config.accountName}.blob.core.windows.net/${containerName}/${blobName}?${sasToken}`;
 
       return {
         sasUrl,
@@ -203,7 +215,8 @@ class AzureBlobStorageService {
     }
 
     try {
-      const containerClient = this.blobServiceClient!.getContainerClient(this.containerName);
+      const containerName = this.containers.resumes;
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       
       await blockBlobClient.deleteIfExists();
@@ -229,7 +242,8 @@ class AzureBlobStorageService {
     }
 
     try {
-      const containerClient = this.blobServiceClient!.getContainerClient(this.containerName);
+      const containerName = this.containers.resumes; // Default to resumes container
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       
       const properties = await blockBlobClient.getProperties();
@@ -247,15 +261,260 @@ class AzureBlobStorageService {
   }
 
   /**
-   * List blobs for a user
+   * Upload profile picture to Azure Blob Storage
    */
-  async listUserBlobs(userId: string): Promise<string[]> {
+  async uploadProfilePicture(
+    userId: string,
+    fileBuffer: Buffer,
+    fileName: string,
+    mimeType: string
+  ): Promise<UploadResult> {
     if (!this.isReady()) {
       throw new Error('Azure Blob Storage service not initialized');
     }
 
     try {
-      const containerClient = this.blobServiceClient!.getContainerClient(this.containerName);
+      const blobName = `${userId}/${Date.now()}-${fileName}`;
+      const containerClient = this.blobServiceClient!.getContainerClient(this.containers.profilePictures);
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+      // Upload the file with metadata
+      await blockBlobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: {
+          blobContentType: mimeType
+        },
+        metadata: {
+          userId,
+          originalFileName: fileName,
+          uploadDate: new Date().toISOString(),
+          mimeType,
+          fileType: 'profile-picture'
+        }
+      });
+
+      const blobUrl = blockBlobClient.url;
+      
+      // Generate public URL (no SAS needed for profile pictures)
+      const publicUrl = `https://${this.config!.accountName}.blob.core.windows.net/${this.containers.profilePictures}/${blobName}`;
+
+      console.log(`✅ Profile picture uploaded to Azure Blob Storage: ${blobName}`);
+      
+      return {
+        blobUrl: publicUrl,
+        blobName,
+      };
+    } catch (error) {
+      console.error('Failed to upload profile picture to Azure Blob Storage:', error);
+      logServerError(error as Error, { 
+        service: 'azure-blob-storage', 
+        action: 'upload-profile', 
+        userId
+      }, {
+        fileName: fileName.substring(0, 50)
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Upload general file to Azure Blob Storage
+   */
+  async uploadFile(
+    containerType: keyof typeof this.containers,
+    userId: string,
+    fileBuffer: Buffer,
+    fileName: string,
+    mimeType: string,
+    metadata: Record<string, string> = {}
+  ): Promise<UploadResult> {
+    if (!this.isReady()) {
+      throw new Error('Azure Blob Storage service not initialized');
+    }
+
+    try {
+      const blobName = `${userId}/${Date.now()}-${fileName}`;
+      const containerName = this.containers[containerType];
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+      // Upload the file with metadata
+      await blockBlobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: {
+          blobContentType: mimeType
+        },
+        metadata: {
+          userId,
+          originalFileName: fileName,
+          uploadDate: new Date().toISOString(),
+          mimeType,
+          containerType,
+          ...metadata
+        }
+      });
+
+      const blobUrl = blockBlobClient.url;
+      
+      // Generate SAS URL for secure access
+      const sasResult = await this.generateSASUrlForContainer(containerName, blobName, 24);
+
+      console.log(`✅ File uploaded to Azure Blob Storage: ${blobName} in container ${containerName}`);
+      
+      return {
+        blobUrl,
+        blobName,
+        sasUrl: sasResult.sasUrl
+      };
+    } catch (error) {
+      console.error(`Failed to upload file to Azure Blob Storage container ${containerType}:`, error);
+      logServerError(error as Error, { 
+        service: 'azure-blob-storage', 
+        action: 'upload-file', 
+        userId
+      }, {
+        fileName: fileName.substring(0, 50),
+        containerType
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Generate SAS URL for specific container and blob
+   */
+  private async generateSASUrlForContainer(
+    containerName: string,
+    blobName: string, 
+    expiryHours: number = 1
+  ): Promise<SASTokenResult> {
+    if (!this.isReady() || !this.config) {
+      throw new Error('Azure Blob Storage service not initialized');
+    }
+
+    try {
+      const permissions = BlobSASPermissions.parse('r'); // Read-only permission
+      const expiresOn = new Date();
+      expiresOn.setHours(expiresOn.getHours() + expiryHours);
+
+      const sharedKeyCredential = new StorageSharedKeyCredential(
+        this.config.accountName,
+        this.config.accountKey
+      );
+
+      const sasOptions: BlobSASSignatureValues = {
+        containerName,
+        blobName,
+        permissions,
+        expiresOn,
+        protocol: SASProtocol.Https
+      };
+
+      const sasToken = generateBlobSASQueryParameters(sasOptions, sharedKeyCredential);
+      const sasUrl = `https://${this.config.accountName}.blob.core.windows.net/${containerName}/${blobName}?${sasToken}`;
+
+      return {
+        sasUrl,
+        expiresOn
+      };
+    } catch (error) {
+      console.error('Failed to generate SAS URL for container:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete file from specific container
+   */
+  async deleteFile(containerType: keyof typeof this.containers, blobName: string): Promise<void> {
+    if (!this.isReady()) {
+      console.warn('Azure Blob Storage service not initialized, skipping delete');
+      return;
+    }
+
+    try {
+      const containerName = this.containers[containerType];
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      
+      await blockBlobClient.deleteIfExists();
+      console.log(`✅ File deleted from Azure Blob Storage: ${blobName} in container ${containerName}`);
+    } catch (error) {
+      console.error(`Failed to delete file from Azure Blob Storage container ${containerType}:`, error);
+      logServerError(error as Error, { 
+        service: 'azure-blob-storage', 
+        action: 'delete-file'
+      }, {
+        blobName: blobName.substring(0, 50),
+        containerType
+      });
+      // Don't throw - we don't want to block the operation if deletion fails
+    }
+  }
+
+  /**
+   * Delete all files for a user (GDPR compliance)
+   */
+  async deleteAllUserFiles(userId: string): Promise<string[]> {
+    if (!this.isReady()) {
+      console.warn('Azure Blob Storage service not initialized, skipping delete');
+      return [];
+    }
+
+    const deletedContainers: string[] = [];
+
+    try {
+      // Delete from all containers
+      for (const [containerType, containerName] of Object.entries(this.containers)) {
+        try {
+          const containerClient = this.blobServiceClient!.getContainerClient(containerName);
+          const blobsToDelete: string[] = [];
+          
+          // List all blobs for this user in this container
+          for await (const blob of containerClient.listBlobsFlat({ prefix: `${userId}/` })) {
+            blobsToDelete.push(blob.name);
+          }
+
+          // Delete all user blobs in this container
+          if (blobsToDelete.length > 0) {
+            const deletePromises = blobsToDelete.map(async (blobName) => {
+              const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+              await blockBlobClient.deleteIfExists();
+            });
+            
+            await Promise.all(deletePromises);
+            deletedContainers.push(containerType);
+            console.log(`✅ Deleted ${blobsToDelete.length} files for user ${userId} from container ${containerName}`);
+          }
+        } catch (error) {
+          console.error(`Failed to delete files from container ${containerName}:`, error);
+        }
+      }
+
+      return deletedContainers;
+    } catch (error) {
+      console.error('Failed to delete all user files from Azure Blob Storage:', error);
+      logServerError(error as Error, { 
+        service: 'azure-blob-storage', 
+        action: 'delete-all-user-files',
+        userId
+      });
+      return deletedContainers;
+    }
+  }
+
+  /**
+   * List blobs for a user in specific container
+   */
+  async listUserBlobs(
+    containerType: keyof typeof this.containers, 
+    userId: string
+  ): Promise<string[]> {
+    if (!this.isReady()) {
+      throw new Error('Azure Blob Storage service not initialized');
+    }
+
+    try {
+      const containerName = this.containers[containerType];
+      const containerClient = this.blobServiceClient!.getContainerClient(containerName);
       const blobNames: string[] = [];
       
       for await (const blob of containerClient.listBlobsFlat({ prefix: `${userId}/` })) {
@@ -264,7 +523,35 @@ class AzureBlobStorageService {
 
       return blobNames;
     } catch (error) {
-      console.error('Failed to list user blobs:', error);
+      console.error(`Failed to list user blobs in container ${containerType}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all blobs for a user across all containers
+   */
+  async listAllUserBlobs(userId: string): Promise<Record<string, string[]>> {
+    if (!this.isReady()) {
+      throw new Error('Azure Blob Storage service not initialized');
+    }
+
+    const result: Record<string, string[]> = {};
+
+    try {
+      for (const [containerType, containerName] of Object.entries(this.containers)) {
+        try {
+          const blobs = await this.listUserBlobs(containerType as keyof typeof this.containers, userId);
+          result[containerType] = blobs;
+        } catch (error) {
+          console.error(`Failed to list blobs in container ${containerType}:`, error);
+          result[containerType] = [];
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Failed to list all user blobs:', error);
       throw error;
     }
   }

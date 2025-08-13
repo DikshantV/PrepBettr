@@ -170,7 +170,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
   const handleAnalyze = async (jobId: string) => {
     setLoading(true);
     try {
-      // TODO: Implement actual job analysis with Gemini API
+      // TODO: Implement actual job analysis with Azure OpenAI
       console.log(`Analyzing job with ID: ${jobId}`);
       
       // Update job status to "analyzing"

@@ -7,6 +7,7 @@ import {
   mapErrorToResponse,
   ServerErrorContext 
 } from '@/lib/errors';
+import { telemetry } from '@/lib/utils/telemetry';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = [
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || undefined;
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
   let userId: string | undefined;
+  const startTime = Date.now();
 
   try {
     // Verify authentication
@@ -72,6 +74,19 @@ export async function POST(request: NextRequest) {
     // Process the resume
     console.log(`📄 Processing resume upload for user ${userId}: ${file.name}`);
     
+    // Track resume upload attempt
+    await telemetry.trackUserAction({
+      action: 'resume_upload_api_start',
+      feature: 'resume_processing',
+      userId: userId!,
+      properties: {
+        fileName: file.name,
+        fileSize: file.size.toString(),
+        mimeType: file.type,
+        generateQuestions: generateQuestions.toString()
+      }
+    });
+    
     const result = await resumeProcessingService.processResume(
       userId!,
       fileBuffer,
@@ -91,6 +106,39 @@ export async function POST(request: NextRequest) {
       );
       return NextResponse.json(errorResponse, { status: errorResponse.status });
     }
+
+    // Track successful resume processing
+    const processingTime = Date.now() - startTime;
+    await telemetry.trackResumeUpload(
+      userId!,
+      file.size,
+      file.type,
+      processingTime
+    );
+    
+    await telemetry.trackUserAction({
+      action: 'resume_upload_api_success',
+      feature: 'resume_processing',
+      userId: userId!,
+      properties: {
+        fileName: file.name,
+        resumeId: result.data!.resumeId,
+        questionsGenerated: result.data!.interviewQuestions?.length.toString() || '0',
+        processingTimeMs: processingTime.toString(),
+        storageProvider: result.data!.storageProvider
+      }
+    });
+    
+    await telemetry.trackBusinessMetric(
+      'ResumeProcessingSuccess',
+      1,
+      userId!,
+      {
+        fileType: file.type,
+        fileSize: Math.round(file.size / 1024).toString() + 'KB',
+        processingTimeSeconds: Math.round(processingTime / 1000).toString()
+      }
+    );
 
     // Return success response
     return NextResponse.json({
@@ -121,6 +169,19 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
+    // Track error
+    await telemetry.trackError({
+      error: error instanceof Error ? error : new Error(error.message || 'Unknown error'),
+      userId,
+      context: {
+        endpoint: 'resume-upload',
+        method: 'POST',
+        url: requestUrl,
+        userAgent: userAgent || 'unknown',
+        processingTimeMs: (Date.now() - startTime).toString()
+      }
+    });
+    
     // Create server error context for logging
     const context: ServerErrorContext = {
       userId,

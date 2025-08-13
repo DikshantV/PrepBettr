@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/actions/auth.action";
-import { db } from "@/firebase/admin";
+import { azureCosmosService } from "@/lib/services/azure-cosmos-service";
 import { dummyInterviews } from "@/constants";
 import { createMockInterview } from "@/lib/services/mock-interview.service";
 
@@ -11,24 +11,21 @@ export async function getUserInterviews(): Promise<Interview[]> {
     const user = await getCurrentUser();
     if (!user) return [];
 
-    // Add timeout and better error handling for Firestore operations
-    const interviewsRef = db.collection('interviews');
-    const query = interviewsRef
-      .where('userId', '==', user.id)
-      .orderBy('createdAt', 'desc');
+    // Use Azure Cosmos DB to get user interviews
+    const interviews = await azureCosmosService.getUserInterviews(user.id);
     
-    // Add timeout wrapper to prevent hanging requests
-    const snapshotPromise = query.get();
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), 10000); // 10 second timeout
-    });
-    
-    const snapshot = await Promise.race([snapshotPromise, timeoutPromise]) as FirebaseFirestore.QuerySnapshot;
-    
-    return snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Interview[];
+    return interviews.map(interview => ({
+      id: interview.id,
+      userId: interview.userId,
+      jobTitle: interview.jobTitle,
+      company: interview.company,
+      jobDescription: interview.jobDescription,
+      questions: interview.questions,
+      createdAt: interview.createdAt.toISOString(),
+      updatedAt: interview.updatedAt.toISOString(),
+      finalized: interview.finalized,
+      feedbackGenerated: interview.feedbackGenerated
+    }));
     
   } catch (error) {
     console.error('Error fetching user interviews:', error);
@@ -40,31 +37,30 @@ export async function getUserInterviews(): Promise<Interview[]> {
 // Ensure mock interviews exist and return consistent data
 export async function ensureMockInterviews(count: number): Promise<Interview[]> {
   try {
-    // Query for existing public interviews
-    const interviewsRef = db.collection('interviews');
-    const query = interviewsRef
-      .where('userId', '==', 'public')
-      .where('finalized', '==', true)
-      .orderBy('createdAt', 'desc')
-      .limit(count);
-    
-    const snapshot = await query.get();
-    const existingInterviews = snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Interview[];
+    // Query for existing public interviews using Azure Cosmos DB
+    const existingInterviews = await azureCosmosService.getPublicInterviews('public', count);
     
     // If we have enough interviews, return them
     if (existingInterviews.length >= count) {
-      return existingInterviews.slice(0, count);
+      return existingInterviews.slice(0, count).map(interview => ({
+        id: interview.id,
+        userId: interview.userId,
+        jobTitle: interview.jobTitle,
+        company: interview.company,
+        jobDescription: interview.jobDescription,
+        questions: interview.questions,
+        createdAt: interview.createdAt.toISOString(),
+        updatedAt: interview.updatedAt.toISOString(),
+        finalized: interview.finalized,
+        feedbackGenerated: interview.feedbackGenerated
+      }));
     }
     
     // Calculate how many new interviews we need
     const needed = count - existingInterviews.length;
     console.log(`Creating ${needed} new mock interviews (existing: ${existingInterviews.length})`);
     
-    // Create new mock interviews using batch write
-    const batch = db.batch();
+    // Create new mock interviews
     const newInterviews: Interview[] = [];
     
     for (let i = 0; i < needed; i++) {
@@ -72,9 +68,20 @@ export async function ensureMockInterviews(count: number): Promise<Interview[]> 
         // Generate a new mock interview
         const mockInterview = await createMockInterview('public');
         
-        // Add to batch
-        const docRef = db.collection('interviews').doc(mockInterview.id);
-        batch.set(docRef, mockInterview);
+        // Save to Azure Cosmos DB
+        await azureCosmosService.createInterview({
+          userId: mockInterview.userId,
+          jobTitle: mockInterview.jobTitle,
+          company: mockInterview.company,
+          jobDescription: mockInterview.jobDescription,
+          questions: Array.isArray(mockInterview.questions) && typeof mockInterview.questions[0] === 'string' 
+            ? mockInterview.questions.map(q => ({ question: q, category: 'general', difficulty: 'medium' as const }))
+            : mockInterview.questions as any,
+          createdAt: typeof mockInterview.createdAt === 'string' ? new Date(mockInterview.createdAt) : new Date(),
+          updatedAt: typeof mockInterview.updatedAt === 'string' ? new Date(mockInterview.updatedAt) : new Date(),
+          finalized: mockInterview.finalized,
+          feedbackGenerated: mockInterview.feedbackGenerated
+        });
         
         newInterviews.push(mockInterview);
       } catch (error) {
@@ -83,14 +90,21 @@ export async function ensureMockInterviews(count: number): Promise<Interview[]> 
       }
     }
     
-    // Commit the batch write
-    if (newInterviews.length > 0) {
-      await batch.commit();
-      console.log(`Successfully created ${newInterviews.length} mock interviews`);
-    }
+    console.log(`Successfully created ${newInterviews.length} mock interviews`);
     
     // Combine existing and new interviews
-    const allInterviews = [...existingInterviews, ...newInterviews];
+    const allInterviews = [...existingInterviews.map(interview => ({
+      id: interview.id,
+      userId: interview.userId,
+      jobTitle: interview.jobTitle,
+      company: interview.company,
+      jobDescription: interview.jobDescription,
+      questions: interview.questions,
+      createdAt: interview.createdAt.toISOString(),
+      updatedAt: interview.updatedAt.toISOString(),
+      finalized: interview.finalized,
+      feedbackGenerated: interview.feedbackGenerated
+    })), ...newInterviews];
     
     // Return the latest interviews (sorted by createdAt desc)
     return allInterviews
@@ -110,25 +124,26 @@ export async function getPublicInterviews(): Promise<Interview[]> {
     const user = await getCurrentUser();
     if (!user) return [];
 
-    const interviewsRef = db.collection('interviews');
-    const query = interviewsRef
-      .where('finalized', '==', true)
-      .where('userId', '!=', user.id)
-      .orderBy('createdAt', 'desc')
-      .limit(20);
-    
-    const snapshot = await query.get();
-    
-    const interviews = snapshot.docs.map((doc: FirebaseFirestore.DocumentData) => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Interview[];
+    // Use Azure Cosmos DB to get public interviews excluding user's own
+    const interviews = await azureCosmosService.getPublicInterviewsExcludingUser(user.id, 20);
     
     // Use mock data if no interviews found
     if (interviews.length === 0) {
       return await ensureMockInterviews(8);
     }
-    return interviews;
+    
+    return interviews.map(interview => ({
+      id: interview.id,
+      userId: interview.userId,
+      jobTitle: interview.jobTitle,
+      company: interview.company,
+      jobDescription: interview.jobDescription,
+      questions: interview.questions,
+      createdAt: interview.createdAt.toISOString(),
+      updatedAt: interview.updatedAt.toISOString(),
+      finalized: interview.finalized,
+      feedbackGenerated: interview.feedbackGenerated
+    }));
     
   } catch (error) {
     console.error('Error fetching public interviews:', error);

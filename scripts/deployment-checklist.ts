@@ -73,16 +73,33 @@ class DeploymentChecker {
     console.log('\n🔐 Checking environment variables...');
     
     const requiredEnvVars = [
+      // Firebase Authentication (Required)
       'NEXT_PUBLIC_FIREBASE_API_KEY',
       'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
       'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
       'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
       'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
       'NEXT_PUBLIC_FIREBASE_APP_ID',
-      'AZURE_OPENAI_KEY',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+      
+      // Azure Core Services (Required)
+      'AZURE_KEY_VAULT_URL',
+      'AZURE_COSMOS_ENDPOINT',
+      'AZURE_COSMOS_KEY',
+      'AZURE_STORAGE_CONNECTION_STRING',
+      
+      // Azure AI Services (Required)
       'AZURE_OPENAI_ENDPOINT',
+      'AZURE_OPENAI_API_KEY',
+      'AZURE_OPENAI_DEPLOYMENT',
       'AZURE_SPEECH_KEY',
-      'SPEECH_ENDPOINT'
+      'AZURE_SPEECH_REGION',
+      'AZURE_SPEECH_ENDPOINT',
+      
+      // Monitoring (Required for production)
+      'APPLICATIONINSIGHTS_CONNECTION_STRING'
     ];
 
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);

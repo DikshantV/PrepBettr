@@ -9,6 +9,8 @@ interface AzureSecrets {
   azureOpenAIDeployment: string;
   azureOpenAIGpt35Deployment?: string; // gpt-35-turbo deployment
   azureOpenAIGpt4oDeployment?: string; // gpt-4o deployment
+  azureAppConfigConnectionString?: string; // Azure App Configuration connection string
+  azureAppConfigEndpoint?: string; // Azure App Configuration endpoint
 }
 
 let cachedSecrets: AzureSecrets | null = null;
@@ -33,7 +35,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIEndpoint: process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT || '',
       azureOpenAIDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o',
       azureOpenAIGpt35Deployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
-      azureOpenAIGpt4oDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
+      azureOpenAIGpt4oDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o',
+      azureAppConfigConnectionString: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_CONNECTION_STRING,
+      azureAppConfigEndpoint: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_ENDPOINT
     };
 
     // Validate that required secrets are available
@@ -43,6 +47,10 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
 
     if (!secrets.azureOpenAIKey || !secrets.azureOpenAIEndpoint) {
       console.warn('⚠️ Azure OpenAI credentials not available in browser environment');
+    }
+
+    if (!secrets.azureAppConfigConnectionString && !secrets.azureAppConfigEndpoint) {
+      console.warn('⚠️ Azure App Configuration credentials not available in browser environment');
     }
 
     cachedSecrets = secrets;
@@ -60,7 +68,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIEndpoint: '',
       azureOpenAIDeployment: 'gpt-4o',
       azureOpenAIGpt35Deployment: 'gpt-35-turbo',
-      azureOpenAIGpt4oDeployment: 'gpt-4o'
+      azureOpenAIGpt4oDeployment: 'gpt-4o',
+      azureAppConfigConnectionString: undefined,
+      azureAppConfigEndpoint: undefined
     };
     
     cachedSecrets = fallbackSecrets;
@@ -82,12 +92,18 @@ export function getAzureConfig() {
       azureOpenAIEndpoint: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT,
       azureOpenAIDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT,
       azureOpenAIGpt35Deployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT,
-      azureOpenAIGpt4oDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT
+      azureOpenAIGpt4oDeployment: !!process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT,
+      azureAppConfigConnectionString: !!process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_CONNECTION_STRING,
+      azureAppConfigEndpoint: !!process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_ENDPOINT
     },
     deployments: {
       default: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT,
       gpt35Turbo: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
       gpt4o: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
+    },
+    appConfiguration: {
+      connectionString: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_CONNECTION_STRING,
+      endpoint: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_ENDPOINT
     }
   };
 }

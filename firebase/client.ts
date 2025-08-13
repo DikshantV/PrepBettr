@@ -1,9 +1,6 @@
-import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
-import { getRemoteConfig } from "firebase/remote-config";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,16 +19,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firebase services
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
-
-// Only initialize Analytics in the browser
-let analytics;
-if (typeof window !== 'undefined') {
-    isSupported().then(yes => {
-        if (yes) analytics = getAnalytics(app);
-    });
-}
 
 const googleProvider = new GoogleAuthProvider();
 
-export { auth, db, storage, analytics, googleProvider, app };
+export { auth, db, googleProvider, app };

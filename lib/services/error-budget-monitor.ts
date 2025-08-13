@@ -1,5 +1,4 @@
-import { db } from '@/firebase/client';
-import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { azureCosmosService } from './azure-cosmos-service';
 
 export interface ErrorEvent {
   featureName: string;
@@ -23,8 +22,6 @@ export interface ErrorBudget {
 
 class ErrorBudgetMonitorService {
   private static instance: ErrorBudgetMonitorService;
-  private readonly COLLECTION_NAME = 'featureErrors';
-  private readonly ERROR_BUDGETS_COLLECTION = 'errorBudgets';
 
   // Default error budgets for our features
   private readonly DEFAULT_BUDGETS: Record<string, Omit<ErrorBudget, 'currentErrors' | 'budgetExceeded' | 'lastReset'>> = {
@@ -52,10 +49,15 @@ class ErrorBudgetMonitorService {
    */
   async logError(errorEvent: ErrorEvent): Promise<void> {
     try {
-      await addDoc(collection(db, this.COLLECTION_NAME), {
-        ...errorEvent,
-        timestamp: Timestamp.fromDate(errorEvent.timestamp),
-        createdAt: Timestamp.now(),
+      await azureCosmosService.createErrorEvent({
+        featureName: errorEvent.featureName,
+        errorType: errorEvent.errorType,
+        errorMessage: errorEvent.errorMessage,
+        userId: errorEvent.userId,
+        userAgent: errorEvent.userAgent,
+        timestamp: errorEvent.timestamp,
+        severity: errorEvent.severity,
+        metadata: errorEvent.metadata
       });
 
       console.log(`Error logged for feature ${errorEvent.featureName}:`, errorEvent.errorMessage);
@@ -73,17 +75,7 @@ class ErrorBudgetMonitorService {
    */
   async getErrorCount(featureName: string, timeWindowMinutes: number = 60): Promise<number> {
     try {
-      const cutoffTime = new Date(Date.now() - timeWindowMinutes * 60 * 1000);
-      
-      const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('featureName', '==', featureName),
-        where('timestamp', '>=', Timestamp.fromDate(cutoffTime)),
-        orderBy('timestamp', 'desc')
-      );
-
-      const snapshot = await getDocs(q);
-      return snapshot.size;
+      return await azureCosmosService.getErrorEventCount(featureName, timeWindowMinutes);
     } catch (error) {
       console.error('Error getting error count:', error);
       return 0;
@@ -129,9 +121,9 @@ class ErrorBudgetMonitorService {
    */
   private async handleBudgetExceeded(featureName: string, errorBudget: ErrorBudget): Promise<void> {
     // Log the budget breach
-    await addDoc(collection(db, this.ERROR_BUDGETS_COLLECTION), {
+    await azureCosmosService.createErrorBudget({
       featureName,
-      breachedAt: Timestamp.now(),
+      breachedAt: new Date(),
       errorCount: errorBudget.currentErrors,
       threshold: errorBudget.errorThreshold,
       timeWindow: errorBudget.timeWindow,
@@ -169,21 +161,17 @@ class ErrorBudgetMonitorService {
    */
   async getRecentErrors(featureName: string, limitCount: number = 10): Promise<ErrorEvent[]> {
     try {
-      const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('featureName', '==', featureName),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
-
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          timestamp: data.timestamp.toDate(),
-        } as ErrorEvent;
-      });
+      const errorEvents = await azureCosmosService.getErrorEvents(featureName, 24 * 60, limitCount); // Last 24 hours
+      return errorEvents.map(event => ({
+        featureName: event.featureName,
+        errorType: event.errorType as ErrorEvent['errorType'],
+        errorMessage: event.errorMessage,
+        userId: event.userId,
+        userAgent: event.userAgent,
+        timestamp: event.timestamp,
+        severity: event.severity as ErrorEvent['severity'],
+        metadata: event.metadata
+      }));
     } catch (error) {
       console.error('Error getting recent errors:', error);
       return [];

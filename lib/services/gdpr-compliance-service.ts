@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
+import { azureBlobStorage } from '@/lib/services/azure-blob-storage';
 import { getDBService } from '@/firebase/admin';
 
 export interface UserConsent {
@@ -39,7 +39,6 @@ export interface AnonymizedAnalytics {
 
 export class GDPRComplianceService {
   private db: ReturnType<typeof getFirestore> | null = null;
-  private storage: ReturnType<typeof getStorage> | null = null;
   private static instance: GDPRComplianceService;
   
   private getDB() {
@@ -47,13 +46,6 @@ export class GDPRComplianceService {
       this.db = getDBService();
     }
     return this.db;
-  }
-  
-  private getStorage() {
-    if (!this.storage) {
-      this.storage = getStorage();
-    }
-    return this.storage;
   }
 
   public static getInstance(): GDPRComplianceService {
@@ -416,20 +408,45 @@ export class GDPRComplianceService {
   }
 
   private async deleteFromStorage(userId: string): Promise<boolean> {
+    let filesDeleted = false;
+    
     try {
-      const bucket = this.getStorage().bucket();
+      // Try Azure Blob Storage first
+      await azureBlobStorage.initialize();
+      if (azureBlobStorage.isReady()) {
+        console.log(`🗑️ Deleting Azure Blob Storage files for user ${userId}`);
+        const deletedContainers = await azureBlobStorage.deleteAllUserFiles(userId);
+        if (deletedContainers.length > 0) {
+          console.log(`✅ Deleted from Azure containers: ${deletedContainers.join(', ')}`);
+          filesDeleted = true;
+        }
+      }
+    } catch (azureError) {
+      console.error('Error deleting from Azure Blob Storage:', azureError);
+    }
+
+    // Also attempt Firebase Storage cleanup for legacy files
+    try {
+      // Dynamic import to avoid circular dependency
+      const { getStorage } = await import('firebase-admin/storage');
+      const storage = getStorage();
+      const bucket = storage.bucket();
+      
       const [files] = await bucket.getFiles({
         prefix: `users/${userId}/`
       });
-
-      const deletePromises = files.map(file => file.delete());
-      await Promise.all(deletePromises);
-
-      return files.length > 0;
-    } catch (error) {
-      console.error('Error deleting from storage:', error);
-      return false;
+      
+      if (files.length > 0) {
+        const deletePromises = files.map(file => file.delete());
+        await Promise.all(deletePromises);
+        console.log(`✅ Deleted ${files.length} legacy Firebase Storage files for user ${userId}`);
+        filesDeleted = true;
+      }
+    } catch (firebaseError) {
+      console.error('Error deleting from Firebase Storage:', firebaseError);
     }
+
+    return filesDeleted;
   }
 
   private async deleteFromExternalServices(userId: string): Promise<void> {

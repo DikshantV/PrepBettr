@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gdprComplianceService } from '@/lib/services/gdpr-compliance-service';
-import { verifySession } from '@/lib/auth';
+import { withAuth, AuthenticatedUser } from '@/lib/middleware/authMiddleware';
+import { azureFunctionsClient } from '@/lib/services/azure-functions-client';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
-    const session = await verifySession(request);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await request.json();
     const { action, ...data } = body;
@@ -23,14 +20,14 @@ export async function POST(request: NextRequest) {
 
         const consent = {
           ...data.consent,
-          userId: session.userId
+          userId: user.uid
         };
 
         await gdprComplianceService.recordConsent(consent);
         return NextResponse.json({ success: true, message: 'Consent recorded successfully' });
 
       case 'get-consent':
-        const userConsent = await gdprComplianceService.getConsent(session.userId);
+        const userConsent = await gdprComplianceService.getConsent(user.uid);
         return NextResponse.json({ consent: userConsent });
 
       case 'update-consent':
@@ -41,20 +38,45 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        await gdprComplianceService.updateConsent(session.userId, data.updates);
+        await gdprComplianceService.updateConsent(user.uid, data.updates);
         return NextResponse.json({ success: true, message: 'Consent updated successfully' });
 
       case 'request-deletion':
-        const requestId = await gdprComplianceService.requestDataDeletion(
-          session.userId,
-          session.email || session.userId,
-          data.reason
-        );
-        return NextResponse.json({
-          success: true,
-          requestId,
-          message: 'Data deletion request submitted. Processing will begin within 30 days.'
-        });
+        // Use Azure Functions for GDPR deletion if available
+        try {
+          const azureResult = await azureFunctionsClient.requestGDPRDeletion(
+            user.uid,
+            user.email || user.uid,
+            data.reason || 'User requested account deletion'
+          );
+          
+          if (azureResult.requestId) {
+            return NextResponse.json({
+              success: true,
+              requestId: azureResult.requestId,
+              status: azureResult.status,
+              message: 'Data deletion request submitted via Azure Functions. Processing will begin within 30 days.',
+              method: 'azure-functions'
+            });
+          } else {
+            throw new Error('Azure Functions deletion failed: ' + azureResult.message);
+          }
+        } catch (azureError) {
+          console.warn('Azure Functions deletion failed, using fallback:', azureError);
+          
+          // Fallback to original service
+          const requestId = await gdprComplianceService.requestDataDeletion(
+            user.uid,
+            user.email || user.uid,
+            data.reason
+          );
+          return NextResponse.json({
+            success: true,
+            requestId,
+            message: 'Data deletion request submitted. Processing will begin within 30 days.',
+            method: 'fallback'
+          });
+        }
 
       case 'deletion-status':
         if (!data.requestId) {
@@ -68,7 +90,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status });
 
       case 'export-data':
-        const exportData = await gdprComplianceService.exportUserData(session.userId);
+        const exportData = await gdprComplianceService.exportUserData(user.uid);
         
         // Convert to JSON string for download
         const jsonData = JSON.stringify(exportData, null, 2);
@@ -77,7 +99,7 @@ export async function POST(request: NextRequest) {
         return new NextResponse(buffer, {
           headers: {
             'Content-Type': 'application/json',
-            'Content-Disposition': `attachment; filename="user_data_export_${session.userId}.json"`,
+            'Content-Disposition': `attachment; filename="user_data_export_${user.uid}.json"`,
             'Content-Length': buffer.length.toString(),
           },
         });
@@ -92,7 +114,7 @@ export async function POST(request: NextRequest) {
 
         const anonymizedData = gdprComplianceService.anonymizeAnalyticsData({
           ...data.analyticsData,
-          userId: session.userId
+          userId: user.uid
         });
 
         return NextResponse.json({ anonymizedData });
@@ -127,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('GDPR compliance error:', error);
+    console.error('GDPR compliance error for user:', user.uid, error);
     return NextResponse.json(
       { 
         error: 'GDPR operation failed',
@@ -136,4 +158,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

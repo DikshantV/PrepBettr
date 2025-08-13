@@ -1,7 +1,6 @@
 // lib/services/notification-service.ts
 
-import { getAdminFirestore } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { azureCosmosService } from './azure-cosmos-service';
 import { awsSESService, EmailParams } from './aws-ses-service';
 // MJML import with conditional loading for build compatibility
 let mjml2html: any;
@@ -103,8 +102,6 @@ export interface DailySummaryData {
 }
 
 export class NotificationService {
-  private db = getAdminFirestore();
-  private collection = 'notification_events';
 
   /**
    * Send job discovered notification
@@ -271,11 +268,11 @@ export class NotificationService {
     jobId?: string;
     applicationId?: string;
   }): Promise<{ success: boolean; error?: string }> {
-    const eventId = this.db.collection(this.collection).doc().id;
+    let eventId: string | undefined;
     
     try {
       // Create notification event record
-      const event: Omit<NotificationEvent, 'id'> = {
+      eventId = await azureCosmosService.createNotificationEvent({
         userId: params.userId,
         type: params.type,
         channel: 'email',
@@ -288,9 +285,7 @@ export class NotificationService {
         createdAt: new Date(),
         jobId: params.jobId,
         applicationId: params.applicationId
-      };
-
-      await this.db.collection(this.collection).doc(eventId).set(event);
+      });
 
       // Send email via AWS SES
       const emailParams: EmailParams = {
@@ -302,15 +297,13 @@ export class NotificationService {
       const emailResult = await awsSESService.sendEmail(emailParams);
 
       // Update event status
-      const updateData: Partial<NotificationEvent> = {
+      await azureCosmosService.updateNotificationEvent(eventId, params.userId, {
         status: emailResult.success ? 'sent' : 'failed',
         sentAt: emailResult.success ? new Date() : undefined,
         messageId: emailResult.messageId,
         error: emailResult.error,
-        updatedAt: FieldValue.serverTimestamp() as any
-      };
-
-      await this.db.collection(this.collection).doc(eventId).update(updateData);
+        updatedAt: new Date()
+      });
 
       console.log(`Notification ${params.type} ${emailResult.success ? 'sent' : 'failed'} to ${params.recipient}`);
 
@@ -322,12 +315,18 @@ export class NotificationService {
     } catch (error) {
       console.error('Error in sendEmail:', error);
       
-      // Update event status to failed
-      await this.db.collection(this.collection).doc(eventId).update({
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        updatedAt: FieldValue.serverTimestamp()
-      });
+      // Update event status to failed (only if eventId exists)
+      if (eventId) {
+        try {
+          await azureCosmosService.updateNotificationEvent(eventId, params.userId, {
+            status: 'failed',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            updatedAt: new Date()
+          });
+        } catch (updateError) {
+          console.error('Failed to update notification event status:', updateError);
+        }
+      }
 
       return {
         success: false,
@@ -1095,37 +1094,47 @@ export class NotificationService {
     }
   ): Promise<NotificationEvent[]> {
     try {
-      let query = this.db
-        .collection(this.collection)
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc');
-
-      if (options?.type) {
-        query = query.where('type', '==', options.type);
-      }
-
-      if (options?.status) {
-        query = query.where('status', '==', options.status);
-      }
-
-      if (options?.startDate) {
-        query = query.where('createdAt', '>=', options.startDate);
-      }
-
-      if (options?.endDate) {
-        query = query.where('createdAt', '<=', options.endDate);
-      }
-
-      if (options?.limit) {
-        query = query.limit(options.limit);
-      }
-
-      const snapshot = await query.get();
+      const limit = options?.limit || 50;
+      const events = await azureCosmosService.getUserNotificationEvents(userId, limit);
       
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as NotificationEvent));
+      // Apply additional filters
+      let filteredEvents = events;
+      
+      if (options?.type) {
+        filteredEvents = filteredEvents.filter(event => event.type === options.type);
+      }
+      
+      if (options?.status) {
+        filteredEvents = filteredEvents.filter(event => event.status === options.status);
+      }
+      
+      if (options?.startDate) {
+        filteredEvents = filteredEvents.filter(event => event.createdAt >= options.startDate!);
+      }
+      
+      if (options?.endDate) {
+        filteredEvents = filteredEvents.filter(event => event.createdAt <= options.endDate!);
+      }
+      
+      return filteredEvents.map(event => ({
+        id: event.id,
+        userId: event.userId,
+        type: event.type as NotificationType,
+        channel: event.channel as NotificationChannel,
+        recipient: event.recipient,
+        subject: event.subject,
+        content: event.content,
+        templateUsed: event.templateUsed,
+        metadata: event.metadata,
+        status: event.status as NotificationEvent['status'],
+        createdAt: event.createdAt,
+        sentAt: event.sentAt,
+        updatedAt: event.updatedAt,
+        error: event.error,
+        messageId: event.messageId,
+        jobId: event.jobId,
+        applicationId: event.applicationId
+      }));
 
     } catch (error) {
       console.error('Error getting notification history:', error);
@@ -1146,11 +1155,15 @@ export class NotificationService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const snapshot = await this.db
-        .collection(this.collection)
-        .where('userId', '==', userId)
-        .where('createdAt', '>=', startDate)
-        .get();
+      // Get recent notifications using Azure Cosmos DB query
+      const events = await azureCosmosService.queryDocuments<any>(
+        'notificationEvents',
+        'SELECT * FROM c WHERE c.userId = @userId AND c.createdAt >= @startDate',
+        [
+          { name: '@userId', value: userId },
+          { name: '@startDate', value: startDate }
+        ]
+      );
 
       const stats = {
         total: 0,
@@ -1159,17 +1172,17 @@ export class NotificationService {
         byType: {} as Record<NotificationType, number>
       };
 
-      snapshot.docs.forEach(doc => {
-        const data = doc.data() as NotificationEvent;
+      events.forEach((event: any) => {
         stats.total++;
 
-        if (data.status === 'sent' || data.status === 'delivered') {
+        if (event.status === 'sent' || event.status === 'delivered') {
           stats.sent++;
-        } else if (data.status === 'failed') {
+        } else if (event.status === 'failed') {
           stats.failed++;
         }
 
-        stats.byType[data.type] = (stats.byType[data.type] || 0) + 1;
+        const eventType = event.type as NotificationType;
+        stats.byType[eventType] = (stats.byType[eventType] || 0) + 1;
       });
 
       return stats;
@@ -1193,26 +1206,34 @@ export class NotificationService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-      const snapshot = await this.db
-        .collection(this.collection)
-        .where('createdAt', '<', cutoffDate)
-        .limit(1000) // Process in batches
-        .get();
+      // Get old events using Azure Cosmos DB query
+      const oldEvents = await azureCosmosService.queryDocuments<any>(
+        'notificationEvents',
+        'SELECT c.id, c.userId FROM c WHERE c.createdAt < @cutoffDate',
+        [{ name: '@cutoffDate', value: cutoffDate }]
+      );
 
-      if (snapshot.empty) {
+      if (oldEvents.length === 0) {
         return { deleted: 0 };
       }
 
-      const batch = this.db.batch();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
+      // Process in smaller batches to avoid limits
+      const batchSize = 25;
+      let totalDeleted = 0;
+      
+      for (let i = 0; i < oldEvents.length; i += batchSize) {
+        const batch = oldEvents.slice(i, i + batchSize);
+        const deletePromises = batch.map(event => 
+          azureCosmosService.deleteDocument('notificationEvents', event.id, event.userId)
+        );
+        
+        await Promise.all(deletePromises);
+        totalDeleted += batch.length;
+      }
 
-      await batch.commit();
+      console.log(`Cleaned up ${totalDeleted} old notification events`);
 
-      console.log(`Cleaned up ${snapshot.docs.length} old notification events`);
-
-      return { deleted: snapshot.docs.length };
+      return { deleted: totalDeleted };
 
     } catch (error) {
       console.error('Error cleaning up old notification events:', error);

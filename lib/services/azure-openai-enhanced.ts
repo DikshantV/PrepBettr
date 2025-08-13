@@ -51,7 +51,7 @@ export class EnhancedAzureOpenAIService {
     // Complex tasks - use gpt-4o for quality
     'cover-letter': {
       deployment: 'gpt-4o',
-      temperature: 0.7,      // Match Gemini default for consistency
+      temperature: 0.7,      // Balanced creativity for quality output
       maxTokens: 1500,       // Full cover letter
       topP: 0.9,
       frequencyPenalty: 0.1,
