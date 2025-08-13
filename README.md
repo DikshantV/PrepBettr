@@ -368,6 +368,265 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
+## 🔐 Production Deployment & Management
+
+### How to Add New Secrets to Key Vault
+
+1. **Using Azure CLI**:
+```bash
+# Set a new secret
+az keyvault secret set \
+  --vault-name "your-keyvault-name" \
+  --name "SECRET_NAME" \
+  --value "secret-value"
+
+# Verify the secret was added
+az keyvault secret show \
+  --vault-name "your-keyvault-name" \
+  --name "SECRET_NAME" \
+  --query "value" -o tsv
+```
+
+2. **Using Azure Portal**:
+   - Navigate to your Key Vault in Azure Portal
+   - Go to "Secrets" section
+   - Click "+ Generate/Import"
+   - Enter the secret name and value
+   - Set expiration date if needed
+   - Click "Create"
+
+3. **Update Application Configuration**:
+```typescript
+// Add to azure-config.ts
+export const getSecretFromKeyVault = async (secretName: string) => {
+  const credential = new DefaultAzureCredential();
+  const vaultUrl = process.env.AZURE_KEY_VAULT_URI;
+  const client = new SecretClient(vaultUrl, credential);
+  
+  try {
+    const secret = await client.getSecret(secretName);
+    return secret.value;
+  } catch (error) {
+    console.error(`Failed to retrieve secret ${secretName}:`, error);
+    throw error;
+  }
+};
+```
+
+4. **Grant Access Permissions**:
+```bash
+# For App Service Managed Identity
+az keyvault set-policy \
+  --name "your-keyvault-name" \
+  --object-id "managed-identity-object-id" \
+  --secret-permissions get list
+
+# For Service Principal
+az keyvault set-policy \
+  --name "your-keyvault-name" \
+  --spn "service-principal-id" \
+  --secret-permissions get list
+```
+
+### Promoting a Preview to Production
+
+#### For Azure Static Web Apps (SWA)
+
+1. **Verify Preview Environment**:
+```bash
+# Test the preview environment
+curl -I https://your-app-preview.azurestaticapps.net/api/health
+
+# Run smoke tests against preview
+npm run test:e2e -- --baseUrl=https://your-app-preview.azurestaticapps.net
+```
+
+2. **Promote via Azure CLI**:
+```bash
+# Get the preview build ID
+az staticwebapp environment list \
+  --name "your-swa-name" \
+  --resource-group "your-resource-group"
+
+# Promote specific build to production
+az staticwebapp environment set \
+  --name "your-swa-name" \
+  --resource-group "your-resource-group" \
+  --environment-name "default" \
+  --source "preview-build-id"
+```
+
+3. **Promote via GitHub Actions**:
+```yaml
+# .github/workflows/promote-to-prod.yml
+name: Promote to Production
+on:
+  workflow_dispatch:
+    inputs:
+      preview_build_id:
+        description: 'Preview build ID to promote'
+        required: true
+        type: string
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Promote to Production
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'promote'
+          build_id: ${{ github.event.inputs.preview_build_id }}
+```
+
+4. **Post-Promotion Verification**:
+```bash
+# Verify production deployment
+curl -I https://your-app.azurestaticapps.net/api/health
+
+# Run full test suite against production
+npm run test:e2e:prod
+
+# Check application insights for errors
+az monitor app-insights query \
+  --app "your-app-insights" \
+  --analytics-query "exceptions | where timestamp > ago(10m)"
+```
+
+#### For Azure App Service
+
+1. **Swap Deployment Slots**:
+```bash
+# Warm up the staging slot
+az webapp deployment slot swap \
+  --resource-group "your-resource-group" \
+  --name "your-app-name" \
+  --slot "staging" \
+  --target-slot "production" \
+  --action "swap"
+```
+
+2. **Gradual Traffic Routing**:
+```bash
+# Route 10% traffic to staging for testing
+az webapp traffic-routing set \
+  --resource-group "your-resource-group" \
+  --name "your-app-name" \
+  --distribution staging=10
+
+# After validation, route 100% to production
+az webapp traffic-routing set \
+  --resource-group "your-resource-group" \
+  --name "your-app-name" \
+  --distribution production=100
+```
+
+### Rollback: Redeploy Previous SWA Build via GitHub UI
+
+#### Option 1: Via GitHub Actions UI
+
+1. **Navigate to GitHub Repository**:
+   - Go to your repository on GitHub
+   - Click on "Actions" tab
+   - Find the "Deploy to Azure Static Web Apps" workflow
+
+2. **Identify Previous Successful Build**:
+   - Look for the last successful deployment before the issue
+   - Note the commit SHA and build details
+   - Click on the successful workflow run
+
+3. **Re-run Previous Build**:
+   - Click "Re-run all jobs" on the successful workflow
+   - This will redeploy the exact same build to production
+   - Monitor the deployment progress in the Actions tab
+
+#### Option 2: Via Azure Portal
+
+1. **Access Static Web App**:
+   - Login to Azure Portal
+   - Navigate to your Static Web App resource
+   - Go to "Deployment history" section
+
+2. **Select Previous Build**:
+   - Find the stable build you want to rollback to
+   - Click on the build entry
+   - Click "Activate" to make it the active production build
+
+3. **Verify Rollback**:
+```bash
+# Check if the rollback was successful
+curl -I https://your-app.azurestaticapps.net
+
+# Verify specific functionality
+npm run test:smoke -- --baseUrl=https://your-app.azurestaticapps.net
+```
+
+#### Option 3: Emergency Rollback via Git
+
+1. **Revert to Previous Commit**:
+```bash
+# Create a revert commit
+git revert HEAD --no-edit
+
+# Or revert to specific commit
+git revert abc1234 --no-edit
+
+# Push the revert
+git push origin main
+```
+
+2. **Force Deploy Specific Commit**:
+```bash
+# Checkout previous stable commit
+git checkout abc1234
+
+# Create a new branch and force push
+git checkout -b emergency-rollback
+git push origin emergency-rollback
+
+# Merge to main to trigger deployment
+git checkout main
+git merge emergency-rollback
+git push origin main
+```
+
+#### Rollback Checklist
+
+- [ ] **Identify the issue**: Document what caused the need for rollback
+- [ ] **Verify previous stable build**: Ensure the target build was working correctly
+- [ ] **Backup current state**: Take snapshots of current configuration if needed
+- [ ] **Execute rollback**: Use one of the methods above
+- [ ] **Test functionality**: Run smoke tests on rolled-back version
+- [ ] **Update monitoring**: Check that all monitoring and alerts are working
+- [ ] **Communicate status**: Notify stakeholders of the rollback completion
+- [ ] **Plan fix**: Create action plan to address the original issue
+
+#### Post-Rollback Actions
+
+1. **Monitor Application Health**:
+```bash
+# Check health endpoints
+curl https://your-app.azurestaticapps.net/api/health
+
+# Monitor error rates
+az monitor app-insights query \
+  --app "your-app-insights" \
+  --analytics-query "requests | where timestamp > ago(30m) | summarize ErrorRate = (countif(success == false) * 100.0) / count() by bin(timestamp, 5m)"
+```
+
+2. **Validate Core Features**:
+   - User authentication flow
+   - Voice interview functionality  
+   - Resume upload and processing
+   - License key validation
+
+3. **Root Cause Analysis**:
+   - Review deployment logs
+   - Analyze what changed between stable and failed builds
+   - Document lessons learned
+   - Update deployment process to prevent similar issues
+
 ## 🔍 Troubleshooting
 
 ### Common Issues and Solutions
