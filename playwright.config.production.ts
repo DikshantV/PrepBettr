@@ -24,7 +24,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL for production testing */
-    baseURL: 'https://prepbettr.vercel.app',
+    baseURL: process.env.BASE_URL || 'https://prepbettr.com',
 
     /* Collect trace for all tests in production */
     trace: 'on',
