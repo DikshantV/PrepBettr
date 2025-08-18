@@ -56,8 +56,6 @@ async function initializeUserSubscription(db, userId, email, name) {
     plan: 'free',
     planStatus: 'active',
     currentPeriodEnd: null,
-    dodoCustomerId: null,
-    dodoSubscriptionId: null,
     updatedAt: FieldValue.serverTimestamp()
   }, { merge: true });
 

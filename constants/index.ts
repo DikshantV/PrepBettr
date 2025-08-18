@@ -92,7 +92,6 @@ export const mappings = {
   wordpress: "wordpress",
   contentful: "contentful",
   netlify: "netlify",
-  vercel: "vercel",
   "aws amplify": "amplify",
 };
 

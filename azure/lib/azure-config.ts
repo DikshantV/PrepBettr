@@ -28,8 +28,14 @@ function createKeyVaultClient(): SecretClient {
     throw new Error('AZURE_KEY_VAULT_URI environment variable is required');
   }
   
-  const credential = new DefaultAzureCredential();
-  return new SecretClient(AZURE_KEY_VAULT_URI, credential);
+  try {
+    const credential = new DefaultAzureCredential();
+    return new SecretClient(AZURE_KEY_VAULT_URI, credential);
+  } catch (error) {
+    console.error('❌ Failed to create DefaultAzureCredential:', error);
+    console.error('💡 Hint: Ensure you are logged in with "az login" for local development');
+    throw error;
+  }
 }
 
 /**
@@ -87,8 +93,8 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     // Fallback to environment variables if Key Vault fails
     console.log('🔄 Falling back to environment variables...');
     const fallbackSecrets = {
-      speechKey: process.env.NEXT_PUBLIC_SPEECH_KEY || '',
-      speechEndpoint: process.env.NEXT_PUBLIC_SPEECH_ENDPOINT || '',
+      speechKey: process.env.SPEECH_KEY || process.env.NEXT_PUBLIC_SPEECH_KEY || '',
+      speechEndpoint: process.env.SPEECH_ENDPOINT || process.env.NEXT_PUBLIC_SPEECH_ENDPOINT || '',
       azureOpenAIKey: process.env.AZURE_OPENAI_KEY || '',
       azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
       azureOpenAIDeployment: process.env.AZURE_OPENAI_DEPLOYMENT || '',

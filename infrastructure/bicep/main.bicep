@@ -223,12 +223,28 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=azure-form-recognizer-key)'
         }
         {
+          name: 'FIREBASE_PROJECT_ID'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=firebase-project-id)'
+        }
+        {
+          name: 'FIREBASE_CLIENT_EMAIL'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=firebase-client-email)'
+        }
+        {
+          name: 'FIREBASE_PRIVATE_KEY'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=firebase-private-key)'
+        }
+        {
           name: 'STORAGE_CONNECTION_STRING'
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${az.environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
         }
         {
           name: 'KEY_VAULT_NAME'
           value: keyVault.name
+        }
+        {
+          name: 'AZURE_KEY_VAULT_URI'
+          value: keyVault.properties.vaultUri
         }
         {
           name: 'ENVIRONMENT'

@@ -247,32 +247,36 @@ build_application() {
     log_info "Application built successfully ✅"
 }
 
-deploy_to_vercel() {
-    log_step "Deploying to Vercel..."
+deploy_to_azure_static_web_app() {
+    log_step "Deploying to Azure Static Web App..."
     
     cd "$PROJECT_ROOT"
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "DRY RUN: Would deploy to Vercel"
+        log_info "DRY RUN: Would deploy to Azure Static Web App"
         return 0
     fi
     
-    # Check if Vercel CLI is available
-    if ! command -v vercel &> /dev/null; then
-        log_warning "Vercel CLI not found. Installing..."
-        npm install -g vercel
+    # Check if Azure Static Web Apps CLI is available
+    if ! command -v swa &> /dev/null; then
+        log_warning "Azure Static Web Apps CLI not found. Installing..."
+        npm install -g @azure/static-web-apps-cli
     fi
     
     # Deploy based on environment
-    if [[ "$ENVIRONMENT" == "production" ]]; then
-        log_info "Deploying to production..."
-        vercel --prod --yes
+    local app_name="prepbettr-swa-${ENVIRONMENT}"
+    local resource_group="${AZURE_RESOURCE_GROUP:-prepbettr-rg-${ENVIRONMENT}}"
+    
+    log_info "Deploying to Azure Static Web App: $app_name"
+    
+    # Deploy using Azure CLI or GitHub Actions integration
+    if [[ -n "$AZURE_STATIC_WEB_APPS_API_TOKEN" ]]; then
+        swa deploy --deployment-token "$AZURE_STATIC_WEB_APPS_API_TOKEN" --app-location "." --output-location ".next"
     else
-        log_info "Deploying to staging..."
-        vercel --yes
+        log_info "Using GitHub Actions for deployment - skipping CLI deployment"
     fi
     
-    log_info "Vercel deployment completed ✅"
+    log_info "Azure Static Web App deployment completed ✅"
 }
 
 run_health_checks() {
@@ -381,7 +385,7 @@ main() {
     run_tests
     build_application
     deploy_azure_functions
-    deploy_to_vercel
+    deploy_to_azure_static_web_app
     run_health_checks
     cleanup
     generate_deployment_report

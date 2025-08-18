@@ -44,7 +44,8 @@ const nextConfig = {
     // Keep other experimental features here if needed
   },
   // Azure Static Web Apps configuration
-  trailingSlash: true,
+  // Temporarily disabled during domain validation to prevent conflicts
+  // trailingSlash: true,
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   
   // Custom webpack config for Azure packages

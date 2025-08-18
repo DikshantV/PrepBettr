@@ -58,3 +58,19 @@ DEPENDENCY_*.md
 azure-credentials-update.env
 temp-missing-credentials.txt
 update-env-credentials.sh
+
+# Azure sensitive files
+AZURE_DEPLOYMENT_TOKEN.txt
+*.token
+*.secret
+azure-domain-reset.sh
+test-azure-secrets.js
+**/node_modules/
+azure/node_modules/
+azure/lib/compiled/
+
+# Script files that may contain secrets
+scripts/*secrets*.sh
+scripts/*keyvault*.sh
+**/load-dev-secrets.sh
+**/migrate-secrets-*.sh

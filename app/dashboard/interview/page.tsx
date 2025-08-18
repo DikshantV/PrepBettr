@@ -7,6 +7,7 @@ import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
+import { ResumePromptToast, useResumePromptToast } from "@/components/ResumePromptToast";
 import BanterLoader from "@/components/ui/BanterLoader";
 
 const SUPPORTED_LANGUAGES = [
@@ -26,6 +27,22 @@ interface User {
   email: string;
 }
 
+interface ResumeData {
+  questions: string[];
+  fileUrl: string;
+  resumeId: string;
+  extractedData?: {
+    personalInfo?: any;
+    summary?: string;
+    skills?: string[];
+    experience?: any[];
+    education?: any[];
+    projects?: any[];
+    certifications?: any[];
+    languages?: any[];
+  };
+}
+
 const Page = () => {
     const router = useRouter();
     const [isEditorExpanded, setIsEditorExpanded] = useState(false);
@@ -33,6 +50,10 @@ const Page = () => {
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+    
+    // Resume prompt toast state
+    const { show: showToast, hideToast, showToast: showPromptToast } = useResumePromptToast(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -57,6 +78,30 @@ const Page = () => {
 
         fetchUser();
     }, [router]);
+
+    // Show resume prompt toast when user arrives and no resume is uploaded
+    useEffect(() => {
+        if (user && !resumeData && !showToast) {
+            // Delay showing the toast slightly to avoid overwhelming the UI
+            const timer = setTimeout(() => {
+                showPromptToast();
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [user, resumeData, showToast, showPromptToast]);
+
+    // Handle successful resume upload
+    const handleResumeUpload = (uploadResult: ResumeData) => {
+        console.log('Resume uploaded successfully:', uploadResult);
+        setResumeData(uploadResult);
+        hideToast(); // Hide the prompt toast
+    };
+
+    // Handle resume replacement
+    const handleResumeReplaced = () => {
+        console.log('Resume being replaced...');
+        // Could show a confirmation dialog here if needed
+    };
 
     if (isLoading) {
         return (
@@ -85,8 +130,18 @@ const Page = () => {
             <div className="">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-semibold text-white">Interview Panel</h3>
-                    <div className="flex items-center gap-2">
-                        <PdfUploadButton />
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <PdfUploadButton 
+                                onQuestionsGenerated={handleResumeUpload}
+                                onResumeReplaced={handleResumeReplaced}
+                            />
+                            <ResumePromptToast 
+                                show={showToast && !resumeData}
+                                onDismiss={hideToast}
+                                message="Upload resume for better questions"
+                            />
+                        </div>
                         <div className="flex items-center gap-2">
 
                             <button
@@ -121,6 +176,8 @@ const Page = () => {
                         userName={user.name}
                         userId={user.id}
                         type="generate"
+                        resumeInfo={resumeData?.extractedData}
+                        resumeQuestions={resumeData?.questions}
                     />
                 </div>
             </div>

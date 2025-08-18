@@ -38,12 +38,6 @@ graph TB
         end
     end
     
-    %% License & Payment
-    subgraph "License Management"
-        DLP[Dodo Payments]
-        LK[License Keys]
-        EM[Email Service]
-    end
     
     %% Data Flow
     UI --> Auth
@@ -55,10 +49,6 @@ graph TB
     
     UI --> FS
     UI --> FCS
-    
-    FA --> DLP
-    DLP --> LK
-    LK --> EM
     
     %% Styling
     classDef primary fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -78,7 +68,6 @@ graph TB
 - npm/yarn/pnpm
 - Azure account with Speech Services and OpenAI deployments
 - Firebase project with Auth, Firestore, and Storage enabled
-- Dodo Payments account for license management
 
 ### Installation
 
@@ -149,10 +138,6 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-
-# Dodo Payments (License Management)
-DODO_API_KEY=your_dodo_api_key
-DODO_WEBHOOK_SECRET=your_webhook_secret
 
 
 # Application Settings
@@ -337,15 +322,25 @@ az webapp deployment slot swap \
   --target-slot production
 ```
 
-### Vercel Deployment (Alternative)
+### Azure Static Web Apps (Alternative)
 
-For quick deployments and preview environments:
+For preview environments and static hosting:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/prepbettr)
+1. **Create Azure Static Web App**:
+```bash
+az staticwebapp create \
+  --name "prepbettr" \
+  --resource-group "your-rg" \
+  --source "https://github.com/yourusername/prepbettr" \
+  --location "Central US" \
+  --branch "main" \
+  --app-location "/" \
+  --api-location "api" \
+  --output-location "out"
+```
 
-1. Click the deploy button above
-2. Configure environment variables in Vercel dashboard
-3. Deploy to production
+2. Configure environment variables in Azure Portal
+3. Deploy automatically via GitHub Actions integration
 
 ### Docker Deployment
 
@@ -619,7 +614,6 @@ az monitor app-insights query \
    - User authentication flow
    - Voice interview functionality  
    - Resume upload and processing
-   - License key validation
 
 3. **Root Cause Analysis**:
    - Review deployment logs

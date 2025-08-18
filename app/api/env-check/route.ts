@@ -4,7 +4,7 @@ import { getAzureHealthStatus } from '@/lib/azure-startup';
 export async function GET() {
   const envCheck = {
     NODE_ENV: process.env.NODE_ENV,
-    VERCEL: !!process.env.VERCEL ? 'YES' : 'NO',
+    AZURE_DEPLOYMENT: !!process.env.AZURE_APP_SERVICE_URL ? 'YES' : 'NO',
     // Azure environment variables
     AZURE_KEY_VAULT_URI: !!process.env.AZURE_KEY_VAULT_URI ? 'SET' : 'MISSING',
     NEXT_PUBLIC_SPEECH_KEY: !!process.env.NEXT_PUBLIC_SPEECH_KEY ? 'SET' : 'MISSING',

@@ -3,7 +3,7 @@ import { Page, expect } from '@playwright/test';
 // Environment-specific configuration
 export const getTestConfig = () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const baseURL = isProduction ? 'https://prepbettr.vercel.app' : 'http://localhost:3000';
+  const baseURL = isProduction ? 'https://prepbettr.azurewebsites.net' : 'http://localhost:3000';
   
   return {
     baseURL,

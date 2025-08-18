@@ -17,7 +17,7 @@ jest.mock('openai', () => {
 });
 
 // Mock the fetchAzureSecrets function
-jest.mock('@/lib/azure-config-vercel', () => ({
+jest.mock('@/lib/azure-config', () => ({
   fetchAzureSecrets: jest.fn().mockResolvedValue({
     azureOpenAIKey: 'mock-key',
     azureOpenAIEndpoint: 'mock-endpoint',

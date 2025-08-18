@@ -25,10 +25,12 @@ interface PdfUploadButtonProps {
   onQuestionsGenerated?: (result: {
     questions: string[];
     fileUrl: string;
-    docId: string;
+    resumeId: string;
+    extractedData?: any;
   }) => void;
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
+  onResumeReplaced?: () => void;
 }
 
 export type { PdfUploadButtonProps };
