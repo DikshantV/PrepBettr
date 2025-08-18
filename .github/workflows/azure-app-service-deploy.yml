@@ -40,21 +40,10 @@ jobs:
     - name: 🧹 Clean up development dependencies
       run: npm prune --production
 
-    - name: 📦 Prepare deployment files
+    - name: 📦 Create deployment package
       run: |
-        # Create a clean deployment directory
-        mkdir -p deploy
-        
-        # Copy essential files and built application
-        cp -r .next/ deploy/
-        cp -r public/ deploy/
-        cp -r node_modules/ deploy/
-        cp package.json deploy/
-        cp next.config.js deploy/
-        cp middleware.ts deploy/ 2>/dev/null || :
-        
-        # Create .zip for deployment
-        cd deploy && zip -r ../app.zip . && cd ..
+        # Create a deployment package with all necessary files
+        zip -r app.zip .next/ public/ package.json next.config.js node_modules/ middleware.ts pages/ lib/ components/ app/ 2>/dev/null || zip -r app.zip .next/ public/ package.json next.config.js node_modules/
 
     - name: 🚀 Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
