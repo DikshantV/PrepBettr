@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // Commented out for static export
 
 import ProfileForm from '../../../components/ProfileForm';
 import { getCurrentUser } from '@/lib/actions/auth.action';

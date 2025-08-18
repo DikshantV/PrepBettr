@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // Commented out for static export
 
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import InterviewClient from "./InterviewClient";
@@ -142,16 +142,13 @@ async function getInterviewData(id: string) {
             };
             
             const currentUser = await getCurrentUser();
-            if (!currentUser) {
-                throw new Error('User not authenticated');
-            }
-
+            
             return {
                 ...mockData,
-                user: {
-                    id: currentUser.id,
-                    name: currentUser.name || 'User',
-                    email: currentUser.email || ''
+                user: currentUser || {
+                    id: 'static-user',
+                    name: 'User',
+                    email: 'user@example.com'
                 }
             };
         }
@@ -189,16 +186,13 @@ async function getInterviewData(id: string) {
         };
 
         const currentUser = await getCurrentUser();
-        if (!currentUser) {
-            throw new Error('User not authenticated');
-        }
-
+        
         return {
             ...mockData,
-            user: {
-                id: currentUser.id,
-                name: currentUser.name || 'User',
-                email: currentUser.email || ''
+            user: currentUser || {
+                id: 'static-user',
+                name: 'User',
+                email: 'user@example.com'
             }
         };
     } catch (error) {
@@ -215,6 +209,21 @@ interface PageParams {
 
 interface PageProps {
     params: Promise<PageParams>;
+}
+
+export async function generateStaticParams() {
+    // Generate static params for mock interviews only
+    // In production, you'd fetch actual interview IDs from the database
+    return [
+        { id: 'mock-interview-1' },
+        { id: 'mock-interview-2' },
+        { id: 'mock-interview-3' },
+        { id: 'mock-interview-4' },
+        { id: 'mock-interview-5' },
+        { id: 'mock-interview-6' },
+        { id: 'mock-interview-7' },
+        { id: 'mock-interview-8' },
+    ];
 }
 
 export default async function Page({ params }: PageProps) {

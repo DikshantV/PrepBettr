@@ -6,8 +6,8 @@ import { UsageProvider } from "@/contexts/UsageContext";
 import AuthenticatedLayout from "@/components/authenticated-layout";
 
 // Force dynamic rendering since we use cookies
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// export const dynamic = 'force-dynamic'; // Commented out for static export
+// export const revalidate = 0; // Commented out for static export
 
 interface AccountLayoutProps {
   children: ReactNode;
