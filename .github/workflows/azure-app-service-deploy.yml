@@ -1,0 +1,50 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🏗 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install dependencies
+      run: npm ci
+
+    - name: 🔧 Build application
+      run: npm run build
+      env:
+        NEXT_PUBLIC_APP_URL: "https://prepbettr-ghd5amanhtdjfsdf.centralus-01.azurewebsites.net"
+        ENVIRONMENT: "production"
+        GRPC_VERBOSITY: "ERROR"
+        NODE_OPTIONS: "--no-warnings --openssl-legacy-provider"
+
+    - name: 📦 Create deployment package
+      run: |
+        # Create a deployment archive with built app and dependencies
+        tar -czf deployment.tar.gz \
+          .next/ \
+          public/ \
+          package.json \
+          package-lock.json \
+          next.config.js \
+          --exclude=node_modules
+
+    - name: 🚀 Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'PrepBettr'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: deployment.tar.gz

@@ -44,8 +44,9 @@ const nextConfig = {
   experimental: {
     // Keep other experimental features here if needed
   },
-  // Azure Static Web Apps configuration - using dynamic rendering for API routes
+  // Azure Static Web Apps configuration
   trailingSlash: true,
+  output: 'export',
   
   // Custom webpack config for Azure packages
   webpack: (config, { isServer }) => {
