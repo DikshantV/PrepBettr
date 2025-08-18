@@ -5,6 +5,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -43,10 +44,8 @@ const nextConfig = {
   experimental: {
     // Keep other experimental features here if needed
   },
-  // Azure Static Web Apps configuration
-  // Temporarily disabled during domain validation to prevent conflicts
-  // trailingSlash: true,
-  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  // Azure Static Web Apps configuration - using dynamic rendering for API routes
+  trailingSlash: true,
   
   // Custom webpack config for Azure packages
   webpack: (config, { isServer }) => {
