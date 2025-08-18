@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { UploadCloud, FileText, X } from 'lucide-react';
 import BanterLoader from '@/components/ui/BanterLoader';
+import { GlowingButton } from '@/components/ui/GlowingButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import Uploady, { 
   useItemProgressListener, 
@@ -20,9 +21,27 @@ import { useTelemetry } from '@/components/providers/TelemetryProvider';
 type UploadResponse = {
   success: boolean;
   data?: {
-    questions?: string[];
-    fileUrl?: string;
-    docId?: string;
+    message?: string;
+    resumeId?: string;
+    extractedData?: {
+      personalInfo?: any;
+      summary?: string;
+      skills?: string[];
+      experience?: any[];
+      education?: any[];
+      projects?: any[];
+      certifications?: any[];
+      languages?: any[];
+    };
+    interviewQuestions?: string[];
+    storageProvider?: 'azure' | 'firebase';
+    fileInfo?: {
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      fileUrl: string;
+      sasUrl?: string;
+    };
   };
   error?: string;
 }
@@ -31,16 +50,19 @@ interface PdfUploadButtonProps {
   onQuestionsGenerated?: (result: {
     questions: string[];
     fileUrl: string;
-    docId: string;
+    resumeId: string;
+    extractedData?: any;
   }) => void;
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
+  onResumeReplaced?: () => void;
 }
 
 const PdfUploadButton = ({ 
   onQuestionsGenerated, 
   onUploadStart, 
-  onUploadEnd 
+  onUploadEnd,
+  onResumeReplaced 
 }: PdfUploadButtonProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,6 +73,21 @@ const PdfUploadButton = ({
   // Handle upload start
   useItemStartListener(async (item) => {
     const uploadFile = item.file as File;
+    
+    // If there's an existing file, this means we're replacing it
+    if (file) {
+      console.log('🔄 Replacing existing resume file...');
+      onResumeReplaced?.();
+      
+      // Track resume replacement
+      await trackUserAction('resume_upload_replacement', 'resume_processing', {
+        oldFileName: file.name,
+        newFileName: uploadFile.name,
+        oldFileSize: file.size.toString(),
+        newFileSize: uploadFile.size.toString()
+      });
+    }
+    
     setFile(uploadFile);
     setIsUploading(true);
     onUploadStart?.();
@@ -59,7 +96,8 @@ const PdfUploadButton = ({
     await trackUserAction('resume_upload_start', 'resume_processing', {
       fileName: uploadFile.name,
       fileSize: uploadFile.size.toString(),
-      fileType: uploadFile.type
+      fileType: uploadFile.type,
+      isReplacement: (!!file).toString()
     });
   });
 
@@ -110,9 +148,15 @@ const PdfUploadButton = ({
       const response = item.uploadResponse?.data as UploadResponse;
       
       if (response?.success) {
-        const questions = response.data?.questions;
-        if (questions?.length) {
-          toast.success('Document processed successfully!');
+        const questions = response.data?.interviewQuestions || [];
+        const extractedData = response.data?.extractedData;
+        const fileUrl = response.data?.fileInfo?.fileUrl || '';
+        const resumeId = response.data?.resumeId || '';
+        
+        if (questions.length > 0) {
+          toast.success('Resume processed successfully!', {
+            description: `Generated ${questions.length} interview questions`
+          });
           
           // Track successful resume upload and processing
           if (file) {
@@ -125,28 +169,39 @@ const PdfUploadButton = ({
             await trackUserAction('resume_upload_success', 'resume_processing', {
               fileName: file.name,
               questionsGenerated: questions.length.toString(),
-              processingTimeMs: processingTime.toString()
+              processingTimeMs: processingTime.toString(),
+              resumeId
             });
           }
           
           onQuestionsGenerated?.({
             questions,
-            fileUrl: response.data?.fileUrl || '',
-            docId: response.data?.docId || ''
+            fileUrl,
+            resumeId,
+            extractedData
           });
         } else {
-          toast.warning('No questions were generated', {
-            description: 'The PDF might not contain enough content or the content might not be suitable for question generation.'
+          toast.warning('Resume uploaded but no questions generated', {
+            description: 'The resume was processed but might not contain enough relevant content for question generation.'
           });
           
           // Track upload with no questions generated
           await trackUserAction('resume_upload_no_questions', 'resume_processing', {
             fileName: file?.name || 'unknown',
-            processingTimeMs: processingTime.toString()
+            processingTimeMs: processingTime.toString(),
+            resumeId
+          });
+          
+          // Still call the callback with empty questions so UI knows upload succeeded
+          onQuestionsGenerated?.({
+            questions: [],
+            fileUrl,
+            resumeId,
+            extractedData
           });
         }
       } else {
-        throw new Error(response?.error || 'Failed to process PDF');
+        throw new Error(response?.error || 'Failed to process resume');
       }
     } catch (error) {
       console.error('Error processing PDF:', error);
@@ -189,13 +244,16 @@ const PdfUploadButton = ({
   // Custom button component for Uploady
   const CustomUploadButton = asUploadButton(({ onClick, isUploading: isUploadingProp }: { onClick: () => void, isUploading: boolean }) => (
     <div className="relative">
-      {isUploading && <BanterLoader overlay text="Uploading and Processing PDF..." />}
-      <button
-        type="button"
+      {isUploading && <BanterLoader overlay text="Uploading and Processing Resume..." />}
+      <GlowingButton
         onClick={onClick}
         disabled={isUploading || isUploadingProp}
-        className={`p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm ${
-          isUploading || isUploadingProp ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : ''
+        size="sm"
+        className="w-auto h-10"
+        innerClassName={`${
+          isUploading || isUploadingProp 
+            ? 'bg-indigo-600 dark:bg-indigo-700' 
+            : 'bg-slate-950 dark:bg-slate-900 hover:bg-slate-800 dark:hover:bg-slate-800'
         }`}
         aria-label="Upload resume/CV"
         title="Upload resume/CV (PDF)"
@@ -206,7 +264,7 @@ const PdfUploadButton = ({
         ) : (
           <UploadCloud className="w-6 h-6" />
         )}
-      </button>
+      </GlowingButton>
 
       <AnimatePresence>
         {file && (
@@ -292,7 +350,7 @@ export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
   return (
     <Uploady
       destination={{ 
-        url: '/api/upload-pdf',
+        url: '/api/resume/upload',
         headers: authHeaders
       }}
       accept="application/pdf"

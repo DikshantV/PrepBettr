@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Test configuration for staging environment
-const STAGING_BASE_URL = process.env.STAGING_BASE_URL || 'https://prepbettr-staging.vercel.app';
+const STAGING_BASE_URL = process.env.STAGING_BASE_URL || 'https://prepbettr-staging.azurewebsites.net';
 const FIREBASE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 
 test.describe('Staging Functions Integration Tests', () => {

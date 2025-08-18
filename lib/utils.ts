@@ -92,7 +92,6 @@ const techIconsMap: Record<string, { type: 'react-icon' | 'devicon'; icon: strin
   'gcp': { type: 'react-icon', icon: 'SiGooglecloud' },
   'googlecloud': { type: 'react-icon', icon: 'SiGooglecloud' },
   'firebase': { type: 'react-icon', icon: 'SiFirebase' },
-  'vercel': { type: 'react-icon', icon: 'SiVercel' },
   'netlify': { type: 'react-icon', icon: 'SiNetlify' },
   
   // Version Control

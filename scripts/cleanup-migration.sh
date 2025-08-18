@@ -167,7 +167,6 @@ clean_build_artifacts() {
     rm -rf node_modules/.cache/typescript
     
     # Remove other caches
-    rm -rf .vercel
     rm -rf coverage
     
     log_info "✅ Build artifacts cleaned"

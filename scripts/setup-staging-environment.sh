@@ -310,7 +310,7 @@ Generated on: $(date)
 - [ ] .env.staging file created and populated
 - [ ] Azure Key Vault secrets configured
 - [ ] Firebase staging project configured
-- [ ] Vercel staging environment configured
+- [ ] Azure Static Web App staging environment configured
 
 ## Functionality Tests
 - [ ] User registration and login

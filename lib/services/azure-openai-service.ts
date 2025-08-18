@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { fetchAzureSecrets } from '@/lib/azure-config-vercel';
+import { fetchAzureSecrets } from '@/lib/azure-config';
 import { InterviewContext } from '@/lib/types/voice';
 
 export interface ConversationMessage {

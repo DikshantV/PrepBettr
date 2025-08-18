@@ -47,7 +47,7 @@ export class EmailVerificationService {
       await this.db.collection('email_verifications').add(verificationData);
 
       // Create verification URL
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.AZURE_APP_SERVICE_URL || 'http://localhost:3000';
       const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
       // Email content

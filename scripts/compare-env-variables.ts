@@ -73,9 +73,6 @@ const keyVaultMapping = new Map<string, string | null>([
   ['AWS_SECRET_ACCESS_KEY', null],
   ['AWS_SES_FROM_EMAIL', null],
   
-  // DODO Payments (typically not in Key Vault)
-  ['DODO_SECRET_KEY', null],
-  ['DODO_WEBHOOK_SECRET', null],
   
   // MJML (typically not in Key Vault)
   ['MJML_API_ENDPOINT', null],
@@ -83,8 +80,12 @@ const keyVaultMapping = new Map<string, string | null>([
   ['MJML_PUBLIC_KEY', null],
   ['MJML_SECRET_KEY', null],
   
-  // Azure Key Vault URI
+// Azure Key Vault URI
   ['AZURE_KEY_VAULT_URI', null],
+  
+  // Azure App Configuration (typically not in Key Vault)
+  ['AZURE_APPCONFIG_CONNECTION_STRING', null],
+  ['AZURE_APPCONFIG_ENDPOINT', null],
   
   // Azure Function Key (typically not in Key Vault)
   ['AZURE_FUNCTION_KEY', null],

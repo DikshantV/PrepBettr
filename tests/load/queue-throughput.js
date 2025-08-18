@@ -43,7 +43,7 @@ const testJobs = new SharedArray('test_jobs', function () {
 });
 
 // Test configuration based on environment
-const BASE_URL = __ENV.BASE_URL || 'https://prepbettr-staging.vercel.app';
+const BASE_URL = __ENV.BASE_URL || 'https://prepbettr-staging.azurewebsites.net';
 const FIRESTORE_EMULATOR = __ENV.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
 
 // Load test stages

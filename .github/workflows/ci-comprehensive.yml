@@ -482,7 +482,7 @@ jobs:
       env:
         CI: true
         NODE_ENV: test
-        STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.vercel.app' }}
+        STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.azurewebsites.net' }}
         FIRESTORE_EMULATOR_HOST: localhost:8080
         FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
     
@@ -531,7 +531,7 @@ jobs:
           --summary-trend-stats="min,p(50),p(95),p(99),max" \
           --summary-time-unit=ms
       env:
-        BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.vercel.app' }}
+        BASE_URL: ${{ secrets.STAGING_BASE_URL || 'https://prepbettr-staging.azurewebsites.net' }}
         FIRESTORE_EMULATOR_HOST: localhost:8080
     
     - name: Analyze load test results

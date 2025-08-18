@@ -20,6 +20,25 @@ enum InterviewState {
     FINISHED = "FINISHED",
 }
 
+interface ExtractedResumeData {
+    personalInfo?: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        address?: string;
+        linkedin?: string;
+        github?: string;
+        website?: string;
+    };
+    summary?: string;
+    skills?: string[];
+    experience?: any[];
+    education?: any[];
+    projects?: any[];
+    certifications?: any[];
+    languages?: any[];
+}
+
 interface AgentProps {
     userName: string;
     userId: string;
@@ -28,6 +47,8 @@ interface AgentProps {
     type: string;
     questions?: string[];
     profileImage?: string;
+    resumeInfo?: ExtractedResumeData;
+    resumeQuestions?: string[];
 }
 
 const Agent = ({
@@ -37,6 +58,8 @@ const Agent = ({
     feedbackId,
     type,
     questions,
+    resumeInfo,
+    resumeQuestions,
 }: AgentProps) => {
     const router = useRouter();
     const [interviewState, setInterviewState] = useState<InterviewState>(InterviewState.READY);
@@ -499,11 +522,27 @@ const Agent = ({
             // Step 3: Build interview context and get AI intro
             const interviewContext = {
                 userName,
-                questions,
+                questions: resumeQuestions || questions, // Prioritize resume-generated questions
                 type,
                 userId,
                 interviewId,
-                feedbackId
+                feedbackId,
+                // Include resume information for better context
+                resumeInfo: resumeInfo ? {
+                    hasResume: true,
+                    candidateName: resumeInfo.personalInfo?.name || userName,
+                    summary: resumeInfo.summary,
+                    skills: resumeInfo.skills?.join(', ') || '',
+                    experience: resumeInfo.experience?.map(exp => 
+                        `${exp.position} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})`
+                    ).join(', ') || '',
+                    education: resumeInfo.education?.map(edu => 
+                        `${edu.degree} in ${edu.field} from ${edu.institution}`
+                    ).join(', ') || '',
+                    yearsOfExperience: resumeInfo.experience?.length || 0
+                } : {
+                    hasResume: false
+                }
             };
 
             const response = await fetch('/api/voice/conversation', {

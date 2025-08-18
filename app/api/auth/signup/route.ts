@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       emailVerified: false
     });
 
-    const verificationUrl = `${process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000'}/api/auth/verify-email?token`;
+    const verificationUrl = `${process.env.NEXTAUTH_URL || process.env.AZURE_APP_SERVICE_URL || 'http://localhost:3000'}/api/auth/verify-email?token`;
     const { success, error } = await emailVerificationService.sendVerificationEmail(uid, email, userName);
 
     if (!success) {
