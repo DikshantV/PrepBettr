@@ -20,31 +20,44 @@ jobs:
         node-version: '20'
         cache: 'npm'
 
+    - name: 🔐 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: 📦 Install dependencies
       run: npm ci
 
     - name: 🔧 Build application
       run: npm run build
       env:
-        NEXT_PUBLIC_APP_URL: "https://prepbettr-ghd5amanhtdjfsdf.centralus-01.azurewebsites.net"
+        NEXT_PUBLIC_APP_URL: "https://prepbettr.azurewebsites.net"
         ENVIRONMENT: "production"
+        NODE_ENV: "production"
         GRPC_VERBOSITY: "ERROR"
         NODE_OPTIONS: "--no-warnings --openssl-legacy-provider"
 
-    - name: 📦 Create deployment package
+    - name: 🧹 Clean up development dependencies
+      run: npm prune --production
+
+    - name: 📦 Prepare deployment files
       run: |
-        # Create a deployment archive with built app and dependencies
-        tar -czf deployment.tar.gz \
-          .next/ \
-          public/ \
-          package.json \
-          package-lock.json \
-          next.config.js \
-          --exclude=node_modules
+        # Create a clean deployment directory
+        mkdir -p deploy
+        
+        # Copy essential files and built application
+        cp -r .next/ deploy/
+        cp -r public/ deploy/
+        cp -r node_modules/ deploy/
+        cp package.json deploy/
+        cp next.config.js deploy/
+        cp middleware.ts deploy/ 2>/dev/null || :
+        
+        # Create .zip for deployment
+        cd deploy && zip -r ../app.zip . && cd ..
 
     - name: 🚀 Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'PrepBettr'
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: deployment.tar.gz
+        package: 'app.zip'
