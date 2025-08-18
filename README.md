@@ -745,3 +745,4 @@ For issues and questions:
 - Create an issue in the GitHub repository
 - Contact support at support@prepbettr.com
 - Check the [troubleshooting guide](#-troubleshooting) above
+# Deploy to prepbettr.com
