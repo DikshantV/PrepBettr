@@ -1,0 +1,1207 @@
+[
+  {
+    "etag": "\"71055b56-0000-0100-0000-6895e5400000\"",
+    "id": "/subscriptions/d8a087af-6789-498e-9a5c-ba8f470e11e5/resourceGroups/PrepBettr_group/providers/Microsoft.CognitiveServices/accounts/Interview-agent1",
+    "identity": null,
+    "kind": "OpenAI",
+    "location": "eastus",
+    "name": "Interview-agent1",
+    "properties": {
+      "abusePenalty": null,
+      "allowedFqdnList": null,
+      "apiProperties": {
+        "aadClientId": null,
+        "aadTenantId": null,
+        "additionalProperties": null,
+        "eventHubConnectionString": null,
+        "qnaAzureSearchEndpointId": null,
+        "qnaAzureSearchEndpointKey": null,
+        "qnaRuntimeEndpoint": null,
+        "statisticsEnabled": null,
+        "storageAccountConnectionString": null,
+        "superUser": null,
+        "websiteName": null
+      },
+      "callRateLimit": {
+        "count": null,
+        "renewalPeriod": null,
+        "rules": [
+          {
+            "count": 30.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.dalle.post",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "dalle/*"
+              },
+              {
+                "method": "POST",
+                "path": "openai/images/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 30.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.dalle.other",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "dalle/*"
+              },
+              {
+                "method": "*",
+                "path": "openai/operations/images/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 120.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.assistants.list",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "openai/assistants"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 120.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.threads.list",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "openai/threads"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 120.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.vectorstores.list",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "openai/vector_stores"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 100000.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.assistants.default",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "openai/assistants"
+              },
+              {
+                "method": "*",
+                "path": "openai/assistants/*"
+              },
+              {
+                "method": "*",
+                "path": "openai/threads"
+              },
+              {
+                "method": "*",
+                "path": "openai/threads/*"
+              },
+              {
+                "method": "*",
+                "path": "openai/vector_stores"
+              },
+              {
+                "method": "*",
+                "path": "openai/vector_stores/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 100000.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.responses.default",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "openai/responses"
+              },
+              {
+                "method": "*",
+                "path": "openai/responses/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 30.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.batches.post",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "openai/v1/batches"
+              },
+              {
+                "method": "POST",
+                "path": "openai/batches"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 500.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.batches.get",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "openai/v1/batches/*"
+              },
+              {
+                "method": "GET",
+                "path": "openai/batches/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai.batches.list",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "openai/v1/batches"
+              },
+              {
+                "method": "GET",
+                "path": "openai/batches"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 30.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "openai",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "openai/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 30.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "default",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "VirtualNetworks",
+          "value": null
+        },
+        {
+          "name": "CustomerManagedKey",
+          "value": null
+        },
+        {
+          "name": "MaxFineTuneCount",
+          "value": "500"
+        },
+        {
+          "name": "MaxRunningFineTuneCount",
+          "value": "3"
+        },
+        {
+          "name": "MaxUserFileCount",
+          "value": "100"
+        },
+        {
+          "name": "MaxTrainingFileSize",
+          "value": "512000000"
+        },
+        {
+          "name": "MaxUserFileImportDurationInHours",
+          "value": "1"
+        },
+        {
+          "name": "MaxFineTuneJobDurationInHours",
+          "value": "720"
+        },
+        {
+          "name": "MaxEvaluationRunDurationInHours",
+          "value": "5"
+        },
+        {
+          "name": "MaxRunningEvaluationCount",
+          "value": "5"
+        },
+        {
+          "name": "MaxRunningGlobalStandardFineTuneCount",
+          "value": "3"
+        },
+        {
+          "name": "TrustedServices",
+          "value": "Microsoft.CognitiveServices,Microsoft.MachineLearningServices,Microsoft.Search,Microsoft.VideoIndexer"
+        },
+        {
+          "name": "RaiMonitor",
+          "value": null
+        },
+        {
+          "name": "quotaRefundsEnabled",
+          "value": "false"
+        }
+      ],
+      "commitmentPlanAssociations": null,
+      "customSubDomainName": "interview-agent1",
+      "dateCreated": "2025-08-01T11:09:43.3088975Z",
+      "deletionDate": null,
+      "disableLocalAuth": null,
+      "dynamicThrottlingEnabled": null,
+      "encryption": null,
+      "endpoint": "https://interview-agent1.openai.azure.com/",
+      "endpoints": {
+        "OpenAI Dall-E API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Language Model Instance API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Model Scaleset API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Moderations API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Realtime API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Sora API": "https://interview-agent1.openai.azure.com/",
+        "OpenAI Whisper API": "https://interview-agent1.openai.azure.com/",
+        "Token Service API": "https://interview-agent1.openai.azure.com/"
+      },
+      "internalId": "e811393e3df449e0a656b5914fafd00c",
+      "isMigrated": false,
+      "locations": null,
+      "migrationToken": null,
+      "networkAcls": {
+        "defaultAction": "Allow",
+        "ipRules": [],
+        "virtualNetworkRules": []
+      },
+      "privateEndpointConnections": [],
+      "provisioningState": "Succeeded",
+      "publicNetworkAccess": "Enabled",
+      "quotaLimit": null,
+      "restore": null,
+      "restrictOutboundNetworkAccess": null,
+      "scheduledPurgeDate": null,
+      "skuChangeInfo": null,
+      "userOwnedStorage": null
+    },
+    "resourceGroup": "PrepBettr_group",
+    "sku": {
+      "capacity": null,
+      "family": null,
+      "name": "S0",
+      "size": null,
+      "tier": null
+    },
+    "systemData": {
+      "createdAt": "2025-08-01T11:09:42.266916+00:00",
+      "createdBy": "Dikshant.vashishtha1625@gmail.com",
+      "createdByType": "User",
+      "lastModifiedAt": "2025-08-01T11:09:42.266916+00:00",
+      "lastModifiedBy": "Dikshant.vashishtha1625@gmail.com",
+      "lastModifiedByType": "User"
+    },
+    "tags": {
+      "Prepbettr": "InterviewAgent1"
+    },
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "etag": "\"5d015587-0000-0200-0000-6895ee0b0000\"",
+    "id": "/subscriptions/d8a087af-6789-498e-9a5c-ba8f470e11e5/resourceGroups/PrepBettr_group/providers/Microsoft.CognitiveServices/accounts/prepbettr-speech-services",
+    "identity": null,
+    "kind": "SpeechServices",
+    "location": "eastus2",
+    "name": "prepbettr-speech-services",
+    "properties": {
+      "abusePenalty": null,
+      "allowedFqdnList": null,
+      "apiProperties": null,
+      "callRateLimit": {
+        "count": null,
+        "renewalPeriod": null,
+        "rules": [
+          {
+            "count": 50.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "token",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "sts/v1.0/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 200.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.synthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/synthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 200.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.customvoicesynthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/customvoicesynthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 200.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.neuralvoicesynthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/neuralvoicesynthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 10.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.aoaivoicesynthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/aoaivoicesynthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 3.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.aoaihdvoicesynthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/aoaihdvoicesynthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 200.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.customneuralvoicesynthesize",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/customneuralvoicesynthesize"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 1.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.liveavatarconnect",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/liveavatarconnect"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 200.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.livecustomavatarconnect",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/livecustomavatarconnect"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 2.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.batchavatarcreate",
+            "matchPatterns": [
+              {
+                "method": "PUT",
+                "path": "avatar/batchsyntheses/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.conversationtranscription",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speech/singlechannelaudioconversationtranscription"
+              },
+              {
+                "method": "*",
+                "path": "speech/multichannelaudioconversationtranscribe"
+              },
+              {
+                "method": "*",
+                "path": "speech/videoconversationtranscribe"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.speechtotext",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speechtotext/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.batchtexttospeechcreate",
+            "matchPatterns": [
+              {
+                "method": "PUT",
+                "path": "texttospeech/batchsyntheses/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.texttospeech",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "texttospeech/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.customvoice",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "customvoice/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 20.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.speakerrecognitionv2",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "speaker/*"
+              },
+              {
+                "method": "*",
+                "path": "speaker-recognition/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 5.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "speech.speakerrecognitionv1",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "spid/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 500.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "container.billing",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "billing/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "default",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "CommitmentPlan",
+          "value": null
+        },
+        {
+          "name": "VirtualNetworks",
+          "value": null
+        },
+        {
+          "name": "CustomerManagedKey",
+          "value": null
+        },
+        {
+          "name": "Container",
+          "value": "SpeechServices.CustomSpeechToText,SpeechServices.NeuralTextToSpeechOnPrem,SpeechServices.DPP,SpeechServices.SpeechToText,SpeechServices.ctsdiarizer,SpeechServices.diarization"
+        }
+      ],
+      "commitmentPlanAssociations": null,
+      "customSubDomainName": null,
+      "dateCreated": "2025-08-08T12:31:07.506074Z",
+      "deletionDate": null,
+      "disableLocalAuth": null,
+      "dynamicThrottlingEnabled": null,
+      "encryption": null,
+      "endpoint": "https://eastus2.api.cognitive.microsoft.com/",
+      "endpoints": {
+        "Speech Services Audio Content Creation": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Batch Avatar": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Batch Text to Speech": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Custom Avatar": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Custom Voice": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Custom Voice Trial": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speaker Identification": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speaker Verification": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speech to Text": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speech to Text (Standard)": "https://eastus2.stt.speech.microsoft.com",
+        "Speech Services Speech to Text 2024-05-15-preview": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speech to Text 2024-11-15": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speech to Text v3.2": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Speech to Text v3.2_internal.1": "https://eastus2.api.cognitive.microsoft.com/",
+        "Speech Services Text to Speech (Neural)": "https://eastus2.tts.speech.microsoft.com",
+        "Token": "https://eastus2.api.cognitive.microsoft.com/",
+        "Video Translation": "https://eastus2.api.cognitive.microsoft.com/",
+        "Voice Agent Realtime API": "https://eastus2.api.cognitive.microsoft.com/",
+        "Voice Live Realtime API": "https://eastus2.api.cognitive.microsoft.com/"
+      },
+      "internalId": "ae2b67da10514a96b0d8da1724bf50a7",
+      "isMigrated": false,
+      "locations": null,
+      "migrationToken": null,
+      "networkAcls": null,
+      "privateEndpointConnections": [],
+      "provisioningState": "Succeeded",
+      "publicNetworkAccess": "Enabled",
+      "quotaLimit": null,
+      "restore": null,
+      "restrictOutboundNetworkAccess": null,
+      "scheduledPurgeDate": null,
+      "skuChangeInfo": null,
+      "userOwnedStorage": null
+    },
+    "resourceGroup": "PrepBettr_group",
+    "sku": {
+      "capacity": null,
+      "family": null,
+      "name": "S0",
+      "size": null,
+      "tier": null
+    },
+    "systemData": {
+      "createdAt": "2025-08-08T12:31:06.532928+00:00",
+      "createdBy": "Dikshant.vashishtha1625@gmail.com",
+      "createdByType": "User",
+      "lastModifiedAt": "2025-08-08T12:31:06.532928+00:00",
+      "lastModifiedBy": "Dikshant.vashishtha1625@gmail.com",
+      "lastModifiedByType": "User"
+    },
+    "tags": null,
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "etag": "\"5d01b5bd-0000-0200-0000-6895fa350000\"",
+    "id": "/subscriptions/d8a087af-6789-498e-9a5c-ba8f470e11e5/resourceGroups/PrepBettr_group/providers/Microsoft.CognitiveServices/accounts/prepbettr-document-intelligence",
+    "identity": {
+      "principalId": "8cf0a3f1-8d23-497d-b178-1b037e160fcf",
+      "tenantId": "e94a306b-e041-4248-ab03-8096d0b5f123",
+      "type": "SystemAssigned",
+      "userAssignedIdentities": null
+    },
+    "kind": "FormRecognizer",
+    "location": "eastus2",
+    "name": "prepbettr-document-intelligence",
+    "properties": {
+      "abusePenalty": null,
+      "allowedFqdnList": null,
+      "apiProperties": null,
+      "callRateLimit": {
+        "count": null,
+        "renewalPeriod": null,
+        "rules": [
+          {
+            "count": 500.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "container.billing",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "billing/*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 10.0
+          },
+          {
+            "count": 15.0,
+            "dynamicThrottlingEnabled": true,
+            "key": "formrecognizer.analyze",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models/{id}/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models/{modelId}/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/prebuilt/businessCard/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/prebuilt/idDocument/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/prebuilt/invoice/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/layout/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/prebuilt/receipt/analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/prebuilt/receipt/asyncBatchAnalyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentModels/{modelId}:analyze"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/read"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentClassifiers/{classifierId}:analyze"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels/{modelId}:analyze"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels/{modelId}:analyze?_overload=analyzeDocument"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentClassifiers/{classifierId}:analyze"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentClassifiers/{classifierId}:analyze?_overload=classifyDocument"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels/{modelId}:analyzeBatch"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 50.0,
+            "dynamicThrottlingEnabled": true,
+            "key": "formrecognizer.get.object",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{modelId}/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/prebuilt/businessCard/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/prebuilt/idDocument/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/prebuilt/invoice/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/prebuilt/receipt/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/prebuilt/receipt/operations/{operationId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentModels/{modelId}/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/layout/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{modelId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{modelId}/copyResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/operations/{operationId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{modelId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{id}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentModels/{modelId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentClassifiers/{classifierId}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentClassifiers/{classifierId}/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/operations/{operationId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/operations/{operationId}?_overload={_overload}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentClassifiers/{classifierId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentClassifiers/{classifierId}/analyzeResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}/analyzeBatchResults/{resultId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}/analyzeResults/{resultId}/figures/{figureId}"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}/analyzeResults/{resultId}/pdf"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 10.0,
+            "dynamicThrottlingEnabled": true,
+            "key": "formrecognizer.list.objects",
+            "matchPatterns": [
+              {
+                "method": "GET",
+                "path": "formrecognizer/operations"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/info"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentModels"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/documentClassifiers"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/operations"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/info"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentClassifiers"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/documentModels/{modelId}/analyzeBatchResults"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 5.0,
+            "dynamicThrottlingEnabled": true,
+            "key": "formrecognizer.model.management",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models/compose"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models/copyAuthorization"
+              },
+              {
+                "method": "DELETE",
+                "path": "formrecognizer/custom/models/{id}"
+              },
+              {
+                "method": "GET",
+                "path": "formrecognizer/custom/models/{id}/keys"
+              },
+              {
+                "method": "DELETE",
+                "path": "formrecognizer/custom/models/{modelId}"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/models/{modelId}/copy"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentModels/{modelId}:copyTo"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentModels:authorizeCopy"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentModels:build"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentModels:compose"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/custom/train"
+              },
+              {
+                "method": "DELETE",
+                "path": "formrecognizer/custom/models/{modelId}"
+              },
+              {
+                "method": "DELETE",
+                "path": "formrecognizer/documentModels/{modelId}"
+              },
+              {
+                "method": "POST",
+                "path": "formrecognizer/documentClassifiers:build"
+              },
+              {
+                "method": "DELETE",
+                "path": "formrecognizer/documentClassifiers/{classifierId}"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels:authorizeCopy"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels/{modelId}:copyTo"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels:build"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentModels:compose"
+              },
+              {
+                "method": "DELETE",
+                "path": "documentintelligence/documentModels/{modelId}"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentClassifiers:build"
+              },
+              {
+                "method": "DELETE",
+                "path": "documentintelligence/documentClassifiers/{classifierId}"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentClassifiers/{classifierId}:copyTo"
+              },
+              {
+                "method": "POST",
+                "path": "documentintelligence/documentClassifiers:authorizeCopy"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 15.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "formrecognizer.chat.build",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "documentintelligence/chat:build"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 5.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "formrecognizer.chat.complete",
+            "matchPatterns": [
+              {
+                "method": "POST",
+                "path": "documentintelligence/chat/{chatId}:complete"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 60.0
+          },
+          {
+            "count": 100.0,
+            "dynamicThrottlingEnabled": null,
+            "key": "formrecognizer.labeling",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "documentintelligence/labelingProjects/*"
+              },
+              {
+                "method": "*",
+                "path": "documentintelligence/classificationProjects/*"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/labelingProjects"
+              },
+              {
+                "method": "GET",
+                "path": "documentintelligence/classificationProjects"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          },
+          {
+            "count": 5.0,
+            "dynamicThrottlingEnabled": true,
+            "key": "default",
+            "matchPatterns": [
+              {
+                "method": "*",
+                "path": "*"
+              }
+            ],
+            "minCount": null,
+            "renewalPeriod": 1.0
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "DynamicThrottling",
+          "value": null
+        },
+        {
+          "name": "VirtualNetworks",
+          "value": null
+        },
+        {
+          "name": "CustomerManagedKey",
+          "value": null
+        },
+        {
+          "name": "Container",
+          "value": "FormRecognizer.Forms,FormRecognizer.FormRecognizerCustomSupervised,FormRecognizer.FormRecognizerLayout,FormRecognizer.formrecognizerreadlayout,FormRecognizer.FormRecognizerId,FormRecognizer.FormRecognizerInvoice,FormRecognizer.FormRecognizerReceipt,FormRecognizer.FormRecognizerBusinessCard,FormRecognizer.FormRecognizerRead,FormRecognizer.FormRecognizerKvp"
+        }
+      ],
+      "commitmentPlanAssociations": null,
+      "customSubDomainName": "prepbettr-document-intelligence",
+      "dateCreated": "2025-08-08T13:22:27.9949774Z",
+      "deletionDate": null,
+      "disableLocalAuth": null,
+      "dynamicThrottlingEnabled": null,
+      "encryption": null,
+      "endpoint": "https://prepbettr-document-intelligence.cognitiveservices.azure.com/",
+      "endpoints": {
+        "Container": "https://prepbettr-document-intelligence.cognitiveservices.azure.com/",
+        "FormRecognizer": "https://prepbettr-document-intelligence.cognitiveservices.azure.com/"
+      },
+      "internalId": "0d14f0dbd5544b1d82cd3cf66a2edb29",
+      "isMigrated": false,
+      "locations": null,
+      "migrationToken": null,
+      "networkAcls": null,
+      "privateEndpointConnections": [],
+      "provisioningState": "Succeeded",
+      "publicNetworkAccess": "Enabled",
+      "quotaLimit": null,
+      "restore": null,
+      "restrictOutboundNetworkAccess": null,
+      "scheduledPurgeDate": null,
+      "skuChangeInfo": null,
+      "userOwnedStorage": null
+    },
+    "resourceGroup": "PrepBettr_group",
+    "sku": {
+      "capacity": null,
+      "family": null,
+      "name": "S0",
+      "size": null,
+      "tier": null
+    },
+    "systemData": {
+      "createdAt": "2025-08-08T13:22:24.558093+00:00",
+      "createdBy": "Dikshant.vashishtha1625@gmail.com",
+      "createdByType": "User",
+      "lastModifiedAt": "2025-08-08T13:22:24.558093+00:00",
+      "lastModifiedBy": "Dikshant.vashishtha1625@gmail.com",
+      "lastModifiedByType": "User"
+    },
+    "tags": null,
+    "type": "Microsoft.CognitiveServices/accounts"
+  }
+]

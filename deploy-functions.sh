@@ -15,10 +15,10 @@ NC='\033[0m' # No Color
 
 # Configuration
 RESOURCE_GROUP="PrepBettr_group"
-FUNCTION_APP_NAME="PrepBettr" 
-LOCATION="centralus"
-STORAGE_ACCOUNT="prepbettrstorage639"
-APP_INSIGHTS_NAME="PrepBettr"
+FUNCTION_APP_NAME="prepbettr-functions" 
+LOCATION="eastus2"
+STORAGE_ACCOUNT="prepbettrstorage684"
+APP_INSIGHTS_NAME="prepbettr-swa"
 
 echo -e "${BLUE}📋 Configuration:${NC}"
 echo "  Resource Group: $RESOURCE_GROUP"
