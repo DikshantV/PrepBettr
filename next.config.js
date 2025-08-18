@@ -44,9 +44,8 @@ const nextConfig = {
   experimental: {
     // Keep other experimental features here if needed
   },
-  // Azure Static Web Apps configuration
-  trailingSlash: true,
-  output: 'export',
+  // Azure App Service configuration
+  trailingSlash: false,
   
   // Custom webpack config for Azure packages
   webpack: (config, { isServer }) => {
