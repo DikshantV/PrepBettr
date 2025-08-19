@@ -44,7 +44,12 @@ jobs:
         # Copy standalone server files and dependencies
         mkdir -p deploy
         cp -r .next/standalone/* deploy/
-        cp -r .next/static deploy/.next/static
+        
+        # Copy static files to the correct location
+        mkdir -p deploy/.next/static
+        cp -r .next/static/* deploy/.next/static/
+        
+        # Copy public directory
         cp -r public deploy/public
         
         # Create the deployment package
