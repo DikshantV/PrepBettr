@@ -3,13 +3,19 @@
 import { useEffect, useState } from 'react';
 import { auth } from '@/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { User } from 'firebase/auth';
 
 export function AuthDebug() {
   const { user, loading } = useAuth();
-  const [firebaseUser, setFirebaseUser] = useState(auth.currentUser);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(auth?.currentUser || null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((fbUser) => {
+    if (!auth) {
+      console.log('Firebase auth not available for debug');
+      return;
+    }
+
+    const unsubscribe = auth.onAuthStateChanged((fbUser: User | null) => {
       setFirebaseUser(fbUser);
     });
 
