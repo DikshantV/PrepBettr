@@ -48,7 +48,7 @@ const nextConfig = {
   trailingSlash: false,
   
   // Custom webpack config for Azure packages
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (isServer) {
       // Optimize server-side Azure packages
       config.externals = config.externals || [];
@@ -59,6 +59,15 @@ const nextConfig = {
         '@azure/keyvault-secrets': 'commonjs @azure/keyvault-secrets',
       });
     }
+    
+    // Temporarily disable minification to resolve webpack error
+    if (!dev) {
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      };
+    }
+    
     return config;
   },
   

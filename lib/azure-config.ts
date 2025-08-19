@@ -118,7 +118,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseProjectId: firebaseProjectId?.value || process.env.FIREBASE_PROJECT_ID || '',
       firebaseClientEmail: firebaseClientEmail?.value || process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: firebasePrivateKey?.value || process.env.FIREBASE_PRIVATE_KEY || '',
-      firebaseClientKey: firebaseClientKey?.value || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
+      firebaseClientKey: firebaseClientKey?.value || '',
       azureFormRecognizerKey: azureFormRecognizerKey?.value,
       azureFormRecognizerEndpoint: azureFormRecognizerEndpoint?.value,
       azureStorageAccountName: azureStorageAccountName?.value,
@@ -143,6 +143,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
       firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || '',
+      firebaseClientKey: '',
       // Optional fallbacks
       azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY,
       azureFormRecognizerEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
@@ -202,7 +203,7 @@ export async function initializeAzureEnvironment(): Promise<void> {
     
     // Set the Firebase client key from secrets or environment
     if (secrets.firebaseClientKey) {
-      process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY = secrets.firebaseClientKey;
+      process.env['NEXT_PUBLIC_FIREBASE_CLIENT_KEY'] = secrets.firebaseClientKey;
     }
     
     // Set optional Azure services if available

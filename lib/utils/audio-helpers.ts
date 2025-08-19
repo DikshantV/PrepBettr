@@ -17,8 +17,11 @@ export async function playAudioBuffer(
       // Convert to Uint8Array if needed
       const audioArray = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
       
-      // Create blob from audio data
-      const audioBlob = new Blob([audioArray], { type: mimeType });
+      // Create blob from audio data with proper ArrayBuffer
+      const arrayBuffer = new ArrayBuffer(audioArray.length);
+      const view = new Uint8Array(arrayBuffer);
+      view.set(audioArray);
+      const audioBlob = new Blob([arrayBuffer], { type: mimeType });
       const audioUrl = URL.createObjectURL(audioBlob);
       
       // Create and configure audio element
@@ -61,7 +64,10 @@ export function createAudioBlob(
   mimeType: string = 'audio/wav'
 ): Blob {
   const audioArray = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  return new Blob([audioArray], { type: mimeType });
+  const arrayBuffer = new ArrayBuffer(audioArray.length);
+  const view = new Uint8Array(arrayBuffer);
+  view.set(audioArray);
+  return new Blob([arrayBuffer], { type: mimeType });
 }
 
 /**
@@ -179,7 +185,10 @@ export function preloadAudioBuffer(
   mimeType: string = 'audio/wav'
 ): HTMLAudioElement {
   const audioArray = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  const audioBlob = new Blob([audioArray], { type: mimeType });
+  const arrayBuffer = new ArrayBuffer(audioArray.length);
+  const view = new Uint8Array(arrayBuffer);
+  view.set(audioArray);
+  const audioBlob = new Blob([arrayBuffer], { type: mimeType });
   const audioUrl = URL.createObjectURL(audioBlob);
   
   const audio = new Audio(audioUrl);
