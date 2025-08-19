@@ -14,6 +14,7 @@ interface AzureSecrets {
   firebaseProjectId: string;
   firebaseClientEmail: string;
   firebasePrivateKey: string;
+  firebaseClientKey?: string;
   // Additional Azure services
   azureFormRecognizerKey?: string;
   azureFormRecognizerEndpoint?: string;
@@ -73,7 +74,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     // Fetch all secrets (some are optional)
     const [
       speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment,
-      firebaseProjectId, firebaseClientEmail, firebasePrivateKey,
+      firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
       azureFormRecognizerKey, azureFormRecognizerEndpoint, azureStorageAccountName, azureStorageAccountKey
     ] = await Promise.all([
       client.getSecret('speech-key'),
@@ -84,6 +85,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       getOptionalSecret('firebase-project-id'),
       getOptionalSecret('firebase-client-email'),
       getOptionalSecret('firebase-private-key'),
+      getOptionalSecret('NEXT-PUBLIC-FIREBASE-CLIENT-KEY'),
       getOptionalSecret('azure-form-recognizer-key'),
       getOptionalSecret('azure-form-recognizer-endpoint'),
       getOptionalSecret('azure-storage-account-name'),
@@ -116,6 +118,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseProjectId: firebaseProjectId?.value || process.env.FIREBASE_PROJECT_ID || '',
       firebaseClientEmail: firebaseClientEmail?.value || process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: firebasePrivateKey?.value || process.env.FIREBASE_PRIVATE_KEY || '',
+      firebaseClientKey: firebaseClientKey?.value || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
       azureFormRecognizerKey: azureFormRecognizerKey?.value,
       azureFormRecognizerEndpoint: azureFormRecognizerEndpoint?.value,
       azureStorageAccountName: azureStorageAccountName?.value,
@@ -196,6 +199,11 @@ export async function initializeAzureEnvironment(): Promise<void> {
     process.env.FIREBASE_CLIENT_EMAIL = secrets.firebaseClientEmail;
     process.env.FIREBASE_PRIVATE_KEY = secrets.firebasePrivateKey;
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = secrets.firebaseProjectId;
+    
+    // Set the Firebase client key from secrets or environment
+    if (secrets.firebaseClientKey) {
+      process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY = secrets.firebaseClientKey;
+    }
     
     // Set optional Azure services if available
     if (secrets.azureFormRecognizerKey) {
