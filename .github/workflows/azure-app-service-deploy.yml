@@ -41,15 +41,16 @@ jobs:
     - name: 📦 Create standalone deployment package
       run: |
         # Create deployment package with standalone Next.js build
-        # Copy standalone server files and dependencies
-        mkdir -p deploy
-        cp -r .next/standalone/* deploy/
+        # The standalone build already has the correct structure
         
-        # Copy static files to the correct location
-        mkdir -p deploy/.next/static
+        # Copy the entire standalone directory as the base
+        cp -r .next/standalone deploy
+        
+        # Copy static files to the correct location within the standalone structure
+        # The .next directory already exists in standalone, we just need to add static files
         cp -r .next/static/* deploy/.next/static/
         
-        # Copy public directory
+        # Copy public directory (the standalone build doesn't include this automatically)
         cp -r public deploy/public
         
         # Create the deployment package
