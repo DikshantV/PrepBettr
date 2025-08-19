@@ -46,8 +46,9 @@ jobs:
         # Copy the entire standalone directory as the base
         cp -r .next/standalone deploy
         
-        # Copy static files to the correct location within the standalone structure
-        # The .next directory already exists in standalone, we just need to add static files
+        # Create static directory and copy static files
+        # The standalone .next doesn't include static directory, so we create it
+        mkdir -p deploy/.next/static
         cp -r .next/static/* deploy/.next/static/
         
         # Copy public directory (the standalone build doesn't include this automatically)
