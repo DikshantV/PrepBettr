@@ -1,26 +1,30 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { auth } from '@/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFirebase } from '@/hooks/useFirebase';
 import { User } from 'firebase/auth';
 
 export function AuthDebug() {
   const { user, loading } = useAuth();
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(auth?.currentUser || null);
+  const { auth: firebaseAuth, isInitialized } = useFirebase();
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!auth) {
+    if (!isInitialized || !firebaseAuth) {
       console.log('Firebase auth not available for debug');
       return;
     }
 
-    const unsubscribe = auth.onAuthStateChanged((fbUser: User | null) => {
+    // Set initial user
+    setFirebaseUser(firebaseAuth.currentUser);
+
+    const unsubscribe = firebaseAuth.onAuthStateChanged((fbUser: User | null) => {
       setFirebaseUser(fbUser);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isInitialized, firebaseAuth]);
 
   if (process.env.NODE_ENV !== 'development') {
     return null;
