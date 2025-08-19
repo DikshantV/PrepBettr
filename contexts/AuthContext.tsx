@@ -2,9 +2,9 @@
 
 import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/firebase/client";
 import type { User as FirebaseUser } from "firebase/auth";
 import { initializeUser } from "@/lib/utils/jwt-decoder";
+import { useFirebase } from "@/hooks/useFirebase";
 
 // Define the auth context interface
 interface AuthContextType {
@@ -49,9 +49,19 @@ function convertFirebaseUserToUser(firebaseUser: FirebaseUser): User {
 export function AuthProvider({ children, initialUser }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [loading, setLoading] = useState(!initialUser); // If we have initial user, don't start loading
+  const { auth: firebaseAuth, isInitialized, error: firebaseError } = useFirebase();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+    // Only set up auth listener if Firebase is initialized and auth is available
+    if (!isInitialized || !firebaseAuth) {
+      if (firebaseError) {
+        console.error('Firebase initialization error in AuthProvider:', firebaseError);
+        setLoading(false);
+      }
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userData: User = convertFirebaseUserToUser(firebaseUser);
         setUser(userData);
@@ -66,7 +76,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     });
 
     return () => unsubscribe();
-  }, [initialUser]);
+  }, [isInitialized, firebaseAuth, initialUser, firebaseError]);
 
   const contextValue: AuthContextType = {
     user,
