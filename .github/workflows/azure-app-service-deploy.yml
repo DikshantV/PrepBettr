@@ -42,8 +42,13 @@ jobs:
 
     - name: 📦 Create deployment package
       run: |
-        # Create a deployment package with all necessary files
-        zip -r app.zip .next/ public/ package.json next.config.js node_modules/ middleware.ts pages/ lib/ components/ app/ 2>/dev/null || zip -r app.zip .next/ public/ package.json next.config.js node_modules/
+        # Create a deployment package with all necessary files for Azure App Service
+        # Ensure package.json is in the root for Azure to detect it properly
+        zip -r app.zip .next/ public/ package.json package-lock.json next.config.js node_modules/ 2>/dev/null || zip -r app.zip .next/ public/ package.json next.config.js node_modules/
+
+    - name: ⚙️ Configure startup command
+      run: |
+        az webapp config set --name PrepBettr --resource-group PrepBettr_group --startup-file "npm start"
 
     - name: 🚀 Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
