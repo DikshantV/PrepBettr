@@ -204,6 +204,9 @@ export async function initializeAzureEnvironment(): Promise<void> {
     // Set the Firebase client key from secrets or environment
     if (secrets.firebaseClientKey) {
       process.env['NEXT_PUBLIC_FIREBASE_CLIENT_KEY'] = secrets.firebaseClientKey;
+      console.log('🔑 Firebase client key set from Azure Key Vault');
+    } else {
+      console.warn('⚠️ Firebase client key not found in Azure Key Vault');
     }
     
     // Set optional Azure services if available
