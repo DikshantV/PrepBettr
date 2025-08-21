@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Set session cookie after successful user creation
-    cookies().set(SESSION_COOKIE_NAME, idToken, {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: SESSION_DURATION_S,
