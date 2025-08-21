@@ -66,7 +66,7 @@ export async function verifyFirebaseToken(idToken: string): Promise<AuthResult> 
         email: decodedToken.email,
         name: decodedToken.name || decodedToken.email?.split('@')[0],
         picture: decodedToken.picture,
-        email_verified: decodedToken.email_verified,
+        email_verified: decodedToken.email_verified || false,
         firebase: decodedToken.firebase,
         custom_claims: decodedToken.custom_claims || {}
       }
