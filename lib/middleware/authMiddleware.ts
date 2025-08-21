@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/firebase/admin';
+import { verifyIdToken } from '@/lib/firebase/admin';
 
 /**
  * Firebase Authentication Middleware for Next.js API Routes
@@ -49,7 +49,15 @@ function extractBearerToken(authHeader: string | null): string | null {
  */
 export async function verifyFirebaseToken(idToken: string): Promise<AuthResult> {
   try {
-    const decodedToken = await auth.verifyIdToken(idToken, true);
+    const decodedToken = await verifyIdToken(idToken);
+    
+    if (!decodedToken) {
+      return {
+        success: false,
+        user: null,
+        error: 'Invalid or expired token'
+      };
+    }
     
     return {
       success: true,
@@ -254,7 +262,10 @@ export function withAdminAuth<T extends any[]>(
  */
 export async function getUserFromSessionCookie(sessionCookie: string): Promise<AuthResult> {
   try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    // Note: Session cookie verification needs direct Firebase Admin auth access
+    const { getAdminAuth } = await import('@/lib/firebase/admin');
+    const adminAuth = getAdminAuth();
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
     
     return {
       success: true,
