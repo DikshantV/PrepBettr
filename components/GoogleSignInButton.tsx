@@ -63,7 +63,11 @@ export default function GoogleSignInButton() {
         if (signInResponse.ok) {
           console.log('GoogleSignInButton: First sign in successful, redirecting to dashboard');
           toast.success('Signed in successfully!');
-          setSignInSuccess(true);
+          
+          // Add small delay to ensure session cookie is set before redirect
+          setTimeout(() => {
+            setSignInSuccess(true);
+          }, 100);
           return;
         }
 
@@ -108,7 +112,11 @@ export default function GoogleSignInButton() {
           if (retrySignIn.ok) {
             console.log('GoogleSignInButton: Second sign in successful, redirecting to dashboard');
             toast.success('Signed in successfully!');
-            setSignInSuccess(true);
+            
+            // Add small delay to ensure session cookie is set before redirect
+            setTimeout(() => {
+              setSignInSuccess(true);
+            }, 100);
             return;
           }
 

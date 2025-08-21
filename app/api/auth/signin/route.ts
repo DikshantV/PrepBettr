@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { verifyFirebaseToken } from '@/lib/middleware/authMiddleware';
 import { FirebaseService } from '@/services/firebase.service';
+
+const SESSION_COOKIE_NAME = 'session';
+const SESSION_DURATION_S = 7 * 24 * 60 * 60; // 7 days
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +38,15 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Set session cookie
+    cookies().set(SESSION_COOKIE_NAME, idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: SESSION_DURATION_S,
+      path: '/',
+      sameSite: 'lax',
+    });
 
     // Return user data
     return NextResponse.json({
