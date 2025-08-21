@@ -16,16 +16,24 @@ export default function GoogleSignInButton() {
   // Handle redirect on successful sign-in
   useEffect(() => {
     if (signInSuccess) {
-      console.log('GoogleSignInButton: Attempting router.replace to /dashboard');
-      try {
-        router.replace('/dashboard');
-      } catch (error) {
-        console.error('Router.replace failed:', error);
-        console.log('GoogleSignInButton: Fallback to window.location.replace');
-        if (typeof window !== 'undefined') {
-          window.location.replace('/dashboard');
+      console.log('GoogleSignInButton: Redirecting to dashboard after successful sign-in');
+      
+      // Use more robust redirect mechanism
+      const redirectToDashboard = () => {
+        try {
+          console.log('GoogleSignInButton: Attempting router.replace to /dashboard');
+          router.replace('/dashboard');
+        } catch (error) {
+          console.error('Router.replace failed:', error);
+          console.log('GoogleSignInButton: Fallback to window.location.href');
+          if (typeof window !== 'undefined') {
+            window.location.href = '/dashboard';
+          }
         }
-      }
+      };
+      
+      // Add additional delay to ensure cookie propagation and DOM updates
+      setTimeout(redirectToDashboard, 200);
     }
   }, [signInSuccess, router]);
 
