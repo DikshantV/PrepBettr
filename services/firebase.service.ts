@@ -1,7 +1,6 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { getStorage, Storage } from 'firebase-admin/storage';
-import { getAuth } from 'firebase-admin/auth';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin';
+import { Firestore } from 'firebase-admin/firestore';
+import { Storage } from 'firebase-admin/storage';
 
 export interface InterviewData {
   id?: string;
@@ -66,21 +65,9 @@ export class FirebaseService {
   private storage: Storage;
 
   constructor() {
-    // Initialize Firebase Admin SDK if not already initialized
-    if (!getApps().length) {
-      const app = process.env.NODE_ENV === 'test' 
-        ? initializeApp({ projectId: 'test-project' })
-        : initializeApp({
-            credential: process.env.GOOGLE_APPLICATION_CREDENTIALS 
-              ? cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS))
-              : undefined,
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-          });
-    }
-
-    this.db = getFirestore();
-    this.storage = getStorage();
+    // Use the centralized Firebase Admin initialization
+    this.db = getAdminFirestore();
+    this.storage = getAdminStorage();
   }
 
   // Interview Operations
