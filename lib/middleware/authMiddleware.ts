@@ -274,7 +274,7 @@ export async function getUserFromSessionCookie(sessionCookie: string): Promise<A
         email: decodedClaims.email,
         name: decodedClaims.name || decodedClaims.email?.split('@')[0],
         picture: decodedClaims.picture,
-        email_verified: decodedClaims.email_verified,
+        email_verified: decodedClaims.email_verified || false,
         firebase: decodedClaims.firebase,
         custom_claims: decodedClaims.custom_claims || {}
       }
