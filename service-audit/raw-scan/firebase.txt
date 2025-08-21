@@ -1,0 +1,2059 @@
+./middleware.ts:4:// Edge-runtime compatible authentication check
+./middleware.ts:5:function isAuthenticatedFromRequest(request: NextRequest): boolean {
+./middleware.ts:10:    // If no session cookie exists, user is not authenticated
+./middleware.ts:20:    console.error('Error checking authentication in middleware:', error);
+./middleware.ts:26:  // Only check authentication for dashboard routes
+./middleware.ts:28:    const isAuthenticated = isAuthenticatedFromRequest(request);
+./middleware.ts:30:    if (!isAuthenticated) {
+./middleware.ts:37:  // For authenticated users trying to access sign-in or sign-up pages,
+./middleware.ts:40:    const isAuthenticated = isAuthenticatedFromRequest(request);
+./middleware.ts:42:    if (isAuthenticated) {
+./test_responsive_verification.js:35:    'components/authenticated-layout.tsx',
+./test_responsive_verification.js:64:  const authLayoutFile = 'app/(auth)/layout.tsx';
+./test_responsive_verification.js:66:  if (fs.existsSync(authLayoutFile)) {
+./test_responsive_verification.js:67:    const content = fs.readFileSync(authLayoutFile, 'utf8');
+./test_responsive_verification.js:82:    console.log(`   ❌ ${authLayoutFile}: File not found\n`);
+./types/realtime.ts:19:  createdAt: Date | FirebaseTimestamp;
+./types/realtime.ts:20:  updatedAt: Date | FirebaseTimestamp;
+./types/realtime.ts:21:  completedAt?: Date | FirebaseTimestamp;
+./types/realtime.ts:39:    expiresAt?: Date | FirebaseTimestamp;
+./types/realtime.ts:44:    lastActivityAt: Date | FirebaseTimestamp;
+./types/realtime.ts:64:// Firestore timestamp type
+./types/realtime.ts:65:export interface FirebaseTimestamp {
+./types/realtime.ts:74:  lastUpdated?: Date | FirebaseTimestamp;
+./types/realtime.ts:83:  lastUpdated?: Date | FirebaseTimestamp;
+./types/index.d.ts:58:  uid: string; // Firebase UID (same as id for compatibility)
+./contexts/SWRProvider.tsx:38:    // Don't show toast errors for auth-related issues or expected errors
+./contexts/SWRProvider.tsx:39:    if (error?.code === 'permission-denied' || error?.message?.includes('auth')) {
+./contexts/AuthContext.tsx:4:import { onAuthStateChanged } from "firebase/auth";
+./contexts/AuthContext.tsx:5:import type { User as FirebaseUser } from "firebase/auth";
+./contexts/AuthContext.tsx:7:import { useFirebase } from "@/hooks/useFirebase";
+./contexts/AuthContext.tsx:9:// Define the auth context interface
+./contexts/AuthContext.tsx:10:interface AuthContextType {
+./contexts/AuthContext.tsx:13:  isAuthenticated: boolean;
+./contexts/AuthContext.tsx:17:const AuthContext = createContext<AuthContextType>({
+./contexts/AuthContext.tsx:20:  isAuthenticated: false,
+./contexts/AuthContext.tsx:23:// AuthProvider props interface
+./contexts/AuthContext.tsx:24:interface AuthProviderProps {
+./contexts/AuthContext.tsx:29:// Helper function to convert Firebase User to our consistent User format
+./contexts/AuthContext.tsx:30:function convertFirebaseUserToUser(firebaseUser: FirebaseUser): User {
+./contexts/AuthContext.tsx:33:    uid: firebaseUser.uid,
+./contexts/AuthContext.tsx:34:    email: firebaseUser.email ?? undefined,
+./contexts/AuthContext.tsx:35:    name: firebaseUser.displayName ?? undefined,
+./contexts/AuthContext.tsx:36:    picture: firebaseUser.photoURL ?? undefined,
+./contexts/AuthContext.tsx:37:    email_verified: firebaseUser.emailVerified,
+./contexts/AuthContext.tsx:42:    iss: 'firebase-client'
+./contexts/AuthContext.tsx:48:// AuthProvider component that manages auth state
+./contexts/AuthContext.tsx:49:export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+./contexts/AuthContext.tsx:52:  const { auth: firebaseAuth, isInitialized, error: firebaseError } = useFirebase();
+./contexts/AuthContext.tsx:55:    // Only set up auth listener if Firebase is initialized and auth is available
+./contexts/AuthContext.tsx:56:    if (!isInitialized || !firebaseAuth) {
+./contexts/AuthContext.tsx:57:      if (firebaseError) {
+./contexts/AuthContext.tsx:58:        console.error('Firebase initialization error in AuthProvider:', firebaseError);
+./contexts/AuthContext.tsx:64:    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser: FirebaseUser | null) => {
+./contexts/AuthContext.tsx:65:      if (firebaseUser) {
+./contexts/AuthContext.tsx:66:        const userData: User = convertFirebaseUserToUser(firebaseUser);
+./contexts/AuthContext.tsx:70:        // This prevents clearing the user when Firebase client auth hasn't loaded yet
+./contexts/AuthContext.tsx:79:  }, [isInitialized, firebaseAuth, initialUser, firebaseError]);
+./contexts/AuthContext.tsx:81:  const contextValue: AuthContextType = {
+./contexts/AuthContext.tsx:84:    isAuthenticated: !!user,
+./contexts/AuthContext.tsx:88:    <AuthContext.Provider value={contextValue}>
+./contexts/AuthContext.tsx:90:    </AuthContext.Provider>
+./contexts/AuthContext.tsx:94:// Custom hook to use the auth context
+./contexts/AuthContext.tsx:95:export function useAuth(): AuthContextType {
+./contexts/AuthContext.tsx:96:  const context = useContext(AuthContext);
+./contexts/AuthContext.tsx:99:    throw new Error("useAuth must be used within an AuthProvider");
+./contexts/AuthContext.tsx:106:export { AuthContext };
+./check-env.js:3:// Check for required Firebase environment variables
+./check-env.js:5:  'FIREBASE_PROJECT_ID',
+./check-env.js:6:  'FIREBASE_CLIENT_EMAIL',
+./check-env.js:7:  'FIREBASE_PRIVATE_KEY',
+./check-env.js:8:  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'
+./check-env.js:11:console.log('Checking Firebase environment variables...\n');
+./app/admin/layout.tsx:3:import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
+./app/admin/layout.tsx:4:import { AuthProvider } from "@/contexts/AuthContext";
+./app/admin/layout.tsx:5:import AuthenticatedLayout from "@/components/authenticated-layout";
+./app/admin/layout.tsx:16:  // Check authentication
+./app/admin/layout.tsx:17:  if (!(await isAuthenticated())) {
+./app/admin/layout.tsx:25:    <AuthProvider initialUser={user}>
+./app/admin/layout.tsx:26:      <AuthenticatedLayout>
+./app/admin/layout.tsx:28:      </AuthenticatedLayout>
+./app/admin/layout.tsx:29:    </AuthProvider>
+./app/dashboard/settings/page.tsx:29:      // Clear any local storage or session data
+./app/dashboard/settings/page.tsx:30:      localStorage.clear();
+./app/dashboard/settings/page.tsx:31:      sessionStorage.clear();
+./app/dashboard/layout.server.tsx:3:import { isAuthenticated } from "@/lib/actions/auth.action";
+./app/dashboard/layout.server.tsx:4:import AuthenticatedLayout from "@/components/authenticated-layout";
+./app/dashboard/layout.server.tsx:11:  if (!(await isAuthenticated())) {
+./app/dashboard/layout.server.tsx:16:    <AuthenticatedLayout>
+./app/dashboard/layout.server.tsx:18:    </AuthenticatedLayout>
+./app/dashboard/profile/page.tsx:4:import { getCurrentUser } from '@/lib/actions/auth.action';
+./app/dashboard/interview/[id]/FeedbackClientRealtime.tsx:7:import { useAuth } from "@/contexts/AuthContext";
+./app/dashboard/interview/[id]/FeedbackClientRealtime.tsx:11:} from "@/lib/hooks/useRealtimeFirestore";
+./app/dashboard/interview/[id]/FeedbackClientRealtime.tsx:34:  const { user, loading: authLoading } = useAuth();
+./app/dashboard/interview/[id]/FeedbackClientRealtime.tsx:85:  if (authLoading) {
+./app/dashboard/interview/[id]/FeedbackClientRealtime.tsx:94:            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+./app/dashboard/interview/[id]/feedback/FeedbackClient.tsx:7:import { useInterview } from "@/lib/hooks/useFirestore";
+./app/dashboard/interview/[id]/page.tsx:3:import { getCurrentUser } from "@/lib/actions/auth.action";
+./app/dashboard/interview/[id]/page.tsx:69:                        'What is your approach to handling user authentication?'
+./app/dashboard/interview/[id]/page.tsx:105:                    techstack: ['React Native', 'JavaScript', 'Firebase', 'Redux'],
+./app/dashboard/interview/page.tsx:8:import { getCurrentUser } from "@/lib/actions/auth.action";
+./app/dashboard/layout.tsx:3:import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
+./app/dashboard/layout.tsx:5:import AuthenticatedLayout from "@/components/authenticated-layout";
+./app/dashboard/layout.tsx:6:import { AuthProvider } from "@/contexts/AuthContext";
+./app/dashboard/layout.tsx:18:  // Check authentication
+./app/dashboard/layout.tsx:19:  if (!(await isAuthenticated())) {
+./app/dashboard/layout.tsx:27:    <AuthProvider initialUser={user}>
+./app/dashboard/layout.tsx:28:      <AuthenticatedLayout>
+./app/dashboard/layout.tsx:30:      </AuthenticatedLayout>
+./app/dashboard/layout.tsx:31:    </AuthProvider>
+./app/dashboard/DashboardClient.tsx:9:import { useAuth } from "@/contexts/AuthContext";
+./app/dashboard/DashboardClient.tsx:17:    const { user, loading } = useAuth();
+./app/dashboard/DashboardClient.tsx:19:    // Show loading state while auth is being determined
+./app/dashboard/page.tsx:3:// The user is now provided via AuthContext from the layout
+./app/dashboard/DashboardClientRealtime.tsx:9:import { useAuth } from "@/contexts/AuthContext";
+./app/dashboard/DashboardClientRealtime.tsx:13:} from "@/lib/hooks/useRealtimeFirestore";
+./app/dashboard/DashboardClientRealtime.tsx:22:  const { user, loading: authLoading } = useAuth();
+./app/dashboard/DashboardClientRealtime.tsx:38:  // Show loading state while auth is being determined
+./app/dashboard/DashboardClientRealtime.tsx:39:  if (authLoading) {
+./app/layout.tsx:4:import { AuthProvider } from "@/contexts/AuthContext";
+./app/layout.tsx:71:                <AuthProvider>
+./app/layout.tsx:75:                </AuthProvider>
+./app/community-mock-interview/interview/page.tsx:5:import { useInterview } from '@/lib/hooks/useFirestore';
+./app/community-mock-interview/interview/page.tsx:10:    getCommunityInterviewFromStorage,
+./app/community-mock-interview/interview/page.tsx:11:    setCommunityInterviewInStorage,
+./app/community-mock-interview/interview/page.tsx:14:} from '@/lib/utils/communityInterviewStorage';
+./app/community-mock-interview/interview/page.tsx:19:    const [dataSource, setDataSource] = useState<'url' | 'localStorage' | 'firestore' | null>(null);
+./app/community-mock-interview/interview/page.tsx:28:    // Fetch interview data using Firestore lookup (only if we have an ID)
+./app/community-mock-interview/interview/page.tsx:29:    const { interview, loading: firestoreLoading, error: firestoreError } = useInterview(urlInterviewId);
+./app/community-mock-interview/interview/page.tsx:50:            // Priority 2: Check localStorage for recently stored data
+./app/community-mock-interview/interview/page.tsx:51:            const storedData = getCommunityInterviewFromStorage();
+./app/community-mock-interview/interview/page.tsx:54:                setDataSource('localStorage');
+./app/community-mock-interview/interview/page.tsx:55:                console.log('✅ Using localStorage for interview data');
+./app/community-mock-interview/interview/page.tsx:59:            // Priority 3: Use Firestore data if available
+./app/community-mock-interview/interview/page.tsx:60:            if (interview && !firestoreLoading && !firestoreError) {
+./app/community-mock-interview/interview/page.tsx:61:                const firestoreData: CommunityInterviewData = {
+./app/community-mock-interview/interview/page.tsx:70:                setInterviewData(firestoreData);
+./app/community-mock-interview/interview/page.tsx:71:                setDataSource('firestore');
+./app/community-mock-interview/interview/page.tsx:72:                console.log('✅ Using Firestore for interview data');
+./app/community-mock-interview/interview/page.tsx:76:            // If we have an ID but no other data sources worked, wait for Firestore
+./app/community-mock-interview/interview/page.tsx:77:            if (urlInterviewId && firestoreLoading) {
+./app/community-mock-interview/interview/page.tsx:87:    }, [urlInterviewId, urlRole, urlType, urlLevel, urlTechstack, interview, firestoreLoading, firestoreError]);
+./app/community-mock-interview/interview/page.tsx:90:    if (firestoreLoading && !interviewData) {
+./app/community-mock-interview/interview/page.tsx:94:    // Show Firestore error state only if no other data sources are available
+./app/community-mock-interview/interview/page.tsx:95:    if (firestoreError && !interviewData) {
+./app/community-mock-interview/interview/page.tsx:99:                <p className="text-gray-300">{firestoreError}</p>
+./app/community-mock-interview/interview/page.tsx:116:    // Update localStorage with current data for future persistence (if not already from localStorage)
+./app/community-mock-interview/interview/page.tsx:118:        if (interviewData && dataSource !== 'localStorage') {
+./app/community-mock-interview/interview/page.tsx:119:            setCommunityInterviewInStorage(interviewData);
+./app/api/config/firebase/route.ts:9:    // Get Firebase client key from environment
+./app/api/config/firebase/route.ts:10:    const firebaseClientKey = process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY;
+./app/api/config/firebase/route.ts:12:    if (!firebaseClientKey || firebaseClientKey === 'mock-key-for-build-time') {
+./app/api/config/firebase/route.ts:14:        error: 'Firebase client key not available',
+./app/api/config/firebase/route.ts:20:      apiKey: firebaseClientKey,
+./app/api/config/firebase/route.ts:21:      authDomain: "prepbettr.firebaseapp.com",
+./app/api/config/firebase/route.ts:23:      storageBucket: "prepbettr.firebasestorage.app",
+./app/api/config/firebase/route.ts:30:    console.error('Failed to get Firebase config:', error);
+./app/api/config/firebase/route.ts:32:      error: 'Failed to get Firebase configuration',
+./app/api/auth/signup/route.ts:3:import { verifyFirebaseToken } from '@/lib/middleware/authMiddleware';
+./app/api/auth/signup/route.ts:4:import { FirebaseService } from '@/services/firebase.service';
+./app/api/auth/signup/route.ts:27:    // Verify the Firebase ID token
+./app/api/auth/signup/route.ts:28:    const authResult = await verifyFirebaseToken(idToken);
+./app/api/auth/signup/route.ts:30:    if (!authResult.success || !authResult.user) {
+./app/api/auth/signup/route.ts:37:    const firebaseService = new FirebaseService();
+./app/api/auth/signup/route.ts:40:    const existingUser = await firebaseService.getUser(authResult.user.uid);
+./app/api/auth/signup/route.ts:49:    // Create new user in Firestore
+./app/api/auth/signup/route.ts:50:    await firebaseService.createUser(authResult.user.uid, {
+./app/api/auth/signup/route.ts:69:        uid: authResult.user.uid,
+./app/api/auth/signup/route.ts:72:        picture: authResult.user.picture
+./app/api/auth/signin/route.ts:3:import { verifyFirebaseToken } from '@/lib/middleware/authMiddleware';
+./app/api/auth/signin/route.ts:4:import { FirebaseService } from '@/services/firebase.service';
+./app/api/auth/signin/route.ts:20:    // Verify the Firebase ID token
+./app/api/auth/signin/route.ts:21:    const authResult = await verifyFirebaseToken(idToken);
+./app/api/auth/signin/route.ts:23:    if (!authResult.success || !authResult.user) {
+./app/api/auth/signin/route.ts:30:    const firebaseService = new FirebaseService();
+./app/api/auth/signin/route.ts:32:    // Check if user exists in Firestore
+./app/api/auth/signin/route.ts:33:    const existingUser = await firebaseService.getUser(authResult.user.uid);
+./app/api/auth/signin/route.ts:56:        uid: authResult.user.uid,
+./app/api/auth/signin/route.ts:57:        email: authResult.user.email,
+./app/api/auth/signin/route.ts:58:        name: authResult.user.name,
+./app/api/auth/signin/route.ts:59:        picture: authResult.user.picture,
+./app/marketing/privacy/page.tsx:52:              However, no method of transmission over the Internet or electronic storage is 100% secure.
+./app/marketing/terms/page.tsx:35:              <li>Notify us immediately of any unauthorized use of your account</li>
+./app/marketing/terms/page.tsx:43:              <li>Authorize us to charge your payment method</li>
+./app/marketing/terms/page.tsx:60:              <li>Attempt to gain unauthorized access to any accounts or systems</li>
+./app/account/layout.tsx:3:import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
+./app/account/layout.tsx:4:import { AuthProvider } from "@/contexts/AuthContext";
+./app/account/layout.tsx:6:import AuthenticatedLayout from "@/components/authenticated-layout";
+./app/account/layout.tsx:17:  // Check authentication
+./app/account/layout.tsx:18:  if (!(await isAuthenticated())) {
+./app/account/layout.tsx:26:    <AuthProvider initialUser={user}>
+./app/account/layout.tsx:28:        <AuthenticatedLayout>
+./app/account/layout.tsx:30:        </AuthenticatedLayout>
+./app/account/layout.tsx:32:    </AuthProvider>
+./app/(auth)/sign-up/page.tsx:3:import AuthForm from "@/components/AuthForm";
+./app/(auth)/sign-up/page.tsx:6:    return <AuthForm type="sign-up" />;
+./app/(auth)/profile/page.tsx:4:import { getCurrentUser } from '@/lib/actions/auth.action';
+./app/(auth)/layout.tsx:3:const AuthLayout = ({ children }: { children: ReactNode }) => {
+./app/(auth)/layout.tsx:4:    // Authentication redirect is now handled by middleware
+./app/(auth)/layout.tsx:5:    // This layout just provides the structure for auth pages
+./app/(auth)/layout.tsx:18:export default AuthLayout;
+./app/(auth)/sign-in/page.tsx:3:import AuthForm from "@/components/AuthForm";
+./app/(auth)/sign-in/page.tsx:4:import AuthDebugInfo from "@/components/AuthDebugInfo";
+./app/(auth)/sign-in/page.tsx:9:            <AuthForm type="sign-in" />
+./app/(auth)/sign-in/page.tsx:10:            <AuthDebugInfo />
+./test-mock-interviews.js:7:const admin = require('firebase-admin');
+./test-mock-interviews.js:9:// Initialize Firebase Admin
+./test-mock-interviews.js:16:const db = admin.firestore();
+./test-mock-interviews.js:19:  console.log('🔍 Checking for public mock interviews in Firestore...\n');
+./test-mock-interviews.js:53:      console.log('\n⚠️  Index required. Deploy indexes with: firebase deploy --only firestore:indexes');
+./debug-redirect-issue.js:13:    console.log('=== Test 1: Simulate successful auth flow ===');
+./debug-redirect-issue.js:26:    console.log('\n=== Test 2: Check if Firebase config is accessible ===');
+./debug-redirect-issue.js:27:    const configResponse = await fetch(`${baseUrl}/api/config/firebase`);
+./debug-redirect-issue.js:29:    console.log('Firebase config status:', configResponse.status);
+./debug-redirect-issue.js:30:    console.log('Firebase config has API key:', !!config.apiKey);
+./debug-redirect-issue.js:32:    console.log('\n=== Test 3: Check auth API responses ===');
+./debug-redirect-issue.js:34:    const signinTest = await fetch(`${baseUrl}/api/auth/signin`, {
+./debug-redirect-issue.js:45:    // Test sign-in page to see if it redirects authenticated users
+./debug-redirect-issue.js:63:    console.log('   ✓ "Firebase auth successful, user: [some-uid]"');
+./debug-redirect-issue.js:70:    console.log('   - POST request to /api/auth/signin (should be 200)');
+./debug-redirect-issue.js:71:    console.log('   - POST request to /api/auth/signup (if user creation needed)');
+./debug-redirect-issue.js:77:    console.log('   - Cookie value should be a Firebase ID token');
+./azure/followUpWorker/index.js:8:app.storageQueue('followUpWorker', {
+./azure/followUpWorker/index.js:10:    connection: 'AzureWebJobsStorage',
+./azure/followUpWorker/index.js:407:            // Store follow-up record (TODO: implement proper storage)
+./azure/followUpWorker/index.js:474:// Utility functions (TODO: Implement with proper data storage)
+./azure/followUpWorker/index.js:521:    // TODO: Store in database (Firestore, etc.)
+./azure/health/index.js:30:                    firebase_configured: !!(
+./azure/health/index.js:31:                        process.env.FIREBASE_PROJECT_ID && 
+./azure/health/index.js:32:                        process.env.FIREBASE_CLIENT_EMAIL
+./azure/onUserPlanChange/index.js:52:      // Azure Cosmos DB doesn't provide "before/after" like Firestore
+./azure/TokenRefreshTimer/index.js:98: * Refresh an OAuth token
+./azure/TokenRefreshTimer/index.js:135:            return 'https://www.linkedin.com/oauth/v2/accessToken';
+./azure/TokenRefreshTimer/index.js:137:            return 'https://api.wellfound.com/oauth/token';
+./azure/shared/authMiddleware.js:1:const admin = require('firebase-admin');
+./azure/shared/authMiddleware.js:6: * Firebase Authentication Middleware for Azure Functions
+./azure/shared/authMiddleware.js:8: * This middleware validates Firebase ID tokens and ensures only authenticated users
+./azure/shared/authMiddleware.js:12:let firebaseApp = null;
+./azure/shared/authMiddleware.js:16: * Initialize Firebase Admin SDK with Azure Key Vault secrets
+./azure/shared/authMiddleware.js:18:async function initializeFirebase() {
+./azure/shared/authMiddleware.js:19:  if (firebaseApp) {
+./azure/shared/authMiddleware.js:20:    return firebaseApp.auth();
+./azure/shared/authMiddleware.js:32:    // Get Firebase configuration from environment or Key Vault
+./azure/shared/authMiddleware.js:33:    let firebaseConfig = {};
+./azure/shared/authMiddleware.js:37:        const projectIdSecret = await keyVaultClient.getSecret('FIREBASE-PROJECT-ID');
+./azure/shared/authMiddleware.js:38:        const clientEmailSecret = await keyVaultClient.getSecret('FIREBASE-CLIENT-EMAIL');
+./azure/shared/authMiddleware.js:39:        const privateKeySecret = await keyVaultClient.getSecret('FIREBASE-PRIVATE-KEY');
+./azure/shared/authMiddleware.js:41:        firebaseConfig = {
+./azure/shared/authMiddleware.js:52:    if (!firebaseConfig.projectId) {
+./azure/shared/authMiddleware.js:53:      firebaseConfig = {
+./azure/shared/authMiddleware.js:54:        projectId: process.env.FIREBASE_PROJECT_ID,
+./azure/shared/authMiddleware.js:55:        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+./azure/shared/authMiddleware.js:56:        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+./azure/shared/authMiddleware.js:61:    if (!firebaseConfig.projectId || !firebaseConfig.clientEmail || !firebaseConfig.privateKey) {
+./azure/shared/authMiddleware.js:62:      throw new Error('Missing Firebase configuration. Ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.');
+./azure/shared/authMiddleware.js:65:    // Initialize Firebase Admin
+./azure/shared/authMiddleware.js:66:    firebaseApp = admin.initializeApp({
+./azure/shared/authMiddleware.js:68:        projectId: firebaseConfig.projectId,
+./azure/shared/authMiddleware.js:69:        clientEmail: firebaseConfig.clientEmail,
+./azure/shared/authMiddleware.js:70:        privateKey: firebaseConfig.privateKey
+./azure/shared/authMiddleware.js:72:      projectId: firebaseConfig.projectId
+./azure/shared/authMiddleware.js:75:    console.log('Firebase Admin SDK initialized successfully');
+./azure/shared/authMiddleware.js:76:    return firebaseApp.auth();
+./azure/shared/authMiddleware.js:79:    console.error('Firebase initialization failed:', error);
+./azure/shared/authMiddleware.js:85: * Extract Bearer token from Authorization header
+./azure/shared/authMiddleware.js:87:function extractBearerToken(authHeader) {
+./azure/shared/authMiddleware.js:88:  if (!authHeader) {
+./azure/shared/authMiddleware.js:92:  const parts = authHeader.split(' ');
+./azure/shared/authMiddleware.js:101: * Verify Firebase ID token
+./azure/shared/authMiddleware.js:103:async function verifyFirebaseToken(idToken) {
+./azure/shared/authMiddleware.js:105:    const auth = await initializeFirebase();
+./azure/shared/authMiddleware.js:106:    const decodedToken = await auth.verifyIdToken(idToken, true);
+./azure/shared/authMiddleware.js:123: * Authentication middleware for Azure Functions
+./azure/shared/authMiddleware.js:126: * const { authMiddleware } = require('../shared/authMiddleware');
+./azure/shared/authMiddleware.js:129: *   const authResult = await authMiddleware(context, req);
+./azure/shared/authMiddleware.js:130: *   if (!authResult.success) {
+./azure/shared/authMiddleware.js:131: *     context.res = authResult.response;
+./azure/shared/authMiddleware.js:135: *   const user = authResult.user;
+./azure/shared/authMiddleware.js:139:async function authMiddleware(context, req) {
+./azure/shared/authMiddleware.js:141:    // Extract token from Authorization header
+./azure/shared/authMiddleware.js:142:    const authHeader = req.headers.authorization || req.headers.Authorization;
+./azure/shared/authMiddleware.js:143:    const token = extractBearerToken(authHeader);
+./azure/shared/authMiddleware.js:155:            error: 'Missing or invalid Authorization header',
+./azure/shared/authMiddleware.js:156:            message: 'Please provide a valid Bearer token in the Authorization header'
+./azure/shared/authMiddleware.js:162:    // Verify the Firebase token
+./azure/shared/authMiddleware.js:163:    const verificationResult = await verifyFirebaseToken(token);
+./azure/shared/authMiddleware.js:182:    // Log successful authentication (for monitoring)
+./azure/shared/authMiddleware.js:184:    context.log(`Authenticated user: ${user.uid} (${user.email})`);
+./azure/shared/authMiddleware.js:193:    context.log.error('Authentication middleware error:', error);
+./azure/shared/authMiddleware.js:204:          error: 'Authentication system error',
+./azure/shared/authMiddleware.js:213: * Optional: Role-based authorization middleware
+./azure/shared/authMiddleware.js:218:  const authResult = await authMiddleware(context, req);
+./azure/shared/authMiddleware.js:220:  if (!authResult.success) {
+./azure/shared/authMiddleware.js:221:    return authResult;
+./azure/shared/authMiddleware.js:224:  const user = authResult.user;
+./azure/shared/authMiddleware.js:249:  return authResult;
+./azure/shared/authMiddleware.js:253: * Utility to create authenticated Azure Function wrapper
+./azure/shared/authMiddleware.js:256: * const { createAuthenticatedFunction } = require('../shared/authMiddleware');
+./azure/shared/authMiddleware.js:258: * module.exports = createAuthenticatedFunction(async function (context, req, user) {
+./azure/shared/authMiddleware.js:260: *   // 'user' contains the authenticated Firebase user
+./azure/shared/authMiddleware.js:263:function createAuthenticatedFunction(handlerFunction, options = {}) {
+./azure/shared/authMiddleware.js:265:    const { requiredRoles = [], skipAuth = false } = options;
+./azure/shared/authMiddleware.js:267:    if (skipAuth) {
+./azure/shared/authMiddleware.js:271:    const authResult = requiredRoles.length > 0 
+./azure/shared/authMiddleware.js:273:      : await authMiddleware(context, req);
+./azure/shared/authMiddleware.js:275:    if (!authResult.success) {
+./azure/shared/authMiddleware.js:276:      context.res = authResult.response;
+./azure/shared/authMiddleware.js:280:    // Call the actual handler with the authenticated user
+./azure/shared/authMiddleware.js:281:    return await handlerFunction(context, req, authResult.user);
+./azure/shared/authMiddleware.js:293: * Health check endpoint (no auth required)
+./azure/shared/authMiddleware.js:304:      service: 'Azure Functions Auth Middleware'
+./azure/shared/authMiddleware.js:310:  authMiddleware,
+./azure/shared/authMiddleware.js:313:  createAuthenticatedFunction,
+./azure/shared/authMiddleware.js:315:  initializeFirebase,
+./azure/shared/authMiddleware.js:316:  verifyFirebaseToken
+./azure/processGDPRScheduledDeletions/index.js:2:const { BlobServiceClient } = require('@azure/storage-blob');
+./azure/processGDPRScheduledDeletions/index.js:5:const admin = require('firebase-admin');
+./azure/processGDPRScheduledDeletions/index.js:19:let firebaseInitialized = false;
+./azure/processGDPRScheduledDeletions/index.js:58:    // Initialize Azure Blob Storage
+./azure/processGDPRScheduledDeletions/index.js:59:    let storageConnection = process.env.AZURE_STORAGE_CONNECTION_STRING;
+./azure/processGDPRScheduledDeletions/index.js:61:    if (!storageConnection && keyVaultClient) {
+./azure/processGDPRScheduledDeletions/index.js:63:        const secret = await keyVaultClient.getSecret('storage-connection-string');
+./azure/processGDPRScheduledDeletions/index.js:64:        storageConnection = secret.value;
+./azure/processGDPRScheduledDeletions/index.js:66:        context.log.warn('Could not retrieve Storage connection from Key Vault:', error.message);
+./azure/processGDPRScheduledDeletions/index.js:70:    if (!storageConnection) {
+./azure/processGDPRScheduledDeletions/index.js:71:      throw new Error('Azure Storage connection string not found');
+./azure/processGDPRScheduledDeletions/index.js:74:    blobServiceClient = BlobServiceClient.fromConnectionString(storageConnection);
+./azure/processGDPRScheduledDeletions/index.js:76:    // Initialize Firebase Admin SDK
+./azure/processGDPRScheduledDeletions/index.js:77:    if (!firebaseInitialized) {
+./azure/processGDPRScheduledDeletions/index.js:78:      let firebaseConfig;
+./azure/processGDPRScheduledDeletions/index.js:82:          const serviceAccountSecret = await keyVaultClient.getSecret('firebase-service-account-key');
+./azure/processGDPRScheduledDeletions/index.js:83:          firebaseConfig = JSON.parse(serviceAccountSecret.value);
+./azure/processGDPRScheduledDeletions/index.js:85:          context.log.warn('Could not retrieve Firebase config from Key Vault:', error.message);
+./azure/processGDPRScheduledDeletions/index.js:90:      if (!firebaseConfig) {
+./azure/processGDPRScheduledDeletions/index.js:91:        firebaseConfig = {
+./azure/processGDPRScheduledDeletions/index.js:92:          projectId: process.env.FIREBASE_PROJECT_ID,
+./azure/processGDPRScheduledDeletions/index.js:93:          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+./azure/processGDPRScheduledDeletions/index.js:94:          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+./azure/processGDPRScheduledDeletions/index.js:100:          credential: admin.credential.cert(firebaseConfig),
+./azure/processGDPRScheduledDeletions/index.js:101:          projectId: firebaseConfig.projectId
+./azure/processGDPRScheduledDeletions/index.js:105:      firebaseInitialized = true;
+./azure/processGDPRScheduledDeletions/index.js:185:    // Delete from Azure Blob Storage
+./azure/processGDPRScheduledDeletions/index.js:187:      const deletedBlobContainers = await deleteFromBlobStorage(context, request.userId);
+./azure/processGDPRScheduledDeletions/index.js:189:        deletedData.push(`blob-storage (${deletedBlobContainers.join(', ')})`);
+./azure/processGDPRScheduledDeletions/index.js:192:      const errorMsg = `Failed to delete from blob storage: ${error.message}`;
+./azure/processGDPRScheduledDeletions/index.js:197:    // Delete from Firebase Authentication
+./azure/processGDPRScheduledDeletions/index.js:199:      await admin.auth().deleteUser(request.userId);
+./azure/processGDPRScheduledDeletions/index.js:200:      deletedData.push('firebase-auth (1 user)');
+./azure/processGDPRScheduledDeletions/index.js:201:      context.log(`✅ Deleted Firebase authentication record for user ${request.userId}`);
+./azure/processGDPRScheduledDeletions/index.js:203:      const errorMsg = `Failed to delete Firebase auth record: ${error.message}`;
+./azure/processGDPRScheduledDeletions/index.js:313: * Delete user files from Azure Blob Storage
+./azure/processGDPRScheduledDeletions/index.js:315:async function deleteFromBlobStorage(context, userId) {
+./azure/applicationWorker/index.js:45:app.storageQueue('applicationWorker', {
+./azure/applicationWorker/index.js:47:    connection: 'AzureWebJobsStorage',
+./azure/applicationWorker/index.js:373:            // Store application in database (TODO: implement proper storage)
+./azure/applicationWorker/index.js:436:// Utility functions (TODO: Implement with proper data storage)
+./azure/applicationWorker/index.js:477:    // TODO: Store in database (Firestore, etc.)
+./azure/searchScheduler/index.js:73:    authLevel: 'function',
+./azure/searchScheduler/index.js:148:        // TODO: In production, this would query Firebase Firestore or another database
+./azure/deleteUserData/index.js:1:const admin = require('firebase-admin');
+./azure/deleteUserData/index.js:3:const { BlobServiceClient } = require('@azure/storage-blob');
+./azure/deleteUserData/index.js:6:const { createAuthenticatedFunction, authMiddleware } = require('../shared/authMiddleware');
+./azure/deleteUserData/index.js:9:let firebaseInitialized = false;
+./azure/deleteUserData/index.js:14:  if (firebaseInitialized && cosmosClient && blobServiceClient) return;
+./azure/deleteUserData/index.js:23:    // Initialize Firebase Admin
+./azure/deleteUserData/index.js:24:    if (!firebaseInitialized) {
+./azure/deleteUserData/index.js:25:      const serviceAccountSecret = await secretClient.getSecret('firebase-service-account-key');
+./azure/deleteUserData/index.js:34:      firebaseInitialized = true;
+./azure/deleteUserData/index.js:43:    // Initialize Azure Storage client
+./azure/deleteUserData/index.js:45:      const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+./azure/deleteUserData/index.js:46:      blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
+./azure/deleteUserData/index.js:70:async function handleDeleteUserData(context, req, authenticatedUser) {
+./azure/deleteUserData/index.js:78:      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Functions-Key',
+./azure/deleteUserData/index.js:94:    const requestingUserId = authenticatedUser.uid;
+./azure/deleteUserData/index.js:95:    const isAdmin = authenticatedUser.custom_claims?.roles?.includes('admin') || false;
+./azure/deleteUserData/index.js:106:    // Verify authorization - either admin or user deleting their own data
+./azure/deleteUserData/index.js:110:        error: 'Users can only delete their own data. You are authenticated as: ' + requestingUserId,
+./azure/deleteUserData/index.js:180:    // Delete from Azure Blob Storage
+./azure/deleteUserData/index.js:196:        deletedCollections.push({ collection: 'azure-storage', count: deletedBlobsCount });
+./azure/deleteUserData/index.js:197:        context.log(`Deleted ${deletedBlobsCount} files from Azure Storage`);
+./azure/deleteUserData/index.js:200:      context.log.error('Error deleting from Azure Storage:', error);
+./azure/deleteUserData/index.js:201:      deletionErrors.push({ collection: 'azure-storage', error: error.message });
+./azure/deleteUserData/index.js:204:    // Delete Firebase Authentication record
+./azure/deleteUserData/index.js:206:      await admin.auth().deleteUser(userId);
+./azure/deleteUserData/index.js:207:      deletedCollections.push({ collection: 'firebase-auth', count: 1 });
+./azure/deleteUserData/index.js:208:      context.log(`Deleted Firebase authentication record for user: ${userId}`);
+./azure/deleteUserData/index.js:210:      context.log.error('Error deleting Firebase auth record:', error);
+./azure/deleteUserData/index.js:211:      deletionErrors.push({ collection: 'firebase-auth', error: error.message });
+./azure/deleteUserData/index.js:291:// Export authenticated function
+./azure/deleteUserData/index.js:292:module.exports = createAuthenticatedFunction(handleDeleteUserData);
+./azure/lib/middleware/function-error-handler.js:324:    // Authentication errors
+./azure/lib/middleware/function-error-handler.js:326:      error.message.includes('unauthorized') ||
+./azure/lib/middleware/function-error-handler.js:327:      error.message.includes('authentication') ||
+./azure/lib/middleware/function-error-handler.js:331:        'Authentication failed',
+./azure/lib/middleware/function-error-handler.js:333:        'AUTH_ERROR'
+./azure/lib/compiled/azure-config.js:33:        const [speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment, azureOpenAIGpt35, azureOpenAIGpt4o, storageAccountName, storageAccountKey, formRecognizerEndpoint, formRecognizerKey] = await Promise.all([
+./azure/lib/compiled/azure-config.js:41:            client.getSecret('azure-storage-account-name').catch(() => null), // Optional
+./azure/lib/compiled/azure-config.js:42:            client.getSecret('azure-storage-account-key').catch(() => null), // Optional
+./azure/lib/compiled/azure-config.js:57:            azureStorageAccountName: storageAccountName?.value,
+./azure/lib/compiled/azure-config.js:58:            azureStorageAccountKey: storageAccountKey?.value,
+./azure/lib/compiled/azure-config.js:77:            azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+./azure/lib/compiled/azure-config.js:78:            azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
+./azure/lib/services/queue-service.js:1:const { QueueServiceClient } = require('@azure/storage-queue');
+./azure/lib/services/queue-service.js:20:        const connectionString = process.env.AzureWebJobsStorage;
+./azure/lib/services/queue-service.js:22:            throw new Error('AzureWebJobsStorage connection string is required');
+./azure/lib/services/automation-logs.js:231:            // This would typically query a database or storage
+./azure/lib/azure-config.ts:15:  azureStorageAccountName?: string; // Azure Storage Account Name
+./azure/lib/azure-config.ts:16:  azureStorageAccountKey?: string; // Azure Storage Account Key
+./azure/lib/azure-config.ts:55:    const [speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment, azureOpenAIGpt35, azureOpenAIGpt4o, storageAccountName, storageAccountKey, formRecognizerEndpoint, formRecognizerKey] = await Promise.all([
+./azure/lib/azure-config.ts:63:      client.getSecret('azure-storage-account-name').catch(() => null), // Optional
+./azure/lib/azure-config.ts:64:      client.getSecret('azure-storage-account-key').catch(() => null), // Optional
+./azure/lib/azure-config.ts:81:      azureStorageAccountName: storageAccountName?.value,
+./azure/lib/azure-config.ts:82:      azureStorageAccountKey: storageAccountKey?.value,
+./azure/lib/azure-config.ts:103:      azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+./azure/lib/azure-config.ts:104:      azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
+./azure/jobSearchWorker/index.js:45:app.storageQueue('jobSearchWorker', {
+./azure/jobSearchWorker/index.js:47:    connection: 'AzureWebJobsStorage',
+./azure/jobSearchWorker/index.js:104:            // Store discovered jobs for user (TODO: implement proper storage)
+./azure/jobSearchWorker/index.js:458:// Utility functions (TODO: Implement with proper data storage)
+./azure/jobSearchWorker/index.js:480:    // TODO: Store discovered jobs in database (Firestore, etc.)
+./azure/HttpTrigger1/index.js:5:// In-memory session storage (in production, use Azure Table Storage or Cosmos DB)
+./azure/createSessionCookie/index.js:1:const { createAuthenticatedFunction, initializeFirebase } = require('../shared/authMiddleware');
+./azure/createSessionCookie/index.js:5: * Requires authentication - user must provide valid Firebase ID token
+./azure/createSessionCookie/index.js:7:async function handleCreateSessionCookie(context, req, authenticatedUser) {
+./azure/createSessionCookie/index.js:15:      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+./azure/createSessionCookie/index.js:28:    const auth = await initializeFirebase();
+./azure/createSessionCookie/index.js:30:    // Get idToken from request body or use the authenticated token
+./azure/createSessionCookie/index.js:32:    const tokenToUse = idToken || req.headers.authorization?.replace('Bearer ', '');
+./azure/createSessionCookie/index.js:37:        error: 'ID token is required in request body or Authorization header',
+./azure/createSessionCookie/index.js:48:    const sessionCookie = await auth.createSessionCookie(tokenToUse, { 
+./azure/createSessionCookie/index.js:53:    context.log(`Session cookie created successfully for user: ${authenticatedUser.uid} (${duration}ms)`);
+./azure/createSessionCookie/index.js:61:      userId: authenticatedUser.uid,
+./azure/createSessionCookie/index.js:72:    if (error.code === 'auth/id-token-expired') {
+./azure/createSessionCookie/index.js:75:    } else if (error.code === 'auth/id-token-revoked') {
+./azure/createSessionCookie/index.js:78:    } else if (error.code === 'auth/argument-error') {
+./azure/createSessionCookie/index.js:92:// Export authenticated function
+./azure/createSessionCookie/index.js:93:module.exports = createAuthenticatedFunction(handleCreateSessionCookie);
+./azure/verifyToken/index.js:1:const { verifyFirebaseToken } = require('../shared/authMiddleware');
+./azure/verifyToken/index.js:6: * This function verifies Firebase ID tokens. It can be called in two ways:
+./azure/verifyToken/index.js:8: * 2. With Authorization Bearer header (for authenticated requests)
+./azure/verifyToken/index.js:18:      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+./azure/verifyToken/index.js:34:    const authHeader = req.headers.authorization;
+./azure/verifyToken/index.js:38:    } else if (authHeader && authHeader.startsWith('Bearer ')) {
+./azure/verifyToken/index.js:39:      token = authHeader.substring(7);
+./azure/verifyToken/index.js:45:        error: 'No token provided in request body or Authorization header',
+./azure/verifyToken/index.js:52:    const verificationResult = await verifyFirebaseToken(token);
+./azure/verifyToken/index.js:83:        firebase: user.firebase
+./test-auth-flow.js:5:// Test Firebase configuration endpoint
+./test-auth-flow.js:6:async function testFirebaseConfig() {
+./test-auth-flow.js:7:  console.log('=== Testing Firebase Config API ===');
+./test-auth-flow.js:10:    const req = https.request('https://prepbettr.com/api/config/firebase', {
+./test-auth-flow.js:21:          console.log('✅ Firebase config endpoint working');
+./test-auth-flow.js:29:          console.log('❌ Firebase config failed to parse response');
+./test-auth-flow.js:37:      console.log('❌ Firebase config request failed:', error.message);
+./test-auth-flow.js:54:    const req = https.request('https://prepbettr.com/api/auth/signin', {
+./test-auth-flow.js:100:    const req = https.request('https://prepbettr.com/api/auth/signup', {
+./test-auth-flow.js:140:    '/api/auth/google',
+./test-auth-flow.js:141:    '/api/auth/callback',
+./test-auth-flow.js:142:    '/api/auth/session',
+./test-auth-flow.js:143:    '/api/auth/token'
+./test-auth-flow.js:175:    await testFirebaseConfig();
+./test-auth-flow.js:182:    console.log('✅ Firebase configuration is properly loaded');
+./test-auth-flow.js:183:    console.log('✅ Authentication APIs respond with expected errors');
+./test-auth-flow.js:185:    console.log('   1. Invalid Firebase ID tokens being sent by frontend');
+./test-auth-flow.js:187:    console.log('   3. Firebase Admin SDK token verification failing');
+./test-auth-flow.js:188:    console.log('   4. Frontend not properly handling Google OAuth flow');
+./constants/index.ts:25:  firebase: "firebase",
+./next.config.js:14:        hostname: 'storage.googleapis.com',
+./next.config.js:38:    '@azure/storage-blob', 
+./next.config.js:42:    'firebase-admin',
+./next.config.js:60:        '@azure/storage-blob': 'commonjs @azure/storage-blob',
+./tests/community-interview-flow.manual.js:33:// Test 2: Simulate localStorage storage
+./tests/community-interview-flow.manual.js:34:console.log('🧪 Test 2: LocalStorage Persistence');
+./tests/community-interview-flow.manual.js:35:const testLocalStorage = () => {
+./tests/community-interview-flow.manual.js:37:    const mockLocalStorage = {
+./tests/community-interview-flow.manual.js:38:        storage: new Map(),
+./tests/community-interview-flow.manual.js:40:            return this.storage.get(key) || null;
+./tests/community-interview-flow.manual.js:43:            this.storage.set(key, value);
+./tests/community-interview-flow.manual.js:46:            this.storage.delete(key);
+./tests/community-interview-flow.manual.js:50:    // Test storage functionality
+./tests/community-interview-flow.manual.js:51:    const storageKey = 'communityMockInterviewSelection';
+./tests/community-interview-flow.manual.js:57:    mockLocalStorage.setItem(storageKey, JSON.stringify(dataToStore));
+./tests/community-interview-flow.manual.js:58:    const retrieved = JSON.parse(mockLocalStorage.getItem(storageKey));
+./tests/community-interview-flow.manual.js:67:testLocalStorage();
+./tests/community-interview-flow.manual.js:68:console.log('✅ LocalStorage test passed\n');
+./tests/community-interview-flow.manual.js:73:const simulateDataResolution = (urlParams, localStorageData, firestoreData) => {
+./tests/community-interview-flow.manual.js:83:    // Priority 2: localStorage (recent data)
+./tests/community-interview-flow.manual.js:84:    if (localStorageData && localStorageData.id) {
+./tests/community-interview-flow.manual.js:85:        const isStale = Date.now() - localStorageData.timestamp > 24 * 60 * 60 * 1000;
+./tests/community-interview-flow.manual.js:87:            console.log('🎯 Using localStorage (Priority 2)');
+./tests/community-interview-flow.manual.js:89:                source: 'localStorage',
+./tests/community-interview-flow.manual.js:90:                data: localStorageData
+./tests/community-interview-flow.manual.js:95:    // Priority 3: Firestore data
+./tests/community-interview-flow.manual.js:96:    if (firestoreData && firestoreData.id) {
+./tests/community-interview-flow.manual.js:97:        console.log('🎯 Using Firestore (Priority 3)');
+./tests/community-interview-flow.manual.js:99:            source: 'firestore',
+./tests/community-interview-flow.manual.js:100:            data: firestoreData
+./tests/community-interview-flow.manual.js:120:console.log('\nScenario 2: Only localStorage available');
+./tests/community-interview-flow.manual.js:128:console.log('\nScenario 3: Only Firestore available');
+./tests/community-interview-flow.manual.js:131:    null, // No localStorage
+./tests/community-interview-flow.manual.js:175:console.log('1. Clicking community interview card stores data in localStorage');
+./tests/community-interview-flow.manual.js:177:console.log('3. Community interview page resolves data from URL → localStorage → Firestore');
+./tests/integration/resume-tailor-parity.js:108:        console.log('\n💡 Note: Authentication required. This test requires a valid session.');
+./tests/integration/resume-tailor-parity.js:109:        console.log('   To test manually, use the web interface or provide valid authentication.');
+./tests/integration/staging-functions.spec.ts:5:const FIREBASE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+./tests/integration/staging-functions.spec.ts:9:    // Setup test data in Firestore emulator
+./tests/integration/staging-functions.spec.ts:20:      // Mock authentication for testing
+./tests/integration/staging-functions.spec.ts:22:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:62:      // Verify data is stored in Firestore emulator
+./tests/integration/staging-functions.spec.ts:64:        `http://${FIREBASE_EMULATOR_HOST}/emulator/v1/projects/test-project/databases/(default)/documents/interviews`,
+./tests/integration/staging-functions.spec.ts:67:            'Authorization': 'Bearer test-token',
+./tests/integration/staging-functions.spec.ts:80:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:103:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:133:      // Verify data is stored in Firestore emulator
+./tests/integration/staging-functions.spec.ts:135:        `http://${FIREBASE_EMULATOR_HOST}/emulator/v1/projects/test-project/databases/(default)/documents/resumes`,
+./tests/integration/staging-functions.spec.ts:138:            'Authorization': 'Bearer test-token',
+./tests/integration/staging-functions.spec.ts:150:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:182:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:221:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:255:              'Authorization': 'Bearer test-token'
+./tests/integration/staging-functions.spec.ts:271:    test('should validate API authentication', async ({ request }) => {
+./tests/integration/staging-functions.spec.ts:272:      // Test without authentication
+./tests/integration/staging-functions.spec.ts:290:          'Authorization': 'Bearer test-token'
+./tests/integration/staging-functions.spec.ts:300:  test.describe('Firebase Integration', () => {
+./tests/integration/staging-functions.spec.ts:301:    test('should respect Firestore security rules', async ({ request }) => {
+./tests/integration/staging-functions.spec.ts:307:            'Authorization': 'Bearer different-user-token'
+./tests/integration/staging-functions.spec.ts:315:    test('should handle Firestore connection issues', async ({ page }) => {
+./tests/integration/staging-functions.spec.ts:316:      // Simulate Firestore connection issue by intercepting requests
+./tests/integration/staging-functions.spec.ts:317:      await page.route('**/firestore.googleapis.com/**', route => {
+./tests/integration/staging-functions.spec.ts:322:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/integration/staging-functions.spec.ts:348:        window.localStorage.setItem('test_user', JSON.stringify({
+./tests/resume-tailor-endpoint.test.ts:30:    const expectedAuthError = {
+./tests/resume-tailor-endpoint.test.ts:31:      error: 'Authentication required'
+./tests/resume-tailor-endpoint.test.ts:45:    expect(expectedAuthError).toHaveProperty('error');
+./tests/resume-tailor-endpoint.test.ts:52:      AUTHENTICATION_REQUIRED: 401,
+./tests/global-setup.ts:4: * Global Jest setup - starts Firebase emulators for testing
+./tests/global-setup.ts:7:  console.log('🚀 Starting Firebase emulators for testing...');
+./tests/global-setup.ts:10:    // Set environment variables for emulated Firebase
+./tests/global-setup.ts:11:    process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+./tests/global-setup.ts:12:    process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+./tests/global-setup.ts:13:    process.env.FIREBASE_STORAGE_EMULATOR_HOST = 'localhost:9199';
+./tests/global-setup.ts:17:    // Start the Firebase emulators
+./tests/global-setup.ts:18:    console.log('Starting Firebase emulators...');
+./tests/global-setup.ts:19:    execSync('firebase emulators:start --only firestore,auth,storage --import=./tests/fixtures/emulator-data --export-on-exit=./tests/fixtures/emulator-data &', {
+./tests/global-setup.ts:27:    console.log('✅ Firebase emulators started successfully');
+./tests/global-setup.ts:29:    console.error('❌ Failed to start Firebase emulators:', error);
+./tests/quota-middleware.test.ts:7:import { firebaseVerification } from '@/lib/services/firebase-verification';
+./tests/quota-middleware.test.ts:12:jest.mock('@/lib/services/firebase-verification', () => ({
+./tests/quota-middleware.test.ts:13:  firebaseVerification: {
+./tests/quota-middleware.test.ts:30:const mockVerifyIdToken = firebaseVerification.verifyIdToken as jest.MockedFunction<typeof firebaseVerification.verifyIdToken>;
+./tests/load/queue-throughput.js:47:const FIRESTORE_EMULATOR = __ENV.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+./tests/load/queue-throughput.js:92:// Generate authentication token for testing
+./tests/load/queue-throughput.js:95:  // In real implementation, this would call your auth service
+./tests/load/queue-throughput.js:114:      'Authorization': token,
+./tests/load/queue-throughput.js:171:      'Authorization': token,
+./tests/load/queue-throughput.js:222:      'Authorization': token,
+./tests/load/queue-throughput.js:284:      'Authorization': getTestToken(),
+./tests/load/queue-throughput.js:310:      'Authorization': getTestToken(),
+./tests/load/queue-throughput.js:385:      'Authorization': getTestToken('admin'),
+./tests/firestore-rules.test.ts:1:import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing';
+./tests/firestore-rules.test.ts:5:describe('Firestore Security Rules', () => {
+./tests/firestore-rules.test.ts:10:    const rulesPath = resolve(__dirname, '../firestore.rules');
+./tests/firestore-rules.test.ts:15:      firestore: {
+./tests/firestore-rules.test.ts:30:    await testEnv.clearFirestore();
+./tests/firestore-rules.test.ts:36:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:37:      const userDoc = context.firestore().doc(`users/${userId}`);
+./tests/firestore-rules.test.ts:52:      const context1 = testEnv.authenticatedContext(userId1);
+./tests/firestore-rules.test.ts:53:      const context2 = testEnv.authenticatedContext(userId2);
+./tests/firestore-rules.test.ts:56:      const user1Doc = context1.firestore().doc(`users/${userId1}`);
+./tests/firestore-rules.test.ts:63:      const user1DocAsUser2 = context2.firestore().doc(`users/${userId1}`);
+./tests/firestore-rules.test.ts:67:    it('should deny unauthenticated access to user documents', async () => {
+./tests/firestore-rules.test.ts:68:      const context = testEnv.unauthenticatedContext();
+./tests/firestore-rules.test.ts:69:      const userDoc = context.firestore().doc('users/test-user');
+./tests/firestore-rules.test.ts:78:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:79:      const interviewDoc = context.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:94:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:95:      const interviewDoc = context.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:109:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:110:      const interviewDoc = context.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:124:    it('should allow authenticated users to read finalized interviews', async () => {
+./tests/firestore-rules.test.ts:128:      const context1 = testEnv.authenticatedContext(userId1);
+./tests/firestore-rules.test.ts:129:      const context2 = testEnv.authenticatedContext(userId2);
+./tests/firestore-rules.test.ts:132:      const interviewDoc = context1.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:143:      const interviewDocAsUser2 = context2.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:151:      const context1 = testEnv.authenticatedContext(userId1);
+./tests/firestore-rules.test.ts:152:      const context2 = testEnv.authenticatedContext(userId2);
+./tests/firestore-rules.test.ts:155:      const interviewDoc = context1.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:166:      const interviewDocAsUser2 = context2.firestore().doc('interviews/interview-1');
+./tests/firestore-rules.test.ts:174:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:175:      const usageDoc = context.firestore().doc(`usage/${userId}`);
+./tests/firestore-rules.test.ts:190:      const context1 = testEnv.authenticatedContext(userId1);
+./tests/firestore-rules.test.ts:191:      const context2 = testEnv.authenticatedContext(userId2);
+./tests/firestore-rules.test.ts:194:      const usage1Doc = context1.firestore().doc(`usage/${userId1}`);
+./tests/firestore-rules.test.ts:202:      const usage1DocAsUser2 = context2.firestore().doc(`usage/${userId1}`);
+./tests/firestore-rules.test.ts:210:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:211:      const applicationDoc = context.firestore().doc('applications/app-1');
+./tests/firestore-rules.test.ts:224:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:225:      const applicationDoc = context.firestore().doc('applications/app-1');
+./tests/firestore-rules.test.ts:239:      const context = testEnv.authenticatedContext(userId);
+./tests/firestore-rules.test.ts:240:      const eventDoc = context.firestore().doc('subscription_events/event-1');
+./tests/firestore-rules.test.ts:253:    it('should deny unauthenticated access to subscription events', async () => {
+./tests/firestore-rules.test.ts:254:      const context = testEnv.unauthenticatedContext();
+./tests/firestore-rules.test.ts:255:      const eventDoc = context.firestore().doc('subscription_events/event-1');
+./tests/azure-services-health.test.ts:221:  describe('Security and Authentication', () => {
+./tests/azure-services-health.test.ts:233:    it('should use proper authentication headers', async () => {
+./tests/azure-services-health.test.ts:242:      console.log('✅ Authentication keys are properly configured');
+./tests/api/resume/tailor/simple.test.js:4:jest.mock('@/lib/services/firebase-verification', () => ({
+./tests/api/resume/tailor/simple.test.js:5:  firebaseVerification: {
+./tests/api/resume/tailor/simple.test.js:38:    expect(data.error).toBe('Authentication required');
+./tests/api/resume/tailor/simple.test.js:42:    const { firebaseVerification } = require('@/lib/services/firebase-verification');
+./tests/api/resume/tailor/simple.test.js:50:    firebaseVerification.verifyIdToken.mockResolvedValue({
+./tests/api/resume/tailor/simple.test.js:63:    const { firebaseVerification } = require('@/lib/services/firebase-verification');
+./tests/api/resume/tailor/simple.test.js:72:    firebaseVerification.verifyIdToken.mockResolvedValue({
+./tests/api/resume/tailor/api.test.ts:3:import { firebaseVerification } from '@/lib/services/firebase-verification';
+./tests/api/resume/tailor/api.test.ts:7:jest.mock('@/lib/services/firebase-verification');
+./tests/api/resume/tailor/api.test.ts:11:  let mockFirebaseVerification;
+./tests/api/resume/tailor/api.test.ts:16:    mockFirebaseVerification = firebaseVerification;
+./tests/api/resume/tailor/api.test.ts:30:  describe('Authentication', () => {
+./tests/api/resume/tailor/api.test.ts:37:      expect(responseBody).toEqual({ error: 'Authentication required' });
+./tests/api/resume/tailor/api.test.ts:41:      mockFirebaseVerification.verifyIdToken.mockResolvedValue({
+./tests/api/resume/tailor/api.test.ts:57:      mockFirebaseVerification.verifyIdToken.mockResolvedValue({
+./tests/api/resume/tailor/api.test.ts:126:      mockFirebaseVerification.verifyIdToken.mockResolvedValue({
+./tests/api/resume/tailor/api.test.ts:208:    it('should handle authentication errors (401)', async () => {
+./tests/api/resume/tailor/api.test.ts:209:      const authError = new Error('Authentication failed');
+./tests/api/resume/tailor/api.test.ts:210:      authError.status = 401;
+./tests/api/resume/tailor/api.test.ts:213:      mockAzureOpenAIService.tailorResume.mockRejectedValue(authError);
+./tests/api/resume/tailor/api.test.ts:225:        error: 'Authentication failed with Azure OpenAI service.',
+./tests/global-teardown.ts:4: * Global Jest teardown - stops Firebase emulators after testing
+./tests/global-teardown.ts:7:  console.log('🛑 Shutting down Firebase emulators...');
+./tests/global-teardown.ts:10:    // Stop Firebase emulators
+./tests/global-teardown.ts:11:    execSync('firebase emulators:stop', {
+./tests/global-teardown.ts:16:    console.log('✅ Firebase emulators stopped successfully');
+./tests/global-teardown.ts:18:    console.warn('⚠️  Error stopping Firebase emulators:', error);
+./tests/e2e/resume-url-extraction.test.ts:7: * 3. Authentication enforcement (401 for unauthenticated requests)
+./tests/e2e/resume-url-extraction.test.ts:14:// Mock Firebase Admin for testing
+./tests/e2e/resume-url-extraction.test.ts:15:jest.mock('firebase-admin', () => ({
+./tests/e2e/resume-url-extraction.test.ts:17:    auth: () => ({
+./tests/e2e/resume-url-extraction.test.ts:21:  auth: () => ({
+./tests/e2e/resume-url-extraction.test.ts:95:    // Mock successful authentication by default
+./tests/e2e/resume-url-extraction.test.ts:96:    const mockFirebaseAdmin = require('firebase-admin');
+./tests/e2e/resume-url-extraction.test.ts:97:    mockFirebaseAdmin.auth().verifyIdToken.mockResolvedValue({
+./tests/e2e/resume-url-extraction.test.ts:313:  describe('3. Authentication Tests', () => {
+./tests/e2e/resume-url-extraction.test.ts:326:      expect(data.error).toContain('Authentication required');
+./tests/e2e/resume-url-extraction.test.ts:330:      const mockFirebaseAdmin = require('firebase-admin');
+./tests/e2e/resume-url-extraction.test.ts:331:      mockFirebaseAdmin.auth().verifyIdToken.mockRejectedValueOnce(new Error('Invalid token'));
+./tests/e2e/resume-url-extraction.test.ts:347:    test('should return 401 for unauthenticated resume tailoring requests', async () => {
+./tests/e2e/resume-url-extraction.test.ts:361:      expect(data.error).toContain('Authentication required');
+./debug-auth.js:3:// Test Firebase admin import issues
+./debug-auth.js:4:console.log('=== Firebase Import Test ===');
+./debug-auth.js:8:  const middlewarePath = path.join(__dirname, 'lib', 'middleware', 'authMiddleware.ts');
+./debug-auth.js:11:  // Try to check the firebase admin import
+./debug-auth.js:12:  const adminPath = path.join(__dirname, 'firebase', 'admin.ts');
+./debug-auth.js:15:  const libAdminPath = path.join(__dirname, 'lib', 'firebase', 'admin.ts');
+./debug-auth.js:22:  console.log('firebase/admin exists:', fs.existsSync(adminPath));
+./debug-auth.js:23:  console.log('lib/firebase/admin exists:', fs.existsSync(libAdminPath));
+./debug-auth.js:28:    const importLine = content.split('\n').find(line => line.includes("from '@/firebase/admin'"));
+./debug-auth.js:36:console.log('=== End Firebase Test ===');
+./debug-auth-flow.js:4: * Debug script to test authentication flow and identify redirect issues
+./debug-auth-flow.js:9:async function debugAuthFlow() {
+./debug-auth-flow.js:10:  console.log('🔍 Debugging authentication flow...\n');
+./debug-auth-flow.js:13:    console.log('=== Step 1: Check current authentication state ===');
+./debug-auth-flow.js:15:    // Test if we can access dashboard without auth (should redirect)
+./debug-auth-flow.js:16:    console.log('Testing dashboard access without authentication...');
+./debug-auth-flow.js:29:    console.log('\n=== Step 3: Test Firebase config endpoint ===');
+./debug-auth-flow.js:30:    const configResponse = await fetch(`${baseUrl}/api/config/firebase`);
+./debug-auth-flow.js:32:    console.log('Firebase config available:', {
+./debug-auth-flow.js:34:      authDomain: config.authDomain,
+./debug-auth-flow.js:38:    console.log('\n=== Step 4: Test auth API endpoints ===');
+./debug-auth-flow.js:41:    const signInTest = await fetch(`${baseUrl}/api/auth/signin`, {
+./debug-auth-flow.js:47:    const signUpTest = await fetch(`${baseUrl}/api/auth/signup`, {
+./debug-auth-flow.js:62:    console.log('\n=== Authentication Flow Analysis ===');
+./debug-auth-flow.js:63:    console.log('✅ Dashboard correctly redirects unauthenticated users');
+./debug-auth-flow.js:65:    console.log('✅ Firebase config is available');
+./debug-auth-flow.js:66:    console.log('✅ Auth API endpoints are responding');
+./debug-auth-flow.js:74:    console.log('   - "Firebase auth successful, user: [uid]"');
+./debug-auth-flow.js:85:debugAuthFlow();
+./portals/linkedin.ts:81:      throw new Error('LinkedIn Azure AD configuration not found. Please configure OAuth app first.');
+./portals/linkedin.ts:86:   * Generate OAuth authorization URL for LinkedIn
+./portals/linkedin.ts:88:  generateAuthUrl(userId: string, state?: string): string {
+./portals/linkedin.ts:101:    return `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+./portals/linkedin.ts:105:   * Exchange authorization code for access token
+./portals/linkedin.ts:113:      const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+./portals/linkedin.ts:119:          grant_type: 'authorization_code',
+./portals/linkedin.ts:150:   * Get authenticated user profile
+./portals/linkedin.ts:166:            'Authorization': `Bearer ${accessToken}`,
+./portals/linkedin.ts:220:              'Authorization': `Bearer ${accessToken}`,
+./portals/linkedin.ts:277:            'Authorization': `Bearer ${accessToken}`,
+./portals/linkedin.ts:319:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:87:    // 1000 requests per hour per authenticated user
+./portals/wellfound.ts:103:      throw new Error('Wellfound Azure AD configuration not found. Please configure OAuth app first.');
+./portals/wellfound.ts:108:   * Generate OAuth authorization URL for Wellfound
+./portals/wellfound.ts:110:  generateAuthUrl(userId: string, state?: string): string {
+./portals/wellfound.ts:123:    return `https://angel.co/api/oauth/authorize?${params.toString()}`;
+./portals/wellfound.ts:127:   * Exchange authorization code for access token
+./portals/wellfound.ts:135:      const response = await fetch('https://angel.co/api/oauth/token', {
+./portals/wellfound.ts:141:          grant_type: 'authorization_code',
+./portals/wellfound.ts:172:   * Get authenticated user profile
+./portals/wellfound.ts:188:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:241:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:280:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:323:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:358:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:499:            'Authorization': `Bearer ${accessToken}`,
+./portals/wellfound.ts:533:            'Authorization': `Bearer ${accessToken}`,
+./components/InterviewCardClient.tsx:11:import { useAuth } from "@/contexts/AuthContext";
+./components/InterviewCardClient.tsx:12:import { setCommunityInterviewInStorage } from "@/lib/utils/communityInterviewStorage";
+./components/InterviewCardClient.tsx:39:    const { user } = useAuth();
+./components/InterviewCardClient.tsx:62:            // Store community interview data in localStorage for persistence
+./components/InterviewCardClient.tsx:63:            setCommunityInterviewInStorage({
+./components/ui/alert.tsx:2:import { cva, type VariantProps } from "class-variance-authority"
+./components/ui/floating-navbar/floating-navbar.tsx:10:import { useAuth } from '@/contexts/AuthContext';
+./components/ui/floating-navbar/floating-navbar.tsx:30:  const { user, loading } = useAuth();
+./components/ui/floating-navbar/floating-navbar.tsx:91:            {/* Placeholder for auth button */}
+./components/ui/badge.tsx:2:import { cva, type VariantProps } from "class-variance-authority"
+./components/ui/sidebar.tsx:5:import { cva, VariantProps } from "class-variance-authority"
+./components/ui/button.tsx:3:import { cva, type VariantProps } from "class-variance-authority"
+./components/ResumeProcessingStatus.tsx:9:import { useRealtimeApplicationStatus } from "@/lib/hooks/useRealtimeFirestore";
+./components/AuthSync.tsx:4:import { signInWithCustomToken } from 'firebase/auth';
+./components/AuthSync.tsx:5:import { auth } from '@/firebase/client';
+./components/AuthSync.tsx:6:import { useAuth } from '@/contexts/AuthContext';
+./components/AuthSync.tsx:7:import { debugFirebaseAuth } from '@/lib/utils/firebase-auth-debug';
+./components/AuthSync.tsx:9:export function AuthSync() {
+./components/AuthSync.tsx:10:  const { user } = useAuth();
+./components/AuthSync.tsx:13:    async function syncAuth() {
+./components/AuthSync.tsx:16:        console.log('=== Auth Sync Debug ===');
+./components/AuthSync.tsx:18:        console.log('Firebase current user:', auth.currentUser);
+./components/AuthSync.tsx:20:        debugFirebaseAuth();
+./components/AuthSync.tsx:23:      // If we have a user from server context but no Firebase user, 
+./components/AuthSync.tsx:24:      // there's an authentication mismatch
+./components/AuthSync.tsx:25:      if (user && !auth.currentUser) {
+./components/AuthSync.tsx:26:        console.warn('Authentication mismatch detected: Server has user but Firebase client does not');
+./components/AuthSync.tsx:27:        console.warn('This may cause Firestore permission errors');
+./components/AuthSync.tsx:30:        // Try to get a fresh token from the server to sync Firebase auth
+./components/AuthSync.tsx:32:          const response = await fetch('/api/auth/sync-firebase');
+./components/AuthSync.tsx:36:              await signInWithCustomToken(auth, customToken);
+./components/AuthSync.tsx:37:              console.log('Successfully synced Firebase authentication');
+./components/AuthSync.tsx:41:          console.error('Failed to sync Firebase authentication:', error);
+./components/AuthSync.tsx:46:    // Run auth sync after a short delay to allow Firebase to initialize
+./components/AuthSync.tsx:47:    const timer = setTimeout(syncAuth, 1000);
+./components/UserProfile.tsx:3:import { useAuth } from "@/contexts/AuthContext";
+./components/UserProfile.tsx:8: * Example component demonstrating how to use the useAuth context
+./components/UserProfile.tsx:9: * This component can be used anywhere within the AuthProvider tree
+./components/UserProfile.tsx:13:  const { user, isAuthenticated, loading } = useAuth();
+./components/UserProfile.tsx:28:  // Not authenticated
+./components/UserProfile.tsx:29:  if (!isAuthenticated || !user) {
+./components/UserProfile.tsx:37:  // Authenticated user
+./components/GoogleSignInButton.tsx:3:import { auth } from "@/firebase/client";
+./components/GoogleSignInButton.tsx:4:import { signInWithPopup } from "firebase/auth";
+./components/GoogleSignInButton.tsx:9:import { googleProvider } from "@/firebase/client";
+./components/GoogleSignInButton.tsx:45:      const result = await signInWithPopup(auth, googleProvider);
+./components/GoogleSignInButton.tsx:47:      console.log('Firebase auth successful, user:', user.uid);
+./components/GoogleSignInButton.tsx:61:        const signInResponse = await fetch('/api/auth/signin', {
+./components/GoogleSignInButton.tsx:86:          const createUserResponse = await fetch('/api/auth/signup', {
+./components/GoogleSignInButton.tsx:110:          const retrySignIn = await fetch('/api/auth/signin', {
+./components/GoogleSignInButton.tsx:142:        console.error('Authentication error:', error);
+./components/providers/TelemetryProvider.tsx:5:import { useAuth } from '@/contexts/AuthContext';
+./components/providers/TelemetryProvider.tsx:30:  const { user } = useAuth();
+./components/ProfileForm.tsx:10:import { auth } from "@/firebase/client";
+./components/ProfileForm.tsx:81:      const response = await fetch('/api/auth/resend-verification', {
+./components/ProfileForm.tsx:121:      const currentUser = auth.currentUser;
+./components/ProfileForm.tsx:123:        throw new Error("User not authenticated");
+./components/ProfileForm.tsx:128:      toast.error("Authentication Error", {
+./components/ProfileForm.tsx:206:        await fetch('/api/auth/signout', { method: 'POST' });
+./components/ProfileForm.tsx:432:                      'REST API', 'MongoDB', 'PostgreSQL', 'MySQL', 'SQL Server', 'SQLite', 'Firebase', 'Redis',
+./components/AuthForm.tsx:7:import { auth } from "@/firebase/client";
+./components/AuthForm.tsx:17:} from "firebase/auth";
+./components/AuthForm.tsx:22:import { signIn, signUp } from "@/lib/actions/auth.action";
+./components/AuthForm.tsx:26:const authFormSchema = (type: FormType) => {
+./components/AuthForm.tsx:34:const AuthForm = ({ type }: { type: FormType }) => {
+./components/AuthForm.tsx:39:    const formSchema = authFormSchema(type);
+./components/AuthForm.tsx:58:                    auth,
+./components/AuthForm.tsx:84:                await trackUserAction('signup', 'auth', {
+./components/AuthForm.tsx:94:                    auth,
+./components/AuthForm.tsx:111:                const response = await fetch('/api/auth/signin', {
+./components/AuthForm.tsx:120:                    console.log('AuthForm: Sign in successful, redirecting to dashboard');
+./components/AuthForm.tsx:125:                    await trackUserAction('signin', 'auth', {
+./components/AuthForm.tsx:166:            console.log('AuthForm: Attempting router.replace to /dashboard');
+./components/AuthForm.tsx:171:                console.log('AuthForm: Fallback to window.location.replace');
+./components/AuthForm.tsx:255:export default AuthForm;
+./components/CommunityInterviewPage.tsx:8:import { getCurrentUser } from "@/lib/actions/auth.action";
+./components/authenticated-layout.tsx:83:import { useAuth } from "@/contexts/AuthContext";
+./components/authenticated-layout.tsx:177:interface AuthenticatedLayoutProps {
+./components/authenticated-layout.tsx:181:export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
+./components/authenticated-layout.tsx:184:  const { user } = useAuth();
+./components/authenticated-layout.tsx:469:export default AuthenticatedLayout;
+./components/DashboardLayout.tsx:7:import { useAuth } from '@/contexts/AuthContext';
+./components/DashboardLayout.tsx:8:import { signOut } from '@/lib/actions/auth.action';
+./components/DashboardLayout.tsx:44:  const { user } = useAuth();
+./components/EmailVerificationBanner.tsx:5:import { useAuth } from "@/contexts/AuthContext";
+./components/EmailVerificationBanner.tsx:10:  const { user } = useAuth();
+./components/EmailVerificationBanner.tsx:21:      const response = await fetch('/api/auth/resend-verification', {
+./components/tech-icons.ts:74:  SiFirebase,
+./components/tech-icons.ts:219:  SiFirebase,
+./components/AuthDebug.tsx:4:import { useAuth } from '@/contexts/AuthContext';
+./components/AuthDebug.tsx:5:import { useFirebase } from '@/hooks/useFirebase';
+./components/AuthDebug.tsx:6:import { User } from 'firebase/auth';
+./components/AuthDebug.tsx:8:export function AuthDebug() {
+./components/AuthDebug.tsx:9:  const { user, loading } = useAuth();
+./components/AuthDebug.tsx:10:  const { auth: firebaseAuth, isInitialized } = useFirebase();
+./components/AuthDebug.tsx:11:  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+./components/AuthDebug.tsx:14:    if (!isInitialized || !firebaseAuth) {
+./components/AuthDebug.tsx:15:      console.log('Firebase auth not available for debug');
+./components/AuthDebug.tsx:20:    setFirebaseUser(firebaseAuth.currentUser);
+./components/AuthDebug.tsx:22:    const unsubscribe = firebaseAuth.onAuthStateChanged((fbUser: User | null) => {
+./components/AuthDebug.tsx:23:      setFirebaseUser(fbUser);
+./components/AuthDebug.tsx:27:  }, [isInitialized, firebaseAuth]);
+./components/AuthDebug.tsx:35:      <h3 className="font-bold">Auth Debug Info</h3>
+./components/AuthDebug.tsx:37:        <p><strong>Auth Context Loading:</strong> {loading ? 'Yes' : 'No'}</p>
+./components/AuthDebug.tsx:39:        <p><strong>Firebase User:</strong> {firebaseUser ? `${firebaseUser.email} (${firebaseUser.uid})` : 'None'}</p>
+./components/AuthDebug.tsx:40:        <p><strong>Auth Match:</strong> {user && firebaseUser && user.id === firebaseUser.uid ? '✅ Match' : '❌ Mismatch'}</p>
+./components/InterviewCardRealtime.tsx:9:import { useRealtimeInterview } from "@/lib/hooks/useRealtimeFirestore";
+./components/AuthDebugInfo.tsx:4:import { useAuth } from '@/contexts/AuthContext';
+./components/AuthDebugInfo.tsx:9:  authState: any;
+./components/AuthDebugInfo.tsx:13:export default function AuthDebugInfo() {
+./components/AuthDebugInfo.tsx:15:  const auth = useAuth();
+./components/AuthDebugInfo.tsx:29:        authState: {
+./components/AuthDebugInfo.tsx:30:          user: auth.user ? { uid: auth.user.uid, email: auth.user.email } : null,
+./components/AuthDebugInfo.tsx:31:          loading: auth.loading,
+./components/AuthDebugInfo.tsx:32:          isAuthenticated: auth.isAuthenticated
+./components/AuthDebugInfo.tsx:44:  }, [auth]);
+./components/AuthDebugInfo.tsx:50:      <div className="font-bold mb-2">🔍 Auth Debug Info</div>
+./components/AuthDebugInfo.tsx:54:        <div>Auth Loading: {debugInfo.authState.loading ? 'Yes' : 'No'}</div>
+./components/AuthDebugInfo.tsx:55:        <div>Authenticated: {debugInfo.authState.isAuthenticated ? '✅' : '❌'}</div>
+./components/AuthDebugInfo.tsx:56:        <div>User: {debugInfo.authState.user?.email || 'None'}</div>
+./components/PdfUploadButton.tsx:17:import { useAuth } from '@/contexts/AuthContext';
+./components/PdfUploadButton.tsx:18:import { auth } from '@/firebase/client';
+./components/PdfUploadButton.tsx:37:    storageProvider?: 'azure' | 'firebase';
+./components/PdfUploadButton.tsx:318:  const { user } = useAuth();
+./components/PdfUploadButton.tsx:319:  const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({
+./components/PdfUploadButton.tsx:324:  // Update headers with auth token when user changes
+./components/PdfUploadButton.tsx:326:    const updateAuthHeaders = async () => {
+./components/PdfUploadButton.tsx:328:        if (user && auth.currentUser) {
+./components/PdfUploadButton.tsx:329:          const idToken = await auth.currentUser.getIdToken();
+./components/PdfUploadButton.tsx:330:          setAuthHeaders(prev => ({
+./components/PdfUploadButton.tsx:332:            'Authorization': `Bearer ${idToken}`
+./components/PdfUploadButton.tsx:335:          // Remove auth header if no user
+./components/PdfUploadButton.tsx:336:          setAuthHeaders(prev => {
+./components/PdfUploadButton.tsx:337:            const { Authorization, ...rest } = prev;
+./components/PdfUploadButton.tsx:342:        console.error('Error getting auth token:', error);
+./components/PdfUploadButton.tsx:343:        // Continue without auth token - server will handle development mode
+./components/PdfUploadButton.tsx:347:    updateAuthHeaders();
+./components/PdfUploadButton.tsx:354:        headers: authHeaders
+./firebase/admin.ts:1:import { initializeApp, cert, getApps, App } from "firebase-admin/app";
+./firebase/admin.ts:2:import { getAuth } from "firebase-admin/auth";
+./firebase/admin.ts:3:import { getFirestore } from "firebase-admin/firestore";
+./firebase/admin.ts:4:import { getStorage, Storage } from "firebase-admin/storage";
+./firebase/admin.ts:8:  'FIREBASE_PROJECT_ID',
+./firebase/admin.ts:9:  'FIREBASE_CLIENT_EMAIL',
+./firebase/admin.ts:10:  'FIREBASE_PRIVATE_KEY',
+./firebase/admin.ts:11:  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'
+./firebase/admin.ts:23:// Define types for our Firebase admin services
+./firebase/admin.ts:24:interface FirebaseAdmin {
+./firebase/admin.ts:26:  auth: ReturnType<typeof getAuth>;
+./firebase/admin.ts:27:  db: ReturnType<typeof getFirestore>;
+./firebase/admin.ts:28:  storage: Storage;
+./firebase/admin.ts:32:const loadFirebasePrivateKey = (): string => {
+./firebase/admin.ts:34:  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+./firebase/admin.ts:49:        // Find the FIREBASE_PRIVATE_KEY line and extract the full value
+./firebase/admin.ts:52:          if (line.startsWith('FIREBASE_PRIVATE_KEY=')) {
+./firebase/admin.ts:54:            const keyValue = line.substring('FIREBASE_PRIVATE_KEY='.length);
+./firebase/admin.ts:75:  console.log('🔧 Formatting Firebase private key...');
+./firebase/admin.ts:129:  console.log('✅ Firebase private key formatted successfully');
+./firebase/admin.ts:133:// Initialize Firebase Admin
+./firebase/admin.ts:134:const initFirebaseAdmin = (): FirebaseAdmin => {
+./firebase/admin.ts:137:    if (!process.env.FIREBASE_PROJECT_ID && (process.env.NODE_ENV === 'production' || process.env.NEXT_PHASE === 'phase-production-build')) {
+./firebase/admin.ts:138:      console.log('Skipping Firebase Admin initialization during build');
+./firebase/admin.ts:141:        auth: {} as any,
+./firebase/admin.ts:143:        storage: {} as any
+./firebase/admin.ts:153:        auth: {} as any,
+./firebase/admin.ts:155:        storage: {} as any
+./firebase/admin.ts:164:      if (!process.env.FIREBASE_ADMIN_LOGGED) {
+./firebase/admin.ts:165:        console.log('🔄 Using existing Firebase Admin app');
+./firebase/admin.ts:166:        process.env.FIREBASE_ADMIN_LOGGED = 'true';
+./firebase/admin.ts:170:        auth: getAuth(existingApp),
+./firebase/admin.ts:171:        db: getFirestore(existingApp),
+./firebase/admin.ts:172:        storage: getStorage(existingApp)
+./firebase/admin.ts:176:    console.log('🚀 Initializing new Firebase Admin app...');
+./firebase/admin.ts:182:      const rawPrivateKey = loadFirebasePrivateKey();
+./firebase/admin.ts:187:      const rawKey = process.env.FIREBASE_PRIVATE_KEY || '';
+./firebase/admin.ts:198:    process.env.FIRESTORE_EMULATOR_HOST = '';
+./firebase/admin.ts:203:    // Force Firestore to use REST instead of gRPC to avoid SSL issues
+./firebase/admin.ts:204:    process.env.GOOGLE_CLOUD_FIRESTORE_EMULATOR_HOST = '';
+./firebase/admin.ts:205:    process.env.FIRESTORE_PREFER_REST = 'true';
+./firebase/admin.ts:215:        projectId: process.env.FIREBASE_PROJECT_ID!,
+./firebase/admin.ts:216:        clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+./firebase/admin.ts:219:      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+./firebase/admin.ts:223:    const auth = getAuth(app);
+./firebase/admin.ts:225:    // Initialize Firestore 
+./firebase/admin.ts:228:      // Initialize Firestore
+./firebase/admin.ts:229:      db = getFirestore(app);
+./firebase/admin.ts:232:      // for configuring Firestore transport settings
+./firebase/admin.ts:234:      console.warn('Failed to initialize Firestore, falling back to basic initialization:', error);
+./firebase/admin.ts:235:      // Fallback to basic Firestore initialization
+./firebase/admin.ts:236:      db = getFirestore(app);
+./firebase/admin.ts:239:    const storage = getStorage(app);
+./firebase/admin.ts:241:    console.log(`Firebase Admin initialized successfully with bucket: ${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}`);
+./firebase/admin.ts:243:    return { app, auth, db, storage };
+./firebase/admin.ts:245:    console.error('Failed to initialize Firebase Admin:', error);
+./firebase/admin.ts:246:    throw new Error(`Failed to initialize Firebase Admin: ${error instanceof Error ? error.message : 'Unknown error'}`);
+./firebase/admin.ts:251:let firebaseAdmin: FirebaseAdmin | null = null;
+./firebase/admin.ts:254:const getFirebaseAdmin = (): FirebaseAdmin => {
+./firebase/admin.ts:259:  if (!firebaseAdmin) {
+./firebase/admin.ts:261:      firebaseAdmin = initFirebaseAdmin();
+./firebase/admin.ts:263:      initializationError = error instanceof Error ? error : new Error('Unknown Firebase initialization error');
+./firebase/admin.ts:267:  return firebaseAdmin;
+./firebase/admin.ts:271:export const getAuthService = () => getFirebaseAdmin().auth;
+./firebase/admin.ts:272:export const getDBService = () => getFirebaseAdmin().db;
+./firebase/admin.ts:273:export const getStorageService = () => getFirebaseAdmin().storage;
+./firebase/admin.ts:277:let _firebaseAdmin: FirebaseAdmin | null = null;
+./firebase/admin.ts:280:  if (!_firebaseAdmin) {
+./firebase/admin.ts:281:    _firebaseAdmin = initFirebaseAdmin();
+./firebase/admin.ts:283:  return _firebaseAdmin;
+./firebase/admin.ts:287:export const auth = new Proxy({} as any, {
+./firebase/admin.ts:290:    return (admin.auth as any)[prop];
+./firebase/admin.ts:301:export const storage = new Proxy({} as any, {
+./firebase/admin.ts:304:    return (admin.storage as any)[prop];
+./firebase/client.ts:1:import { getFirestore } from "firebase/firestore";
+./firebase/client.ts:2:import { initializeApp, getApp, getApps } from "firebase/app";
+./firebase/client.ts:3:import { getAuth, GoogleAuthProvider } from "firebase/auth";
+./firebase/client.ts:5:// State for Firebase instances
+./firebase/client.ts:7:let auth: any = null;
+./firebase/client.ts:12:// Function to fetch Firebase config from API
+./firebase/client.ts:13:async function fetchFirebaseConfig() {
+./firebase/client.ts:15:    const response = await fetch('/api/config/firebase');
+./firebase/client.ts:17:      throw new Error('Failed to fetch Firebase config');
+./firebase/client.ts:21:      throw new Error('Firebase client key not available');
+./firebase/client.ts:25:    console.warn('Failed to fetch Firebase config from API:', error);
+./firebase/client.ts:30:// Function to get Firebase config dynamically
+./firebase/client.ts:31:function getStaticFirebaseConfig() {
+./firebase/client.ts:33:  const buildTimeKey = process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY;
+./firebase/client.ts:37:    authDomain: "prepbettr.firebaseapp.com",
+./firebase/client.ts:39:    storageBucket: "prepbettr.firebasestorage.app",
+./firebase/client.ts:46:// Initialize Firebase with dynamic configuration
+./firebase/client.ts:47:async function initializeFirebase() {
+./firebase/client.ts:48:  if (isInitialized) return { app, auth, db };
+./firebase/client.ts:54:    return { app, auth, db };
+./firebase/client.ts:60:    let firebaseConfig;
+./firebase/client.ts:64:      firebaseConfig = await fetchFirebaseConfig();
+./firebase/client.ts:68:    if (!firebaseConfig) {
+./firebase/client.ts:69:      firebaseConfig = getStaticFirebaseConfig();
+./firebase/client.ts:73:    if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "mock-key-for-build-time") {
+./firebase/client.ts:74:      app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+./firebase/client.ts:75:      auth = getAuth(app);
+./firebase/client.ts:76:      db = getFirestore(app);
+./firebase/client.ts:77:      console.log('✅ Firebase initialized successfully with key:', firebaseConfig.apiKey.substring(0, 10) + '...');
+./firebase/client.ts:80:      console.log('Firebase initialization skipped - using mock configuration for build');
+./firebase/client.ts:83:      auth = null;
+./firebase/client.ts:87:    console.warn('Firebase initialization failed, using fallback configuration:', error);
+./firebase/client.ts:89:    auth = null;
+./firebase/client.ts:95:  return { app, auth, db };
+./firebase/client.ts:99:const staticConfig = getStaticFirebaseConfig();
+./firebase/client.ts:103:    auth = getAuth(app);
+./firebase/client.ts:104:    db = getFirestore(app);
+./firebase/client.ts:107:    console.warn('Static Firebase initialization failed:', error);
+./firebase/client.ts:111:// Export function to ensure Firebase is initialized
+./firebase/client.ts:112:export async function ensureFirebaseInitialized() {
+./firebase/client.ts:114:    await initializeFirebase();
+./firebase/client.ts:116:  return { app, auth, db };
+./firebase/client.ts:119:const googleProvider = new GoogleAuthProvider();
+./firebase/client.ts:121:export { auth, db, googleProvider, app };
+./test-ensure-mock-interviews.ts:9:const { db } = require('./firebase/admin');
+./hooks/useFirebase.ts:2:import { ensureFirebaseInitialized } from '@/firebase/client';
+./hooks/useFirebase.ts:4:export function useFirebase() {
+./hooks/useFirebase.ts:5:  const [firebase, setFirebase] = useState<{
+./hooks/useFirebase.ts:7:    auth: any;
+./hooks/useFirebase.ts:13:    auth: null,
+./hooks/useFirebase.ts:21:    const initFirebase = async () => {
+./hooks/useFirebase.ts:23:        const { app, auth, db } = await ensureFirebaseInitialized();
+./hooks/useFirebase.ts:26:          setFirebase({
+./hooks/useFirebase.ts:28:            auth,
+./hooks/useFirebase.ts:34:        console.error('Firebase initialization error:', error);
+./hooks/useFirebase.ts:36:          setFirebase(prev => ({
+./hooks/useFirebase.ts:38:            error: error instanceof Error ? error.message : 'Firebase initialization failed'
+./hooks/useFirebase.ts:44:    initFirebase();
+./hooks/useFirebase.ts:51:  return firebase;
+./scripts/migrate-users.js:8: * - Set environment variables: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
+./scripts/migrate-users.js:12:const { initializeApp, cert, getApps } = require('firebase-admin/app');
+./scripts/migrate-users.js:13:const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+./scripts/migrate-users.js:29:async function initializeFirebaseAdmin() {
+./scripts/migrate-users.js:36:    projectId: process.env.FIREBASE_PROJECT_ID,
+./scripts/migrate-users.js:37:    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+./scripts/migrate-users.js:38:    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+./scripts/migrate-users.js:42:    throw new Error('Missing Firebase service account credentials. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables.');
+./scripts/migrate-users.js:47:    projectId: process.env.FIREBASE_PROJECT_ID,
+./scripts/migrate-users.js:85:    console.log('🚀 Starting Firestore subscription schema migration...');
+./scripts/migrate-users.js:87:    // Initialize Firebase Admin
+./scripts/migrate-users.js:88:    const app = await initializeFirebaseAdmin();
+./scripts/migrate-users.js:89:    const db = getFirestore(app);
+./scripts/migrate-users.js:91:    console.log('📊 Fetching users from Firestore...');
+./scripts/migrate-users.js:101:    // Process users in batches to avoid overwhelming Firestore
+./scripts/backfill-mock-interviews.ts:6: * This script seeds the first 20 Azure-generated mock interviews to Firestore
+./scripts/backfill-mock-interviews.ts:19: *   - FIREBASE_PROJECT_ID
+./scripts/backfill-mock-interviews.ts:20: *   - FIREBASE_CLIENT_EMAIL
+./scripts/backfill-mock-interviews.ts:21: *   - FIREBASE_PRIVATE_KEY
+./scripts/backfill-mock-interviews.ts:26:import { getAdminFirestore } from '../lib/firebase/admin';
+./scripts/backfill-mock-interviews.ts:39:const COLLECTION_NAME = 'mockInterviews'; // Firestore collection name
+./scripts/backfill-mock-interviews.ts:130: * Save interviews to Firestore
+./scripts/backfill-mock-interviews.ts:132:async function saveToFirestore(interviews: any[]): Promise<void> {
+./scripts/backfill-mock-interviews.ts:133:  const db = getAdminFirestore();
+./scripts/backfill-mock-interviews.ts:146:  console.log(`💾 Saved ${interviews.length} interviews to Firestore`);
+./scripts/backfill-mock-interviews.ts:150: * Verify existing mock interviews in Firestore
+./scripts/backfill-mock-interviews.ts:153:  const db = getAdminFirestore();
+./scripts/backfill-mock-interviews.ts:183:      'FIREBASE_PROJECT_ID',
+./scripts/backfill-mock-interviews.ts:184:      'FIREBASE_CLIENT_EMAIL',
+./scripts/backfill-mock-interviews.ts:185:      'FIREBASE_PRIVATE_KEY'
+./scripts/backfill-mock-interviews.ts:242:        // Save batch to Firestore
+./scripts/backfill-mock-interviews.ts:243:        await saveToFirestore(validInterviews);
+./scripts/backfill-mock-interviews.ts:273:    console.log(`\n🎯 Total mock interviews in Firestore: ${finalCount}`);
+./scripts/backfill-mock-interviews.ts:299:export { main, generateMockInterview, saveToFirestore, getExistingInterviewCount };
+./scripts/deployment-checklist.ts:76:      // Firebase Authentication (Required)
+./scripts/deployment-checklist.ts:77:      'NEXT_PUBLIC_FIREBASE_API_KEY',
+./scripts/deployment-checklist.ts:78:      'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+./scripts/deployment-checklist.ts:79:      'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+./scripts/deployment-checklist.ts:80:      'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+./scripts/deployment-checklist.ts:81:      'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+./scripts/deployment-checklist.ts:82:      'NEXT_PUBLIC_FIREBASE_APP_ID',
+./scripts/deployment-checklist.ts:83:      'FIREBASE_PROJECT_ID',
+./scripts/deployment-checklist.ts:84:      'FIREBASE_CLIENT_EMAIL',
+./scripts/deployment-checklist.ts:85:      'FIREBASE_PRIVATE_KEY',
+./scripts/deployment-checklist.ts:91:      'AZURE_STORAGE_CONNECTION_STRING',
+./scripts/fetch-build-config.ts:264:      NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'prepbettr',
+./scripts/fetch-build-config.ts:265:      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'prepbettr.firebaseapp.com',
+./scripts/fetch-build-config.ts:266:      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'prepbettr.firebasestorage.app',
+./scripts/fetch-build-config.ts:267:      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '660242808945',
+./scripts/fetch-build-config.ts:268:      NEXT_PUBLIC_FIREBASE_APP_ID: '1:660242808945:web:4edbaac82ed140f4d05bd0',
+./scripts/fetch-build-config.ts:269:      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: 'G-LF6KN9F2HY',
+./scripts/test-feature-flags.ts:10:// Standalone test version without Firebase dependencies
+./scripts/test-feature-flags.ts:170:    console.log('1. Set up Firebase Remote Config parameters');
+./scripts/firebase/migrate-seed-data.ts:4: * Firestore Migration Script - Seed Auto-Apply Collections
+./scripts/firebase/migrate-seed-data.ts:6: * This script seeds the Firestore database with mock data for the auto-apply feature.
+./scripts/firebase/migrate-seed-data.ts:15: * npm run seed-firestore
+./scripts/firebase/migrate-seed-data.ts:17: * npx ts-node scripts/firebase/migrate-seed-data.ts
+./scripts/firebase/migrate-seed-data.ts:20:import { initializeApp, cert, getApps, deleteApp } from 'firebase-admin/app';
+./scripts/firebase/migrate-seed-data.ts:21:import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+./scripts/firebase/migrate-seed-data.ts:29:// Initialize Firebase Admin
+./scripts/firebase/migrate-seed-data.ts:30:function initializeFirebaseAdmin() {
+./scripts/firebase/migrate-seed-data.ts:32:    return getFirestore();
+./scripts/firebase/migrate-seed-data.ts:36:    'FIREBASE_PROJECT_ID',
+./scripts/firebase/migrate-seed-data.ts:37:    'FIREBASE_CLIENT_EMAIL', 
+./scripts/firebase/migrate-seed-data.ts:38:    'FIREBASE_PRIVATE_KEY'
+./scripts/firebase/migrate-seed-data.ts:47:  const privateKey = process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n');
+./scripts/firebase/migrate-seed-data.ts:51:      projectId: process.env.FIREBASE_PROJECT_ID!,
+./scripts/firebase/migrate-seed-data.ts:52:      clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+./scripts/firebase/migrate-seed-data.ts:57:  return getFirestore(app);
+./scripts/firebase/migrate-seed-data.ts:60:// Utility function to convert ISO string dates to Firestore Timestamps
+./scripts/firebase/migrate-seed-data.ts:86:async function seedUsers(db: FirebaseFirestore.Firestore) {
+./scripts/firebase/migrate-seed-data.ts:106:async function seedAutoApplySettings(db: FirebaseFirestore.Firestore) {
+./scripts/firebase/migrate-seed-data.ts:126:async function seedJobListings(db: FirebaseFirestore.Firestore) {
+./scripts/firebase/migrate-seed-data.ts:133:      // Transform job listing to match Firestore schema
+./scripts/firebase/migrate-seed-data.ts:134:      const firestoreJobListing = {
+./scripts/firebase/migrate-seed-data.ts:136:        // Add additional fields for Firestore schema
+./scripts/firebase/migrate-seed-data.ts:148:      // Remove fields that don't exist in Firestore schema
+./scripts/firebase/migrate-seed-data.ts:149:      delete (firestoreJobListing as any).relevancyScore;
+./scripts/firebase/migrate-seed-data.ts:150:      delete (firestoreJobListing as any).matchedSkills;  
+./scripts/firebase/migrate-seed-data.ts:151:      delete (firestoreJobListing as any).missingSkills;
+./scripts/firebase/migrate-seed-data.ts:152:      delete (firestoreJobListing as any).applicationStatus;
+./scripts/firebase/migrate-seed-data.ts:154:      const convertedData = convertDatesToTimestamps(firestoreJobListing);
+./scripts/firebase/migrate-seed-data.ts:167:async function seedApplications(db: FirebaseFirestore.Firestore) {
+./scripts/firebase/migrate-seed-data.ts:174:      // Transform application to match Firestore schema
+./scripts/firebase/migrate-seed-data.ts:175:      const firestoreApplication = {
+./scripts/firebase/migrate-seed-data.ts:179:        // Add additional fields for Firestore schema
+./scripts/firebase/migrate-seed-data.ts:186:      delete (firestoreApplication as any).automationLog;
+./scripts/firebase/migrate-seed-data.ts:188:      const convertedData = convertDatesToTimestamps(firestoreApplication);
+./scripts/firebase/migrate-seed-data.ts:201:async function seedAutomationLogs(db: FirebaseFirestore.Firestore) {
+./scripts/firebase/migrate-seed-data.ts:210:      const firestoreLogEntry = {
+./scripts/firebase/migrate-seed-data.ts:219:      const convertedData = convertDatesToTimestamps(firestoreLogEntry);
+./scripts/firebase/migrate-seed-data.ts:232:        const firestoreLogEntry = {
+./scripts/firebase/migrate-seed-data.ts:241:        const convertedData = convertDatesToTimestamps(firestoreLogEntry);
+./scripts/firebase/migrate-seed-data.ts:254:// Create Firestore indexes configuration
+./scripts/firebase/migrate-seed-data.ts:256:  console.log('🔄 Creating firestore.indexes.json...');
+./scripts/firebase/migrate-seed-data.ts:308:  fs.writeFileSync('firestore.indexes.json', JSON.stringify(indexes, null, 2));
+./scripts/firebase/migrate-seed-data.ts:309:  console.log('✅ Created firestore.indexes.json\n');
+./scripts/firebase/migrate-seed-data.ts:315:    console.log('🚀 Starting Firestore Auto-Apply Collections Migration\n');
+./scripts/firebase/migrate-seed-data.ts:323:    const db = initializeFirebaseAdmin();
+./scripts/firebase/migrate-seed-data.ts:324:    console.log('✅ Firebase Admin initialized\n');
+./scripts/firebase/migrate-seed-data.ts:338:    console.log('1. Deploy indexes: firebase deploy --only firestore:indexes');
+./scripts/firebase/migrate-seed-data.ts:339:    console.log('2. Update security rules: firebase deploy --only firestore:rules');
+./scripts/firebase/mock-data.ts:2: * Mock data for seeding Firestore collections
+./scripts/firebase/mock-data.ts:109:      'HTML', 'Node.js', 'Express', 'MongoDB', 'Firebase',
+./scripts/firebase/mock-data.ts:126:        technologies: ['Vue.js', 'JavaScript', 'CSS', 'Node.js', 'Firebase'],
+./scripts/find-firebase-function-calls.js:4: * Firebase to Azure Functions Migration Scanner
+./scripts/find-firebase-function-calls.js:6: * This script scans your codebase to find Firebase Cloud Function calls
+./scripts/find-firebase-function-calls.js:18:  firebaseFunction: /firebase\.functions\(\)/g,
+./scripts/find-firebase-function-calls.js:61: * Scan file for Firebase function patterns
+./scripts/find-firebase-function-calls.js:68:    // Check for general Firebase function patterns
+./scripts/find-firebase-function-calls.js:159:            issue: 'Direct call to Firebase verifyToken function',
+./scripts/find-firebase-function-calls.js:168:            issue: 'Direct call to Firebase createSessionCookie function',
+./scripts/find-firebase-function-calls.js:177:            issue: 'Direct call to Firebase deleteUserData function',
+./scripts/find-firebase-function-calls.js:186:            issue: `Firebase function pattern found: ${match.pattern}`,
+./scripts/find-firebase-function-calls.js:201:  console.log('🔍 Scanning codebase for Firebase Cloud Function calls...\n');
+./scripts/find-firebase-function-calls.js:217:    console.log('✅ No Firebase Cloud Function calls found!');
+./scripts/find-firebase-function-calls.js:221:  console.log(`📊 Found ${Object.keys(results).length} files with Firebase function calls:\n`);
+./scripts/find-firebase-function-calls.js:261:  console.log('📖 For migration guide, see: scripts/firebase-to-azure-migration-guide.md');
+./scripts/test-resume-processing.ts:4:import { azureBlobStorage } from '../lib/services/azure-blob-storage';
+./scripts/test-resume-processing.ts:10:  azureBlobStorageInit: boolean;
+./scripts/test-resume-processing.ts:20:    azureBlobStorageInit: false,
+./scripts/test-resume-processing.ts:29:    // Test 1: Azure Blob Storage Initialization
+./scripts/test-resume-processing.ts:30:    console.log('1️⃣ Testing Azure Blob Storage initialization...');
+./scripts/test-resume-processing.ts:32:      results.azureBlobStorageInit = await azureBlobStorage.initialize();
+./scripts/test-resume-processing.ts:33:      console.log(`   ✅ Azure Blob Storage: ${results.azureBlobStorageInit ? 'Ready' : 'Not configured (will use Firebase fallback)'}`);
+./scripts/test-resume-processing.ts:35:      console.log(`   ⚠️ Azure Blob Storage: Error - ${error}`);
+./scripts/test-resume-processing.ts:120:        console.log(`   📊 Storage provider: ${result.data?.storageProvider}`);
+./scripts/test-resume-processing.ts:147:    console.log(`Azure Blob Storage: ${results.azureBlobStorageInit ? '✅ Ready' : '⚠️ Fallback to Firebase'}`);
+./scripts/setup-azure-app-config.ts:218:  console.log('# (with Azure managed identity for authentication)\n');
+./scripts/setup-azure-app-config.ts:264:  console.log('- Error Budgets: Tracked automatically in Firestore');
+./scripts/setup-remote-config.ts:2: * Firebase Remote Config Setup Script
+./scripts/setup-remote-config.ts:4: * This script helps setup the required Remote Config parameters in Firebase.
+./scripts/setup-remote-config.ts:75:  console.log('🚀 Firebase Remote Config Setup for Feature Flags\n');
+./scripts/setup-remote-config.ts:78:  console.log('1. Go to Firebase Console: https://console.firebase.google.com');
+./scripts/setup-remote-config.ts:94:  console.log('If you have Firebase Admin SDK configured, you can use the Firebase CLI:');
+./scripts/setup-remote-config.ts:96:  console.log('1. Install Firebase CLI: npm install -g firebase-tools');
+./scripts/setup-remote-config.ts:97:  console.log('2. Login: firebase login');
+./scripts/setup-remote-config.ts:98:  console.log('3. Set project: firebase use prepbettr');
+./scripts/setup-remote-config.ts:100:  console.log('5. Deploy: firebase deploy --only remoteconfig\n');
+./scripts/setup-remote-config.ts:122:  console.log('- Error Budgets: Tracked automatically in Firestore');
+./scripts/setup-azure-app-config-production.ts:20:  // Firebase Client Configuration (Public)
+./scripts/setup-azure-app-config-production.ts:21:  NEXT_PUBLIC_FIREBASE_CLIENT_KEY: process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
+./scripts/setup-azure-app-config-production.ts:22:  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'prepbettr.firebasestorage.app',
+./scripts/setup-azure-app-config-production.ts:23:  NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'prepbettr',
+./scripts/setup-azure-app-config-production.ts:24:  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'prepbettr.firebaseapp.com',
+./scripts/setup-azure-app-config-production.ts:25:  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '660242808945',
+./scripts/setup-azure-app-config-production.ts:26:  NEXT_PUBLIC_FIREBASE_APP_ID: '1:660242808945:web:4edbaac82ed140f4d05bd0',
+./scripts/setup-azure-app-config-production.ts:27:  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: 'G-LF6KN9F2HY',
+./scripts/setup-azure-app-config-production.ts:194:      const testKeys = ['ENVIRONMENT', 'NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'FREE_TIER_INTERVIEWS_LIMIT'];
+./scripts/test-key-vault.js:30:      'azure-storage-account-name',
+./scripts/test-key-vault.js:31:      'azure-storage-account-key',
+./scripts/test-key-vault.js:148:      console.log('\n💡 Authentication Tips:');
+./scripts/monitor-mock-interview-usage.ts:7: * - Firestore write operations for mock interviews
+./scripts/monitor-mock-interview-usage.ts:18:import { getAdminFirestore } from '../lib/firebase/admin';
+./scripts/monitor-mock-interview-usage.ts:19:import { Timestamp } from 'firebase-admin/firestore';
+./scripts/monitor-mock-interview-usage.ts:34:  firestoreWrites: number;
+./scripts/monitor-mock-interview-usage.ts:55:  private db = getAdminFirestore();
+./scripts/monitor-mock-interview-usage.ts:73:    console.log(`   - Firestore writes: ${ALERT_THRESHOLD_WRITES}/hour`);
+./scripts/monitor-mock-interview-usage.ts:127:      // Count Firestore writes in the last hour
+./scripts/monitor-mock-interview-usage.ts:132:      const firestoreWrites = writesSnapshot.size;
+./scripts/monitor-mock-interview-usage.ts:159:      const errorRate = firestoreWrites > 0 ? (errors / firestoreWrites) * 100 : 0;
+./scripts/monitor-mock-interview-usage.ts:164:        firestoreWrites,
+./scripts/monitor-mock-interview-usage.ts:188:      hourStats.writes += firestoreWrites;
+./scripts/monitor-mock-interview-usage.ts:193:      // Store metrics in Firestore
+./scripts/monitor-mock-interview-usage.ts:217:      // Check Firestore feature flags collection
+./scripts/monitor-mock-interview-usage.ts:257:   * Store metrics in Firestore for historical tracking
+./scripts/monitor-mock-interview-usage.ts:279:    console.log(`├─ 📝 Firestore Writes (last hour): ${metrics.firestoreWrites}`);
+./scripts/monitor-mock-interview-usage.ts:292:    // Check Firestore writes threshold
+./scripts/monitor-mock-interview-usage.ts:293:    if (metrics.firestoreWrites > ALERT_THRESHOLD_WRITES) {
+./scripts/monitor-mock-interview-usage.ts:294:      alerts.push(`🚨 HIGH FIRESTORE WRITES: ${metrics.firestoreWrites} exceeds threshold of ${ALERT_THRESHOLD_WRITES}/hour`);
+./scripts/monitor-mock-interview-usage.ts:318:      // Store alerts in Firestore
+./scripts/monitor-mock-interview-usage.ts:330:   * Store alert in Firestore
+./scripts/monitor-mock-interview-usage.ts:339:          firestoreWrites: metrics.firestoreWrites,
+./scripts/monitor-mock-interview-usage.ts:372:    console.log(`📝 Total Firestore Writes: ${totalWrites}`);
+./scripts/monitor-mock-interview-usage.ts:412:    const totalWrites = metrics.reduce((sum, m) => sum + m.firestoreWrites, 0);
+./scripts/compare-env-variables.ts:55:  // Azure Storage
+./scripts/compare-env-variables.ts:56:  ['AZURE_STORAGE_ACCOUNT_NAME', 'azure-storage-account-name'],
+./scripts/compare-env-variables.ts:57:  ['AZURE_STORAGE_ACCOUNT_KEY', 'azure-storage-account-key'],
+./scripts/compare-env-variables.ts:63:  // Firebase (typically not in Key Vault)
+./scripts/compare-env-variables.ts:64:  ['FIREBASE_PROJECT_ID', null],
+./scripts/compare-env-variables.ts:65:  ['FIREBASE_PRIVATE_KEY', null],
+./scripts/compare-env-variables.ts:66:  ['FIREBASE_CLIENT_EMAIL', null],
+./scripts/compare-env-variables.ts:67:  ['NEXT_PUBLIC_FIREBASE_CLIENT_KEY', null],
+./scripts/compare-env-variables.ts:68:  ['NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', null],
+./scripts/compare-env-variables.ts:103:  'FIREBASE_PROJECT_ID',
+./scripts/compare-env-variables.ts:104:  'FIREBASE_PRIVATE_KEY',
+./scripts/compare-env-variables.ts:105:  'FIREBASE_CLIENT_EMAIL',
+./scripts/compare-env-variables.ts:106:  'NEXT_PUBLIC_FIREBASE_CLIENT_KEY',
+./scripts/compare-env-variables.ts:107:  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+./lib/middleware/error-handler.ts:100:    // Authentication errors
+./lib/middleware/error-handler.ts:101:    if (error.message?.includes('unauthorized') || error.message?.includes('token')) {
+./lib/middleware/error-handler.ts:103:        name: 'AuthenticationError',
+./lib/middleware/error-handler.ts:104:        message: 'Authentication failed',
+./lib/middleware/error-handler.ts:106:        code: 'AUTH_ERROR',
+./lib/middleware/authMiddleware.ts:2:import { verifyIdToken } from '@/lib/firebase/admin';
+./lib/middleware/authMiddleware.ts:5: * Firebase Authentication Middleware for Next.js API Routes
+./lib/middleware/authMiddleware.ts:7: * This middleware validates Firebase ID tokens and ensures only authenticated users
+./lib/middleware/authMiddleware.ts:11:export interface AuthenticatedUser {
+./lib/middleware/authMiddleware.ts:17:  firebase: any;
+./lib/middleware/authMiddleware.ts:21:export interface AuthResult {
+./lib/middleware/authMiddleware.ts:23:  user: AuthenticatedUser | null;
+./lib/middleware/authMiddleware.ts:27:export interface AuthRequest extends NextRequest {
+./lib/middleware/authMiddleware.ts:28:  user?: AuthenticatedUser;
+./lib/middleware/authMiddleware.ts:32: * Extract Bearer token from Authorization header
+./lib/middleware/authMiddleware.ts:34:function extractBearerToken(authHeader: string | null): string | null {
+./lib/middleware/authMiddleware.ts:35:  if (!authHeader) {
+./lib/middleware/authMiddleware.ts:39:  const parts = authHeader.split(' ');
+./lib/middleware/authMiddleware.ts:48: * Verify Firebase ID token
+./lib/middleware/authMiddleware.ts:50:export async function verifyFirebaseToken(idToken: string): Promise<AuthResult> {
+./lib/middleware/authMiddleware.ts:70:        firebase: decodedToken.firebase,
+./lib/middleware/authMiddleware.ts:85: * Authentication middleware for Next.js API routes
+./lib/middleware/authMiddleware.ts:88: * import { authMiddleware } from '@/lib/middleware/authMiddleware';
+./lib/middleware/authMiddleware.ts:91: *   const authResult = await authMiddleware(request);
+./lib/middleware/authMiddleware.ts:92: *   if (!authResult.success) {
+./lib/middleware/authMiddleware.ts:93: *     return authResult.response;
+./lib/middleware/authMiddleware.ts:96: *   const user = authResult.user;
+./lib/middleware/authMiddleware.ts:100:export async function authMiddleware(request: NextRequest): Promise<{
+./lib/middleware/authMiddleware.ts:102:  user: AuthenticatedUser | null;
+./lib/middleware/authMiddleware.ts:106:    // Extract token from Authorization header
+./lib/middleware/authMiddleware.ts:107:    const authHeader = request.headers.get('authorization');
+./lib/middleware/authMiddleware.ts:108:    const token = extractBearerToken(authHeader);
+./lib/middleware/authMiddleware.ts:116:            error: 'Missing or invalid Authorization header',
+./lib/middleware/authMiddleware.ts:117:            message: 'Please provide a valid Bearer token in the Authorization header'
+./lib/middleware/authMiddleware.ts:124:    // Verify the Firebase token
+./lib/middleware/authMiddleware.ts:125:    const verificationResult = await verifyFirebaseToken(token);
+./lib/middleware/authMiddleware.ts:141:    console.log(`Authenticated user: ${verificationResult.user?.uid} (${verificationResult.user?.email})`);
+./lib/middleware/authMiddleware.ts:149:    console.error('Authentication middleware error:', error);
+./lib/middleware/authMiddleware.ts:156:          error: 'Authentication system error',
+./lib/middleware/authMiddleware.ts:166: * Role-based authorization middleware
+./lib/middleware/authMiddleware.ts:175:  user: AuthenticatedUser | null;
+./lib/middleware/authMiddleware.ts:178:  const authResult = await authMiddleware(request);
+./lib/middleware/authMiddleware.ts:180:  if (!authResult.success) {
+./lib/middleware/authMiddleware.ts:181:    return authResult;
+./lib/middleware/authMiddleware.ts:184:  const user = authResult.user!;
+./lib/middleware/authMiddleware.ts:206:  return authResult;
+./lib/middleware/authMiddleware.ts:217: * Higher-order function to create authenticated API handlers
+./lib/middleware/authMiddleware.ts:220: * import { withAuth } from '@/lib/middleware/authMiddleware';
+./lib/middleware/authMiddleware.ts:222: * export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
+./lib/middleware/authMiddleware.ts:227:export function withAuth<T extends any[]>(
+./lib/middleware/authMiddleware.ts:228:  handler: (request: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<NextResponse>,
+./lib/middleware/authMiddleware.ts:229:  options: { requiredRoles?: string[]; skipAuth?: boolean } = {}
+./lib/middleware/authMiddleware.ts:232:    const { requiredRoles = [], skipAuth = false } = options;
+./lib/middleware/authMiddleware.ts:234:    if (skipAuth) {
+./lib/middleware/authMiddleware.ts:238:    const authResult = requiredRoles.length > 0 
+./lib/middleware/authMiddleware.ts:240:      : await authMiddleware(request);
+./lib/middleware/authMiddleware.ts:242:    if (!authResult.success || !authResult.user) {
+./lib/middleware/authMiddleware.ts:243:      return authResult.response!;
+./lib/middleware/authMiddleware.ts:246:    // Call the actual handler with the authenticated user
+./lib/middleware/authMiddleware.ts:247:    return await handler(request, authResult.user, ...args);
+./lib/middleware/authMiddleware.ts:254:export function withAdminAuth<T extends any[]>(
+./lib/middleware/authMiddleware.ts:255:  handler: (request: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<NextResponse>
+./lib/middleware/authMiddleware.ts:257:  return withAuth(handler, { requiredRoles: ['admin'] });
+./lib/middleware/authMiddleware.ts:263:export async function getUserFromSessionCookie(sessionCookie: string): Promise<AuthResult> {
+./lib/middleware/authMiddleware.ts:265:    // Note: Session cookie verification needs direct Firebase Admin auth access
+./lib/middleware/authMiddleware.ts:266:    const { getAdminAuth } = await import('@/lib/firebase/admin');
+./lib/middleware/authMiddleware.ts:267:    const adminAuth = getAdminAuth();
+./lib/middleware/authMiddleware.ts:268:    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+./lib/middleware/authMiddleware.ts:278:        firebase: decodedClaims.firebase,
+./lib/middleware/authMiddleware.ts:293: * Middleware for API routes that need to handle both authenticated and anonymous users
+./lib/middleware/authMiddleware.ts:295:export async function optionalAuth(request: NextRequest): Promise<{
+./lib/middleware/authMiddleware.ts:296:  user: AuthenticatedUser | null;
+./lib/middleware/authMiddleware.ts:297:  isAuthenticated: boolean;
+./lib/middleware/authMiddleware.ts:299:  const authHeader = request.headers.get('authorization');
+./lib/middleware/authMiddleware.ts:300:  const token = extractBearerToken(authHeader);
+./lib/middleware/authMiddleware.ts:305:      isAuthenticated: false
+./lib/middleware/authMiddleware.ts:309:  const verificationResult = await verifyFirebaseToken(token);
+./lib/middleware/authMiddleware.ts:313:    isAuthenticated: verificationResult.success
+./lib/middleware/authMiddleware.ts:318: * Health check utility (no auth required)
+./lib/middleware/authMiddleware.ts:325:      service: 'Next.js API Auth Middleware'
+./lib/errors.ts:105:        return createErrorResponse('Service authentication failed. Please try again later.', 500);
+./lib/utils.ts:94:  'firebase': { type: 'react-icon', icon: 'SiFirebase' },
+./lib/utils/telemetry.ts:438:      appInsights.setAuthenticatedUserContext(userId, email);
+./lib/utils/telemetry.ts:466:      appInsights.clearAuthenticatedUserContext();
+./lib/utils/communityInterviewStorage.ts:1:// Utility functions for managing community interview localStorage data
+./lib/utils/communityInterviewStorage.ts:14:export const COMMUNITY_INTERVIEW_STORAGE_KEY = 'communityMockInterviewSelection';
+./lib/utils/communityInterviewStorage.ts:17: * Safely get community interview data from localStorage
+./lib/utils/communityInterviewStorage.ts:19:export const getCommunityInterviewFromStorage = (): CommunityInterviewData | null => {
+./lib/utils/communityInterviewStorage.ts:23:        const stored = localStorage.getItem(COMMUNITY_INTERVIEW_STORAGE_KEY);
+./lib/utils/communityInterviewStorage.ts:31:            localStorage.removeItem(COMMUNITY_INTERVIEW_STORAGE_KEY);
+./lib/utils/communityInterviewStorage.ts:38:        localStorage.removeItem(COMMUNITY_INTERVIEW_STORAGE_KEY);
+./lib/utils/communityInterviewStorage.ts:44: * Store community interview data in localStorage
+./lib/utils/communityInterviewStorage.ts:46:export const setCommunityInterviewInStorage = (data: Omit<CommunityInterviewData, 'timestamp'>): void => {
+./lib/utils/communityInterviewStorage.ts:54:        localStorage.setItem(COMMUNITY_INTERVIEW_STORAGE_KEY, JSON.stringify(dataWithTimestamp));
+./lib/utils/communityInterviewStorage.ts:61: * Clear community interview data from localStorage
+./lib/utils/communityInterviewStorage.ts:63:export const clearCommunityInterviewFromStorage = (): void => {
+./lib/utils/communityInterviewStorage.ts:67:        localStorage.removeItem(COMMUNITY_INTERVIEW_STORAGE_KEY);
+./lib/utils/communityInterviewStorage.ts:68:        console.log('Community interview data cleared from storage');
+./lib/utils/communityInterviewStorage.ts:78:    const stored = getCommunityInterviewFromStorage();
+./lib/utils/communityInterviewStorage.ts:96:        window.clearCommunityInterview = clearCommunityInterviewFromStorage;
+./lib/utils/communityInterviewStorage.ts:98:        window.getCommunityInterview = getCommunityInterviewFromStorage;
+./lib/utils/jwt-decoder.ts:2: * Simple JWT decoder for Firebase ID tokens
+./lib/utils/jwt-decoder.ts:3: * This bypasses Firebase Admin SDK to avoid SSL/gRPC issues
+./lib/utils/jwt-decoder.ts:21:export function decodeFirebaseToken(token: string): DecodedToken | null {
+./lib/utils/jwt-decoder.ts:39:    // Basic validation - check for user_id field (Firebase uses this)
+./lib/utils/jwt-decoder.ts:69:    // Check if it's a Firebase token
+./lib/utils/jwt-decoder.ts:71:      console.error('Not a valid Firebase token');
+./lib/utils/resume-parser.ts:1:import { WorkExperience, Education, Project } from '../services/firebase-resume-service';
+./lib/utils/firebase-auth-debug.ts:3:import { auth } from '@/firebase/client';
+./lib/utils/firebase-auth-debug.ts:4:import { User, IdTokenResult } from 'firebase/auth';
+./lib/utils/firebase-auth-debug.ts:6:export function debugFirebaseAuth() {
+./lib/utils/firebase-auth-debug.ts:7:  if (!auth) {
+./lib/utils/firebase-auth-debug.ts:8:    console.log('=== Firebase Auth Debug ===');
+./lib/utils/firebase-auth-debug.ts:9:    console.log('Firebase auth not available');
+./lib/utils/firebase-auth-debug.ts:14:  const currentUser = auth.currentUser;
+./lib/utils/firebase-auth-debug.ts:16:  console.log('=== Firebase Auth Debug ===');
+./lib/utils/firebase-auth-debug.ts:21:  console.log('Auth Ready:', !!currentUser);
+./lib/utils/firebase-auth-debug.ts:40:    console.log('No Firebase user authenticated');
+./lib/utils/firebase-auth-debug.ts:45:export function waitForFirebaseAuth(): Promise<User | null> {
+./lib/utils/firebase-auth-debug.ts:47:    if (!auth) {
+./lib/utils/firebase-auth-debug.ts:52:    const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
+./lib/firebase/admin.ts:1:import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
+./lib/firebase/admin.ts:2:import { getAuth, Auth } from 'firebase-admin/auth';
+./lib/firebase/admin.ts:3:import { getFirestore, Firestore } from 'firebase-admin/firestore';
+./lib/firebase/admin.ts:4:import { getStorage, Storage } from 'firebase-admin/storage';
+./lib/firebase/admin.ts:7:let adminAuth: Auth | null = null;
+./lib/firebase/admin.ts:8:let adminDb: Firestore | null = null;
+./lib/firebase/admin.ts:9:let adminStorage: Storage | null = null;
+./lib/firebase/admin.ts:12: * Initialize Firebase Admin SDK with singleton pattern
+./lib/firebase/admin.ts:14:export function initializeFirebaseAdmin(): App {
+./lib/firebase/admin.ts:26:  // Skip Firebase initialization if we're in build mode
+./lib/firebase/admin.ts:27:  if (process.env.NODE_ENV === 'production' && !process.env.FIREBASE_PROJECT_ID) {
+./lib/firebase/admin.ts:28:    console.log('Skipping Firebase Admin initialization during build');
+./lib/firebase/admin.ts:40:      projectId: process.env.FIREBASE_PROJECT_ID,
+./lib/firebase/admin.ts:41:      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+./lib/firebase/admin.ts:42:      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+./lib/firebase/admin.ts:46:      console.warn('Missing Firebase service account credentials, creating mock app for build');
+./lib/firebase/admin.ts:57:      projectId: process.env.FIREBASE_PROJECT_ID,
+./lib/firebase/admin.ts:58:      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
+./lib/firebase/admin.ts:61:    console.log('Firebase Admin initialized successfully');
+./lib/firebase/admin.ts:64:    console.error('Firebase Admin initialization error:', error);
+./lib/firebase/admin.ts:67:      console.log('Creating mock Firebase app for build process');
+./lib/firebase/admin.ts:75:    throw new Error('Failed to initialize Firebase Admin SDK');
+./lib/firebase/admin.ts:80: * Get Firebase Admin Auth instance
+./lib/firebase/admin.ts:82:export function getAdminAuth(): Auth {
+./lib/firebase/admin.ts:83:  if (!adminAuth) {
+./lib/firebase/admin.ts:84:    const app = initializeFirebaseAdmin();
+./lib/firebase/admin.ts:87:      adminAuth = {} as Auth;
+./lib/firebase/admin.ts:89:      adminAuth = getAuth(app);
+./lib/firebase/admin.ts:92:  return adminAuth;
+./lib/firebase/admin.ts:96: * Get Firebase Admin Firestore instance
+./lib/firebase/admin.ts:98:export function getAdminFirestore(): Firestore {
+./lib/firebase/admin.ts:100:    const app = initializeFirebaseAdmin();
+./lib/firebase/admin.ts:103:      adminDb = {} as Firestore;
+./lib/firebase/admin.ts:105:      adminDb = getFirestore(app);
+./lib/firebase/admin.ts:112: * Get Firebase Admin Storage instance
+./lib/firebase/admin.ts:114:export function getAdminStorage(): Storage {
+./lib/firebase/admin.ts:115:  if (!adminStorage) {
+./lib/firebase/admin.ts:116:    const app = initializeFirebaseAdmin();
+./lib/firebase/admin.ts:119:      adminStorage = {} as Storage;
+./lib/firebase/admin.ts:121:      adminStorage = getStorage(app);
+./lib/firebase/admin.ts:124:  return adminStorage;
+./lib/firebase/admin.ts:128: * Helper to verify Firebase ID token
+./lib/firebase/admin.ts:132:    const auth = getAdminAuth();
+./lib/firebase/admin.ts:133:    const decodedToken = await auth.verifyIdToken(token);
+./lib/hooks/useOfflineSupport.ts:94:    // Try to store in localStorage for persistence
+./lib/hooks/useOfflineSupport.ts:96:      const existingQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+./lib/hooks/useOfflineSupport.ts:98:      localStorage.setItem('offlineQueue', JSON.stringify(existingQueue));
+./lib/hooks/useOfflineSupport.ts:142:    // Update localStorage
+./lib/hooks/useOfflineSupport.ts:144:      localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
+./lib/hooks/useOfflineSupport.ts:185:      const persistedQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+./lib/hooks/useOfflineSupport.ts:212:        localStorage.removeItem('offlineQueue');
+./lib/hooks/useRealtimeFirestore.ts:15:} from 'firebase/firestore';
+./lib/hooks/useRealtimeFirestore.ts:16:import { db } from '@/firebase/client';
+./lib/hooks/useRealtimeFirestore.ts:17:import { useAuth } from '@/contexts/AuthContext';
+./lib/hooks/useRealtimeFirestore.ts:29:  const { user } = useAuth();
+./lib/hooks/useRealtimeFirestore.ts:84:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useRealtimeFirestore.ts:100:    if (authLoading || !user) {
+./lib/hooks/useRealtimeFirestore.ts:101:      if (!authLoading) {
+./lib/hooks/useRealtimeFirestore.ts:133:  }, [user, authLoading, mutate]);
+./lib/hooks/useRealtimeFirestore.ts:138:    isLoading: authLoading || isLoading,
+./lib/hooks/useRealtimeFirestore.ts:198:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useRealtimeFirestore.ts:209:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useRealtimeFirestore.ts:225:    if (authLoading || !user || !interviewId) {
+./lib/hooks/useRealtimeFirestore.ts:226:      if (!authLoading) {
+./lib/hooks/useRealtimeFirestore.ts:260:  }, [interviewId, user, authLoading, mutate]);
+./lib/hooks/useRealtimeFirestore.ts:265:    isLoading: authLoading || isLoading,
+./lib/hooks/useRealtimeFirestore.ts:272:  const { user } = useAuth();
+./lib/hooks/useCommunityInterview.ts:5:import { doc, getDoc } from 'firebase/firestore';
+./lib/hooks/useCommunityInterview.ts:6:import { db } from '@/firebase/client';
+./lib/hooks/useFirestore.ts:13:} from 'firebase/firestore';
+./lib/hooks/useFirestore.ts:14:import { db } from '@/firebase/client';
+./lib/hooks/useFirestore.ts:15:import { useAuth } from '@/contexts/AuthContext';
+./lib/hooks/useFirestore.ts:16:import { auth } from '@/firebase/client';
+./lib/hooks/useFirestore.ts:17:import { onAuthStateChanged } from 'firebase/auth';
+./lib/hooks/useFirestore.ts:24:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useFirestore.ts:28:      if (authLoading) return; // Wait for auth to resolve
+./lib/hooks/useFirestore.ts:62:  }, [user, authLoading]);
+./lib/hooks/useFirestore.ts:64:  return { interviews, loading: authLoading || localLoading, error };
+./lib/hooks/useFirestore.ts:72:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useFirestore.ts:76:      if (authLoading) return; // Wait for auth to resolve
+./lib/hooks/useFirestore.ts:112:  }, [user, authLoading]);
+./lib/hooks/useFirestore.ts:114:  return { interviews, loading: authLoading || localLoading, error };
+./lib/hooks/useFirestore.ts:117:// Hook for fetching a specific interview (with auth check)
+./lib/hooks/useFirestore.ts:122:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useFirestore.ts:132:      if (authLoading) return; // Wait for auth to resolve
+./lib/hooks/useFirestore.ts:167:  }, [interviewId, user, authLoading]);
+./lib/hooks/useFirestore.ts:169:  return { interview, loading: authLoading || localLoading, error };
+./lib/hooks/useFirestore.ts:177:  const [firebaseReady, setFirebaseReady] = useState(false);
+./lib/hooks/useFirestore.ts:178:  const { user, loading: authLoading } = useAuth();
+./lib/hooks/useFirestore.ts:180:  // Wait for Firebase Auth to be ready
+./lib/hooks/useFirestore.ts:182:    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+./lib/hooks/useFirestore.ts:183:      setFirebaseReady(true);
+./lib/hooks/useFirestore.ts:184:      if (!firebaseUser && user) {
+./lib/hooks/useFirestore.ts:185:        // Firebase auth is not ready but we have a user from server context
+./lib/hooks/useFirestore.ts:186:        console.log('Firebase auth state not ready, but user exists from server');
+./lib/hooks/useFirestore.ts:201:      if (authLoading || !firebaseReady) return; // Wait for both auth and Firebase to resolve
+./lib/hooks/useFirestore.ts:209:      // Check if Firebase user is authenticated
+./lib/hooks/useFirestore.ts:210:      const currentUser = auth.currentUser;
+./lib/hooks/useFirestore.ts:212:        console.error('Firebase Auth user not found, but user context exists');
+./lib/hooks/useFirestore.ts:213:        setError('Authentication required. Please sign in again.');
+./lib/hooks/useFirestore.ts:244:        // Check for specific Firebase errors
+./lib/hooks/useFirestore.ts:247:          setError('Permission denied. Please check your authentication.');
+./lib/hooks/useFirestore.ts:259:  }, [interviewId, user, authLoading, firebaseReady]);
+./lib/hooks/useFirestore.ts:261:  return { feedback, loading: authLoading || localLoading || !firebaseReady, error };
+./lib/actions/feedback.action.ts:7:  return { success: false, feedback: null, error: 'Static mode', details: 'Auth disabled in static mode' };
+./lib/actions/auth.action.ts:3:  console.warn('Auth disabled in static mode');
+./lib/actions/auth.action.ts:4:  return { success: false, error: 'Static mode', message: 'Auth disabled in static mode' };
+./lib/actions/auth.action.ts:23:export async function isAuthenticated() {
+./lib/services/mock-interview.service.test.ts:59:          'Mobile Development Specialist': ['React Native', 'Swift', 'Kotlin', 'Firebase', 'GraphQL'],
+./lib/services/azure-cosmos-service.ts:73:    storageProvider: 'azure' | 'firebase';
+./lib/services/azure-cosmos-service.ts:892:  // Profile operations (for Firestore profiles collection)
+./lib/services/azure-cosmos-service.ts:945:  // Generic query operations for complex Firestore-like queries
+./lib/services/firebase-resume-service.ts:1:import { FieldValue } from 'firebase-admin/firestore';
+./lib/services/firebase-resume-service.ts:2:import { getAdminStorage, getAdminFirestore } from '../firebase/admin';
+./lib/services/firebase-resume-service.ts:61: * Upload resume file to Firebase Cloud Storage
+./lib/services/firebase-resume-service.ts:63:export async function uploadResumeToStorage(
+./lib/services/firebase-resume-service.ts:70:    const storage = getAdminStorage();
+./lib/services/firebase-resume-service.ts:71:    const bucket = storage.bucket();
+./lib/services/firebase-resume-service.ts:90:    const fileUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+./lib/services/firebase-resume-service.ts:94:    console.error('Error uploading resume to storage:', error);
+./lib/services/firebase-resume-service.ts:95:    throw new Error('Failed to upload resume to cloud storage');
+./lib/services/firebase-resume-service.ts:100: * Delete resume file from Firebase Cloud Storage
+./lib/services/firebase-resume-service.ts:102:export async function deleteResumeFromStorage(filePath: string): Promise<void> {
+./lib/services/firebase-resume-service.ts:104:    const storage = getAdminStorage();
+./lib/services/firebase-resume-service.ts:105:    const bucket = storage.bucket();
+./lib/services/firebase-resume-service.ts:114:    console.error('Error deleting resume from storage:', error);
+./lib/services/firebase-resume-service.ts:121: * Get user's existing resume from Firestore
+./lib/services/firebase-resume-service.ts:125:    const db = getAdminFirestore();
+./lib/services/firebase-resume-service.ts:140: * Save resume data to Firestore
+./lib/services/firebase-resume-service.ts:142:export async function saveResumeToFirestore(resumeData: ResumeData): Promise<string> {
+./lib/services/firebase-resume-service.ts:144:    const db = getAdminFirestore();
+./lib/services/firebase-resume-service.ts:159:    console.error('Error saving resume to Firestore:', error);
+./lib/services/firebase-resume-service.ts:165: * Delete user's existing resume (both storage and Firestore)
+./lib/services/firebase-resume-service.ts:172:      // Delete from storage
+./lib/services/firebase-resume-service.ts:173:      await deleteResumeFromStorage(existingResume.filePath);
+./lib/services/firebase-resume-service.ts:175:      // Delete from Firestore
+./lib/services/firebase-resume-service.ts:176:      const db = getAdminFirestore();
+./lib/services/firebase-resume-service.ts:203:    // Upload new resume to storage
+./lib/services/firebase-resume-service.ts:204:    const { fileUrl, filePath } = await uploadResumeToStorage(
+./lib/services/firebase-resume-service.ts:227:    // Save to Firestore
+./lib/services/firebase-resume-service.ts:228:    const docId = await saveResumeToFirestore(resumeData);
+./lib/services/azure-ai-service.ts:2:import { AzureKeyCredential } from '@azure/core-auth';
+./lib/services/azure-openai.ts:51: * - Authentication errors (401, 403)
+./lib/services/azure-openai.ts:94:        return new Error('Azure OpenAI authentication failed. Please check your API key.');
+./lib/services/azure-blob-storage.ts:1:import { BlobServiceClient, BlobSASPermissions, generateBlobSASQueryParameters, StorageSharedKeyCredential, BlobSASSignatureValues, SASProtocol } from '@azure/storage-blob';
+./lib/services/azure-blob-storage.ts:22:class AzureBlobStorageService {
+./lib/services/azure-blob-storage.ts:34:   * Initialize the Azure Blob Storage service
+./lib/services/azure-blob-storage.ts:42:        accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME || secrets.azureStorageAccountName || '',
+./lib/services/azure-blob-storage.ts:43:        accountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY || secrets.azureStorageAccountKey || '',
+./lib/services/azure-blob-storage.ts:48:        console.warn('⚠️ Azure Blob Storage credentials not found, falling back to Firebase');
+./lib/services/azure-blob-storage.ts:53:      const sharedKeyCredential = new StorageSharedKeyCredential(
+./lib/services/azure-blob-storage.ts:66:      console.log('✅ Azure Blob Storage service initialized');
+./lib/services/azure-blob-storage.ts:69:      console.error('❌ Failed to initialize Azure Blob Storage:', error);
+./lib/services/azure-blob-storage.ts:70:      logServerError(error as Error, { service: 'azure-blob-storage', action: 'initialize' });
+./lib/services/azure-blob-storage.ts:80:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:105:   * Upload resume file to Azure Blob Storage
+./lib/services/azure-blob-storage.ts:114:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:141:      console.log(`✅ Resume uploaded to Azure Blob Storage: ${blobName}`);
+./lib/services/azure-blob-storage.ts:149:      console.error('Failed to upload resume to Azure Blob Storage:', error);
+./lib/services/azure-blob-storage.ts:151:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:166:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:174:      const sharedKeyCredential = new StorageSharedKeyCredential(
+./lib/services/azure-blob-storage.ts:199:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:209:   * Delete resume from Azure Blob Storage
+./lib/services/azure-blob-storage.ts:213:      console.warn('Azure Blob Storage service not initialized, skipping delete');
+./lib/services/azure-blob-storage.ts:223:      console.log(`✅ Resume deleted from Azure Blob Storage: ${blobName}`);
+./lib/services/azure-blob-storage.ts:225:      console.error('Failed to delete resume from Azure Blob Storage:', error);
+./lib/services/azure-blob-storage.ts:227:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:241:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:264:   * Upload profile picture to Azure Blob Storage
+./lib/services/azure-blob-storage.ts:273:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:300:      console.log(`✅ Profile picture uploaded to Azure Blob Storage: ${blobName}`);
+./lib/services/azure-blob-storage.ts:307:      console.error('Failed to upload profile picture to Azure Blob Storage:', error);
+./lib/services/azure-blob-storage.ts:309:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:320:   * Upload general file to Azure Blob Storage
+./lib/services/azure-blob-storage.ts:331:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:360:      console.log(`✅ File uploaded to Azure Blob Storage: ${blobName} in container ${containerName}`);
+./lib/services/azure-blob-storage.ts:368:      console.error(`Failed to upload file to Azure Blob Storage container ${containerType}:`, error);
+./lib/services/azure-blob-storage.ts:370:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:390:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:398:      const sharedKeyCredential = new StorageSharedKeyCredential(
+./lib/services/azure-blob-storage.ts:429:      console.warn('Azure Blob Storage service not initialized, skipping delete');
+./lib/services/azure-blob-storage.ts:439:      console.log(`✅ File deleted from Azure Blob Storage: ${blobName} in container ${containerName}`);
+./lib/services/azure-blob-storage.ts:441:      console.error(`Failed to delete file from Azure Blob Storage container ${containerType}:`, error);
+./lib/services/azure-blob-storage.ts:443:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:458:      console.warn('Azure Blob Storage service not initialized, skipping delete');
+./lib/services/azure-blob-storage.ts:494:      console.error('Failed to delete all user files from Azure Blob Storage:', error);
+./lib/services/azure-blob-storage.ts:496:        service: 'azure-blob-storage', 
+./lib/services/azure-blob-storage.ts:512:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:536:      throw new Error('Azure Blob Storage service not initialized');
+./lib/services/azure-blob-storage.ts:561:export const azureBlobStorage = new AzureBlobStorageService();
+./lib/services/azure-gdpr-service.ts:2:import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+./lib/services/azure-gdpr-service.ts:10: * and audit logging, plus Azure Blob Storage for file deletion.
+./lib/services/azure-gdpr-service.ts:93:   * Initialize Azure services (Cosmos DB, Blob Storage, Key Vault)
+./lib/services/azure-gdpr-service.ts:108:      // Initialize Blob Storage
+./lib/services/azure-gdpr-service.ts:109:      await this.initializeBlobStorage();
+./lib/services/azure-gdpr-service.ts:159:  private async initializeBlobStorage(): Promise<void> {
+./lib/services/azure-gdpr-service.ts:161:      let connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+./lib/services/azure-gdpr-service.ts:166:          const secret = await this.keyVaultClient.getSecret('storage-connection-string');
+./lib/services/azure-gdpr-service.ts:169:          console.warn('Could not retrieve Storage connection from Key Vault:', keyVaultError);
+./lib/services/azure-gdpr-service.ts:174:        throw new Error('Azure Storage connection string not found in environment or Key Vault');
+./lib/services/azure-gdpr-service.ts:179:      console.log('✅ Azure Blob Storage initialized for GDPR service');
+./lib/services/azure-gdpr-service.ts:181:      console.error('❌ Failed to initialize Blob Storage:', error);
+./lib/services/azure-gdpr-service.ts:408:      // Delete from Azure Blob Storage
+./lib/services/azure-gdpr-service.ts:410:        const deletedBlobContainers = await this.deleteFromBlobStorage(request.userId);
+./lib/services/azure-gdpr-service.ts:412:          deletedData.push(`blob-storage (${deletedBlobContainers.join(', ')})`);
+./lib/services/azure-gdpr-service.ts:415:        const errorMsg = `Failed to delete from blob storage: ${error}`;
+./lib/services/azure-gdpr-service.ts:667:   * Delete user files from Azure Blob Storage
+./lib/services/azure-gdpr-service.ts:669:  private async deleteFromBlobStorage(userId: string): Promise<string[]> {
+./lib/services/email-verification-service.ts:3:import { getAdminFirestore } from '@/lib/firebase/admin';
+./lib/services/email-verification-service.ts:4:import { FieldValue } from 'firebase-admin/firestore';
+./lib/services/email-verification-service.ts:10:  private _db: ReturnType<typeof getAdminFirestore> | null = null;
+./lib/services/email-verification-service.ts:14:      this._db = getAdminFirestore();
+./lib/services/email-verification-service.ts:50:      const baseUrl = process.env.NEXTAUTH_URL || process.env.AZURE_APP_SERVICE_URL || 'http://localhost:3000';
+./lib/services/email-verification-service.ts:51:      const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+./lib/services/resume-processing-service.ts:1:import { FieldValue } from 'firebase-admin/firestore';
+./lib/services/resume-processing-service.ts:2:import { getAdminFirestore } from '@/lib/firebase/admin';
+./lib/services/resume-processing-service.ts:3:import { azureBlobStorage } from './azure-blob-storage';
+./lib/services/resume-processing-service.ts:6:  uploadResumeToStorage, 
+./lib/services/resume-processing-service.ts:7:  deleteResumeFromStorage, 
+./lib/services/resume-processing-service.ts:11:} from './firebase-resume-service';
+./lib/services/resume-processing-service.ts:23:    storageProvider: 'azure' | 'firebase';
+./lib/services/resume-processing-service.ts:46:      await azureBlobStorage.initialize();
+./lib/services/resume-processing-service.ts:54:      // Don't throw - we can still operate with Firebase fallback
+./lib/services/resume-processing-service.ts:60:   * Process uploaded resume: storage, extraction, and data persistence
+./lib/services/resume-processing-service.ts:78:      // Step 2: Upload to storage (Azure Blob Storage with Firebase fallback)
+./lib/services/resume-processing-service.ts:79:      const storageResult = await this.uploadToStorage(userId, fileBuffer, fileName, mimeType);
+./lib/services/resume-processing-service.ts:90:      // Step 5: Save to Firestore profiles collection
+./lib/services/resume-processing-service.ts:91:      const resumeId = await this.saveToFirestore(userId, {
+./lib/services/resume-processing-service.ts:93:        fileUrl: storageResult.fileUrl,
+./lib/services/resume-processing-service.ts:94:        filePath: storageResult.filePath,
+./lib/services/resume-processing-service.ts:95:        blobName: storageResult.blobName,
+./lib/services/resume-processing-service.ts:96:        sasUrl: storageResult.sasUrl,
+./lib/services/resume-processing-service.ts:104:          storageProvider: storageResult.provider
+./lib/services/resume-processing-service.ts:114:          fileUrl: storageResult.fileUrl,
+./lib/services/resume-processing-service.ts:115:          sasUrl: storageResult.sasUrl,
+./lib/services/resume-processing-service.ts:118:          storageProvider: storageResult.provider
+./lib/services/resume-processing-service.ts:140:   * Upload resume to storage (Azure Blob with Firebase fallback)
+./lib/services/resume-processing-service.ts:142:  private async uploadToStorage(
+./lib/services/resume-processing-service.ts:152:    provider: 'azure' | 'firebase';
+./lib/services/resume-processing-service.ts:155:    // Try Azure Blob Storage first
+./lib/services/resume-processing-service.ts:156:    if (azureBlobStorage.isReady()) {
+./lib/services/resume-processing-service.ts:158:        console.log('📤 Uploading to Azure Blob Storage...');
+./lib/services/resume-processing-service.ts:159:        const result = await azureBlobStorage.uploadResume(userId, fileBuffer, fileName, mimeType);
+./lib/services/resume-processing-service.ts:168:        console.warn('⚠️ Azure Blob Storage upload failed, falling back to Firebase:', error);
+./lib/services/resume-processing-service.ts:169:        // Continue to Firebase fallback
+./lib/services/resume-processing-service.ts:173:    // Fallback to Firebase Storage
+./lib/services/resume-processing-service.ts:174:    console.log('📤 Uploading to Firebase Storage...');
+./lib/services/resume-processing-service.ts:175:    const { fileUrl, filePath } = await uploadResumeToStorage(userId, fileBuffer, fileName, mimeType);
+./lib/services/resume-processing-service.ts:180:      provider: 'firebase'
+./lib/services/resume-processing-service.ts:353:   * Save resume data to Firestore profiles collection
+./lib/services/resume-processing-service.ts:355:  private async saveToFirestore(userId: string, resumeData: any): Promise<string> {
+./lib/services/resume-processing-service.ts:357:      const db = getAdminFirestore();
+./lib/services/resume-processing-service.ts:370:      console.log(`✅ Resume data saved to Firestore for user: ${userId}`);
+./lib/services/resume-processing-service.ts:373:      console.error('Failed to save resume data to Firestore:', error);
+./lib/services/resume-processing-service.ts:384:      const db = getAdminFirestore();
+./lib/services/resume-processing-service.ts:390:        // Delete from storage based on provider
+./lib/services/resume-processing-service.ts:391:        if (profileData?.metadata?.storageProvider === 'azure' && profileData?.blobName) {
+./lib/services/resume-processing-service.ts:392:          await azureBlobStorage.deleteResume(profileData.blobName);
+./lib/services/resume-processing-service.ts:394:          await deleteResumeFromStorage(profileData.filePath);
+./lib/services/resume-processing-service.ts:409:   * Get user's resume data from Firestore
+./lib/services/resume-processing-service.ts:413:      const db = getAdminFirestore();
+./lib/services/resume-processing-service.ts:435:      if (resumeData?.blobName && azureBlobStorage.isReady()) {
+./lib/services/resume-processing-service.ts:436:        const result = await azureBlobStorage.generateSASUrl(resumeData.blobName, expiryHours);
+./lib/services/firebase-verification.ts:1:import { getAuthService } from "@/firebase/admin";
+./lib/services/firebase-verification.ts:4: * Firebase REST API verification service
+./lib/services/firebase-verification.ts:5: * This provides a fallback when Firebase Admin SDK has SSL/gRPC issues
+./lib/services/firebase-verification.ts:7:class FirebaseVerificationService {
+./lib/services/firebase-verification.ts:8:  private readonly FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
+./lib/services/firebase-verification.ts:9:  private readonly FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+./lib/services/firebase-verification.ts:10:  private readonly FIREBASE_WEB_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY;
+./lib/services/firebase-verification.ts:13:   * Verify token using Firebase Admin SDK (primary method)
+./lib/services/firebase-verification.ts:17:      // Safely get auth service with better error handling
+./lib/services/firebase-verification.ts:18:      let adminAuth;
+./lib/services/firebase-verification.ts:20:        adminAuth = getAuthService();
+./lib/services/firebase-verification.ts:22:        // If Firebase Admin can't initialize, skip to REST API immediately
+./lib/services/firebase-verification.ts:23:        if (!process.env.FIREBASE_INIT_ERROR_LOGGED) {
+./lib/services/firebase-verification.ts:24:          console.warn('⚠️ Firebase Admin initialization failed, using REST API fallback:', 
+./lib/services/firebase-verification.ts:26:          process.env.FIREBASE_INIT_ERROR_LOGGED = 'true';
+./lib/services/firebase-verification.ts:33:          error: initError instanceof Error ? initError.message : 'Firebase initialization failed'
+./lib/services/firebase-verification.ts:38:      const verificationPromise = adminAuth.verifyIdToken(idToken, true);
+./lib/services/firebase-verification.ts:62:      if (!process.env.FIREBASE_SDK_ERROR_LOGGED) {
+./lib/services/firebase-verification.ts:64:          console.warn('⚠️ Firebase Admin SDK has compatibility issues, using REST API fallback');
+./lib/services/firebase-verification.ts:66:          console.warn('⚠️ Firebase Admin SDK verification failed:', 
+./lib/services/firebase-verification.ts:69:        process.env.FIREBASE_SDK_ERROR_LOGGED = 'true';
+./lib/services/firebase-verification.ts:82:   * Verify token using Firebase REST API (fallback method)
+./lib/services/firebase-verification.ts:85:    if (!this.FIREBASE_WEB_API_KEY) {
+./lib/services/firebase-verification.ts:90:        error: 'Firebase Web API key not configured'
+./lib/services/firebase-verification.ts:95:      const response = await fetch(`${this.FIREBASE_AUTH_URL}?key=${this.FIREBASE_WEB_API_KEY}`, {
+./lib/services/firebase-verification.ts:124:        iss: `https://securetoken.google.com/${this.FIREBASE_PROJECT_ID}`,
+./lib/services/firebase-verification.ts:125:        aud: this.FIREBASE_PROJECT_ID,
+./lib/services/firebase-verification.ts:126:        auth_time: parseInt(user.lastLoginAt) / 1000,
+./lib/services/firebase-verification.ts:129:        firebase: {
+./lib/services/firebase-verification.ts:144:      console.error('Firebase REST API verification failed:', error);
+./lib/services/firebase-verification.ts:200:    if (decodedToken.aud && decodedToken.aud !== this.FIREBASE_PROJECT_ID) {
+./lib/services/firebase-verification.ts:208:    const expectedIssuer = `https://securetoken.google.com/${this.FIREBASE_PROJECT_ID}`;
+./lib/services/firebase-verification.ts:233:   * Create session cookie using Firebase Admin SDK
+./lib/services/firebase-verification.ts:237:      // Safely get auth service with better error handling
+./lib/services/firebase-verification.ts:238:      let adminAuth;
+./lib/services/firebase-verification.ts:240:        adminAuth = getAuthService();
+./lib/services/firebase-verification.ts:242:        // If Firebase Admin can't initialize, fallback gracefully
+./lib/services/firebase-verification.ts:244:          console.warn('⚠️ Firebase Admin not available for session cookies:', 
+./lib/services/firebase-verification.ts:252:          error: 'Firebase Admin not available'
+./lib/services/firebase-verification.ts:256:      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+./lib/services/firebase-verification.ts:283:      const adminAuth = getAuthService();
+./lib/services/firebase-verification.ts:284:      const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+./lib/services/firebase-verification.ts:324:export const firebaseVerification = new FirebaseVerificationService();
+./lib/services/firebase-remote-config.ts:1:import { getRemoteConfig, fetchAndActivate, getValue, getAll } from 'firebase/remote-config';
+./lib/services/firebase-remote-config.ts:2:import { app } from '@/firebase/client';
+./lib/services/firebase-remote-config.ts:9:class FirebaseRemoteConfigService {
+./lib/services/firebase-remote-config.ts:36:      console.error('Error initializing Firebase Remote Config:', error);
+./lib/services/firebase-remote-config.ts:110:export const remoteConfigService = new FirebaseRemoteConfigService();
+./lib/services/azure-app-config.ts:4: * Replaces Firebase Remote Config with Azure App Configuration for feature flags
+./lib/services/mock-interview.service.ts:413:      'Mobile App Developer': ['React Native', 'TypeScript', 'Redux', 'Firebase', 'GraphQL'],
+./lib/services/gdpr-compliance-service.ts:1:import { getFirestore } from 'firebase-admin/firestore';
+./lib/services/gdpr-compliance-service.ts:2:import { azureBlobStorage } from '@/lib/services/azure-blob-storage';
+./lib/services/gdpr-compliance-service.ts:3:import { getDBService } from '@/firebase/admin';
+./lib/services/gdpr-compliance-service.ts:41:  private db: ReturnType<typeof getFirestore> | null = null;
+./lib/services/gdpr-compliance-service.ts:207:      // Delete from Firestore collections
+./lib/services/gdpr-compliance-service.ts:223:      // Delete from Firebase Storage
+./lib/services/gdpr-compliance-service.ts:224:      const storageDeleted = await this.deleteFromStorage(request.userId);
+./lib/services/gdpr-compliance-service.ts:225:      if (storageDeleted) deletedData.push('storage');
+./lib/services/gdpr-compliance-service.ts:410:  private async deleteFromStorage(userId: string): Promise<boolean> {
+./lib/services/gdpr-compliance-service.ts:414:      // Try Azure Blob Storage first
+./lib/services/gdpr-compliance-service.ts:415:      await azureBlobStorage.initialize();
+./lib/services/gdpr-compliance-service.ts:416:      if (azureBlobStorage.isReady()) {
+./lib/services/gdpr-compliance-service.ts:417:        console.log(`🗑️ Deleting Azure Blob Storage files for user ${userId}`);
+./lib/services/gdpr-compliance-service.ts:418:        const deletedContainers = await azureBlobStorage.deleteAllUserFiles(userId);
+./lib/services/gdpr-compliance-service.ts:425:      console.error('Error deleting from Azure Blob Storage:', azureError);
+./lib/services/gdpr-compliance-service.ts:428:    // Also attempt Firebase Storage cleanup for legacy files
+./lib/services/gdpr-compliance-service.ts:431:      const { getStorage } = await import('firebase-admin/storage');
+./lib/services/gdpr-compliance-service.ts:432:      const storage = getStorage();
+./lib/services/gdpr-compliance-service.ts:433:      const bucket = storage.bucket();
+./lib/services/gdpr-compliance-service.ts:442:        console.log(`✅ Deleted ${files.length} legacy Firebase Storage files for user ${userId}`);
+./lib/services/gdpr-compliance-service.ts:445:    } catch (firebaseError) {
+./lib/services/gdpr-compliance-service.ts:446:      console.error('Error deleting from Firebase Storage:', firebaseError);
+./lib/services/notification-service.ts:346:          <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+./lib/services/notification-service.ts:422:              <mj-button background-color="#059669" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/jobs/${jobData.jobId}" target="_blank">
+./lib/services/notification-service.ts:433:                <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+./lib/services/notification-service.ts:462:          <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+./lib/services/notification-service.ts:528:              <mj-button background-color="#2563eb" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${appData.applicationId}" target="_blank" padding-bottom="15px">
+./lib/services/notification-service.ts:531:              <mj-button background-color="#059669" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/dashboard" target="_blank">
+./lib/services/notification-service.ts:542:                <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/automation" style="color: #2563eb;">Manage automation settings</a>
+./lib/services/notification-service.ts:573:          <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+./lib/services/notification-service.ts:631:              <mj-button background-color="#2563eb" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${followUpData.applicationId}/follow-up" target="_blank" padding-bottom="15px">
+./lib/services/notification-service.ts:634:              <mj-button background-color="#059669" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${followUpData.applicationId}" target="_blank">
+./lib/services/notification-service.ts:654:                <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/follow-up" style="color: #2563eb;">Manage follow-up settings</a>
+./lib/services/notification-service.ts:683:          <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+./lib/services/notification-service.ts:767:              <mj-button background-color="#2563eb" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/dashboard" target="_blank" padding-bottom="15px">
+./lib/services/notification-service.ts:770:              <mj-button background-color="#059669" color="#ffffff" href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/jobs" target="_blank">
+./lib/services/notification-service.ts:781:                <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+./lib/services/notification-service.ts:858:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/jobs/${jobData.jobId}" class="button" style="background-color: #059669;">Manage in PrepBettr</a>
+./lib/services/notification-service.ts:864:            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+./lib/services/notification-service.ts:920:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${appData.applicationId}" class="button">Track Application</a>
+./lib/services/notification-service.ts:921:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/dashboard" class="button" style="background-color: #059669;">View Dashboard</a>
+./lib/services/notification-service.ts:927:            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/automation" style="color: #2563eb;">Manage automation settings</a>
+./lib/services/notification-service.ts:982:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${followUpData.applicationId}/follow-up" class="button">Send Follow-up</a>
+./lib/services/notification-service.ts:983:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${followUpData.applicationId}" class="button" style="background-color: #059669;">View Application</a>
+./lib/services/notification-service.ts:994:            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/follow-up" style="color: #2563eb;">Manage follow-up settings</a>
+./lib/services/notification-service.ts:1068:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/dashboard" class="button">View Full Dashboard</a>
+./lib/services/notification-service.ts:1069:              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/jobs" class="button" style="background-color: #059669;">Browse All Jobs</a>
+./lib/services/notification-service.ts:1075:            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+./lib/services/azure-openai-service.ts:72:          console.error('🔐 Authentication Error (401):');
+./lib/services/keyword-optimizer-service.ts:93:        const fullPrompt = `You are an expert resume writer specializing in ATS optimization. Rewrite resume sections to include relevant keywords while maintaining authenticity and readability.
+./lib/services/keyword-optimizer-service.ts:294:      3. Maintaining authenticity while optimizing
+./lib/services/keyword-optimizer-service.ts:308:      Optimize this ${section} section for ATS compatibility while maintaining authenticity.
+./lib/services/azure-token-service.ts:5:export interface OAuthTokens {
+./lib/services/azure-token-service.ts:24:  private tokenCache: Map<string, OAuthTokens> = new Map();
+./lib/services/azure-token-service.ts:45:   * Store OAuth tokens securely in Azure Key Vault
+./lib/services/azure-token-service.ts:47:  async storeTokens(portal: 'linkedin' | 'wellfound', userId: string, tokens: OAuthTokens): Promise<void> {
+./lib/services/azure-token-service.ts:61:      throw new Error(`Failed to store OAuth tokens: ${error}`);
+./lib/services/azure-token-service.ts:66:   * Retrieve OAuth tokens from Azure Key Vault
+./lib/services/azure-token-service.ts:68:  async getTokens(portal: 'linkedin' | 'wellfound', userId: string): Promise<OAuthTokens | null> {
+./lib/services/azure-token-service.ts:85:        const tokens: OAuthTokens = JSON.parse(result.value);
+./lib/services/azure-token-service.ts:103:  needsRefresh(tokens: OAuthTokens): boolean {
+./lib/services/azure-token-service.ts:109:   * Refresh OAuth tokens using refresh token
+./lib/services/azure-token-service.ts:116:  ): Promise<OAuthTokens | null> {
+./lib/services/azure-token-service.ts:139:      const newTokens: OAuthTokens = {
+./lib/services/azure-token-service.ts:254:        return 'https://www.linkedin.com/oauth/v2/accessToken';
+./lib/services/azure-token-service.ts:256:        return 'https://api.wellfound.com/oauth/token'; // Note: Wellfound uses AngelList API
+./lib/services/user-targeting.ts:1:import { auth } from '@/firebase/client';
+./lib/services/user-targeting.ts:53:    return auth.currentUser?.uid || null;
+./lib/services/user-targeting.ts:72:   * This could be based on device fingerprinting, localStorage, etc.
+./lib/services/user-targeting.ts:76:    let anonymousId = localStorage.getItem('prep_anonymous_id');
+./lib/services/user-targeting.ts:81:      localStorage.setItem('prep_anonymous_id', anonymousId);
+./lib/services/cloud-functions-verification.ts:7: * Uses Azure Functions as primary, Firebase Cloud Functions as fallback
+./lib/services/cloud-functions-verification.ts:10:  private readonly CLOUD_FUNCTIONS_URL = process.env.FIREBASE_FUNCTIONS_URL || 
+./lib/services/cloud-functions-verification.ts:11:    `https://us-central1-${process.env.FIREBASE_PROJECT_ID}.cloudfunctions.net`;
+./lib/services/cloud-functions-verification.ts:15:   * Verify token using Azure Functions (primary) or Firebase Cloud Functions (fallback)
+./lib/services/cloud-functions-verification.ts:38:        console.warn('Azure Function verification failed, falling back to Firebase:', azureError);
+./lib/services/cloud-functions-verification.ts:39:        // Continue to Firebase fallback
+./lib/services/cloud-functions-verification.ts:43:    // Fallback to Firebase Cloud Functions
+./lib/services/cloud-functions-verification.ts:45:      console.log('Attempting token verification via Firebase Cloud Function');
+./lib/services/cloud-functions-verification.ts:50:          'Authorization': `Bearer ${idToken}`, // Send token in header
+./lib/services/cloud-functions-verification.ts:66:        data: { ...result, method: 'firebase-cloud-function' },
+./lib/services/cloud-functions-verification.ts:70:      console.error('Both Azure and Firebase Cloud Function verification failed:', error);
+./lib/services/cloud-functions-verification.ts:88:          'Authorization': `Bearer ${idToken}`,
+./lib/services/job-notification-integration.ts:4:import { getAdminFirestore } from '@/lib/firebase/admin';
+./lib/services/job-notification-integration.ts:79:  private db = getAdminFirestore();
+./lib/services/azure-functions-client.ts:5: * including job automation, Firebase replacements (auth, GDPR), and other services.
+./lib/services/azure-functions-client.ts:8:// import { QueueServiceClient } from '@azure/storage-queue';
+./lib/services/azure-functions-client.ts:10:// Firebase-replacement interfaces
+./lib/services/azure-functions-client.ts:85:    const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+./lib/services/azure-functions-client.ts:86:    if (storageConnectionString) {
+./lib/services/azure-functions-client.ts:87:      // this.queueServiceClient = QueueServiceClient.fromConnectionString(storageConnectionString);
+./lib/services/azure-functions-client.ts:268:      // This would query the automation logs from storage or Application Insights
+./lib/services/azure-functions-client.ts:308:   * Verify Firebase ID token using Azure Function
+./lib/services/azure-functions-client.ts:475:// Firebase replacements
+./lib/auth.ts:11:    // Extract token from Authorization header
+./lib/auth.ts:12:    const authHeader = request.headers.get('authorization');
+./lib/auth.ts:13:    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+./lib/auth.ts:17:    const token = authHeader.substring(7); // Remove "Bearer " prefix
+./lib/auth.ts:25:    // 3. Validate the token against your auth system (Firebase Auth, etc.)
+./lib/auth.ts:43:export async function requireAuth(request: NextRequest): Promise<UserSession> {
+./lib/auth.ts:46:    throw new Error('Authentication required');
+./lib/azure-config.ts:13:  // Firebase configuration
+./lib/azure-config.ts:14:  firebaseProjectId: string;
+./lib/azure-config.ts:15:  firebaseClientEmail: string;
+./lib/azure-config.ts:16:  firebasePrivateKey: string;
+./lib/azure-config.ts:17:  firebaseClientKey?: string;
+./lib/azure-config.ts:21:  azureStorageAccountName?: string;
+./lib/azure-config.ts:22:  azureStorageAccountKey?: string;
+./lib/azure-config.ts:77:      firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
+./lib/azure-config.ts:78:      azureFormRecognizerKey, azureFormRecognizerEndpoint, azureStorageAccountName, azureStorageAccountKey
+./lib/azure-config.ts:85:      getOptionalSecret('firebase-project-id'),
+./lib/azure-config.ts:86:      getOptionalSecret('firebase-client-email'),
+./lib/azure-config.ts:87:      getOptionalSecret('firebase-private-key'),
+./lib/azure-config.ts:88:      getOptionalSecret('NEXT-PUBLIC-FIREBASE-CLIENT-KEY'),
+./lib/azure-config.ts:91:      getOptionalSecret('azure-storage-account-name'),
+./lib/azure-config.ts:92:      getOptionalSecret('azure-storage-account-key')
+./lib/azure-config.ts:95:    // Validate only Azure-related secrets (Firebase can come from env vars)
+./lib/azure-config.ts:118:      firebaseProjectId: firebaseProjectId?.value || process.env.FIREBASE_PROJECT_ID || '',
+./lib/azure-config.ts:119:      firebaseClientEmail: firebaseClientEmail?.value || process.env.FIREBASE_CLIENT_EMAIL || '',
+./lib/azure-config.ts:120:      firebasePrivateKey: firebasePrivateKey?.value || process.env.FIREBASE_PRIVATE_KEY || '',
+./lib/azure-config.ts:121:      firebaseClientKey: firebaseClientKey?.value || '',
+./lib/azure-config.ts:124:      azureStorageAccountName: azureStorageAccountName?.value,
+./lib/azure-config.ts:125:      azureStorageAccountKey: azureStorageAccountKey?.value
+./lib/azure-config.ts:142:      // Firebase fallbacks
+./lib/azure-config.ts:143:      firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
+./lib/azure-config.ts:144:      firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
+./lib/azure-config.ts:145:      firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || '',
+./lib/azure-config.ts:146:      firebaseClientKey: '',
+./lib/azure-config.ts:150:      azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+./lib/azure-config.ts:151:      azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY
+./lib/azure-config.ts:161:    if (!fallbackSecrets.firebaseProjectId && !process.env.FIREBASE_PROJECT_ID) missingOptional.push('FIREBASE_PROJECT_ID');
+./lib/azure-config.ts:198:    // Set Firebase environment variables
+./lib/azure-config.ts:199:    process.env.FIREBASE_PROJECT_ID = secrets.firebaseProjectId;
+./lib/azure-config.ts:200:    process.env.FIREBASE_CLIENT_EMAIL = secrets.firebaseClientEmail;
+./lib/azure-config.ts:201:    process.env.FIREBASE_PRIVATE_KEY = secrets.firebasePrivateKey;
+./lib/azure-config.ts:202:    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = secrets.firebaseProjectId;
+./lib/azure-config.ts:204:    // Set the Firebase client key from secrets or environment
+./lib/azure-config.ts:205:    if (secrets.firebaseClientKey) {
+./lib/azure-config.ts:206:      process.env['NEXT_PUBLIC_FIREBASE_CLIENT_KEY'] = secrets.firebaseClientKey;
+./lib/azure-config.ts:207:      console.log('🔑 Firebase client key set from Azure Key Vault');
+./lib/azure-config.ts:209:      console.warn('⚠️ Firebase client key not found in Azure Key Vault');
+./lib/azure-config.ts:219:    if (secrets.azureStorageAccountName) {
+./lib/azure-config.ts:220:      process.env.AZURE_STORAGE_ACCOUNT_NAME = secrets.azureStorageAccountName;
+./lib/azure-config.ts:222:    if (secrets.azureStorageAccountKey) {
+./lib/azure-config.ts:223:      process.env.AZURE_STORAGE_ACCOUNT_KEY = secrets.azureStorageAccountKey;
+./functions/gdpr-functions.js:1:const functions = require('firebase-functions');
+./functions/gdpr-functions.js:2:const admin = require('firebase-admin');
+./functions/gdpr-functions.js:12:  // Verify authentication
+./functions/gdpr-functions.js:13:  if (!context.auth) {
+./functions/gdpr-functions.js:15:      'unauthenticated',
+./functions/gdpr-functions.js:16:      'Request must be authenticated'
+./functions/gdpr-functions.js:21:  const requestingUserId = context.auth.uid;
+./functions/gdpr-functions.js:24:  if (userId !== requestingUserId && !context.auth.token?.admin) {
+./functions/gdpr-functions.js:34:    const db = admin.firestore();
+./functions/gdpr-functions.js:35:    const storage = admin.storage();
+./functions/gdpr-functions.js:41:      requestedBy: context.auth.email || requestingUserId,
+./functions/gdpr-functions.js:42:      requestDate: admin.firestore.FieldValue.serverTimestamp(),
+./functions/gdpr-functions.js:67:    // Delete from Firestore collections
+./functions/gdpr-functions.js:89:    // Delete from Firebase Storage
+./functions/gdpr-functions.js:91:      const bucket = storage.bucket();
+./functions/gdpr-functions.js:99:        deletedCollections.push('storage');
+./functions/gdpr-functions.js:100:        console.log(`Deleted ${files.length} files from storage`);
+./functions/gdpr-functions.js:103:      console.error('Error deleting from storage:', error);
+./functions/gdpr-functions.js:106:    // Delete the user's authentication record
+./functions/gdpr-functions.js:108:      await admin.auth().deleteUser(userIdToDelete);
+./functions/gdpr-functions.js:109:      deletedCollections.push('auth');
+./functions/gdpr-functions.js:110:      console.log(`Deleted authentication record for user: ${userIdToDelete}`);
+./functions/gdpr-functions.js:112:      console.error('Error deleting auth record:', error);
+./functions/gdpr-functions.js:118:      completedDate: admin.firestore.FieldValue.serverTimestamp(),
+./functions/gdpr-functions.js:126:      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+./functions/gdpr-functions.js:129:      requestedBy: context.auth.email || requestingUserId
+./functions/gdpr-functions.js:150:          failedAt: admin.firestore.FieldValue.serverTimestamp()
+./functions/gdpr-functions.js:170:    const db = admin.firestore();
+./functions/gdpr-functions.js:195:            auth: { uid: 'system', email: 'system@prepbettr.com' }
+./functions/gdpr-functions.js:206:            failedAt: admin.firestore.FieldValue.serverTimestamp()
+./functions/gdpr-functions.js:222:  // Verify authentication
+./functions/gdpr-functions.js:223:  if (!context.auth) {
+./functions/gdpr-functions.js:225:      'unauthenticated',
+./functions/gdpr-functions.js:226:      'Request must be authenticated'
+./functions/gdpr-functions.js:231:  const requestingUserId = context.auth.uid;
+./functions/gdpr-functions.js:234:  if (userId && userId !== requestingUserId && !context.auth.token?.admin) {
+./functions/gdpr-functions.js:242:    const db = admin.firestore();
+./functions/gdpr-functions.js:247:      exportDate: admin.firestore.FieldValue.serverTimestamp(),
+./functions/gdpr-functions.js:248:      requestedBy: context.auth.email || requestingUserId,
+./functions/gdpr-functions.js:283:      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+./functions/gdpr-functions.js:284:      requestedBy: context.auth.email || requestingUserId
+./functions/index.js:1:const functions = require('firebase-functions');
+./functions/index.js:2:const admin = require('firebase-admin');
+./functions/index.js:4:// Initialize Firebase Admin
+./functions/index.js:10:exports.onUserPlanChange = functions.firestore
+./functions/index.js:18:      const db = admin.firestore();
+./functions/index.js:36:        const timestamp = admin.firestore.FieldValue.serverTimestamp();
+./functions/index.js:38:        // Batch update Firestore - reset counts and update limits
+./functions/index.js:58: * Verify Firebase ID Token
+./functions/index.js:65:  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+./functions/index.js:74:    const authHeader = req.headers.authorization;
+./functions/index.js:76:    if (!idToken && !authHeader) {
+./functions/index.js:80:    const token = idToken || authHeader.split('Bearer ')[1];
+./functions/index.js:86:    // Verify the token using Firebase Admin
+./functions/index.js:87:    const decodedToken = await admin.auth().verifyIdToken(token, true);
+./functions/index.js:113:        auth_time: decodedToken.auth_time,
+./functions/index.js:125:    if (error.code === 'auth/id-token-expired') {
+./functions/index.js:128:    } else if (error.code === 'auth/id-token-revoked') {
+./functions/index.js:131:    } else if (error.code === 'auth/argument-error') {
+./functions/index.js:150:  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+./functions/index.js:158:    const authHeader = req.headers.authorization;
+./functions/index.js:161:    if (!authHeader) {
+./functions/index.js:165:    const token = authHeader.split('Bearer ')[1];
+./functions/index.js:170:    const decodedToken = await admin.auth().verifyIdToken(token, true);
+./functions/index.js:173:    const userRecord = await admin.auth().getUser(decodedToken.uid);
+./functions/index.js:208:  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+./functions/index.js:223:    const sessionCookie = await admin.auth().createSessionCookie(idToken, { expiresIn });
+./functions/index.js:248:  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+./functions/index.js:263:    const decodedToken = await admin.auth().verifySessionCookie(sessionCookie, true);
+./functions/index.js:289:  // Check if request is from an authenticated admin user
+./functions/index.js:290:  if (!context.auth || !context.auth.token.admin) {
+./functions/index.js:307:    await admin.auth().setCustomUserClaims(uid, claims);
+./test-firestore-read.ts:34:  console.log('Starting Firestore read operation tests...');
+./test-firestore-read.ts:55:    console.log('ERROR TYPE: FirebaseError: Missing or insufficient permissions');
+./e2e/smoke-tests.spec.ts:27:  test('Authentication flow is accessible', async ({ page }) => {
+./e2e/smoke-tests.spec.ts:31:    const authSelectors = [
+./e2e/smoke-tests.spec.ts:38:      'a[href*="auth"]'
+./e2e/smoke-tests.spec.ts:41:    let authFound = false;
+./e2e/smoke-tests.spec.ts:42:    for (const selector of authSelectors) {
+./e2e/smoke-tests.spec.ts:45:        authFound = true;
+./e2e/smoke-tests.spec.ts:52:    expect(authFound).toBe(true);
+./e2e/auth-performance.spec.ts:2:import { AuthHelper, PerformanceHelper, NetworkHelper, TEST_USERS, getTestConfig } from './helpers/test-utils';
+./e2e/auth-performance.spec.ts:4:test.describe('Authentication Performance Tests', () => {
+./e2e/auth-performance.spec.ts:5:  let authHelper: AuthHelper;
+./e2e/auth-performance.spec.ts:10:    authHelper = new AuthHelper(page);
+./e2e/auth-performance.spec.ts:14:    // Clear authentication state
+./e2e/auth-performance.spec.ts:15:    await authHelper.clearAuthState();
+./e2e/auth-performance.spec.ts:18:  test('should complete authentication flow within performance thresholds', async ({ page }) => {
+./e2e/auth-performance.spec.ts:22:    // Measure complete authentication flow
+./e2e/auth-performance.spec.ts:23:    const metrics = await performanceHelper.measureAuthFlowPerformance();
+./e2e/auth-performance.spec.ts:29:    console.log(`- Total authentication flow: ${metrics.total}ms`);
+./e2e/auth-performance.spec.ts:48:  test('should handle network monitoring during authentication', async ({ page }) => {
+./e2e/auth-performance.spec.ts:49:    console.log('Testing network requests during authentication...');
+./e2e/auth-performance.spec.ts:52:    const authRequests = await networkHelper.monitorAuthRequests();
+./e2e/auth-performance.spec.ts:54:    // Perform authentication
+./e2e/auth-performance.spec.ts:55:    await authHelper.signIn(TEST_USERS.existing);
+./e2e/auth-performance.spec.ts:61:    console.log(`Captured ${authRequests.length} auth-related requests`);
+./e2e/auth-performance.spec.ts:63:    // Look for critical auth API calls
+./e2e/auth-performance.spec.ts:64:    const signInRequest = authRequests.find(req => req.url.includes('/api/auth/signin'));
+./e2e/auth-performance.spec.ts:72:    const failedRequests = authRequests.filter(req => req.status >= 400);
+./e2e/auth-performance.spec.ts:81:  test('should measure page load times across auth flow', async ({ page }) => {
+./e2e/auth-performance.spec.ts:92:    // After authentication, measure dashboard load
+./e2e/auth-performance.spec.ts:93:    await authHelper.signIn(TEST_USERS.existing);
+./e2e/auth-performance.spec.ts:121:    // Perform authentication under throttled conditions
+./e2e/auth-performance.spec.ts:122:    await authHelper.signIn(TEST_USERS.existing);
+./e2e/auth-performance.spec.ts:125:    console.log(`Authentication under throttled network: ${throttledTime}ms`);
+./e2e/auth-performance.spec.ts:135:  test('should handle concurrent authentication requests', async ({ browser }) => {
+./e2e/auth-performance.spec.ts:136:    console.log('Testing concurrent authentication performance...');
+./e2e/auth-performance.spec.ts:149:      // Run concurrent authentication flows
+./e2e/auth-performance.spec.ts:152:        const helper = new AuthHelper(page);
+./e2e/auth-performance.spec.ts:155:        await helper.clearAuthState();
+./e2e/auth-performance.spec.ts:171:      console.log('Concurrent authentication results:');
+./e2e/auth-performance.spec.ts:189:      console.log('✓ Concurrent authentication performance acceptable');
+./e2e/quota-flows.spec.ts:30:async function clearAuthState(page: Page) {
+./e2e/quota-flows.spec.ts:34:      localStorage.clear();
+./e2e/quota-flows.spec.ts:35:      sessionStorage.clear();
+./e2e/quota-flows.spec.ts:37:      console.log('Storage access denied');
+./e2e/quota-flows.spec.ts:100:    await clearAuthState(page);
+./e2e/dashboard-carousel.spec.ts:272:    // This test assumes user authentication is handled
+./e2e/dashboard-carousel.spec.ts:273:    // You may need to mock authentication or use a test user
+./e2e/dashboard-carousel.spec.ts:275:    // Check if user is authenticated by looking for user-specific content
+./e2e/auth-flow.spec.ts:78:async function clearCookiesAndStorage(page: Page) {
+./e2e/auth-flow.spec.ts:79:  // Clear all cookies and local storage
+./e2e/auth-flow.spec.ts:82:  // Safely clear storage without security errors
+./e2e/auth-flow.spec.ts:86:        localStorage.clear();
+./e2e/auth-flow.spec.ts:87:        sessionStorage.clear();
+./e2e/auth-flow.spec.ts:89:        // Storage access denied - this is expected in some browsers/contexts
+./e2e/auth-flow.spec.ts:90:        console.log('Storage access denied, continuing without clearing storage');
+./e2e/auth-flow.spec.ts:94:    // Ignore storage clearing errors as they're not critical for testing
+./e2e/auth-flow.spec.ts:95:    console.log('Could not access storage for clearing, continuing with test');
+./e2e/auth-flow.spec.ts:99:test.describe('Authentication Flow End-to-End Tests', () => {
+./e2e/auth-flow.spec.ts:101:    // Clear any existing authentication state
+./e2e/auth-flow.spec.ts:102:    await clearCookiesAndStorage(page);
+./e2e/auth-flow.spec.ts:155:    test('should redirect already authenticated user to dashboard', async ({ page }) => {
+./e2e/auth-flow.spec.ts:168:      console.log('✓ Authenticated user redirected from sign-in to dashboard');
+./e2e/auth-flow.spec.ts:176:  test.describe('Test Case 3: Unauthenticated user hits /dashboard → middleware sends /sign-in (302)', () => {
+./e2e/auth-flow.spec.ts:177:    test('should redirect unauthenticated user to sign-in page', async ({ page }) => {
+./e2e/auth-flow.spec.ts:178:      console.log('Testing unauthenticated user access to dashboard...');
+./e2e/auth-flow.spec.ts:180:      // Step 1: Ensure user is not authenticated
+./e2e/auth-flow.spec.ts:181:      await clearCookiesAndStorage(page);
+./e2e/auth-flow.spec.ts:185:      console.log('✓ Attempted to access dashboard without authentication');
+./e2e/auth-flow.spec.ts:213:      // Step 3: Mock Google OAuth popup (since we can't actually test Google OAuth in e2e)
+./e2e/auth-flow.spec.ts:214:      // In a real scenario, you would need to mock the OAuth flow or use test credentials
+./e2e/auth-flow.spec.ts:220:      // Note: Testing actual Google OAuth requires either:
+./e2e/auth-flow.spec.ts:221:      // 1. Mocking the OAuth provider response
+./e2e/auth-flow.spec.ts:223:      // 3. Using a headless OAuth testing service
+./e2e/auth-flow.spec.ts:224:      console.log('⚠ Google OAuth testing requires additional setup for full e2e testing');
+./e2e/auth-flow.spec.ts:268:              // Last resort: check if we're still on sign-in page (which indicates auth failed)
+./e2e/auth-flow.spec.ts:270:              console.log('⚠ No explicit error message found, but stayed on sign-in page (auth failed)');
+./e2e/auth-flow.spec.ts:318:        // Step 4: Verify can't access dashboard without re-authentication
+./e2e/auth-flow.spec.ts:328:    test('should persist authentication across page reloads', async ({ page }) => {
+./e2e/auth-flow.spec.ts:329:      console.log('Testing authentication persistence...');
+./e2e/auth-flow.spec.ts:339:      // Step 3: Should still be on dashboard (authentication persisted)
+./e2e/auth-flow.spec.ts:341:      console.log('✓ Authentication persisted after page reload');
+./e2e/auth-flow.spec.ts:347:      console.log('✓ Authentication persisted in new tab');
+./e2e/auth-flow.spec.ts:377:  test('should have no hydration errors on authenticated dashboard page', async ({ page }) => {
+./e2e/auth-flow.spec.ts:409:    console.log('✓ No hydration errors on authenticated dashboard page');
+./e2e/auth-flow.spec.ts:414:  test('authentication flow works across different browsers', async ({ page, browserName }) => {
+./e2e/auth-flow.spec.ts:415:    console.log(`Testing authentication on ${browserName}...`);
+./e2e/auth-flow.spec.ts:420:    console.log(`✓ Authentication working on ${browserName}`);
+./e2e/community-interview-flow.spec.ts:12:import { AuthHelper, TEST_USERS, getTestConfig } from './helpers/test-utils';
+./e2e/community-interview-flow.spec.ts:36:    // and see if authentication is handled by the app or if we can work around it
+./e2e/community-interview-flow.spec.ts:40:      // Wait for dashboard to load - if authentication is required, we'll be redirected
+./e2e/community-interview-flow.spec.ts:44:      console.log('ℹ Dashboard did not load, trying to handle authentication...');
+./e2e/community-interview-flow.spec.ts:58:          console.log('✓ Successfully authenticated and loaded dashboard');
+./e2e/community-interview-flow.spec.ts:59:        } catch (authError) {
+./e2e/community-interview-flow.spec.ts:60:          console.log('ℹ Authentication failed, tests may not work properly');
+./e2e/helpers/test-utils.ts:31:// Authentication helper functions
+./e2e/helpers/test-utils.ts:32:export class AuthHelper {
+./e2e/helpers/test-utils.ts:35:  async clearAuthState() {
+./e2e/helpers/test-utils.ts:38:      localStorage.clear();
+./e2e/helpers/test-utils.ts:39:      sessionStorage.clear();
+./e2e/helpers/test-utils.ts:115:  async isAuthenticated(): Promise<boolean> {
+./e2e/helpers/test-utils.ts:127:  async waitForAuthenticationState(shouldBeAuthenticated: boolean) {
+./e2e/helpers/test-utils.ts:130:    if (shouldBeAuthenticated) {
+./e2e/helpers/test-utils.ts:144:  async monitorAuthRequests() {
+./e2e/helpers/test-utils.ts:145:    const authRequests: any[] = [];
+./e2e/helpers/test-utils.ts:149:      if (url.includes('/api/auth/') || url.includes('/sign-in') || url.includes('/dashboard')) {
+./e2e/helpers/test-utils.ts:150:        authRequests.push({
+./e2e/helpers/test-utils.ts:160:      if (url.includes('/api/auth/') || url.includes('/sign-in') || url.includes('/dashboard')) {
+./e2e/helpers/test-utils.ts:161:        const matchingRequest = authRequests.find(req => req.url === url);
+./e2e/helpers/test-utils.ts:169:    return authRequests;
+./e2e/helpers/test-utils.ts:213:  async checkForAuthErrors() {
+./e2e/helpers/test-utils.ts:257:  async measureAuthFlowPerformance() {
+./e2e/hydration.spec.ts:48:    // Clear any existing authentication state
+./e2e/hydration.spec.ts:54:          localStorage.clear();
+./e2e/hydration.spec.ts:55:          sessionStorage.clear();
+./e2e/hydration.spec.ts:57:          // Storage access denied - this is expected in some browsers/contexts
+./e2e/hydration.spec.ts:61:      // Ignore storage clearing errors
+./e2e/hydration.spec.ts:168:test.describe('Hydration Error Detection - Authenticated Pages', () => {
+./e2e/hydration.spec.ts:182:  test('should have no hydration errors on dashboard after authentication', async ({ page }) => {
+./e2e/hydration.spec.ts:215:    console.log('✓ No hydration errors on authenticated dashboard');
+./test-firestore-error.ts:41:      console.log('ERROR TYPE: FirebaseError: Missing or insufficient permissions');
+./test-firebase-oauth-flow.js:4: * Test script to validate Firebase OAuth configuration for Azure hosting at prepbettr.com
+./test-firebase-oauth-flow.js:6: * 1. Firebase config uses correct authDomain (prepbettr.firebaseapp.com)
+./test-firebase-oauth-flow.js:7: * 2. Firebase client key is properly loaded from Azure Key Vault
+./test-firebase-oauth-flow.js:8: * 3. Authentication endpoints are working correctly
+./test-firebase-oauth-flow.js:9: * 4. CORS headers are configured for OAuth popups
+./test-firebase-oauth-flow.js:14:async function testFirebaseOAuthConfiguration() {
+./test-firebase-oauth-flow.js:15:  console.log('🔍 Testing Firebase OAuth Configuration for Azure hosting...\n');
+./test-firebase-oauth-flow.js:18:    // Test 1: Verify Firebase config uses correct authDomain
+./test-firebase-oauth-flow.js:19:    console.log('=== Test 1: Firebase Configuration ===');
+./test-firebase-oauth-flow.js:20:    const configResponse = await fetch(`${baseUrl}/api/config/firebase`);
+./test-firebase-oauth-flow.js:23:    console.log('✅ Firebase config loaded successfully');
+./test-firebase-oauth-flow.js:24:    console.log(`   authDomain: ${config.authDomain}`);
+./test-firebase-oauth-flow.js:28:    // Verify authDomain is Firebase project domain (not Azure domain)
+./test-firebase-oauth-flow.js:29:    const expectedAuthDomain = 'prepbettr.firebaseapp.com';
+./test-firebase-oauth-flow.js:30:    if (config.authDomain === expectedAuthDomain) {
+./test-firebase-oauth-flow.js:31:      console.log('✅ authDomain correctly set to Firebase project domain');
+./test-firebase-oauth-flow.js:33:      console.log(`❌ authDomain should be "${expectedAuthDomain}", got "${config.authDomain}"`);
+./test-firebase-oauth-flow.js:38:      console.log('✅ Firebase client API key properly loaded from Azure Key Vault');
+./test-firebase-oauth-flow.js:40:      console.log('❌ Firebase client API key missing or invalid');
+./test-firebase-oauth-flow.js:43:    console.log('\n=== Test 2: CORS Headers for OAuth Popups ===');
+./test-firebase-oauth-flow.js:51:    console.log('CORS Headers for OAuth popups:');
+./test-firebase-oauth-flow.js:56:      console.log('✅ CORP header correctly configured for OAuth popups');
+./test-firebase-oauth-flow.js:58:      console.log('❌ CORP header missing or incorrect - OAuth popups may fail');
+./test-firebase-oauth-flow.js:61:    console.log('\n=== Test 3: Authentication API Endpoints ===');
+./test-firebase-oauth-flow.js:63:    const signinTest = await fetch(`${baseUrl}/api/auth/signin`, {
+./test-firebase-oauth-flow.js:69:    console.log(`   /api/auth/signin: ${signinTest.status} (expected: 401)`);
+./test-firebase-oauth-flow.js:72:    const signupTest = await fetch(`${baseUrl}/api/auth/signup`, {
+./test-firebase-oauth-flow.js:78:    console.log(`   /api/auth/signup: ${signupTest.status} (expected: 401)`);
+./test-firebase-oauth-flow.js:81:      console.log('✅ Authentication endpoints working correctly');
+./test-firebase-oauth-flow.js:83:      console.log('❌ Authentication endpoints not responding as expected');
+./test-firebase-oauth-flow.js:86:    console.log('\n=== Test 4: Authentication Flow Redirects ===');
+./test-firebase-oauth-flow.js:87:    // Test dashboard redirect (should redirect to sign-in for unauthenticated users)
+./test-firebase-oauth-flow.js:98:      console.log('✅ Authentication redirects working correctly');
+./test-firebase-oauth-flow.js:100:      console.log('❌ Authentication redirects not configured properly');
+./test-firebase-oauth-flow.js:105:    console.log('✅ Firebase authDomain: prepbettr.firebaseapp.com (Firebase project domain)');
+./test-firebase-oauth-flow.js:106:    console.log('✅ Authentication method: Popup-based (signInWithPopup)');
+./test-firebase-oauth-flow.js:107:    console.log('✅ OAuth flow: Firebase handles OAuth callbacks via firebaseapp.com');
+./test-firebase-oauth-flow.js:108:    console.log('✅ Post-auth redirect: Users return to prepbettr.com after authentication');
+./test-firebase-oauth-flow.js:109:    console.log('✅ Security: CORS headers configured for OAuth popup support');
+./test-firebase-oauth-flow.js:111:    console.log('\n🎉 Firebase OAuth configuration is correctly set up for Azure hosting!');
+./test-firebase-oauth-flow.js:115:    console.log('3. OAuth popup should open to prepbettr.firebaseapp.com');
+./test-firebase-oauth-flow.js:116:    console.log('4. After successful auth, popup closes and user returns to prepbettr.com');
+./test-firebase-oauth-flow.js:124:testFirebaseOAuthConfiguration();
+./pages/api/upload-pdf.ts:6:import { updateUserResume } from '../../lib/services/firebase-resume-service';
+./pages/api/upload-pdf.ts:8:import { verifyIdToken } from '../../lib/firebase/admin';
+./pages/api/upload-pdf.ts:53:  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+./pages/api/upload-pdf.ts:74:    // For now, skip Firebase auth in development if no token is provided
+./pages/api/upload-pdf.ts:75:    // This allows testing without full auth setup
+./pages/api/upload-pdf.ts:76:    const authHeader = req.headers.authorization;
+./pages/api/upload-pdf.ts:78:    if (authHeader && authHeader.startsWith('Bearer ')) {
+./pages/api/upload-pdf.ts:79:      const idToken = authHeader.split(' ')[1];
+./pages/api/upload-pdf.ts:82:        return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+./pages/api/upload-pdf.ts:85:      // In production, always require auth
+./pages/api/upload-pdf.ts:86:      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+./pages/api/upload-pdf.ts:88:      console.warn('Development mode: Skipping authentication for PDF upload');
+./test-azure-secrets.js:11:process.env.FIREBASE_PROJECT_ID = 'prepbettr';
+./test-azure-secrets.js:12:process.env.FIREBASE_CLIENT_EMAIL = 'firebase-adminsdk-fbsvc@prepbettr.iam.gserviceaccount.com';
+./test-azure-secrets.js:13:process.env.FIREBASE_PRIVATE_KEY = 'fake-private-key-for-testing';
+./test-azure-secrets.js:30:    console.log('   Firebase project ID:', secrets.firebaseProjectId ? '✅ SET' : '❌ MISSING');
+./services/firebase.service.ts:1:import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin';
+./services/firebase.service.ts:2:import { Firestore } from 'firebase-admin/firestore';
+./services/firebase.service.ts:3:import { Storage } from 'firebase-admin/storage';
+./services/firebase.service.ts:63:export class FirebaseService {
+./services/firebase.service.ts:64:  private db: Firestore;
+./services/firebase.service.ts:65:  private storage: Storage;
+./services/firebase.service.ts:68:    // Use the centralized Firebase Admin initialization
+./services/firebase.service.ts:69:    this.db = getAdminFirestore();
+./services/firebase.service.ts:70:    this.storage = getAdminStorage();
+./services/firebase.service.ts:289:      // Test Firestore connection
+./services/firebase.service.ts:302:      console.error('Firebase health check failed:', error);
+./services/__tests__/firebase.service.test.ts:1:import { FirebaseService, InterviewData, ResumeData } from '../firebase.service';
+./services/__tests__/firebase.service.test.ts:3:// Mock Firebase Admin SDK for testing
+./services/__tests__/firebase.service.test.ts:4:jest.mock('firebase-admin/app', () => ({
+./services/__tests__/firebase.service.test.ts:10:jest.mock('firebase-admin/firestore', () => {
+./services/__tests__/firebase.service.test.ts:28:  const mockFirestore = {
+./services/__tests__/firebase.service.test.ts:38:    getFirestore: jest.fn(() => mockFirestore),
+./services/__tests__/firebase.service.test.ts:42:jest.mock('firebase-admin/storage', () => ({
+./services/__tests__/firebase.service.test.ts:43:  getStorage: jest.fn(() => ({})),
+./services/__tests__/firebase.service.test.ts:46:describe('FirebaseService', () => {
+./services/__tests__/firebase.service.test.ts:47:  let firebaseService: FirebaseService;
+./services/__tests__/firebase.service.test.ts:48:  let mockFirestore: any;
+./services/__tests__/firebase.service.test.ts:60:    const { getFirestore } = require('firebase-admin/firestore');
+./services/__tests__/firebase.service.test.ts:61:    mockFirestore = getFirestore();
+./services/__tests__/firebase.service.test.ts:62:    mockCollection = mockFirestore.collection();
+./services/__tests__/firebase.service.test.ts:66:    firebaseService = new FirebaseService();
+./services/__tests__/firebase.service.test.ts:92:        const result = await firebaseService.createInterview(mockInterviewData);
+./services/__tests__/firebase.service.test.ts:94:        expect(mockFirestore.collection).toHaveBeenCalledWith('interviews');
+./services/__tests__/firebase.service.test.ts:109:        await expect(firebaseService.createInterview(mockInterviewData))
+./services/__tests__/firebase.service.test.ts:128:        const result = await firebaseService.getInterview('interview-123', 'user-123');
+./services/__tests__/firebase.service.test.ts:130:        expect(mockFirestore.collection).toHaveBeenCalledWith('interviews');
+./services/__tests__/firebase.service.test.ts:150:        const result = await firebaseService.getInterview('interview-123', 'user-123');
+./services/__tests__/firebase.service.test.ts:170:        await expect(firebaseService.getInterview('interview-123', 'user-123'))
+./services/__tests__/firebase.service.test.ts:179:        const result = await firebaseService.getInterview('non-existent', 'user-123');
+./services/__tests__/firebase.service.test.ts:201:        await firebaseService.updateInterview('interview-123', 'user-123', updates);
+./services/__tests__/firebase.service.test.ts:214:        await expect(firebaseService.updateInterview('non-existent', 'user-123', {}))
+./services/__tests__/firebase.service.test.ts:232:        await expect(firebaseService.updateInterview('interview-123', 'user-123', {}))
+./services/__tests__/firebase.service.test.ts:264:        const result = await firebaseService.getUserInterviews('user-123');
+./services/__tests__/firebase.service.test.ts:287:        await firebaseService.deleteInterview('interview-123', 'user-123');
+./services/__tests__/firebase.service.test.ts:306:        await expect(firebaseService.deleteInterview('interview-123', 'user-123'))
+./services/__tests__/firebase.service.test.ts:316:      fileUrl: 'https://storage.example.com/resumes/resume.pdf',
+./services/__tests__/firebase.service.test.ts:328:        const result = await firebaseService.createResume(mockResumeData);
+./services/__tests__/firebase.service.test.ts:330:        expect(mockFirestore.collection).toHaveBeenCalledWith('resumes');
+./services/__tests__/firebase.service.test.ts:355:        const result = await firebaseService.getResume('resume-123', 'user-123');
+./services/__tests__/firebase.service.test.ts:374:        await expect(firebaseService.getResume('resume-123', 'user-123'))
+./services/__tests__/firebase.service.test.ts:395:        const result = await firebaseService.getUserUsage('user-123');
+./services/__tests__/firebase.service.test.ts:397:        expect(mockFirestore.collection).toHaveBeenCalledWith('usage');
+./services/__tests__/firebase.service.test.ts:407:        const result = await firebaseService.getUserUsage('user-123');
+./services/__tests__/firebase.service.test.ts:417:        await firebaseService.initializeUserUsage('user-123');
+./services/__tests__/firebase.service.test.ts:438:        mockFirestore.runTransaction.mockImplementation(async (callback) => {
+./services/__tests__/firebase.service.test.ts:442:        await firebaseService.incrementUsage('user-123', 'interviews');
+./services/__tests__/firebase.service.test.ts:444:        expect(mockFirestore.runTransaction).toHaveBeenCalled();
+./services/__tests__/firebase.service.test.ts:462:        mockFirestore.runTransaction.mockImplementation(async (callback) => {
+./services/__tests__/firebase.service.test.ts:466:        await expect(firebaseService.incrementUsage('user-123', 'interviews'))
+./services/__tests__/firebase.service.test.ts:478:        const result = await firebaseService.checkUsageLimit('user-123', 'interviews');
+./services/__tests__/firebase.service.test.ts:494:        const result = await firebaseService.checkUsageLimit('user-123', 'interviews');
+./services/__tests__/firebase.service.test.ts:505:        const result = await firebaseService.checkUsageLimit('user-123', 'interviews');
+./services/__tests__/firebase.service.test.ts:523:        await firebaseService.createUser('user-123', userData);
+./services/__tests__/firebase.service.test.ts:547:        const result = await firebaseService.getUser('user-123');
+./services/__tests__/firebase.service.test.ts:557:        const result = await firebaseService.getUser('user-123');
+./services/__tests__/firebase.service.test.ts:572:        mockFirestore.batch.mockReturnValue(mockBatch);
+./services/__tests__/firebase.service.test.ts:575:        await firebaseService.batchDelete('interviews', docIds);
+./services/__tests__/firebase.service.test.ts:590:        const result = await firebaseService.healthCheck();
+./services/__tests__/firebase.service.test.ts:600:        const result = await firebaseService.healthCheck();
