@@ -6,7 +6,8 @@ const SESSION_COOKIE_NAME = 'session';
 export async function POST(request: NextRequest) {
   try {
     // Clear the session cookie
-    cookies().set(SESSION_COOKIE_NAME, '', {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 0, // Expire immediately
