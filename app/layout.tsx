@@ -5,15 +5,17 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { RouterLoadingHandler } from "@/components/RouterLoadingHandler";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
+import FirebaseClientInit from "@/components/FirebaseClientInit";
 import Providers from "./providers";
 import { initializeAzureServices } from '@/lib/azure-startup';
 import { RetryWithBackoff } from '@/lib/utils/retry-with-backoff';
 import { ErrorHandler } from '@/lib/middleware/error-handler';
+import NetworkLoggerInit from '@/components/NetworkLoggerInit';
 
 import "./globals.css";
 
 // Initialize Azure services on server-side
-initializeAzureServices();
+// initializeAzureServices(); // Temporarily disabled for testing
 
 // Initialize retry logic and error handler with Application Insights
 const instrumentationKey = process.env.NEXT_PUBLIC_AZURE_APPLICATION_INSIGHTS_INSTRUMENTATION_KEY;
@@ -67,6 +69,8 @@ export default function RootLayout({
         } as React.CSSProperties} suppressHydrationWarning={true}>
         <Providers>
             <LoadingProvider>
+                <NetworkLoggerInit />
+                <FirebaseClientInit />
                 <RouterLoadingHandler />
                 <AuthProvider>
                     <TelemetryProvider>

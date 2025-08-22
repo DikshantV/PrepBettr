@@ -1,6 +1,6 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { azureBlobStorage } from '@/lib/services/azure-blob-storage';
-import { getDBService } from '@/firebase/admin';
+import { getDBService } from '@/lib/firebase/admin';
 
 export interface UserConsent {
   userId: string;
@@ -38,12 +38,12 @@ export interface AnonymizedAnalytics {
 }
 
 export class GDPRComplianceService {
-  private db: ReturnType<typeof getFirestore> | null = null;
+  private db: Awaited<ReturnType<typeof getDBService>> | null = null;
   private static instance: GDPRComplianceService;
   
-  private getDB() {
+  private async getDB() {
     if (!this.db) {
-      this.db = getDBService();
+      this.db = await getDBService();
     }
     return this.db;
   }
@@ -58,12 +58,13 @@ export class GDPRComplianceService {
   // Consent Management
   async recordConsent(consent: UserConsent): Promise<void> {
     try {
-      const consentRef = this.getDB().collection('userConsents').doc(consent.userId);
+      const db = await this.getDB();
+      const consentRef = db.collection('userConsents').doc(consent.userId);
       await consentRef.set({
         ...consent,
         consentDate: new Date(),
         version: this.getCurrentPrivacyPolicyVersion()
-      }, { merge: true });
+      });
 
       // Log consent change for audit trail
       await this.logConsentChange(consent);
@@ -75,14 +76,15 @@ export class GDPRComplianceService {
 
   async getConsent(userId: string): Promise<UserConsent | null> {
     try {
-      const consentRef = this.getDB().collection('userConsents').doc(userId);
+      const db = await this.getDB();
+      const consentRef = db.collection('userConsents').doc(userId);
       const doc = await consentRef.get();
       
       if (!doc.exists) {
         return null;
       }
 
-      return doc.data() as UserConsent;
+      return (doc.data() as any) as UserConsent;
     } catch (error) {
       console.error('Error getting consent:', error);
       throw new Error('Failed to retrieve user consent');
@@ -91,7 +93,8 @@ export class GDPRComplianceService {
 
   async updateConsent(userId: string, updates: Partial<UserConsent>): Promise<void> {
     try {
-      const consentRef = this.getDB().collection('userConsents').doc(userId);
+      const db = await this.getDB();
+      const consentRef = db.collection('userConsents').doc(userId);
       await consentRef.update({
         ...updates,
         lastUpdated: new Date()
@@ -176,7 +179,8 @@ export class GDPRComplianceService {
         deletedData: []
       };
 
-      await this.getDB().collection('dataDeletionRequests').doc(requestId).set(deletionRequest);
+      const db = await this.getDB();
+      await db.collection('dataDeletionRequests').doc(requestId).set(deletionRequest);
       
       // Schedule deletion process (30-day compliance window)
       await this.scheduleDataDeletion(requestId, userId);
@@ -190,14 +194,15 @@ export class GDPRComplianceService {
 
   async processDataDeletion(requestId: string): Promise<void> {
     try {
-      const requestRef = this.getDB().collection('dataDeletionRequests').doc(requestId);
+      const db = await this.getDB();
+      const requestRef = db.collection('dataDeletionRequests').doc(requestId);
       const requestDoc = await requestRef.get();
       
       if (!requestDoc.exists) {
         throw new Error('Deletion request not found');
       }
 
-      const request = requestDoc.data() as DataDeletionRequest;
+      const request = (requestDoc.data() as any) as DataDeletionRequest;
       
       // Update status to processing
       await requestRef.update({ status: 'processing' });
@@ -241,7 +246,8 @@ export class GDPRComplianceService {
       console.error('Error processing data deletion:', error);
       
       // Update request status to failed
-      await this.getDB().collection('dataDeletionRequests').doc(requestId).update({
+      const failDb = await this.getDB();
+      await failDb.collection('dataDeletionRequests').doc(requestId).update({
         status: 'failed',
         error: error.message || 'Unknown error'
       });
@@ -252,8 +258,9 @@ export class GDPRComplianceService {
 
   async getDeletionRequestStatus(requestId: string): Promise<DataDeletionRequest | null> {
     try {
-      const requestDoc = await this.getDB().collection('dataDeletionRequests').doc(requestId).get();
-      return requestDoc.exists ? requestDoc.data() as DataDeletionRequest : null;
+      const db = await this.getDB();
+      const requestDoc = await db.collection('dataDeletionRequests').doc(requestId).get();
+      return requestDoc.exists ? ((requestDoc.data() as any) as DataDeletionRequest) : null;
     } catch (error) {
       console.error('Error getting deletion request status:', error);
       throw new Error('Failed to get deletion request status');
@@ -272,27 +279,28 @@ export class GDPRComplianceService {
       // Export from all relevant collections
       const collections = ['users', 'userProfiles', 'resumes', 'interviews'];
       
+      const db = await this.getDB();
       for (const collectionName of collections) {
-        const docs = await this.getDB().collection(collectionName)
+        const docs = await db.collection(collectionName)
           .where('userId', '==', userId)
           .get();
         
-        userData.data[collectionName] = docs.docs.map(doc => ({
+        userData.data[collectionName] = docs.docs.map((doc: any) => ({
           id: doc.id,
-          ...doc.data()
+          ...(doc.data() as any)
         }));
       }
 
       // Export consent records
-      const consentDoc = await this.getDB().collection('userConsents').doc(userId).get();
+      const consentDoc = await db.collection('userConsents').doc(userId).get();
       if (consentDoc.exists) {
-        userData.data.consents = consentDoc.data();
+        userData.data.consents = consentDoc.data() as any;
       }
 
       // Export usage data
-      const usageDoc = await this.getDB().collection('usage').doc(userId).get();
+      const usageDoc = await db.collection('usage').doc(userId).get();
       if (usageDoc.exists) {
-        userData.data.usage = usageDoc.data();
+        userData.data.usage = usageDoc.data() as any;
       }
 
       return userData;
@@ -325,7 +333,8 @@ export class GDPRComplianceService {
   }
 
   private async logConsentChange(consent: UserConsent): Promise<void> {
-    await this.getDB().collection('consentAuditLog').add({
+    const db = await this.getDB();
+    await db.collection('consentAuditLog').add({
       userId: consent.userId,
       timestamp: new Date(),
       changes: consent,
@@ -390,12 +399,13 @@ export class GDPRComplianceService {
 
   private async deleteFromCollection(collectionName: string, userId: string): Promise<boolean> {
     try {
-      const batch = this.getDB().batch();
-      const docs = await this.getDB().collection(collectionName)
+      const db = await this.getDB();
+      const batch = db.batch();
+      const docs = await db.collection(collectionName)
         .where('userId', '==', userId)
         .get();
 
-      docs.docs.forEach(doc => {
+      docs.docs.forEach((doc: any) => {
         batch.delete(doc.ref);
       });
 
@@ -456,7 +466,8 @@ export class GDPRComplianceService {
   }
 
   private async logDataDeletion(userId: string, deletedData: string[]): Promise<void> {
-    await this.getDB().collection('dataProtectionAuditLog').add({
+    const db = await this.getDB();
+    await db.collection('dataProtectionAuditLog').add({
       userId,
       action: 'data_deletion',
       timestamp: new Date(),

@@ -27,10 +27,9 @@ export default function ResumeProcessingStatus({
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
   
   const {
-    data: status,
-    isLoading,
-    error,
-    mutate
+    status,
+    loading: isLoading,
+    error
   } = useRealtimeApplicationStatus(applicationId);
 
   // Use real-time data or fallback to initial status
@@ -43,14 +42,14 @@ export default function ResumeProcessingStatus({
     setLastUpdateTime(new Date());
 
     // Handle completion
-    if (currentStatus.status === 'completed' && currentStatus.result) {
+    if (currentStatus.status === 'completed') {
       toast.success('Processing completed successfully!');
-      onComplete?.(currentStatus.result);
+      onComplete?.(currentStatus);
     }
 
     // Handle errors
     if (currentStatus.status === 'failed') {
-      const errorMessage = currentStatus.details?.errorDetails || 'Processing failed';
+      const errorMessage = (currentStatus.details as any)?.errorDetails || (currentStatus as any).message || 'Processing failed';
       toast.error('Processing failed', {
         description: errorMessage
       });
@@ -65,7 +64,7 @@ export default function ResumeProcessingStatus({
         });
       });
     }
-  }, [currentStatus?.status, currentStatus?.result, onComplete, onError]);
+  }, [currentStatus?.status, onComplete, onError]);
 
   const getStatusIcon = () => {
     switch (currentStatus?.status) {
@@ -75,8 +74,6 @@ export default function ResumeProcessingStatus({
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'processing':
         return <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />;
-      case 'cancelled':
-        return <XCircle className="w-5 h-5 text-gray-500" />;
       default:
         return <Clock className="w-5 h-5 text-yellow-500" />;
     }
@@ -90,8 +87,6 @@ export default function ResumeProcessingStatus({
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'processing':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
       default:
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
     }
@@ -99,36 +94,19 @@ export default function ResumeProcessingStatus({
 
   const getStatusText = () => {
     switch (currentStatus?.status) {
-      case 'pending':
-        return 'Queued';
       case 'processing':
         return 'Processing';
       case 'completed':
         return 'Completed';
       case 'failed':
         return 'Failed';
-      case 'cancelled':
-        return 'Cancelled';
       default:
         return 'Unknown';
     }
   };
 
   const getProcessingTypeLabel = () => {
-    switch (currentStatus?.type) {
-      case 'resume_upload':
-        return 'Resume Upload';
-      case 'interview_generation':
-        return 'Interview Generation';
-      case 'feedback_generation':
-        return 'Feedback Generation';
-      case 'resume_tailoring':
-        return 'Resume Tailoring';
-      case 'cover_letter_generation':
-        return 'Cover Letter Generation';
-      default:
-        return 'Processing';
-    }
+    return 'Processing';
   };
 
   const formatTimeRemaining = (seconds: number) => {
@@ -212,39 +190,28 @@ export default function ResumeProcessingStatus({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                {currentStatus.details?.currentStep || 'Processing'}
+                {(currentStatus.details as any)?.currentStep || (currentStatus.details as any)?.stage || 'Processing'}
               </span>
               <span className="font-medium">{currentStatus.progress}%</span>
             </div>
             <Progress value={currentStatus.progress} className="h-2" />
             
-            {currentStatus.details?.totalSteps && (
-              <div className="text-xs text-muted-foreground">
-                Step {Math.floor((currentStatus.progress / 100) * currentStatus.details.totalSteps)} of {currentStatus.details.totalSteps}
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              Progress: {currentStatus.progress}%
+            </div>
           </div>
         )}
 
         {/* Current Message */}
-        {currentStatus.message && (
+        {(currentStatus as any).message && (
           <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm">{currentStatus.message}</p>
+            <p className="text-sm">{(currentStatus as any).message}</p>
           </div>
         )}
 
-        {/* Time Estimation */}
-        {currentStatus.details?.estimatedTimeRemaining && currentStatus.status === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span>
-              Estimated time remaining: {formatTimeRemaining(currentStatus.details.estimatedTimeRemaining)}
-            </span>
-          </div>
-        )}
 
         {/* Error Details */}
-        {currentStatus.status === 'failed' && currentStatus.details?.errorDetails && (
+        {currentStatus.status === 'failed' && (currentStatus.details as any)?.errorDetails && (
           <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -253,7 +220,7 @@ export default function ResumeProcessingStatus({
                   Processing Failed
                 </p>
                 <p className="text-xs text-red-600 dark:text-red-300">
-                  {currentStatus.details.errorDetails}
+                  {(currentStatus.details as any).errorDetails}
                 </p>
               </div>
             </div>
@@ -275,8 +242,8 @@ export default function ResumeProcessingStatus({
             </Button>
           )}
           
-          {currentStatus.status === 'completed' && currentStatus.result && (
-            <Button size="sm" onClick={() => onComplete?.(currentStatus.result)}>
+          {currentStatus.status === 'completed' && (
+            <Button size="sm" onClick={() => onComplete?.(currentStatus)}>
               View Result
             </Button>
           )}
@@ -284,11 +251,8 @@ export default function ResumeProcessingStatus({
 
         {/* Timestamps */}
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-          <div>Started: {new Date(currentStatus.createdAt as any).toLocaleString()}</div>
-          {currentStatus.completedAt && (
-            <div>Completed: {new Date(currentStatus.completedAt as any).toLocaleString()}</div>
-          )}
           <div>Last updated: {lastUpdateTime.toLocaleString()}</div>
+          <div>Updated At: {new Date(currentStatus.updatedAt as any).toLocaleString()}</div>
         </div>
       </CardContent>
     </Card>

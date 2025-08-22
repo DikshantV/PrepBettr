@@ -325,7 +325,7 @@ export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
   React.useEffect(() => {
     const updateAuthHeaders = async () => {
       try {
-        if (user && auth.currentUser) {
+        if (user && auth && auth.currentUser) {
           const idToken = await auth.currentUser.getIdToken();
           setAuthHeaders(prev => ({
             ...prev,

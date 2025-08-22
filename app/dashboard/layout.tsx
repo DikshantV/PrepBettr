@@ -4,6 +4,7 @@ import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
 import { getUserInterviews, getPublicInterviews } from "@/lib/actions/dashboard.action";
 import AuthenticatedLayout from "@/components/authenticated-layout";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthSync } from "@/components/AuthSync";
 import DashboardClient from "./DashboardClient";
 
 // Force dynamic rendering since we use cookies
@@ -25,6 +26,7 @@ export default async function Layout({ children }: DashboardLayoutProps) {
   
   return (
     <AuthProvider initialUser={user}>
+      <AuthSync />
       <AuthenticatedLayout>
         {children}
       </AuthenticatedLayout>

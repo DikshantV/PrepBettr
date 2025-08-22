@@ -1,11 +1,23 @@
-import { azureAppConfigService, FeatureFlags } from './azure-app-config';
+import { unifiedConfigService } from './unified-config-service';
 import { userTargetingService, UserTargetingService } from './user-targeting';
+
+// Updated interface to match unified config schema
+export interface FeatureFlags {
+  autoApplyAzure: boolean;
+  portalIntegration: boolean;
+  voiceInterview: boolean;
+  premiumFeatures: boolean;
+  newUI: boolean;
+}
 
 export interface EnhancedFeatureFlags extends FeatureFlags {
   // Rollout status for each feature
   rolloutStatus: {
     autoApplyAzure: boolean;
     portalIntegration: boolean;
+    voiceInterview: boolean;
+    premiumFeatures: boolean;
+    newUI: boolean;
   };
 }
 
@@ -24,10 +36,11 @@ class FeatureFlagsService {
    */
   async getFeatureFlag(flagName: keyof FeatureFlags): Promise<boolean> {
     try {
-      // First check if the feature is enabled globally via Azure App Configuration
-      const azureConfigValue = await azureAppConfigService.getFeatureFlag(flagName);
+      // Get feature flag from unified config service
+      const configKey = `features.${flagName}`;
+      const globalValue = await unifiedConfigService.get<boolean>(configKey, false);
       
-      if (!azureConfigValue) {
+      if (!globalValue) {
         // If disabled globally, return false
         return false;
       }
@@ -36,7 +49,7 @@ class FeatureFlagsService {
       const rolloutConfig = UserTargetingService.ROLLOUT_CONFIGS[flagName];
       if (!rolloutConfig) {
         // If no rollout config, default to global setting
-        return azureConfigValue;
+        return globalValue;
       }
 
       return userTargetingService.isCurrentUserInRollout(rolloutConfig);
@@ -51,19 +64,34 @@ class FeatureFlagsService {
    */
   async getAllFeatureFlags(): Promise<EnhancedFeatureFlags> {
     try {
-      // Get Azure App Configuration flags
-      const azureFlags = await azureAppConfigService.getAllFeatureFlags();
+      // Get all feature flags from unified config service
+      const allConfigs = await unifiedConfigService.getAll('features.');
+      
+      // Extract flags from config keys
+      const globalFlags: FeatureFlags = {
+        autoApplyAzure: allConfigs['features.autoApplyAzure'] || false,
+        portalIntegration: allConfigs['features.portalIntegration'] || false,
+        voiceInterview: allConfigs['features.voiceInterview'] || false,
+        premiumFeatures: allConfigs['features.premiumFeatures'] || false,
+        newUI: allConfigs['features.newUI'] || false
+      };
       
       // Get rollout status for current user
       const rolloutStatus = userTargetingService.getCurrentUserRolloutStatus();
       
       // Combine both: feature must be enabled globally AND user must be in rollout
       const enhancedFlags: EnhancedFeatureFlags = {
-        autoApplyAzure: azureFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
-        portalIntegration: azureFlags.portalIntegration && rolloutStatus.portalIntegration,
+        autoApplyAzure: globalFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
+        portalIntegration: globalFlags.portalIntegration && rolloutStatus.portalIntegration,
+        voiceInterview: globalFlags.voiceInterview && rolloutStatus.voiceInterview,
+        premiumFeatures: globalFlags.premiumFeatures && rolloutStatus.premiumFeatures,
+        newUI: globalFlags.newUI && rolloutStatus.newUI,
         rolloutStatus: {
           autoApplyAzure: rolloutStatus.autoApplyAzure || false,
           portalIntegration: rolloutStatus.portalIntegration || false,
+          voiceInterview: rolloutStatus.voiceInterview || false,
+          premiumFeatures: rolloutStatus.premiumFeatures || false,
+          newUI: rolloutStatus.newUI || false
         },
       };
 
@@ -73,9 +101,15 @@ class FeatureFlagsService {
       return {
         autoApplyAzure: false,
         portalIntegration: false,
+        voiceInterview: false,
+        premiumFeatures: false,
+        newUI: false,
         rolloutStatus: {
           autoApplyAzure: false,
           portalIntegration: false,
+          voiceInterview: false,
+          premiumFeatures: false,
+          newUI: false
         },
       };
     }
@@ -103,23 +137,26 @@ class FeatureFlagsService {
    * Get debug information about feature flags
    */
   async getDebugInfo(): Promise<{
-    azureAppConfig: FeatureFlags;
+    unifiedConfig: Record<string, any>;
     rolloutStatus: Record<string, boolean>;
     finalFlags: FeatureFlags;
     userId: string | null;
     rolloutConfigs: typeof UserTargetingService.ROLLOUT_CONFIGS;
   }> {
-    const azureAppConfig = await azureAppConfigService.getAllFeatureFlags();
+    const unifiedConfig = await unifiedConfigService.getAll('features.');
     const rolloutStatus = userTargetingService.getCurrentUserRolloutStatus();
     const finalFlags = await this.getAllFeatureFlags();
     const userId = userTargetingService.getCurrentUserId();
 
     return {
-      azureAppConfig,
+      unifiedConfig,
       rolloutStatus,
       finalFlags: {
         autoApplyAzure: finalFlags.autoApplyAzure,
         portalIntegration: finalFlags.portalIntegration,
+        voiceInterview: finalFlags.voiceInterview,
+        premiumFeatures: finalFlags.premiumFeatures,
+        newUI: finalFlags.newUI
       },
       userId,
       rolloutConfigs: UserTargetingService.ROLLOUT_CONFIGS,
@@ -130,13 +167,10 @@ class FeatureFlagsService {
    * Force refresh all feature flags
    */
   async refreshFeatureFlags(): Promise<EnhancedFeatureFlags> {
-    await azureAppConfigService.refreshFeatureFlags();
+    await unifiedConfigService.refresh();
     return this.getAllFeatureFlags();
   }
 }
 
 // Export singleton instance
 export const featureFlagsService = FeatureFlagsService.getInstance();
-
-// Export types
-export type { FeatureFlags };

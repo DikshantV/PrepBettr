@@ -11,7 +11,7 @@ export const EmailVerificationBanner = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Only show banner if user exists and email is not verified
-  const shouldShowBanner = user && !user.emailVerified;
+  const shouldShowBanner = user && !user.email_verified;
 
   const handleVerifyClick = async () => {
     if (!user?.email || isLoading) return;

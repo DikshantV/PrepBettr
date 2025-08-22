@@ -36,14 +36,14 @@ export default function FeedbackClientRealtime({
 
   // Real-time hooks
   const {
-    data: interview,
-    isLoading: interviewLoading,
+    interview,
+    loading: interviewLoading,
     error: interviewError
   } = useRealtimeInterview(interviewId);
 
   const {
-    data: feedback,
-    isLoading: feedbackLoading,
+    feedback,
+    loading: feedbackLoading,
     error: feedbackError
   } = useRealtimeFeedback(interviewId);
 
@@ -56,7 +56,7 @@ export default function FeedbackClientRealtime({
     try {
       const shareUrl = `${window.location.origin}/dashboard/interview/${interviewId}/feedback`;
       await navigator.share({
-        title: `Interview Feedback - ${currentInterview?.role}`,
+        title: `Interview Feedback - ${(currentInterview as any)?.role}`,
         text: 'Check out my interview feedback!',
         url: shareUrl,
       });
@@ -170,25 +170,25 @@ export default function FeedbackClientRealtime({
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-xl">{currentInterview.role}</CardTitle>
+                  <CardTitle className="text-xl">{(currentInterview as any).role}</CardTitle>
                   <div className="flex gap-2 mt-2">
-                    <Badge variant="outline">{currentInterview.type}</Badge>
+                    <Badge variant="outline">{(currentInterview as any).type}</Badge>
                     <Badge variant="secondary">
                       {formatDate(currentInterview.createdAt)}
                     </Badge>
                   </div>
                 </div>
                 
-                {currentInterview.finalized && (
+                {(currentInterview as any).finalized && (
                   <Badge className="bg-green-100 text-green-800">
                     Completed ✓
                   </Badge>
                 )}
               </div>
               
-              {currentInterview.techstack && (
+              {(currentInterview as any).techstack && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {normalizeTechstack(currentInterview.techstack).map((tech) => (
+                  {normalizeTechstack((currentInterview as any).techstack).map((tech) => (
                     <DisplayTechIcons key={tech} name={tech as any} size={20} />
                   ))}
                 </div>

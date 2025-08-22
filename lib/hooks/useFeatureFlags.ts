@@ -1,20 +1,48 @@
 import { useState, useEffect } from 'react';
-import { featureFlagsService, EnhancedFeatureFlags, FeatureFlags } from '@/lib/services/feature-flags';
+import { useUnifiedConfig } from '@/lib/hooks/useUnifiedConfig';
 
+// Define types locally to avoid importing server-only modules
+export interface FeatureFlags {
+  autoApplyAzure: boolean;
+  portalIntegration: boolean;
+  voiceInterview: boolean;
+  premiumFeatures: boolean;
+  newUI: boolean;
+}
+
+export interface EnhancedFeatureFlags extends FeatureFlags {
+  rolloutStatus: {
+    autoApplyAzure: boolean;
+    portalIntegration: boolean;
+    voiceInterview: boolean;
+    premiumFeatures: boolean;
+    newUI: boolean;
+  };
+}
+
+/**
+ * Client-safe feature flags hook that uses API calls instead of direct service imports
+ * This avoids bundling server-only modules for the client
+ */
 export const useFeatureFlags = () => {
   const [flags, setFlags] = useState<EnhancedFeatureFlags | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load feature flags on component mount
+  // Load feature flags on component mount using API instead of direct service import
   useEffect(() => {
     const loadFlags = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch enhanced feature flags (includes rollout logic)
-        const enhancedFlags = await featureFlagsService.getAllFeatureFlags();
+        // Fetch from API endpoint instead of direct service import
+        const response = await fetch('/api/feature-flags');
+        if (!response.ok) {
+          throw new Error('Failed to fetch feature flags');
+        }
+        
+        const enhancedFlags = await response.json();
         setFlags(enhancedFlags);
         setLoading(false);
       } catch (err) {
@@ -27,9 +55,15 @@ export const useFeatureFlags = () => {
           setFlags({
             autoApplyAzure: false,
             portalIntegration: false,
+            voiceInterview: false,
+            premiumFeatures: false,
+            newUI: false,
             rolloutStatus: {
               autoApplyAzure: false,
               portalIntegration: false,
+              voiceInterview: false,
+              premiumFeatures: false,
+              newUI: false,
             },
           });
         }
@@ -47,7 +81,13 @@ export const useFeatureFlags = () => {
     try {
       setLoading(true);
       setError(null);
-      const newFlags = await featureFlagsService.refreshFeatureFlags();
+      
+      const response = await fetch('/api/feature-flags?refresh=true');
+      if (!response.ok) {
+        throw new Error('Failed to refresh feature flags');
+      }
+      
+      const newFlags = await response.json();
       setFlags(newFlags);
       setLoading(false);
     } catch (err) {
@@ -66,5 +106,31 @@ export const useFeatureFlags = () => {
     // Convenience methods for specific flags
     isAutoApplyAzureEnabled: () => getFeatureFlag('autoApplyAzure'),
     isPortalIntegrationEnabled: () => getFeatureFlag('portalIntegration'),
+    isVoiceInterviewEnabled: () => getFeatureFlag('voiceInterview'),
+    isPremiumFeaturesEnabled: () => getFeatureFlag('premiumFeatures'),
+    isNewUIEnabled: () => getFeatureFlag('newUI'),
   };
+};
+
+/**
+ * Simplified hook for individual feature flags using unified config directly
+ * More performant for components that only need specific flags
+ */
+export const useUnifiedFeatureFlag = (flagName: keyof FeatureFlags) => {
+  const configKey = `features.${flagName}`;
+  return useUnifiedConfig<boolean>(configKey, false);
+};
+
+/**
+ * Hook for getting multiple feature flags at once
+ */
+export const useUnifiedFeatureFlags = (flagNames: Array<keyof FeatureFlags>) => {
+  const results = flagNames.reduce((acc, flagName) => {
+    const configKey = `features.${flagName}`;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    acc[flagName] = useUnifiedConfig<boolean>(configKey, false);
+    return acc;
+  }, {} as Record<keyof FeatureFlags, { value: boolean; loading: boolean; error: string | null }>);
+  
+  return results;
 };

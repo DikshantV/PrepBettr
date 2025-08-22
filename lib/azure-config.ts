@@ -1,6 +1,13 @@
 import { DefaultAzureCredential } from '@azure/identity';
 import { SecretClient } from '@azure/keyvault-secrets';
 
+// Client-side safety check - provide empty implementations when running on client
+const isClient = typeof window !== 'undefined';
+
+if (isClient) {
+  console.warn('[Azure Config] Running on client side - using fallback implementations');
+}
+
 // Azure Key Vault configuration
 const AZURE_KEY_VAULT_URI = process.env.AZURE_KEY_VAULT_URI || 'https://prepbettr-keyvault-083.vault.azure.net/';
 
@@ -18,8 +25,12 @@ interface AzureSecrets {
   // Additional Azure services
   azureFormRecognizerKey?: string;
   azureFormRecognizerEndpoint?: string;
-  azureStorageAccountName?: string;
+  // Storage configuration
+  azureStorageAccount?: string;
   azureStorageAccountKey?: string;
+  azureStorageConnectionString?: string;
+  azureStorageContainer?: string;
+  storageProvider?: string;
 }
 
 let cachedSecrets: AzureSecrets | null = null;
@@ -40,6 +51,7 @@ function createKeyVaultClient(): SecretClient {
  * Clear cached secrets (useful when Azure keys are renewed)
  */
 export function clearAzureSecretsCache(): void {
+  if (isClient) return;
   console.log('🔄 Clearing Azure secrets cache...');
   cachedSecrets = null;
 }
@@ -48,6 +60,18 @@ export function clearAzureSecretsCache(): void {
  * Fetch secrets from Azure Key Vault
  */
 export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<AzureSecrets> {
+  if (isClient) {
+    return {
+      speechKey: '',
+      speechEndpoint: '',
+      azureOpenAIKey: '',
+      azureOpenAIEndpoint: '',
+      azureOpenAIDeployment: '',
+      firebaseProjectId: '',
+      firebaseClientEmail: '',
+      firebasePrivateKey: ''
+    };
+  }
   // Clear cache if force refresh is requested
   if (forceRefresh) {
     clearAzureSecretsCache();
@@ -75,7 +99,9 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     const [
       speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment,
       firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
-      azureFormRecognizerKey, azureFormRecognizerEndpoint, azureStorageAccountName, azureStorageAccountKey
+      azureFormRecognizerKey, azureFormRecognizerEndpoint, 
+      azureStorageAccount, azureStorageAccountKey, azureStorageConnectionString,
+      azureStorageContainer, storageProvider
     ] = await Promise.all([
       client.getSecret('speech-key'),
       client.getSecret('speech-endpoint'),
@@ -88,8 +114,11 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       getOptionalSecret('NEXT-PUBLIC-FIREBASE-CLIENT-KEY'),
       getOptionalSecret('azure-form-recognizer-key'),
       getOptionalSecret('azure-form-recognizer-endpoint'),
-      getOptionalSecret('azure-storage-account-name'),
-      getOptionalSecret('azure-storage-account-key')
+      getOptionalSecret('azure-storage-account'),
+      getOptionalSecret('azure-storage-account-key'),
+      getOptionalSecret('azure-storage-connection-string'),
+      getOptionalSecret('azure-storage-container'),
+      getOptionalSecret('storage-provider')
     ]);
 
     // Validate only Azure-related secrets (Firebase can come from env vars)
@@ -121,8 +150,11 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseClientKey: firebaseClientKey?.value || '',
       azureFormRecognizerKey: azureFormRecognizerKey?.value,
       azureFormRecognizerEndpoint: azureFormRecognizerEndpoint?.value,
-      azureStorageAccountName: azureStorageAccountName?.value,
-      azureStorageAccountKey: azureStorageAccountKey?.value
+      azureStorageAccount: azureStorageAccount?.value,
+      azureStorageAccountKey: azureStorageAccountKey?.value,
+      azureStorageConnectionString: azureStorageConnectionString?.value,
+      azureStorageContainer: azureStorageContainer?.value,
+      storageProvider: storageProvider?.value
     };
 
     console.log('✅ Azure secrets loaded successfully');
@@ -147,7 +179,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       // Optional fallbacks
       azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY,
       azureFormRecognizerEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
-      azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+      azureStorageAccount: process.env.AZURE_STORAGE_ACCOUNT_NAME,
       azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY
     };
 
@@ -178,6 +210,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
  * This should be called at application startup
  */
 export async function initializeAzureEnvironment(): Promise<void> {
+  if (isClient) return;
   try {
     const secrets = await fetchAzureSecrets();
     
@@ -216,17 +249,82 @@ export async function initializeAzureEnvironment(): Promise<void> {
     if (secrets.azureFormRecognizerEndpoint) {
       process.env.AZURE_FORM_RECOGNIZER_ENDPOINT = secrets.azureFormRecognizerEndpoint;
     }
-    if (secrets.azureStorageAccountName) {
-      process.env.AZURE_STORAGE_ACCOUNT_NAME = secrets.azureStorageAccountName;
+    // Set storage configuration
+    if (secrets.azureStorageAccount) {
+      process.env.AZURE_STORAGE_ACCOUNT = secrets.azureStorageAccount;
     }
     if (secrets.azureStorageAccountKey) {
       process.env.AZURE_STORAGE_ACCOUNT_KEY = secrets.azureStorageAccountKey;
+    }
+    if (secrets.azureStorageConnectionString) {
+      process.env.AZURE_STORAGE_CONNECTION_STRING = secrets.azureStorageConnectionString;
+    }
+    if (secrets.azureStorageContainer) {
+      process.env.AZURE_STORAGE_CONTAINER = secrets.azureStorageContainer;
+    }
+    if (secrets.storageProvider) {
+      process.env.STORAGE_PROVIDER = secrets.storageProvider;
     }
 
     console.log('🌟 Azure environment initialized successfully');
   } catch (error) {
     console.error('❌ Failed to initialize Azure environment:', error);
     throw error;
+  }
+}
+
+/**
+ * Get generic configuration values (used by storage abstraction and other services)
+ */
+export async function getConfiguration(): Promise<Record<string, string>> {
+  try {
+    const secrets = await fetchAzureSecrets();
+    
+    return {
+      // Azure Storage configuration
+      'AZURE_STORAGE_ACCOUNT': secrets.azureStorageAccount || process.env.AZURE_STORAGE_ACCOUNT || 'prepbettrstorage684',
+      'AZURE_STORAGE_ACCOUNT_KEY': secrets.azureStorageAccountKey || process.env.AZURE_STORAGE_ACCOUNT_KEY || '',
+      'AZURE_STORAGE_CONNECTION_STRING': secrets.azureStorageConnectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '',
+      'AZURE_STORAGE_CONTAINER': secrets.azureStorageContainer || process.env.AZURE_STORAGE_CONTAINER || 'resumes',
+      'STORAGE_PROVIDER': secrets.storageProvider || process.env.STORAGE_PROVIDER || 'firebase',
+      
+      // Azure AI services
+      'AZURE_OPENAI_KEY': secrets.azureOpenAIKey,
+      'AZURE_OPENAI_ENDPOINT': secrets.azureOpenAIEndpoint,
+      'AZURE_OPENAI_DEPLOYMENT': secrets.azureOpenAIDeployment,
+      'AZURE_SPEECH_KEY': secrets.speechKey,
+      'AZURE_SPEECH_ENDPOINT': secrets.speechEndpoint,
+      'AZURE_FORM_RECOGNIZER_KEY': secrets.azureFormRecognizerKey || '',
+      'AZURE_FORM_RECOGNIZER_ENDPOINT': secrets.azureFormRecognizerEndpoint || '',
+      
+      // Firebase configuration
+      'FIREBASE_PROJECT_ID': secrets.firebaseProjectId,
+      'FIREBASE_CLIENT_EMAIL': secrets.firebaseClientEmail,
+      'FIREBASE_PRIVATE_KEY': secrets.firebasePrivateKey,
+      'FIREBASE_CLIENT_KEY': secrets.firebaseClientKey || ''
+    };
+  } catch (error) {
+    console.warn('Failed to get configuration from Azure, using environment variables:', error);
+    
+    // Fallback to environment variables only
+    return {
+      'AZURE_STORAGE_ACCOUNT': process.env.AZURE_STORAGE_ACCOUNT || 'prepbettrstorage684',
+      'AZURE_STORAGE_ACCOUNT_KEY': process.env.AZURE_STORAGE_ACCOUNT_KEY || '',
+      'AZURE_STORAGE_CONNECTION_STRING': process.env.AZURE_STORAGE_CONNECTION_STRING || '',
+      'AZURE_STORAGE_CONTAINER': process.env.AZURE_STORAGE_CONTAINER || 'resumes',
+      'STORAGE_PROVIDER': process.env.STORAGE_PROVIDER || 'firebase',
+      'AZURE_OPENAI_KEY': process.env.AZURE_OPENAI_KEY || '',
+      'AZURE_OPENAI_ENDPOINT': process.env.AZURE_OPENAI_ENDPOINT || '',
+      'AZURE_OPENAI_DEPLOYMENT': process.env.AZURE_OPENAI_DEPLOYMENT || '',
+      'AZURE_SPEECH_KEY': process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY || '',
+      'AZURE_SPEECH_ENDPOINT': process.env.SPEECH_ENDPOINT || '',
+      'AZURE_FORM_RECOGNIZER_KEY': process.env.AZURE_FORM_RECOGNIZER_KEY || '',
+      'AZURE_FORM_RECOGNIZER_ENDPOINT': process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || '',
+      'FIREBASE_PROJECT_ID': process.env.FIREBASE_PROJECT_ID || '',
+      'FIREBASE_CLIENT_EMAIL': process.env.FIREBASE_CLIENT_EMAIL || '',
+      'FIREBASE_PRIVATE_KEY': process.env.FIREBASE_PRIVATE_KEY || '',
+      'FIREBASE_CLIENT_KEY': process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || ''
+    };
   }
 }
 

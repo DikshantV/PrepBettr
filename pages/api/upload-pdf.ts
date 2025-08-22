@@ -3,9 +3,8 @@ import { IncomingForm, File } from 'formidable';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { azureOpenAIService } from '@/lib/services/azure-openai-service';
-import { updateUserResume } from '../../lib/services/firebase-resume-service';
-import { parseResumeText, generateInterviewQuestions } from '../../lib/utils/resume-parser';
-import { verifyIdToken } from '../../lib/firebase/admin';
+import { resumeProcessingService } from '@/lib/services/resume-processing-service';
+import { verifyIdToken } from '@/lib/firebase/admin';
 
 export const config = {
   api: {
@@ -15,33 +14,6 @@ export const config = {
 
 // Azure OpenAI Service will be initialized in the handler
 
-async function parsePDF(filePath: string): Promise<string> {
-  try {
-    const dataBuffer = await readFile(filePath);
-    const { default: pdf } = await import('pdf-parse');
-    const data = await pdf(dataBuffer);
-    return data.text.trim();
-  } finally {
-    // Clean up the temporary file
-    await unlink(filePath).catch(console.error);
-  }
-}
-
-// Helper: Extract key info from resume text
-function extractResumeInfo(text: string) {
-  // Simple regex-based extraction (improve as needed)
-  const nameMatch = text.match(/Name[:\s]+([A-Z][a-zA-Z]+(\s[A-Z][a-zA-Z]+)*)/i);
-  const experienceMatch = text.match(/Experience[:\s]+([\s\S]*?)(Education[:\s]|Skills[:\s]|$)/i);
-  const educationMatch = text.match(/Education[:\s]+([\s\S]*?)(Skills[:\s]|Experience[:\s]|$)/i);
-  const skillsMatch = text.match(/Skills?[:\s]+([\s\S]*?)(Education[:\s]|Experience[:\s]|$)/i);
-
-  return {
-    name: nameMatch ? nameMatch[1].trim() : '',
-    experience: experienceMatch ? experienceMatch[1].replace(/(Education[:\s]|Skills?[:\s]).*$/i, '').trim() : '',
-    education: educationMatch ? educationMatch[1].replace(/(Skills?[:\s]|Experience[:\s]).*$/i, '').trim() : '',
-    skills: skillsMatch ? skillsMatch[1].replace(/(Education[:\s]|Experience[:\s]).*$/i, '').trim() : '',
-  };
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -71,13 +43,13 @@ export default async function handler(
       });
     }
 
-    // For now, skip Firebase auth in development if no token is provided
-    // This allows testing without full auth setup
+    // Handle authentication
     const authHeader = req.headers.authorization;
+    let decodedToken: any = null;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const idToken = authHeader.split(' ')[1];
-      const decodedToken = await verifyIdToken(idToken);
+      decodedToken = await verifyIdToken(idToken);
       if (!decodedToken) {
         return res.status(401).json({ error: 'Unauthorized - Invalid token' });
       }
@@ -85,7 +57,8 @@ export default async function handler(
       // In production, always require auth
       return res.status(401).json({ error: 'Unauthorized - No token provided' });
     } else {
-      console.warn('Development mode: Skipping authentication for PDF upload');
+      console.warn('Development mode: Using mock user ID for PDF upload');
+      decodedToken = { uid: 'dev-user-001' }; // Mock token for development
     }
 
     // Parse the form data
@@ -101,33 +74,23 @@ export default async function handler(
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    // Ensure the file is a PDF
-    if (!file.mimetype?.includes('pdf')) {
-      return res.status(400).json({ error: 'Only PDF files are allowed' });
+
+    const fileBuffer = await readFile(file.filepath);
+    
+    // Use the resume processing service to handle the upload
+    const result = await resumeProcessingService.processResume(
+      decodedToken.uid, 
+      fileBuffer, 
+      file.originalFilename || 'resume.pdf', 
+      file.mimetype || 'application/pdf',
+      file.size
+    );
+
+    if (result.success) {
+      return res.status(200).json(result.data);
+    } else {
+      return res.status(500).json({ error: result.error });
     }
-    // Ensure the file size is reasonable (e.g., 10MB max)
-    const fileSizeInMB = file.size / (1024 * 1024);
-    if (fileSizeInMB > 10) {
-      return res.status(400).json({ error: 'File size too large. Maximum 10MB allowed.' });
-    }
-    // Save the uploaded file temporarily
-    const tempFilePath = join('/tmp', `resume-${Date.now()}.pdf`);
-    await writeFile(tempFilePath, await readFile(file.filepath));
-    // Parse PDF text
-    const text = await parsePDF(tempFilePath);
-    if (!text.trim()) {
-      return res.status(400).json({ error: 'Could not extract text from PDF' });
-    }
-    // Extract key info
-    const resumeInfo = extractResumeInfo(text);
-    // Generate questions using Azure OpenAI
-    const questions = await azureOpenAIService.generateQuestions(resumeInfo);
-    // Respond with structured info and questions
-    return res.status(200).json({
-      success: true,
-      resumeInfo,
-      questions
-    });
   } catch (error: unknown) {
     console.error('Error processing PDF:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

@@ -1,4 +1,4 @@
-import { WorkExperience, Education, Project } from '../services/firebase-resume-service';
+import { WorkExperience, Education, Project } from '../services/azure-ai-service';
 import { azureOpenAIService } from '../services/azure-openai-service';
 
 export interface ParsedResumeData {

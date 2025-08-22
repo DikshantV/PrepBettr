@@ -26,7 +26,7 @@ const InterviewPageContent = () => {
     const urlTechstack = parseTechstack(searchParams?.get('techstack') || null);
     
     // Fetch interview data using Firestore lookup (only if we have an ID)
-    const { interview, loading: firestoreLoading, error: firestoreError } = useInterview(urlInterviewId);
+    const { interview, loading: firestoreLoading, error: firestoreError } = useInterview(urlInterviewId || '');
     
     // Data resolution effect
     useEffect(() => {
@@ -60,10 +60,10 @@ const InterviewPageContent = () => {
             if (interview && !firestoreLoading && !firestoreError) {
                 const firestoreData: CommunityInterviewData = {
                     id: interview.id,
-                    role: interview.role || interview.jobTitle || 'Unknown Role',
-                    type: interview.type || 'technical',
-                    techstack: Array.isArray(interview.techstack) ? interview.techstack : (interview.techstack ? [interview.techstack] : ['General']),
-                    level: interview.level,
+                    role: (interview as any).role || (interview as any).jobTitle || 'Unknown Role',
+                    type: (interview as any).type || 'technical',
+                    techstack: Array.isArray((interview as any).techstack) ? (interview as any).techstack : ((interview as any).techstack ? [(interview as any).techstack] : ['General']),
+                    level: (interview as any).level,
                     createdAt: typeof interview.createdAt === 'string' ? interview.createdAt : interview.createdAt.toISOString(),
                     timestamp: Date.now()
                 };

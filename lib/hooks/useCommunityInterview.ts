@@ -11,6 +11,10 @@ const fetcher = async (id: string) => {
         throw new Error("Interview ID is required");
     }
 
+    if (!db) {
+        throw new Error("Firebase is not initialized");
+    }
+
     // Reference to the document in the publicInterviews collection
     const interviewDocRef = doc(db, 'publicInterviews', id);
 

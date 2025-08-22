@@ -51,6 +51,14 @@ const nextConfig = {
   
   // Custom webpack config for Azure packages
   webpack: (config, { isServer, dev }) => {
+    // Exclude Azure Functions from build
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /azure\/.*\/index\.ts$/,
+      use: 'null-loader',
+    });
+    
     if (isServer) {
       // Optimize server-side Azure packages
       config.externals = config.externals || [];
@@ -59,7 +67,29 @@ const nextConfig = {
         '@azure/cosmos': 'commonjs @azure/cosmos',
         '@azure/storage-blob': 'commonjs @azure/storage-blob',
         '@azure/keyvault-secrets': 'commonjs @azure/keyvault-secrets',
+        '@azure/functions': 'commonjs @azure/functions',
       });
+    } else {
+      // Client-side fallbacks for Node.js modules
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        util: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        http2: false,
+        dns: false,
+        assert: false,
+        os: false,
+        path: false,
+        child_process: false,
+      };
     }
     
     // Temporarily disable minification to resolve webpack error

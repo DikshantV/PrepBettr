@@ -7,11 +7,11 @@ import { randomBytes } from 'crypto';
 import { awsSESService } from './aws-ses-service';
 
 export class EmailVerificationService {
-  private _db: ReturnType<typeof getAdminFirestore> | null = null;
+  private _db: Awaited<ReturnType<typeof getAdminFirestore>> | null = null;
   
-  private get db() {
+  private async getDb() {
     if (!this._db) {
-      this._db = getAdminFirestore();
+      this._db = await getAdminFirestore();
     }
     return this._db;
   }
@@ -44,7 +44,8 @@ export class EmailVerificationService {
       };
 
       // Store in database
-      await this.db.collection('email_verifications').add(verificationData);
+      const db = await this.getDb();
+      await db.collection('email_verifications').add(verificationData);
 
       // Create verification URL
       const baseUrl = process.env.NEXTAUTH_URL || process.env.AZURE_APP_SERVICE_URL || 'http://localhost:3000';
@@ -104,14 +105,15 @@ export class EmailVerificationService {
   async verifyEmail(token: string): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
       // Find verification record
-      const verificationSnapshot = await this.db
+      const db = await this.getDb();
+      const verificationSnapshot = await db
         .collection('email_verifications')
         .where('token', '==', token)
         .where('verified', '==', false)
         .limit(1)
         .get();
 
-      if (verificationSnapshot.empty) {
+      if (verificationSnapshot.empty || !verificationSnapshot.docs || verificationSnapshot.docs.length === 0) {
         return {
           success: false,
           error: 'Invalid or expired verification token'
@@ -119,7 +121,15 @@ export class EmailVerificationService {
       }
 
       const verificationDoc = verificationSnapshot.docs[0];
-      const verificationData = verificationDoc.data() as EmailVerification;
+      const verificationData = (verificationDoc as any)?.data?.() as EmailVerification || {};
+      
+      // Handle mock case where data might be empty
+      if (!verificationData || !verificationData.userId) {
+        return {
+          success: false,
+          error: 'Invalid verification data - this may be expected in development mode'
+        };
+      }
 
       // Check if token has expired
       if (verificationData.expiresAt < new Date()) {
@@ -130,15 +140,15 @@ export class EmailVerificationService {
       }
 
       // Update verification record
-      const batch = this.db.batch();
+      const batch = db.batch();
 
-      batch.update(verificationDoc.ref, {
+      batch.update((verificationDoc as any).ref, {
         verified: true,
         verifiedAt: FieldValue.serverTimestamp()
       });
 
       // Update user's email verification status
-      const userDoc = this.db.collection('users').doc(verificationData.userId);
+      const userDoc = db.collection('users').doc(verificationData.userId);
       batch.update(userDoc, {
         emailVerified: true,
         updatedAt: FieldValue.serverTimestamp()
@@ -167,13 +177,14 @@ export class EmailVerificationService {
    */
   async isEmailVerified(userId: string): Promise<boolean> {
     try {
-      const userDoc = await this.db.collection('users').doc(userId).get();
+      const db = await this.getDb();
+      const userDoc = await db.collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
         return false;
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as any;
       return userData?.emailVerified === true;
 
     } catch (error) {
@@ -190,7 +201,8 @@ export class EmailVerificationService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Get user data
-      const userDoc = await this.db.collection('users').doc(userId).get();
+      const db = await this.getDb();
+      const userDoc = await db.collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
         return {
@@ -199,7 +211,7 @@ export class EmailVerificationService {
         };
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as any;
       
       if (userData?.emailVerified === true) {
         return {
@@ -209,14 +221,14 @@ export class EmailVerificationService {
       }
 
       // Invalidate any existing unverified tokens for this user
-      const existingTokensSnapshot = await this.db
+      const existingTokensSnapshot = await db
         .collection('email_verifications')
         .where('userId', '==', userId)
         .where('verified', '==', false)
         .get();
 
-      const batch = this.db.batch();
-      existingTokensSnapshot.docs.forEach(doc => {
+      const batch = db.batch();
+      existingTokensSnapshot.docs.forEach((doc: any) => {
         batch.delete(doc.ref);
       });
 
@@ -248,13 +260,14 @@ export class EmailVerificationService {
   }> {
     try {
       // Check user's verified status
-      const userDoc = await this.db.collection('users').doc(userId).get();
+      const db = await this.getDb();
+      const userDoc = await db.collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
         return { verified: false, pendingVerification: false };
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as any;
       const verified = userData?.emailVerified === true;
 
       if (verified) {
@@ -266,7 +279,7 @@ export class EmailVerificationService {
       }
 
       // Check if there are pending verifications
-      const pendingSnapshot = await this.db
+      const pendingSnapshot = await db
         .collection('email_verifications')
         .where('userId', '==', userId)
         .where('verified', '==', false)
@@ -291,7 +304,8 @@ export class EmailVerificationService {
    */
   async cleanupExpiredTokens(): Promise<{ deleted: number }> {
     try {
-      const expiredSnapshot = await this.db
+      const db = await this.getDb();
+      const expiredSnapshot = await db
         .collection('email_verifications')
         .where('expiresAt', '<', new Date())
         .where('verified', '==', false)
@@ -301,8 +315,8 @@ export class EmailVerificationService {
         return { deleted: 0 };
       }
 
-      const batch = this.db.batch();
-      expiredSnapshot.docs.forEach(doc => {
+      const batch = db.batch();
+      expiredSnapshot.docs.forEach((doc: any) => {
         batch.delete(doc.ref);
       });
 

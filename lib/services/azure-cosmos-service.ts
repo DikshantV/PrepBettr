@@ -1,5 +1,6 @@
 import { CosmosClient, Database, Container } from '@azure/cosmos';
 import { DefaultAzureCredential } from '@azure/identity';
+import { getCosmosDbConfig } from '@/lib/config/environment-loader';
 
 // Data interfaces
 export interface UserDocument {
@@ -240,38 +241,33 @@ export interface ProfileDocument {
 }
 
 class AzureCosmosService {
-  private client: CosmosClient;
+  private client: CosmosClient | null = null;
   private database: Database | null = null;
   private containers: Map<string, Container> = new Map();
   private initialized = false;
 
   constructor() {
-    // Initialize with connection string or key
-    const connectionString = process.env.AZURE_COSMOS_CONNECTION_STRING;
-    const endpoint = process.env.AZURE_COSMOS_ENDPOINT;
-    const key = process.env.AZURE_COSMOS_KEY;
-    
-    if (connectionString) {
-      this.client = new CosmosClient(connectionString);
-    } else if (endpoint && key) {
-      this.client = new CosmosClient({
-        endpoint: endpoint,
-        key: key
-      });
-    } else {
-      throw new Error('Azure Cosmos DB configuration missing. Set AZURE_COSMOS_CONNECTION_STRING or both AZURE_COSMOS_ENDPOINT and AZURE_COSMOS_KEY');
-    }
+    // Client initialization is now deferred to initialize() method
+    // to use the unified environment loader
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
     try {
-      const databaseId = process.env.AZURE_COSMOS_DATABASE_NAME || 'PrepBettrDB';
+      // Load Cosmos DB configuration from unified environment loader
+      const cosmosConfig = await getCosmosDbConfig();
+      
+      if (!cosmosConfig.connectionString) {
+        throw new Error('Cosmos DB connection string not available in configuration');
+      }
+      
+      // Initialize Cosmos client with configuration
+      this.client = new CosmosClient(cosmosConfig.connectionString);
       
       // Create or get database
       const { database } = await this.client.databases.createIfNotExists({
-        id: databaseId
+        id: cosmosConfig.database
       });
       
       this.database = database;

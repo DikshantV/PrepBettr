@@ -1,14 +1,9 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminFirestore } from '@/lib/firebase/admin';
-import { azureBlobStorage } from './azure-blob-storage';
+import { getStorageService, resumeStorageService } from '@/lib/storage';
+import { StorageProvider } from '@/lib/storage/IStorageService';
 import { azureFormRecognizer, ExtractedResumeData } from './azure-form-recognizer';
-import { 
-  uploadResumeToStorage, 
-  deleteResumeFromStorage, 
-  getUserResume, 
-  deleteUserResume,
-  ResumeData 
-} from './firebase-resume-service';
+// Firebase resume service replaced with Azure services
 // Import will be done dynamically when needed
 import { logServerError } from '@/lib/errors';
 
@@ -20,7 +15,7 @@ export interface ProcessedResumeResult {
     sasUrl?: string;
     extractedData: ExtractedResumeData;
     interviewQuestions: string[];
-    storageProvider: 'azure' | 'firebase';
+    storageProvider: StorageProvider;
   };
   error?: string;
 }
@@ -42,8 +37,7 @@ class ResumeProcessingService {
     }
 
     try {
-      // Initialize Azure services (they will gracefully fall back if not configured)
-      await azureBlobStorage.initialize();
+      // Initialize Azure Form Recognizer (storage is initialized via the abstraction layer)
       await azureFormRecognizer.initialize();
 
       this.initialized = true;
@@ -51,7 +45,7 @@ class ResumeProcessingService {
     } catch (error) {
       console.error('❌ Failed to initialize resume processing service:', error);
       logServerError(error as Error, { service: 'resume-processing', action: 'initialize' });
-      // Don't throw - we can still operate with Firebase fallback
+      // Don't throw - we can still operate with fallbacks
       this.initialized = true;
     }
   }
@@ -75,8 +69,8 @@ class ResumeProcessingService {
       // Step 1: Delete existing resume if it exists
       await this.deleteExistingResume(userId);
 
-      // Step 2: Upload to storage (Azure Blob Storage with Firebase fallback)
-      const storageResult = await this.uploadToStorage(userId, fileBuffer, fileName, mimeType);
+      // Step 2: Upload to storage using the new abstraction layer
+      const storageResult = await resumeStorageService.uploadResume(userId, fileBuffer, fileName, mimeType);
 
       // Step 3: Extract data from resume
       const extractedData = await this.extractResumeData(fileBuffer, mimeType);
@@ -92,7 +86,6 @@ class ResumeProcessingService {
         fileName,
         fileUrl: storageResult.fileUrl,
         filePath: storageResult.filePath,
-        blobName: storageResult.blobName,
         sasUrl: storageResult.sasUrl,
         extractedData,
         interviewQuestions,
@@ -137,7 +130,7 @@ class ResumeProcessingService {
   }
 
   /**
-   * Upload resume to storage (Azure Blob with Firebase fallback)
+   * This method is deprecated - storage is now handled via the abstraction layer
    */
   private async uploadToStorage(
     userId: string,
@@ -151,34 +144,9 @@ class ResumeProcessingService {
     sasUrl?: string;
     provider: 'azure' | 'firebase';
   }> {
-    
-    // Try Azure Blob Storage first
-    if (azureBlobStorage.isReady()) {
-      try {
-        console.log('📤 Uploading to Azure Blob Storage...');
-        const result = await azureBlobStorage.uploadResume(userId, fileBuffer, fileName, mimeType);
-        
-        return {
-          fileUrl: result.blobUrl,
-          blobName: result.blobName,
-          sasUrl: result.sasUrl,
-          provider: 'azure'
-        };
-      } catch (error) {
-        console.warn('⚠️ Azure Blob Storage upload failed, falling back to Firebase:', error);
-        // Continue to Firebase fallback
-      }
-    }
-
-    // Fallback to Firebase Storage
-    console.log('📤 Uploading to Firebase Storage...');
-    const { fileUrl, filePath } = await uploadResumeToStorage(userId, fileBuffer, fileName, mimeType);
-    
-    return {
-      fileUrl,
-      filePath,
-      provider: 'firebase'
-    };
+    // This method is now replaced by the storage abstraction layer
+    // Use resumeStorageService.uploadResume() instead
+    throw new Error('This method is deprecated. Use resumeStorageService.uploadResume() instead.');
   }
 
   /**
@@ -354,7 +322,7 @@ class ResumeProcessingService {
    */
   private async saveToFirestore(userId: string, resumeData: any): Promise<string> {
     try {
-      const db = getAdminFirestore();
+      const db = await getAdminFirestore();
       const docRef = db.collection('profiles').doc(userId);
 
       await docRef.set({
@@ -365,10 +333,10 @@ class ResumeProcessingService {
           uploadDate: FieldValue.serverTimestamp(),
           lastModified: FieldValue.serverTimestamp(),
         },
-      }, { merge: true }); // Use merge to update existing profile
+      }); // Use merge to update existing profile
 
       console.log(`✅ Resume data saved to Firestore for user: ${userId}`);
-      return docRef.id;
+      return userId; // Use userId as the document ID since that's what we set
     } catch (error) {
       console.error('Failed to save resume data to Firestore:', error);
       throw new Error('Failed to save resume data');
@@ -381,22 +349,21 @@ class ResumeProcessingService {
   private async deleteExistingResume(userId: string): Promise<void> {
     try {
       // Get existing resume data
-      const db = getAdminFirestore();
+      const db = await getAdminFirestore();
       const profileDoc = await db.collection('profiles').doc(userId).get();
 
       if (profileDoc.exists) {
-        const profileData = profileDoc.data();
+        const profileData = profileDoc.data() as any;
         
-        // Delete from storage based on provider
-        if (profileData?.metadata?.storageProvider === 'azure' && profileData?.blobName) {
-          await azureBlobStorage.deleteResume(profileData.blobName);
-        } else if (profileData?.filePath) {
-          await deleteResumeFromStorage(profileData.filePath);
+        // Delete from storage using the abstraction layer
+        if (profileData?.filePath) {
+          await resumeStorageService.deleteResume(profileData.filePath);
+        } else if (profileData?.blobName) {
+          await resumeStorageService.deleteResume(profileData.blobName);
         }
       }
 
-      // Also clean up legacy resume data
-      await deleteUserResume(userId);
+      // Legacy resume cleanup (Firebase functions removed)
       
       console.log(`🗑️ Existing resume cleaned up for user: ${userId}`);
     } catch (error) {
@@ -410,15 +377,15 @@ class ResumeProcessingService {
    */
   async getUserResumeData(userId: string): Promise<any> {
     try {
-      const db = getAdminFirestore();
+      const db = await getAdminFirestore();
       const profileDoc = await db.collection('profiles').doc(userId).get();
 
       if (profileDoc.exists) {
-        return profileDoc.data();
+        return profileDoc.data() as any;
       }
 
-      // Fallback to legacy resume collection
-      return await getUserResume(userId);
+      // Legacy resume collection fallback removed
+      return null;
     } catch (error) {
       console.error('Failed to get user resume data:', error);
       throw error;
@@ -426,20 +393,20 @@ class ResumeProcessingService {
   }
 
   /**
-   * Generate new SAS URL for Azure blob
+   * Generate new secure URL for file access
    */
-  async generateNewSASUrl(userId: string, expiryHours: number = 24): Promise<string | null> {
+  async generateNewSecureUrl(userId: string, expiryHours: number = 24): Promise<string | null> {
     try {
       const resumeData = await this.getUserResumeData(userId);
       
-      if (resumeData?.blobName && azureBlobStorage.isReady()) {
-        const result = await azureBlobStorage.generateSASUrl(resumeData.blobName, expiryHours);
-        return result.sasUrl;
+      const filePath = resumeData?.filePath || resumeData?.blobName;
+      if (filePath) {
+        return await resumeStorageService.getResumeUrl(filePath, expiryHours);
       }
 
       return null;
     } catch (error) {
-      console.error('Failed to generate new SAS URL:', error);
+      console.error('Failed to generate new secure URL:', error);
       return null;
     }
   }

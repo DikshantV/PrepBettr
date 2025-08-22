@@ -38,10 +38,10 @@ export default function UserProfile() {
   return (
     <div className="flex items-center space-x-4 p-4 bg-background rounded-lg border">
       <div className="relative">
-        {user.image ? (
+        {user.picture ? (
           <Image
-            src={user.image}
-            alt={user.name}
+            src={user.picture}
+            alt={user.name || user.email || 'User'}
             width={48}
             height={48}
             className="rounded-full object-cover"
@@ -49,7 +49,7 @@ export default function UserProfile() {
         ) : (
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
             <span className="text-lg font-semibold text-muted-foreground">
-              {user.name.charAt(0).toUpperCase()}
+              {(user.name || user.email || '?').charAt(0).toUpperCase()}
             </span>
           </div>
         )}
@@ -57,7 +57,7 @@ export default function UserProfile() {
       
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-medium text-foreground truncate">
-          {user.name}
+          {user.name || user.email || 'User'}
         </h3>
         <p className="text-sm text-muted-foreground truncate">
           {user.email}

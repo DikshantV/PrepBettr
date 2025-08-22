@@ -57,8 +57,8 @@ export function TelemetryProvider({ children }: TelemetryProviderProps) {
 
       if (user) {
         await telemetry.setUser(user.uid, user.email || undefined, {
-          isEmailVerified: user.emailVerified?.toString() || 'false',
-          creationTime: user.metadata?.creationTime || 'unknown'
+          isEmailVerified: user.email_verified?.toString() || 'false',
+          creationTime: 'unknown' // metadata not available in AuthenticatedUser type
         });
       } else {
         await telemetry.clearUser();

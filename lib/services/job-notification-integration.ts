@@ -76,7 +76,14 @@ export interface Application {
 }
 
 export class JobNotificationIntegration {
-  private db = getAdminFirestore();
+  private db: Awaited<ReturnType<typeof getAdminFirestore>> | null = null;
+  
+  private async getDB() {
+    if (!this.db) {
+      this.db = await getAdminFirestore();
+    }
+    return this.db;
+  }
 
   /**
    * Send job discovered notification
@@ -224,7 +231,8 @@ export class JobNotificationIntegration {
   async sendDailySummaries(): Promise<void> {
     try {
       // Get all users with daily summary enabled
-      const usersSnapshot = await this.db
+      const db = await this.getDB();
+      const usersSnapshot = await db
         .collection('users')
         .where('emailVerified', '==', true)
         .where('notificationPreferences.dailySummary', '==', true)
@@ -234,8 +242,8 @@ export class JobNotificationIntegration {
 
       for (const userDoc of usersSnapshot.docs) {
         try {
-          const userId = userDoc.id;
-          const userData = userDoc.data() as UserProfile;
+          const userId = (userDoc as any).id;
+          const userData = (userDoc as any).data() as UserProfile;
 
           const summaryData = await this.generateDailySummary(userId);
           
@@ -251,7 +259,7 @@ export class JobNotificationIntegration {
             console.log(`Sent daily summary to user ${userId}`);
           }
         } catch (userError) {
-          console.error(`Error sending daily summary for user ${userDoc.id}:`, userError);
+          console.error(`Error sending daily summary for user ${(userDoc as any).id}:`, userError);
         }
       }
 
@@ -266,7 +274,8 @@ export class JobNotificationIntegration {
   async processBatchedNotifications(): Promise<void> {
     try {
       // Get users with pending job notifications
-      const pendingSnapshot = await this.db
+      const db = await this.getDB();
+      const pendingSnapshot = await db
         .collection('pending_job_notifications')
         .where('processed', '==', false)
         .get();
@@ -274,8 +283,8 @@ export class JobNotificationIntegration {
       const batchedByUser: Record<string, JobListing[]> = {};
 
       // Group by user
-      pendingSnapshot.docs.forEach(doc => {
-        const data = doc.data();
+      pendingSnapshot.docs.forEach((doc: any) => {
+        const data = doc.data() as any;
         const userId = data.userId;
         
         if (!batchedByUser[userId]) {
@@ -361,13 +370,14 @@ export class JobNotificationIntegration {
    */
   private async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
-      const userDoc = await this.db.collection('users').doc(userId).get();
+      const db = await this.getDB();
+      const userDoc = await db.collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
         return null;
       }
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() as any;
       
       // Set default notification preferences if not exist
       const defaultNotificationPreferences = {
@@ -409,8 +419,9 @@ export class JobNotificationIntegration {
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     try {
+      const db = await this.getDB();
       // Get today's discovered jobs
-      const jobsSnapshot = await this.db
+      const jobsSnapshot = await db
         .collection('discovered_jobs')
         .where('userId', '==', userId)
         .where('createdAt', '>=', startOfDay)
@@ -420,7 +431,7 @@ export class JobNotificationIntegration {
         .get();
 
       // Get today's applications
-      const applicationsSnapshot = await this.db
+      const applicationsSnapshot = await db
         .collection('applications')
         .where('userId', '==', userId)
         .where('appliedAt', '>=', startOfDay)
@@ -428,7 +439,7 @@ export class JobNotificationIntegration {
         .get();
 
       // Get today's follow-ups sent (from notification events)
-      const followUpsSnapshot = await this.db
+      const followUpsSnapshot = await db
         .collection('notification_events')
         .where('userId', '==', userId)
         .where('type', '==', 'follow_up_reminder')
@@ -439,7 +450,7 @@ export class JobNotificationIntegration {
 
       // Get upcoming follow-ups (next 7 days)
       const upcomingDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const upcomingFollowUpsSnapshot = await this.db
+      const upcomingFollowUpsSnapshot = await db
         .collection('follow_up_reminders')
         .where('userId', '==', userId)
         .where('scheduledDate', '>=', today)
@@ -448,8 +459,8 @@ export class JobNotificationIntegration {
         .get();
 
       // Convert discovered jobs to JobDiscoveredData format
-      const topJobs: JobDiscoveredData[] = jobsSnapshot.docs.map(doc => {
-        const data = doc.data();
+      const topJobs: JobDiscoveredData[] = jobsSnapshot.docs.map((doc: any) => {
+        const data = doc.data() as any;
         return {
           jobId: doc.id,
           jobTitle: data.title || '',
@@ -490,7 +501,8 @@ export class JobNotificationIntegration {
    */
   private async storePendingJobNotifications(userId: string, jobs: JobListing[]): Promise<void> {
     try {
-      await this.db.collection('pending_job_notifications').add({
+      const db = await this.getDB();
+      await db.collection('pending_job_notifications').add({
         userId,
         jobs,
         createdAt: new Date(),
@@ -506,10 +518,11 @@ export class JobNotificationIntegration {
    */
   private async getLastBatchNotificationTime(userId: string): Promise<Date | null> {
     try {
-      const doc = await this.db.collection('batch_notification_tracking').doc(userId).get();
+      const db = await this.getDB();
+      const doc = await db.collection('batch_notification_tracking').doc(userId).get();
       
       if (doc.exists) {
-        const data = doc.data();
+        const data = doc.data() as any;
         return data?.lastSentAt?.toDate() || null;
       }
       
@@ -525,10 +538,11 @@ export class JobNotificationIntegration {
    */
   private async updateLastBatchNotificationTime(userId: string, time: Date): Promise<void> {
     try {
-      await this.db.collection('batch_notification_tracking').doc(userId).set({
+      const db = await this.getDB();
+      await db.collection('batch_notification_tracking').doc(userId).set({
         lastSentAt: time,
         updatedAt: new Date()
-      }, { merge: true });
+      });
     } catch (error) {
       console.error('Error updating last batch notification time:', error);
     }
@@ -539,14 +553,15 @@ export class JobNotificationIntegration {
    */
   private async markBatchNotificationsProcessed(userId: string): Promise<void> {
     try {
-      const snapshot = await this.db
+      const db = await this.getDB();
+      const snapshot = await db
         .collection('pending_job_notifications')
         .where('userId', '==', userId)
         .where('processed', '==', false)
         .get();
 
-      const batch = this.db.batch();
-      snapshot.docs.forEach(doc => {
+      const batch = db.batch();
+      snapshot.docs.forEach((doc: any) => {
         batch.update(doc.ref, { processed: true, processedAt: new Date() });
       });
 

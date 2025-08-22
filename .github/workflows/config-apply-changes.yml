@@ -1,0 +1,211 @@
+name: 🚀 Apply Configuration Changes
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - '.config-snapshots/**'
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+jobs:
+  apply-config-changes:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🏗️ Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install dependencies
+      run: npm ci
+      
+    - name: 🔍 Identify configuration snapshots
+      id: snapshots
+      run: |
+        echo "Identifying configuration snapshots from merged PR..."
+        SNAPSHOTS=$(find .config-snapshots -name "*.yaml" -type f | head -10)
+        if [ -z "$SNAPSHOTS" ]; then
+          echo "No configuration snapshots found"
+          exit 0
+        fi
+        
+        echo "Found snapshots:"
+        echo "$SNAPSHOTS"
+        echo "snapshots<<EOF" >> $GITHUB_OUTPUT
+        echo "$SNAPSHOTS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: 🔐 Authenticate with Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: 📊 Process configuration snapshots
+      env:
+        AZURE_APP_CONFIG_CONNECTION_STRING: ${{ secrets.AZURE_APP_CONFIG_CONNECTION_STRING }}
+      run: |
+        if [ -z "${{ steps.snapshots.outputs.snapshots }}" ]; then
+          echo "No snapshots to process"
+          exit 0
+        fi
+        
+        echo "Processing configuration snapshots..."
+        
+        for snapshot_file in ${{ steps.snapshots.outputs.snapshots }}; do
+          echo "Processing: $snapshot_file"
+          
+          # Extract snapshot metadata
+          SNAPSHOT_ID=$(basename "$snapshot_file" .yaml)
+          
+          # Parse YAML configuration (using yq or node script)
+          CONFIG_KEY=$(npx tsx -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const config = yaml.load(fs.readFileSync('$snapshot_file', 'utf8'));
+            console.log(config.change.key);
+          ")
+          
+          CONFIG_VALUE=$(npx tsx -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const config = yaml.load(fs.readFileSync('$snapshot_file', 'utf8'));
+            console.log(JSON.stringify(config.change.value));
+          ")
+          
+          ENVIRONMENT=$(npx tsx -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const config = yaml.load(fs.readFileSync('$snapshot_file', 'utf8'));
+            console.log(config.metadata.environment);
+          ")
+          
+          SYNC_TO_FIREBASE=$(npx tsx -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const config = yaml.load(fs.readFileSync('$snapshot_file', 'utf8'));
+            console.log(config.change.sync_to_firebase);
+          ")
+          
+          echo "Applying configuration change:"
+          echo "  Key: $CONFIG_KEY"
+          echo "  Value: $CONFIG_VALUE" 
+          echo "  Environment: $ENVIRONMENT"
+          echo "  Sync to Firebase: $SYNC_TO_FIREBASE"
+          
+          # Apply configuration using Azure CLI
+          AZURE_KEY="${CONFIG_KEY}"
+          if [ "$ENVIRONMENT" != "production" ]; then
+            AZURE_KEY="${CONFIG_KEY}__${ENVIRONMENT}"
+          fi
+          
+          echo "Setting Azure App Configuration key: $AZURE_KEY"
+          az appconfig kv set \
+            --connection-string "$AZURE_APP_CONFIG_CONNECTION_STRING" \
+            --key "$AZURE_KEY" \
+            --value "$CONFIG_VALUE" \
+            --content-type "application/json" \
+            --tags "environment=$ENVIRONMENT" \
+                   "version=${{ github.sha }}" \
+                   "source=github-actions" \
+                   "lastModifiedBy=${{ github.actor }}" \
+                   "snapshot_id=$SNAPSHOT_ID" \
+                   "sync_to_firebase=$SYNC_TO_FIREBASE"
+          
+          echo "✅ Applied configuration: $CONFIG_KEY"
+          
+          # Record the change in summary
+          echo "## 🎯 Configuration Applied: $CONFIG_KEY" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Value:** \`$CONFIG_VALUE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Snapshot ID:** $SNAPSHOT_ID" >> $GITHUB_STEP_SUMMARY
+          echo "- **Git SHA:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+        done
+        
+    - name: 🔄 Trigger Firebase sync if needed
+      env:
+        AZURE_FUNCTION_KEY: ${{ secrets.AZURE_FUNCTION_KEY }}
+        CONFIG_SYNC_FUNCTION_URL: ${{ secrets.CONFIG_SYNC_FUNCTION_URL }}
+      run: |
+        echo "Triggering Firebase synchronization..."
+        
+        # Check if any snapshots require Firebase sync
+        NEEDS_SYNC=false
+        for snapshot_file in ${{ steps.snapshots.outputs.snapshots }}; do
+          SYNC_TO_FIREBASE=$(npx tsx -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const config = yaml.load(fs.readFileSync('$snapshot_file', 'utf8'));
+            console.log(config.change.sync_to_firebase);
+          ")
+          
+          if [ "$SYNC_TO_FIREBASE" = "true" ]; then
+            NEEDS_SYNC=true
+            break
+          fi
+        done
+        
+        if [ "$NEEDS_SYNC" = "true" ]; then
+          echo "🔄 Triggering Firebase synchronization..."
+          
+          curl -X POST "$CONFIG_SYNC_FUNCTION_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-functions-key: $AZURE_FUNCTION_KEY" \
+            -d '{
+              "trigger": "github-actions",
+              "git_sha": "${{ github.sha }}",
+              "changed_by": "${{ github.actor }}"
+            }' || echo "⚠️ Firebase sync trigger failed (non-blocking)"
+            
+          echo "✅ Firebase sync triggered"
+        else
+          echo "ℹ️ No Firebase sync required"
+        fi
+        
+    - name: 🧹 Cleanup snapshots
+      run: |
+        echo "Cleaning up processed snapshots..."
+        
+        for snapshot_file in ${{ steps.snapshots.outputs.snapshots }}; do
+          # Move to processed directory for audit trail
+          mkdir -p .config-snapshots/processed
+          mv "$snapshot_file" ".config-snapshots/processed/"
+          echo "Moved $snapshot_file to processed/"
+        done
+        
+        # Commit cleanup
+        if [ -n "$(git status --porcelain .config-snapshots)" ]; then
+          git config user.name "Config Management Bot"
+          git config user.email "config-bot@prepbettr.com"
+          git add .config-snapshots/
+          git commit -m "🧹 Archive processed configuration snapshots
+
+          Processed snapshots for PR #${{ github.event.pull_request.number }}
+          Applied by: ${{ github.actor }}
+          Git SHA: ${{ github.sha }}"
+          
+          git push origin main
+          echo "✅ Snapshots archived"
+        fi
+        
+    - name: 📈 Update deployment metrics
+      run: |
+        echo "## 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **PR Number:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Applied by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Git SHA:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 **Configuration changes have been successfully applied!**" >> $GITHUB_STEP_SUMMARY

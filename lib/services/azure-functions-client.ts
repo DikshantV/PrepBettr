@@ -15,7 +15,10 @@ interface TokenVerificationRequest {
 interface TokenVerificationResponse {
   valid: boolean;
   decoded?: any;
+  uid?: string;
+  email?: string;
   error?: string;
+  endpoint?: string;
 }
 
 interface SessionCookieRequest {
@@ -305,17 +308,25 @@ export class AzureFunctionsClient {
   }
 
   /**
-   * Verify Firebase ID token using Azure Function
+   * Verify Firebase ID token using Azure Function (Unified Auth Endpoint)
    */
   async verifyToken(token: string): Promise<TokenVerificationResponse> {
     try {
-      const response = await fetch(`${this.functionAppUrl}/api/verifyToken`, {
+      // Check feature flag for unified auth endpoint
+      const useUnifiedAuth = process.env.AUTH_ENDPOINT === 'v2' || process.env.NEXT_PUBLIC_AUTH_ENDPOINT === 'v2';
+      
+      const endpoint = useUnifiedAuth 
+        ? `${this.functionAppUrl}/api/auth?action=verify`
+        : `${this.functionAppUrl}/api/verifyToken`;
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-functions-key': this.functionKey
+          'x-functions-key': this.functionKey,
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ token })
+        body: JSON.stringify(useUnifiedAuth ? {} : { token })
       });
 
       if (!response.ok) {
@@ -323,7 +334,24 @@ export class AzureFunctionsClient {
       }
 
       const result = await response.json();
-      return result;
+      
+      // Normalize response format between legacy and unified endpoints
+      if (useUnifiedAuth && result.success) {
+        return {
+          valid: result.verified,
+          decoded: result.claims,
+          uid: result.uid,
+          email: result.email,
+          endpoint: 'unified-v2'
+        };
+      }
+      
+      return {
+        valid: result.success || false,
+        decoded: result.claims,
+        error: result.error,
+        endpoint: useUnifiedAuth ? 'unified-v2' : 'legacy-v1'
+      };
 
     } catch (error) {
       console.error('Error verifying token:', error);

@@ -145,7 +145,11 @@ async function getInterviewData(id: string) {
             
             return {
                 ...mockData,
-                user: currentUser || {
+                user: currentUser ? {
+                    id: (currentUser as any).uid || (currentUser as any).id || 'static-user',
+                    name: (currentUser as any).name || (currentUser as any).displayName || 'User',
+                    email: (currentUser as any).email || 'user@example.com'
+                } : {
                     id: 'static-user',
                     name: 'User',
                     email: 'user@example.com'
@@ -189,7 +193,11 @@ async function getInterviewData(id: string) {
         
         return {
             ...mockData,
-            user: currentUser || {
+            user: currentUser ? {
+                id: (currentUser as any).uid || (currentUser as any).id || 'static-user',
+                name: (currentUser as any).name || (currentUser as any).displayName || 'User',
+                email: (currentUser as any).email || 'user@example.com'
+            } : {
                 id: 'static-user',
                 name: 'User',
                 email: 'user@example.com'

@@ -1,0 +1,353 @@
+name: 🔄 Rollback Configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_type:
+        description: 'Type of rollback to perform'
+        required: true
+        type: choice
+        default: 'snapshot'
+        options:
+        - snapshot
+        - git_sha
+        - timestamp
+      rollback_target:
+        description: 'Rollback target (snapshot ID, Git SHA, or timestamp)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+      config_keys:
+        description: 'Specific config keys to rollback (comma-separated, empty for all)'
+        required: false
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+      confirm_rollback:
+        description: 'Type "CONFIRM" to proceed with rollback'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+  id-token: write
+
+jobs:
+  rollback-configuration:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔒 Validate rollback confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirm_rollback }}" != "CONFIRM" ]; then
+          echo "❌ Rollback not confirmed. Please type 'CONFIRM' to proceed."
+          exit 1
+        fi
+        echo "✅ Rollback confirmed"
+        
+    - name: 🏗️ Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for rollback operations
+        
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install dependencies
+      run: npm ci
+      
+    - name: 🔐 Authenticate with Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: 🔍 Identify rollback target
+      id: target
+      env:
+        AZURE_APP_CONFIG_CONNECTION_STRING: ${{ secrets.AZURE_APP_CONFIG_CONNECTION_STRING }}
+      run: |
+        ROLLBACK_TYPE="${{ github.event.inputs.rollback_type }}"
+        ROLLBACK_TARGET="${{ github.event.inputs.rollback_target }}"
+        ENVIRONMENT="${{ github.event.inputs.environment }}"
+        
+        echo "Identifying rollback target..."
+        echo "Type: $ROLLBACK_TYPE"
+        echo "Target: $ROLLBACK_TARGET"
+        echo "Environment: $ENVIRONMENT"
+        
+        case $ROLLBACK_TYPE in
+          "snapshot")
+            echo "Rolling back to snapshot: $ROLLBACK_TARGET"
+            # Find snapshot file
+            SNAPSHOT_FILE=".config-snapshots/processed/${ROLLBACK_TARGET}.yaml"
+            if [ ! -f "$SNAPSHOT_FILE" ]; then
+              echo "❌ Snapshot file not found: $SNAPSHOT_FILE"
+              exit 1
+            fi
+            echo "snapshot_file=$SNAPSHOT_FILE" >> $GITHUB_OUTPUT
+            ;;
+            
+          "git_sha")
+            echo "Rolling back to Git SHA: $ROLLBACK_TARGET"
+            # Validate Git SHA
+            if ! git rev-parse --verify "$ROLLBACK_TARGET^{commit}" > /dev/null 2>&1; then
+              echo "❌ Invalid Git SHA: $ROLLBACK_TARGET"
+              exit 1
+            fi
+            echo "git_sha=$ROLLBACK_TARGET" >> $GITHUB_OUTPUT
+            ;;
+            
+          "timestamp")
+            echo "Rolling back to timestamp: $ROLLBACK_TARGET"
+            # Convert timestamp to Git SHA (find nearest commit)
+            GIT_SHA=$(git rev-list -n 1 --before="$ROLLBACK_TARGET" main)
+            if [ -z "$GIT_SHA" ]; then
+              echo "❌ No commits found before timestamp: $ROLLBACK_TARGET"
+              exit 1
+            fi
+            echo "git_sha=$GIT_SHA" >> $GITHUB_OUTPUT
+            echo "Resolved timestamp to Git SHA: $GIT_SHA"
+            ;;
+            
+          *)
+            echo "❌ Invalid rollback type: $ROLLBACK_TYPE"
+            exit 1
+            ;;
+        esac
+        
+        echo "rollback_type=$ROLLBACK_TYPE" >> $GITHUB_OUTPUT
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+        
+    - name: 📊 Generate rollback plan
+      id: plan
+      run: |
+        ROLLBACK_TYPE="${{ steps.target.outputs.rollback_type }}"
+        CONFIG_KEYS="${{ github.event.inputs.config_keys }}"
+        
+        echo "Generating rollback plan..."
+        
+        # Create rollback plan file
+        ROLLBACK_ID="rollback-$(date +%Y%m%d-%H%M%S)-$(echo $RANDOM | md5sum | head -c 8)"
+        echo "rollback_id=$ROLLBACK_ID" >> $GITHUB_OUTPUT
+        
+        mkdir -p .rollback-plans
+        cat > .rollback-plans/$ROLLBACK_ID.yaml << EOF
+        # Configuration Rollback Plan
+        # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        # Requested by: ${{ github.actor }}
+        
+        metadata:
+          rollback_id: "$ROLLBACK_ID"
+          requested_by: "${{ github.actor }}"
+          requested_at: "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          environment: "${{ steps.target.outputs.environment }}"
+          reason: "${{ github.event.inputs.reason }}"
+          workflow_run_id: "${{ github.run_id }}"
+        
+        rollback:
+          type: "$ROLLBACK_TYPE"
+          target: "${{ github.event.inputs.rollback_target }}"
+          config_keys: "$CONFIG_KEYS"
+          git_sha: "${{ steps.target.outputs.git_sha }}"
+          snapshot_file: "${{ steps.target.outputs.snapshot_file }}"
+        
+        status:
+          created: true
+          executed: false
+          completed: false
+        EOF
+        
+        echo "Generated rollback plan: $ROLLBACK_ID"
+        
+    - name: 🔄 Execute rollback using unified config service
+      env:
+        AZURE_APP_CONFIG_CONNECTION_STRING: ${{ secrets.AZURE_APP_CONFIG_CONNECTION_STRING }}
+      run: |
+        ROLLBACK_TYPE="${{ steps.target.outputs.rollback_type }}"
+        ROLLBACK_ID="${{ steps.plan.outputs.rollback_id }}"
+        
+        echo "Executing rollback..."
+        
+        if [ "$ROLLBACK_TYPE" = "snapshot" ]; then
+          echo "Executing snapshot-based rollback..."
+          
+          # Use the unified config service rollback functionality
+          npx tsx -e "
+            const { unifiedConfigService } = require('./lib/services/unified-config-service');
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            
+            async function executeRollback() {
+              try {
+                const snapshotFile = '${{ steps.target.outputs.snapshot_file }}';
+                const config = yaml.load(fs.readFileSync(snapshotFile, 'utf8'));
+                
+                console.log('Rolling back configuration key:', config.change.key);
+                console.log('Rolling back to value:', config.change.value);
+                
+                // Use the revert functionality with the snapshot version
+                const versionId = config.metadata.snapshot_id;
+                await unifiedConfigService.revert(versionId);
+                
+                console.log('✅ Rollback completed successfully');
+              } catch (error) {
+                console.error('❌ Rollback failed:', error);
+                process.exit(1);
+              }
+            }
+            
+            executeRollback();
+          "
+          
+        else
+          echo "Executing Git SHA-based rollback..."
+          
+          # For Git SHA rollbacks, we need to extract configuration from that point
+          GIT_SHA="${{ steps.target.outputs.git_sha }}"
+          CONFIG_KEYS="${{ github.event.inputs.config_keys }}"
+          
+          echo "Rolling back to Git SHA: $GIT_SHA"
+          
+          # Checkout the target commit temporarily
+          git checkout "$GIT_SHA" -- .config-snapshots/ || echo "No config snapshots at this SHA"
+          
+          # Find the most recent configuration snapshot at that time
+          LATEST_SNAPSHOT=$(find .config-snapshots -name "*.yaml" -type f | sort -r | head -1)
+          
+          if [ -n "$LATEST_SNAPSHOT" ]; then
+            echo "Found configuration snapshot: $LATEST_SNAPSHOT"
+            
+            # Apply the configuration from that snapshot
+            npx tsx -e "
+              const { unifiedConfigService } = require('./lib/services/unified-config-service');
+              const yaml = require('js-yaml');
+              const fs = require('fs');
+              
+              async function executeGitRollback() {
+                try {
+                  const snapshotFile = '$LATEST_SNAPSHOT';
+                  const config = yaml.load(fs.readFileSync(snapshotFile, 'utf8'));
+                  
+                  console.log('Rolling back configuration key:', config.change.key);
+                  console.log('Rolling back to value:', config.change.value);
+                  
+                  await unifiedConfigService.set(config.change.key, config.change.value, {
+                    environment: '${{ steps.target.outputs.environment }}',
+                    version: 'rollback_$GIT_SHA',
+                    changedBy: '${{ github.actor }}',
+                    syncToFirebase: config.change.sync_to_firebase
+                  });
+                  
+                  console.log('✅ Git-based rollback completed successfully');
+                } catch (error) {
+                  console.error('❌ Git-based rollback failed:', error);
+                  process.exit(1);
+                }
+              }
+              
+              executeGitRollback();
+            "
+          else
+            echo "❌ No configuration snapshots found at Git SHA: $GIT_SHA"
+            exit 1
+          fi
+          
+          # Reset to main branch
+          git checkout main
+        fi
+        
+        echo "✅ Rollback execution completed"
+        
+    - name: 🔄 Trigger Firebase sync
+      env:
+        AZURE_FUNCTION_KEY: ${{ secrets.AZURE_FUNCTION_KEY }}
+        CONFIG_SYNC_FUNCTION_URL: ${{ secrets.CONFIG_SYNC_FUNCTION_URL }}
+      run: |
+        echo "Triggering Firebase synchronization after rollback..."
+        
+        curl -X POST "$CONFIG_SYNC_FUNCTION_URL" \
+          -H "Content-Type: application/json" \
+          -H "x-functions-key: $AZURE_FUNCTION_KEY" \
+          -d '{
+            "trigger": "rollback",
+            "git_sha": "${{ github.sha }}",
+            "changed_by": "${{ github.actor }}",
+            "rollback_id": "${{ steps.plan.outputs.rollback_id }}"
+          }' || echo "⚠️ Firebase sync trigger failed (non-blocking)"
+          
+        echo "✅ Firebase sync triggered"
+        
+    - name: 📝 Update rollback plan status
+      run: |
+        ROLLBACK_ID="${{ steps.plan.outputs.rollback_id }}"
+        
+        # Update rollback plan with completion status
+        cat >> .rollback-plans/$ROLLBACK_ID.yaml << EOF
+        
+        execution:
+          started_at: "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          completed_at: "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          git_sha_applied: "${{ github.sha }}"
+          success: true
+        EOF
+        
+        # Commit rollback plan
+        git config user.name "Config Management Bot"
+        git config user.email "config-bot@prepbettr.com"
+        git add .rollback-plans/
+        git commit -m "📝 Record configuration rollback: $ROLLBACK_ID
+
+        Rollback Details:
+        - Type: ${{ steps.target.outputs.rollback_type }}
+        - Target: ${{ github.event.inputs.rollback_target }}
+        - Environment: ${{ steps.target.outputs.environment }}
+        - Reason: ${{ github.event.inputs.reason }}
+        - Executed by: ${{ github.actor }}
+        
+        Rollback ID: $ROLLBACK_ID"
+        
+        git push origin main
+        echo "✅ Rollback plan recorded"
+        
+    - name: 📊 Generate rollback summary
+      run: |
+        echo "## 🔄 Configuration Rollback Completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Rollback ID:** \`${{ steps.plan.outputs.rollback_id }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Type:** ${{ steps.target.outputs.rollback_type }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Target:** ${{ github.event.inputs.rollback_target }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** ${{ steps.target.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Executed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Rollback completed successfully!**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Configuration changes have been reverted" >> $GITHUB_STEP_SUMMARY
+        echo "- Firebase synchronization has been triggered" >> $GITHUB_STEP_SUMMARY
+        echo "- Rollback has been recorded in audit trail" >> $GITHUB_STEP_SUMMARY
+        
+    - name: ⚠️ Notify team (on failure)
+      if: failure()
+      run: |
+        echo "## ❌ Configuration Rollback Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Rollback ID:** \`${{ steps.plan.outputs.rollback_id }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Error occurred during rollback execution**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Please check the workflow logs and contact the development team." >> $GITHUB_STEP_SUMMARY

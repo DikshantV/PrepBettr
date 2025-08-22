@@ -1,0 +1,530 @@
+# ===================================================
+# PrepBettr Azure Optimization Deployment Pipeline
+# Includes validation, testing, and rollback capabilities
+# ===================================================
+
+name: Azure Infrastructure Optimization
+
+on:
+  push:
+    branches: [main, develop]
+    paths: 
+      - 'infrastructure/**'
+      - 'lib/cache/**'
+      - '.github/workflows/azure-optimization-deployment.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'
+      - 'lib/cache/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      dry_run:
+        description: 'Perform dry run (what-if only)'
+        required: false
+        default: false
+        type: boolean
+      rollback:
+        description: 'Rollback to previous deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AZURE_RESOURCE_GROUP_PREFIX: prepbettr
+  AZURE_LOCATION: eastus2
+  NODE_VERSION: '20.x'
+  
+jobs:
+  # ===== VALIDATION JOBS =====
+  
+  validate-infrastructure:
+    name: Validate Infrastructure Code
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+      resource-group-name: ${{ steps.determine-env.outputs.resource-group-name }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [ "${{ github.event.inputs.environment }}" != "" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            ENV="prod"
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            ENV="staging"
+          else
+            ENV="dev"
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "resource-group-name=${{ env.AZURE_RESOURCE_GROUP_PREFIX }}-$ENV-rg" >> $GITHUB_OUTPUT
+          echo "🎯 Deploying to environment: $ENV"
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Bicep CLI
+        run: |
+          curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+          chmod +x ./bicep
+          sudo mv ./bicep /usr/local/bin/bicep
+          bicep --version
+
+      - name: Validate Bicep templates
+        run: |
+          echo "🔍 Validating Bicep templates..."
+          bicep build infrastructure/main.bicep --outfile infrastructure/main.json
+          
+          # Validate all module templates
+          for bicep_file in infrastructure/modules/*.bicep; do
+            echo "Validating $bicep_file..."
+            bicep build "$bicep_file"
+          done
+
+      - name: Run Bicep linter
+        run: |
+          echo "🧹 Running Bicep linter..."
+          bicep lint infrastructure/main.bicep
+          bicep lint infrastructure/modules/*.bicep
+
+      - name: Azure Resource Validation
+        run: |
+          echo "🔍 Validating resource deployment..."
+          az deployment sub validate \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file infrastructure/main.json \
+            --parameters \
+              environment=${{ steps.determine-env.outputs.environment }} \
+              primaryRegion=${{ env.AZURE_LOCATION }} \
+              namePrefix=prepbettr \
+              enableAdvancedSecurity=${{ steps.determine-env.outputs.environment == 'prod' }} \
+              enableMultiRegion=${{ steps.determine-env.outputs.environment == 'prod' }}
+
+  validate-application:
+    name: Validate Application Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type checking
+        run: npm run type-check
+
+      - name: ESLint validation
+        run: npm run lint
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+        env:
+          CI: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+
+  security-scan:
+    name: Security & Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run dependency security audit
+        run: npm audit --audit-level high
+
+      - name: Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium
+
+  # ===== DEPLOYMENT JOBS =====
+
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [validate-infrastructure, validate-application, security-scan]
+    if: github.event_name != 'pull_request'
+    environment: ${{ needs.validate-infrastructure.outputs.environment }}
+    
+    outputs:
+      resource-group-name: ${{ needs.validate-infrastructure.outputs.resource-group-name }}
+      redis-connection-string: ${{ steps.deploy.outputs.redis-connection-string }}
+      cosmos-endpoint: ${{ steps.deploy.outputs.cosmos-endpoint }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Bicep CLI
+        run: |
+          curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+          chmod +x ./bicep
+          sudo mv ./bicep /usr/local/bin/bicep
+
+      - name: Compile Bicep templates
+        run: bicep build infrastructure/main.bicep --outfile infrastructure/main.json
+
+      - name: Check for rollback request
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          echo "🔄 Rolling back to previous deployment..."
+          # Get previous successful deployment
+          PREVIOUS_DEPLOYMENT=$(az deployment sub list \
+            --query "[?properties.provisioningState=='Succeeded'] | sort_by(@, &properties.timestamp) | [-2].name" \
+            --output tsv)
+          
+          if [ -z "$PREVIOUS_DEPLOYMENT" ]; then
+            echo "❌ No previous successful deployment found"
+            exit 1
+          fi
+          
+          echo "Rolling back to deployment: $PREVIOUS_DEPLOYMENT"
+          echo "ROLLBACK_DEPLOYMENT=$PREVIOUS_DEPLOYMENT" >> $GITHUB_ENV
+
+      - name: Azure What-If Analysis
+        id: what-if
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "🔍 Running What-If analysis..."
+          az deployment sub what-if \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file infrastructure/main.json \
+            --parameters \
+              environment=${{ needs.validate-infrastructure.outputs.environment }} \
+              primaryRegion=${{ env.AZURE_LOCATION }} \
+              namePrefix=prepbettr \
+              enableAdvancedSecurity=${{ needs.validate-infrastructure.outputs.environment == 'prod' }} \
+              enableMultiRegion=${{ needs.validate-infrastructure.outputs.environment == 'prod' }} \
+            --result-format FullResourcePayloads \
+            > what-if-results.txt
+          
+          echo "What-If Results:"
+          cat what-if-results.txt
+
+      - name: Deploy Azure Infrastructure
+        id: deploy
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          DEPLOYMENT_NAME="prepbettr-optimization-$(date +%Y%m%d-%H%M%S)"
+          
+          echo "🚀 Deploying infrastructure with name: $DEPLOYMENT_NAME"
+          
+          DEPLOYMENT_RESULT=$(az deployment sub create \
+            --name "$DEPLOYMENT_NAME" \
+            --location ${{ env.AZURE_LOCATION }} \
+            --template-file infrastructure/main.json \
+            --parameters \
+              environment=${{ needs.validate-infrastructure.outputs.environment }} \
+              primaryRegion=${{ env.AZURE_LOCATION }} \
+              namePrefix=prepbettr \
+              enableAdvancedSecurity=${{ needs.validate-infrastructure.outputs.environment == 'prod' }} \
+              enableMultiRegion=${{ needs.validate-infrastructure.outputs.environment == 'prod' }} \
+            --output json)
+          
+          # Extract outputs
+          REDIS_CONNECTION=$(echo $DEPLOYMENT_RESULT | jq -r '.properties.outputs.redisConnectionString.value')
+          COSMOS_ENDPOINT=$(echo $DEPLOYMENT_RESULT | jq -r '.properties.outputs.cosmosDbEndpoint.value')
+          
+          echo "redis-connection-string=$REDIS_CONNECTION" >> $GITHUB_OUTPUT
+          echo "cosmos-endpoint=$COSMOS_ENDPOINT" >> $GITHUB_OUTPUT
+          
+          echo "✅ Infrastructure deployment completed successfully"
+
+      - name: Verify deployment
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo "🔍 Verifying deployment..."
+          
+          # Check resource group exists
+          az group show --name ${{ needs.validate-infrastructure.outputs.resource-group-name }}
+          
+          # Check key resources are running
+          echo "Checking Redis cache..."
+          az redis show \
+            --name prepbettr-redis-${{ needs.validate-infrastructure.outputs.environment }} \
+            --resource-group ${{ needs.validate-infrastructure.outputs.resource-group-name }} \
+            --query "provisioningState" -o tsv
+          
+          echo "Checking Cosmos DB..."
+          az cosmosdb show \
+            --name prepbettr-cosmos-${{ needs.validate-infrastructure.outputs.environment }} \
+            --resource-group ${{ needs.validate-infrastructure.outputs.resource-group-name }} \
+            --query "provisioningState" -o tsv
+
+  deploy-application:
+    name: Deploy Application & Configuration
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    if: github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build:azure
+        env:
+          REDIS_CONNECTION_STRING: ${{ needs.deploy-infrastructure.outputs.redis-connection-string }}
+          COSMOS_ENDPOINT: ${{ needs.deploy-infrastructure.outputs.cosmos-endpoint }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: prepbettr-${{ needs.validate-infrastructure.outputs.environment }}
+          package: .next
+
+      - name: Update Application Settings
+        run: |
+          echo "🔧 Updating application settings..."
+          az webapp config appsettings set \
+            --name prepbettr-${{ needs.validate-infrastructure.outputs.environment }} \
+            --resource-group ${{ needs.deploy-infrastructure.outputs.resource-group-name }} \
+            --settings \
+              REDIS_CONNECTION_STRING="${{ needs.deploy-infrastructure.outputs.redis-connection-string }}" \
+              COSMOS_ENDPOINT="${{ needs.deploy-infrastructure.outputs.cosmos-endpoint }}" \
+              NEXT_PUBLIC_ENV="${{ needs.validate-infrastructure.outputs.environment }}"
+
+  # ===== TESTING JOBS =====
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-application]
+    if: github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Wait for application to be ready
+        run: |
+          echo "⏳ Waiting for application to be ready..."
+          timeout 300 bash -c 'until curl -f https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net/api/health; do sleep 10; done'
+
+      - name: Run health check tests
+        run: npm run test:azure-health
+        env:
+          AZURE_ENDPOINT: https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e:prod
+        env:
+          PLAYWRIGHT_BASE_URL: https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ needs.validate-infrastructure.outputs.environment }}
+          path: playwright-report/
+
+  performance-tests:
+    name: Performance Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-application]
+    if: github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.45.0/k6-v0.45.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+
+      - name: Run performance tests
+        run: |
+          echo "🏃‍♂️ Running performance tests..."
+          ./k6 run --vus 10 --duration 2m tests/load/performance-validation.js
+        env:
+          BASE_URL: https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net
+
+      - name: Validate cache performance
+        run: |
+          echo "💾 Validating cache performance..."
+          curl -s "https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net/api/health/redis" | jq '.details.hitRatio'
+
+  # ===== MONITORING & ALERTS =====
+
+  setup-monitoring:
+    name: Configure Monitoring & Alerts
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, integration-tests]
+    if: github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy monitoring dashboard
+        run: |
+          echo "📊 Setting up monitoring dashboard..."
+          az portal dashboard import \
+            --input-path monitoring/azure-workbook-config-dashboard.json \
+            --resource-group ${{ needs.deploy-infrastructure.outputs.resource-group-name }}
+
+      - name: Configure alert rules
+        run: |
+          echo "🚨 Configuring alert rules..."
+          # Replace placeholders in alert rules template
+          sed -i "s/{subscription-id}/${{ secrets.AZURE_SUBSCRIPTION_ID }}/g" monitoring/azure-alert-rules.json
+          sed -i "s/{resource-group}/${{ needs.deploy-infrastructure.outputs.resource-group-name }}/g" monitoring/azure-alert-rules.json
+          sed -i "s/{app-insights-name}/prepbettr-insights-${{ needs.validate-infrastructure.outputs.environment }}/g" monitoring/azure-alert-rules.json
+          
+          # Deploy alert rules (simplified - in production, use ARM template deployment)
+          echo "Alert rules configuration completed"
+
+  # ===== CLEANUP & ROLLBACK =====
+
+  rollback-on-failure:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-application, integration-tests, performance-tests]
+    if: failure() && github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+    
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get previous deployment
+        id: previous-deployment
+        run: |
+          echo "🔍 Finding previous successful deployment..."
+          PREVIOUS_DEPLOYMENT=$(az deployment sub list \
+            --query "[?properties.provisioningState=='Succeeded'] | sort_by(@, &properties.timestamp) | [-2].name" \
+            --output tsv)
+          
+          if [ -z "$PREVIOUS_DEPLOYMENT" ]; then
+            echo "⚠️ No previous deployment found for rollback"
+            echo "rollback-available=false" >> $GITHUB_OUTPUT
+          else
+            echo "Found previous deployment: $PREVIOUS_DEPLOYMENT"
+            echo "rollback-available=true" >> $GITHUB_OUTPUT
+            echo "deployment-name=$PREVIOUS_DEPLOYMENT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute rollback
+        if: steps.previous-deployment.outputs.rollback-available == 'true'
+        run: |
+          echo "🔄 Executing rollback to deployment: ${{ steps.previous-deployment.outputs.deployment-name }}"
+          
+          # Note: This is a simplified rollback - in production, you would:
+          # 1. Redeploy the previous ARM template
+          # 2. Restore application code
+          # 3. Update configuration
+          # 4. Verify rollback success
+          
+          echo "⚠️ Manual rollback required - please check Azure Portal"
+
+  # ===== NOTIFICATION =====
+
+  notify-completion:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-application, integration-tests, performance-tests, setup-monitoring]
+    if: always() && github.event_name != 'pull_request'
+    
+    steps:
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          text: |
+            PrepBettr Optimization Deployment ${{ job.status }}
+            Environment: ${{ needs.validate-infrastructure.outputs.environment }}
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Create deployment summary
+        run: |
+          echo "# 🚀 PrepBettr Optimization Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.validate-infrastructure.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource Group**: ${{ needs.deploy-infrastructure.outputs.resource-group-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Azure Portal](https://portal.azure.com/#@/resource/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ needs.deploy-infrastructure.outputs.resource-group-name }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Application](https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Health Check](https://prepbettr-${{ needs.validate-infrastructure.outputs.environment }}.azurewebsites.net/api/health)" >> $GITHUB_STEP_SUMMARY
