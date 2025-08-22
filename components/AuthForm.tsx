@@ -15,7 +15,7 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 
 import FormField from "./FormField";
-import GoogleSignInButton from "./dynamic/GoogleSignInButtonDynamic";
+import GoogleAuthButton from "./GoogleAuthButton";
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -236,7 +236,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                     </div>
                 </div>
 
-                <GoogleSignInButton />
+                <GoogleAuthButton mode={isSignIn ? 'signin' : 'signup'} />
 
                 <p className="text-center">
                     {isSignIn ? "No account yet?" : "Have an account already?"}
