@@ -156,39 +156,11 @@ export async function getAdminFirestore() {
     throw new Error('Firebase Admin SDK not available on client side');
   }
   
-  return {
-    collection: (path: string) => ({
-      doc: (id: string) => ({
-        get: async () => ({ exists: false, data: () => null }),
-        set: async (data?: any) => {},
-        update: async (data?: any) => {},
-        delete: async () => {}
-      }),
-      get: async () => ({ 
-        docs: [],
-        empty: true
-      }),
-      add: async (data?: any) => ({ id: 'mock-id' }),
-      where: (field?: string, op?: any, value?: any) => {
-        const queryMethods = {
-          where: (field?: string, op?: any, value?: any) => queryMethods,
-          limit: (num: number) => queryMethods,
-          orderBy: (field?: string, direction?: 'asc' | 'desc') => queryMethods,
-          get: async () => ({ 
-            docs: [],
-            empty: true
-          })
-        };
-        return queryMethods;
-      }
-    }),
-    batch: () => ({
-      set: (ref: any, data: any) => {},
-      update: (ref: any, data: any) => {},
-      delete: (ref: any) => {},
-      commit: async () => {}
-    })
-  };
+  // Get or initialize the Firebase Admin app
+  const app = await initializeFirebaseAdmin();
+  
+  // Return the real Firestore instance
+  return admin.firestore(app);
 }
 
 export async function getAdminRemoteConfig() {

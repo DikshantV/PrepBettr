@@ -215,8 +215,6 @@ export async function initializeAzureEnvironment(): Promise<void> {
     const secrets = await fetchAzureSecrets();
     
     // Set Azure service environment variables
-    process.env.NEXT_PUBLIC_SPEECH_KEY = secrets.speechKey;
-    process.env.NEXT_PUBLIC_SPEECH_ENDPOINT = secrets.speechEndpoint;
     process.env.SPEECH_KEY = secrets.speechKey;
     process.env.SPEECH_ENDPOINT = secrets.speechEndpoint;
     
@@ -224,19 +222,24 @@ export async function initializeAzureEnvironment(): Promise<void> {
     process.env.AZURE_OPENAI_KEY = secrets.azureOpenAIKey;
     process.env.AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
     process.env.AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY = secrets.azureOpenAIKey;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
     
     // Set Firebase environment variables
     process.env.FIREBASE_PROJECT_ID = secrets.firebaseProjectId;
     process.env.FIREBASE_CLIENT_EMAIL = secrets.firebaseClientEmail;
     process.env.FIREBASE_PRIVATE_KEY = secrets.firebasePrivateKey;
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = secrets.firebaseProjectId;
+    
+    // Set client-side environment variables using string concatenation to avoid Next.js inlining
+    const nextPublicPrefix = 'NEXT_PUBLIC_';
+    process.env[nextPublicPrefix + 'SPEECH_KEY'] = secrets.speechKey;
+    process.env[nextPublicPrefix + 'SPEECH_ENDPOINT'] = secrets.speechEndpoint;
+    process.env[nextPublicPrefix + 'AZURE_OPENAI_API_KEY'] = secrets.azureOpenAIKey;
+    process.env[nextPublicPrefix + 'AZURE_OPENAI_ENDPOINT'] = secrets.azureOpenAIEndpoint;
+    process.env[nextPublicPrefix + 'AZURE_OPENAI_DEPLOYMENT'] = secrets.azureOpenAIDeployment;
+    process.env[nextPublicPrefix + 'FIREBASE_PROJECT_ID'] = secrets.firebaseProjectId;
     
     // Set the Firebase client key from secrets or environment
     if (secrets.firebaseClientKey) {
-      process.env['NEXT_PUBLIC_FIREBASE_CLIENT_KEY'] = secrets.firebaseClientKey;
+      process.env[nextPublicPrefix + 'FIREBASE_CLIENT_KEY'] = secrets.firebaseClientKey;
       console.log('🔑 Firebase client key set from Azure Key Vault');
     } else {
       console.warn('⚠️ Firebase client key not found in Azure Key Vault');
@@ -323,7 +326,8 @@ export async function getConfiguration(): Promise<Record<string, string>> {
       'FIREBASE_PROJECT_ID': process.env.FIREBASE_PROJECT_ID || '',
       'FIREBASE_CLIENT_EMAIL': process.env.FIREBASE_CLIENT_EMAIL || '',
       'FIREBASE_PRIVATE_KEY': process.env.FIREBASE_PRIVATE_KEY || '',
-      'FIREBASE_CLIENT_KEY': process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || ''
+      // Use string concatenation to avoid Next.js inlining
+      'FIREBASE_CLIENT_KEY': process.env['NEXT_PUBLIC_' + 'FIREBASE_CLIENT_KEY'] || ''
     };
   }
 }
@@ -332,12 +336,13 @@ export async function getConfiguration(): Promise<Record<string, string>> {
  * Get current Azure configuration (for debugging)
  */
 export function getAzureConfig() {
+  const nextPublicPrefix = 'NEXT_PUBLIC_';
   return {
     keyVaultUri: AZURE_KEY_VAULT_URI,
     hasSecretsCache: !!cachedSecrets,
     environment: {
-      speechKey: !!process.env.NEXT_PUBLIC_SPEECH_KEY,
-      speechEndpoint: !!process.env.NEXT_PUBLIC_SPEECH_ENDPOINT,
+      speechKey: !!process.env[nextPublicPrefix + 'SPEECH_KEY'],
+      speechEndpoint: !!process.env[nextPublicPrefix + 'SPEECH_ENDPOINT'],
       azureOpenAIKey: !!process.env.AZURE_OPENAI_KEY,
       azureOpenAIEndpoint: !!process.env.AZURE_OPENAI_ENDPOINT,
       azureOpenAIDeployment: !!process.env.AZURE_OPENAI_DEPLOYMENT
