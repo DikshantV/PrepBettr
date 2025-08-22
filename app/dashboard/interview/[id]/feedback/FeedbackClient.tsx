@@ -50,7 +50,7 @@ const FeedbackClient = () => {
             <div className="flex flex-row justify-center">
                 <h1 className="text-4xl font-semibold text-white">
                     Feedback on the Interview -{" "}
-                    <span className="capitalize">{interview?.role || "Loading..."}</span> Interview
+                    <span className="capitalize">{(interview as any)?.role || "Loading..."}</span> Interview
                 </h1>
             </div>
 

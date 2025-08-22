@@ -130,7 +130,7 @@ async function generateMockInterview(
  * Save interviews to Firestore
  */
 async function saveToFirestore(interviews: any[]): Promise<void> {
-  const db = getAdminFirestore();
+  const db = await getAdminFirestore();
   const batch = db.batch();
   
   for (const interview of interviews) {
@@ -150,12 +150,12 @@ async function saveToFirestore(interviews: any[]): Promise<void> {
  * Verify existing mock interviews in Firestore
  */
 async function getExistingInterviewCount(): Promise<number> {
-  const db = getAdminFirestore();
+  const db = await getAdminFirestore();
   const snapshot = await db.collection(COLLECTION_NAME)
     .where('metadata.generatedBy', '==', 'backfill-script')
     .get();
   
-  return snapshot.size;
+  return snapshot.docs.length;
 }
 
 /**

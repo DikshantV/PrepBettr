@@ -1,306 +1,114 @@
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin';
-import { Firestore } from 'firebase-admin/firestore';
-import { Storage } from 'firebase-admin/storage';
-
-export interface InterviewData {
-  id?: string;
-  userId: string;
-  jobTitle: string;
-  company: string;
-  jobDescription?: string;
-  questions: Array<{
-    question: string;
-    answer?: string;
-    category: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-  }>;
-  createdAt: Date;
-  updatedAt: Date;
-  finalized: boolean;
-  feedbackGenerated?: boolean;
-}
-
-export interface ResumeData {
-  id?: string;
-  userId: string;
-  fileName: string;
-  fileUrl: string;
-  extractedText: string;
-  parsedSections: {
-    summary?: string;
-    experience?: Array<{
-      title: string;
-      company: string;
-      duration: string;
-      description: string[];
-    }>;
-    education?: Array<{
-      degree: string;
-      school: string;
-      year?: string;
-    }>;
-    skills?: string[];
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface UsageData {
-  userId: string;
-  interviews: {
-    count: number;
-    limit: number;
-    lastReset?: Date;
-  };
-  resumes: {
-    count: number;
-    limit: number;
-    lastReset?: Date;
-  };
-  updatedAt: Date;
-}
+/**
+ * Firebase Service Compatibility Layer
+ * 
+ * Provides mock Firebase service for backward compatibility
+ * Applications should migrate to Azure services
+ */
 
 export class FirebaseService {
-  private db: Firestore;
-  private storage: Storage;
+  private static instance: FirebaseService;
 
-  constructor() {
-    // Use the centralized Firebase Admin initialization
-    this.db = getAdminFirestore();
-    this.storage = getAdminStorage();
-  }
-
-  // Interview Operations
-  async createInterview(data: Omit<InterviewData, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const docRef = this.db.collection('interviews').doc();
-    const now = new Date();
-    
-    const interviewData: InterviewData = {
-      ...data,
-      id: docRef.id,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await docRef.set(interviewData);
-    return docRef.id;
-  }
-
-  async getInterview(id: string, userId: string): Promise<InterviewData | null> {
-    const doc = await this.db.collection('interviews').doc(id).get();
-    
-    if (!doc.exists) {
-      return null;
+  public static getInstance(): FirebaseService {
+    if (!FirebaseService.instance) {
+      FirebaseService.instance = new FirebaseService();
     }
-
-    const data = doc.data() as InterviewData;
-    
-    // Check if user owns this interview or if it's finalized
-    if (data.userId !== userId && !data.finalized) {
-      throw new Error('Access denied: Interview is private');
-    }
-
-    return data;
+    return FirebaseService.instance;
   }
 
-  async updateInterview(id: string, userId: string, updates: Partial<InterviewData>): Promise<void> {
-    const docRef = this.db.collection('interviews').doc(id);
-    const doc = await docRef.get();
-    
-    if (!doc.exists) {
-      throw new Error('Interview not found');
-    }
-
-    const data = doc.data() as InterviewData;
-    if (data.userId !== userId) {
-      throw new Error('Access denied: Not interview owner');
-    }
-
-    await docRef.update({
-      ...updates,
-      updatedAt: new Date(),
-    });
-  }
-
-  async getUserInterviews(userId: string): Promise<InterviewData[]> {
-    const snapshot = await this.db
-      .collection('interviews')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    return snapshot.docs.map(doc => doc.data() as InterviewData);
-  }
-
-  async deleteInterview(id: string, userId: string): Promise<void> {
-    const docRef = this.db.collection('interviews').doc(id);
-    const doc = await docRef.get();
-    
-    if (!doc.exists) {
-      throw new Error('Interview not found');
-    }
-
-    const data = doc.data() as InterviewData;
-    if (data.userId !== userId) {
-      throw new Error('Access denied: Not interview owner');
-    }
-
-    await docRef.delete();
-  }
-
-  // Resume Operations
-  async createResume(data: Omit<ResumeData, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const docRef = this.db.collection('resumes').doc();
-    const now = new Date();
-    
-    const resumeData: ResumeData = {
-      ...data,
-      id: docRef.id,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await docRef.set(resumeData);
-    return docRef.id;
-  }
-
-  async getResume(id: string, userId: string): Promise<ResumeData | null> {
-    const doc = await this.db.collection('resumes').doc(id).get();
-    
-    if (!doc.exists) {
-      return null;
-    }
-
-    const data = doc.data() as ResumeData;
-    
-    // Users can only access their own resumes
-    if (data.userId !== userId) {
-      throw new Error('Access denied: Not resume owner');
-    }
-
-    return data;
-  }
-
-  async getUserResumes(userId: string): Promise<ResumeData[]> {
-    const snapshot = await this.db
-      .collection('resumes')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    return snapshot.docs.map(doc => doc.data() as ResumeData);
-  }
-
-  // Usage tracking
-  async getUserUsage(userId: string): Promise<UsageData | null> {
-    const doc = await this.db.collection('usage').doc(userId).get();
-    
-    if (!doc.exists) {
-      return null;
-    }
-
-    return doc.data() as UsageData;
-  }
-
-  async initializeUserUsage(userId: string): Promise<void> {
-    const usageData: UsageData = {
-      userId,
-      interviews: { count: 0, limit: 5 },
-      resumes: { count: 0, limit: 3 },
-      updatedAt: new Date(),
-    };
-
-    await this.db.collection('usage').doc(userId).set(usageData);
-  }
-
-  async incrementUsage(userId: string, type: 'interviews' | 'resumes'): Promise<void> {
-    const docRef = this.db.collection('usage').doc(userId);
-    
-    await this.db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(docRef);
-      
-      if (!doc.exists) {
-        throw new Error('Usage document not found');
+  /**
+   * Mock authentication methods
+   */
+  async signInWithEmailAndPassword(email: string, password: string) {
+    // Mock sign in - in production this would call Azure AD B2C
+    return {
+      user: {
+        uid: 'mock-user-id',
+        email,
+        displayName: 'Mock User'
       }
-
-      const data = doc.data() as UsageData;
-      const updatedData = {
-        ...data,
-        [type]: {
-          ...data[type],
-          count: data[type].count + 1,
-        },
-        updatedAt: new Date(),
-      };
-
-      transaction.update(docRef, updatedData);
-    });
+    };
   }
 
-  async checkUsageLimit(userId: string, type: 'interviews' | 'resumes'): Promise<boolean> {
-    const usage = await this.getUserUsage(userId);
-    
-    if (!usage) {
-      await this.initializeUserUsage(userId);
-      return true;
+  async createUserWithEmailAndPassword(email: string, password: string) {
+    // Mock user creation
+    return {
+      user: {
+        uid: 'mock-new-user-id',
+        email,
+        displayName: 'New Mock User'
+      }
+    };
+  }
+
+  async signOut() {
+    // Mock sign out
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token');
     }
-
-    return usage[type].count < usage[type].limit;
   }
 
-  // User operations
-  async createUser(uid: string, userData: { email: string; displayName?: string }): Promise<void> {
-    await this.db.collection('users').doc(uid).set({
-      ...userData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Initialize usage counters
-    await this.initializeUserUsage(uid);
+  /**
+   * Mock Firestore operations
+   */
+  async getDocument(collection: string, id: string) {
+    // Mock document fetch
+    return {
+      id,
+      data: {
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    };
   }
 
-  async getUser(uid: string): Promise<any> {
-    const doc = await this.db.collection('users').doc(uid).get();
-    return doc.exists ? doc.data() : null;
+  async setDocument(collection: string, id: string, data: any) {
+    // Mock document set
+    return { id };
   }
 
-  async updateUser(uid: string, updates: any): Promise<void> {
-    await this.db.collection('users').doc(uid).update({
-      ...updates,
-      updatedAt: new Date(),
-    });
+  async updateDocument(collection: string, id: string, data: any) {
+    // Mock document update
+    return { id };
   }
 
-  // Batch operations
-  async batchDelete(collection: string, docs: string[]): Promise<void> {
-    const batch = this.db.batch();
-    
-    docs.forEach(docId => {
-      batch.delete(this.db.collection(collection).doc(docId));
-    });
-
-    await batch.commit();
+  async deleteDocument(collection: string, id: string) {
+    // Mock document delete
+    return { success: true };
   }
 
-  // Health check
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; timestamp: Date }> {
-    try {
-      // Test Firestore connection
-      await this.db.collection('_health').doc('test').set({
-        timestamp: new Date(),
-      });
+  async queryDocuments(collection: string, conditions: any[] = []) {
+    // Mock query
+    return {
+      docs: []
+    };
+  }
 
-      // Test read
-      await this.db.collection('_health').doc('test').get();
+  /**
+   * Mock storage operations
+   */
+  async uploadFile(path: string, file: File | Buffer) {
+    // Mock file upload - would delegate to Azure Blob Storage
+    return {
+      downloadURL: `https://mockcdn.example.com/${path}`,
+      metadata: {
+        size: file instanceof File ? file.size : file.length,
+        contentType: file instanceof File ? file.type : 'application/octet-stream'
+      }
+    };
+  }
 
-      // Cleanup
-      await this.db.collection('_health').doc('test').delete();
+  async deleteFile(path: string) {
+    // Mock file deletion
+    return { success: true };
+  }
 
-      return { status: 'healthy', timestamp: new Date() };
-    } catch (error) {
-      console.error('Firebase health check failed:', error);
-      return { status: 'unhealthy', timestamp: new Date() };
-    }
+  async getDownloadURL(path: string) {
+    // Mock URL generation
+    return `https://mockcdn.example.com/${path}`;
   }
 }
+
+// Export singleton instance
+export const firebaseService = FirebaseService.getInstance();
+export default firebaseService;

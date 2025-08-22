@@ -52,10 +52,25 @@ interface HourlyStats {
 }
 
 class MockInterviewMonitor {
-  private db = getAdminFirestore();
+  private db!: Awaited<ReturnType<typeof getAdminFirestore>>;
   private isRunning = false;
   private intervalId: NodeJS.Timeout | null = null;
   private hourlyStats: Map<string, HourlyStats> = new Map();
+  private initialized = false;
+  
+  /**
+   * Initialize the monitor
+   */
+  private async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+    
+    console.log('🔧 Initializing database connection...');
+    this.db = await getAdminFirestore();
+    this.initialized = true;
+    console.log('✅ Database connection initialized');
+  }
   
   /**
    * Start monitoring
@@ -65,6 +80,9 @@ class MockInterviewMonitor {
       console.log('⚠️ Monitor is already running');
       return;
     }
+    
+    // Initialize database connection
+    await this.initialize();
     
     console.log('🚀 Starting Mock Interview Usage Monitor');
     console.log('==========================================');
@@ -129,7 +147,7 @@ class MockInterviewMonitor {
         .where('createdAt', '>=', hourAgo.toISOString())
         .get();
       
-      const firestoreWrites = writesSnapshot.size;
+      const firestoreWrites = writesSnapshot.docs?.length || 0;
       
       // Calculate token usage from recent interviews
       let totalTokens = 0;
@@ -137,8 +155,8 @@ class MockInterviewMonitor {
       let completionTokens = 0;
       let errors = 0;
       
-      writesSnapshot.forEach(doc => {
-        const data = doc.data();
+      writesSnapshot.docs?.forEach((doc: any) => {
+        const data = doc.data ? doc.data() : doc;
         if (data.metadata?.tokenUsage) {
           promptTokens += data.metadata.tokenUsage.prompt || 0;
           completionTokens += data.metadata.tokenUsage.completion || 0;
@@ -218,7 +236,8 @@ class MockInterviewMonitor {
       const flagDoc = await this.db.collection('featureFlags').doc('USE_AZURE_MOCK').get();
       
       if (flagDoc.exists) {
-        return flagDoc.data()?.enabled === true;
+        const data: any = flagDoc.data ? flagDoc.data() : flagDoc;
+        return data?.enabled === true;
       }
       
       return false;
@@ -235,12 +254,12 @@ class MockInterviewMonitor {
     try {
       const usersSnapshot = await this.db.collection(COLLECTION_NAME)
         .where('createdAt', '>=', since.toISOString())
-        .select('userId')
         .get();
       
       const uniqueUsers = new Set<string>();
-      usersSnapshot.forEach(doc => {
-        const userId = doc.data().userId;
+      usersSnapshot.docs?.forEach((doc: any) => {
+        const data = doc.data ? doc.data() : doc;
+        const userId = data.userId;
         if (userId) {
           uniqueUsers.add(userId);
         }
@@ -387,6 +406,8 @@ class MockInterviewMonitor {
    * Get historical metrics for analysis
    */
   async getHistoricalMetrics(hours: number = 24): Promise<void> {
+    await this.initialize();
+    
     const since = new Date(Date.now() - hours * 3600000);
     
     const snapshot = await this.db.collection(METRICS_COLLECTION)
@@ -399,8 +420,9 @@ class MockInterviewMonitor {
     console.log('==========================================');
     
     const metrics: UsageMetrics[] = [];
-    snapshot.forEach(doc => {
-      metrics.push(doc.data() as UsageMetrics);
+    snapshot.docs?.forEach((doc: any) => {
+      const data = doc.data ? doc.data() : doc;
+      metrics.push(data as UsageMetrics);
     });
     
     if (metrics.length === 0) {

@@ -118,7 +118,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
     // Get the current user's ID token with force refresh
     let idToken = '';
     try {
-      const currentUser = auth.currentUser;
+      const currentUser = auth?.currentUser;
       if (!currentUser) {
         throw new Error("User not authenticated");
       }
@@ -142,11 +142,13 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         // Create form data for file upload
         const formData = new FormData();
         formData.append('file', profilePicFile);
-        formData.append('idToken', idToken);
         
-        // Upload the file to the server
+        // Upload the file to the server (Azure-centric via abstraction)
         const uploadRes = await fetch('/api/upload-profile-pic', {
           method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
           body: formData,
         });
         

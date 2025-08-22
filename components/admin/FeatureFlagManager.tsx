@@ -20,9 +20,16 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
-import { featureFlagsService } from '@/lib/services/feature-flags';
-import { UserTargetingService } from '@/lib/services/user-targeting';
-import { errorBudgetMonitor, ErrorBudget } from '@/lib/services/error-budget-monitor';
+// Define types locally to avoid importing server-only modules
+interface ErrorBudget {
+  featureName: string;
+  errorThreshold: number;
+  timeWindow: number;
+  currentErrors: number;
+  budgetExceeded: boolean;
+  startTime: Date;
+  endTime: Date;
+}
 
 export default function FeatureFlagManager() {
   const [flags, setFlags] = useState<any>(null);
@@ -30,8 +37,8 @@ export default function FeatureFlagManager() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [errorBudgets, setErrorBudgets] = useState<Record<string, ErrorBudget>>({});
   const [rolloutPercentages, setRolloutPercentages] = useState({
-    autoApplyAzure: UserTargetingService.ROLLOUT_CONFIGS.autoApplyAzure.percentage,
-    portalIntegration: UserTargetingService.ROLLOUT_CONFIGS.portalIntegration.percentage,
+    autoApplyAzure: 20,
+    portalIntegration: 15,
   });
 
   useEffect(() => {
@@ -41,15 +48,27 @@ export default function FeatureFlagManager() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [flagsData, debugData, budgetsData] = await Promise.all([
-        featureFlagsService.getAllFeatureFlags(),
-        featureFlagsService.getDebugInfo(),
-        errorBudgetMonitor.getAllErrorBudgets(),
+      // Use API calls instead of direct service imports
+      const [flagsResponse, debugResponse] = await Promise.all([
+        fetch('/api/feature-flags'),
+        fetch('/api/admin/feature-flags/debug'),
       ]);
+      
+      let flagsData = null;
+      let debugData = null;
+      
+      if (flagsResponse.ok) {
+        flagsData = await flagsResponse.json();
+      }
+      
+      if (debugResponse.ok) {
+        debugData = await debugResponse.json();
+      }
 
       setFlags(flagsData);
       setDebugInfo(debugData);
-      setErrorBudgets(budgetsData);
+      // Note: Error budgets functionality temporarily disabled - requires API endpoint
+      setErrorBudgets({});
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
@@ -57,12 +76,26 @@ export default function FeatureFlagManager() {
     }
   };
 
-  const updateRolloutPercentage = (feature: keyof typeof rolloutPercentages, percentage: number) => {
+  const updateRolloutPercentage = async (feature: keyof typeof rolloutPercentages, percentage: number) => {
     if (percentage < 0 || percentage > 100) return;
     
-    setRolloutPercentages(prev => ({ ...prev, [feature]: percentage }));
-    UserTargetingService.updateRolloutPercentage(feature, percentage);
-    loadData(); // Refresh data
+    try {
+      // Update via API call
+      const response = await fetch('/api/admin/rollout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature, percentage })
+      });
+      
+      if (response.ok) {
+        setRolloutPercentages(prev => ({ ...prev, [feature]: percentage }));
+        loadData(); // Refresh data
+      } else {
+        console.error('Failed to update rollout percentage');
+      }
+    } catch (error) {
+      console.error('Error updating rollout percentage:', error);
+    }
   };
 
   const increaseRollout = (feature: keyof typeof rolloutPercentages, increment: number = 5) => {

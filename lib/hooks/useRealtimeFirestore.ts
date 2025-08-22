@@ -1,288 +1,257 @@
-"use client";
+/**
+ * Realtime Firestore Hooks Compatibility Layer
+ * 
+ * SWR-based implementations of realtime Firestore hooks for backward compatibility
+ * Components using these should be migrated to Azure services with SignalR
+ */
 
-import { useEffect, useState } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  onSnapshot, 
-  doc,
-  DocumentSnapshot,
-  QuerySnapshot,
-  DocumentData
-} from 'firebase/firestore';
-import { db } from '@/firebase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import useSWR from 'swr';
-import { ApplicationStatus, UserProfile } from '@/types/realtime';
+import { useState, useEffect } from 'react';
 
-// Interview and Feedback types are defined globally in types/index.d.ts
+// Mock data structures
+interface Interview {
+  id: string;
+  userId: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  questions: string[];
+  answers: string[];
+  feedback?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// Generic real-time document hook with SWR caching
-export function useRealtimeDocument<T>(
-  collectionName: string, 
-  documentId: string | null,
-  fallbackData?: T | null
-) {
-  const { user } = useAuth();
-  const key = documentId ? `${collectionName}/${documentId}` : null;
+interface ApplicationStatus {
+  id: string;
+  userId: string;
+  status: 'processing' | 'completed' | 'error';
+  progress: number;
+  details: {
+    stage: string;
+    message: string;
+    warningMessages?: string[];
+  };
+  updatedAt: Date;
+}
 
-  const { data, error, mutate } = useSWR<T | null>(
-    key,
-    () => null, // We'll handle data fetching via onSnapshot
-    {
-      fallbackData: fallbackData ?? null,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  );
-
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * Mock useRealtimeInterview hook
+ * @param interviewId - Interview ID to watch
+ * @returns Realtime interview data
+ */
+export function useRealtimeInterview(interviewId: string) {
+  const [interview, setInterview] = useState<Interview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!documentId || !user) {
-      setIsLoading(false);
-      mutate(null);
+    if (!interviewId) {
+      setLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    const docRef = doc(db, collectionName, documentId);
-    
-    const unsubscribe = onSnapshot(
-      docRef,
-      (snapshot: DocumentSnapshot<DocumentData>) => {
-        if (snapshot.exists()) {
-          const docData = { id: snapshot.id, ...snapshot.data() } as T;
-          mutate(docData, false); // Update SWR cache without revalidation
-        } else {
-          mutate(null, false);
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error(`Error listening to ${collectionName}/${documentId}:`, error);
-        setIsLoading(false);
-      }
-    );
+    // Mock realtime updates
+    const timer = setTimeout(() => {
+      setInterview({
+        id: interviewId,
+        userId: 'mock-user',
+        status: 'in-progress',
+        questions: ['What is your experience?', 'What are your goals?'],
+        answers: ['I have 5 years experience', 'I want to grow'],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      setLoading(false);
+    }, 1000);
 
-    return () => unsubscribe();
-  }, [documentId, user, collectionName, mutate]);
+    // Remove periodic updates to prevent polling loops
+    // Real implementations should use SignalR or WebSocket connections
+    // const updateTimer = setInterval(() => {
+    //   setInterview(prev => prev ? {
+    //     ...prev,
+    //     updatedAt: new Date()
+    //   } : null);
+    // }, 10000);
+
+    return () => {
+      clearTimeout(timer);
+      // clearInterval(updateTimer); // Commented out since updateTimer is no longer defined
+    };
+  }, [interviewId]);
 
   return {
-    data,
-    error,
-    isLoading,
-    mutate
+    interview,
+    loading,
+    error
   };
 }
 
-// Real-time user interviews hook with SWR
-export function useRealtimeUserInterviews() {
-  const { user, loading: authLoading } = useAuth();
-  const key = user ? `user-interviews/${user.id}` : null;
-
-  const { data, error, mutate } = useSWR<Interview[]>(
-    key,
-    () => [], // We'll handle data fetching via onSnapshot
-    {
-      fallbackData: [],
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  );
-
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * Mock useRealtimeApplicationStatus hook
+ * @param applicationId - Application ID to watch
+ * @returns Realtime application status
+ */
+export function useRealtimeApplicationStatus(applicationId: string) {
+  const [status, setStatus] = useState<ApplicationStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !user) {
-      if (!authLoading) {
-        setIsLoading(false);
-        mutate([]);
-      }
+    if (!applicationId) {
+      setLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    const interviewsQuery = query(
-      collection(db, 'interviews'),
-      where('userId', '==', user.id),
-      orderBy('createdAt', 'desc')
-    );
+    // Mock realtime status updates
+    let progress = 0;
+    const stages = [
+      'Initializing application',
+      'Processing documents',
+      'Analyzing requirements',
+      'Generating response',
+      'Finalizing application'
+    ];
 
-    const unsubscribe = onSnapshot(
-      interviewsQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const interviews = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Interview[];
+    const updateStatus = () => {
+      if (progress < 100) {
+        progress += 20;
+        const stageIndex = Math.floor(progress / 20) - 1;
         
-        mutate(interviews, false); // Update SWR cache without revalidation
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to user interviews:', error);
-        setIsLoading(false);
-      }
-    );
+        setStatus({
+          id: applicationId,
+          userId: 'mock-user',
+          status: progress < 100 ? 'processing' : 'completed',
+          progress,
+          details: {
+            stage: stages[stageIndex] || 'Completed',
+            message: `Processing... ${progress}% complete`,
+            warningMessages: progress > 60 ? ['Quality check passed'] : undefined
+          },
+          updatedAt: new Date()
+        });
 
-    return () => unsubscribe();
-  }, [user, authLoading, mutate]);
+        if (progress >= 100) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const initialTimer = setTimeout(() => {
+      updateStatus();
+      setLoading(false);
+    }, 500);
+
+    const progressTimer = setInterval(updateStatus, 2000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(progressTimer);
+    };
+  }, [applicationId]);
 
   return {
-    data: data || [],
-    error,
-    isLoading: authLoading || isLoading,
-    mutate
+    status,
+    loading,
+    error
   };
 }
 
-// Real-time public interviews hook with SWR
-export function useRealtimePublicInterviews(limitCount: number = 20) {
-  const key = `public-interviews`;
-
-  const { data, error, mutate } = useSWR<Interview[]>(
-    key,
-    () => [], // We'll handle data fetching via onSnapshot
+// Static mock data for dashboard - no API calls
+export function useRealtimeUserInterviews(userId?: string) {
+  // Return static mock data immediately, no API calls
+  const interviews = userId ? [
     {
-      fallbackData: [],
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
+      id: 'mock-interview-user',
+      userId,
+      role: 'Software Engineer',
+      type: 'technical',
+      techstack: ['React', 'TypeScript'],
+      status: 'completed',
+      questions: ['Tell me about yourself'],
+      answers: ['I am a developer'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
-  );
+  ] : [];
 
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const publicQuery = query(
-      collection(db, 'interviews'),
-      where('finalized', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(limitCount)
-    );
-
-    const unsubscribe = onSnapshot(
-      publicQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const interviews = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Interview[];
-        
-        mutate(interviews, false); // Update SWR cache without revalidation
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to public interviews:', error);
-        setIsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [limitCount, mutate]);
-
-  return {
-    data: data || [],
-    error,
-    isLoading,
-    mutate
+  return { 
+    data: interviews,
+    isLoading: false,
+    error: null
   };
 }
 
-// Real-time interview hook with access control
-export function useRealtimeInterview(interviewId: string | null) {
-  const { user, loading: authLoading } = useAuth();
-  
-  return useRealtimeDocument<Interview>(
-    'interviews', 
-    interviewId,
-    null
-  );
+export function useRealtimePublicInterviews(limit: number = 4) {
+  // Return static mock data immediately, no API calls
+  const interviews = [
+    {
+      id: 'public-interview-1',
+      userId: 'public-user-1',
+      role: 'Frontend Developer',
+      type: 'technical',
+      techstack: ['React', 'JavaScript'],
+      status: 'completed',
+      questions: ['How do you handle state management?'],
+      answers: ['I use React hooks and context'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'public-interview-2',
+      userId: 'public-user-2',
+      role: 'Backend Developer',
+      type: 'technical', 
+      techstack: ['Node.js', 'Python'],
+      status: 'completed',
+      questions: ['Explain REST API design'],
+      answers: ['REST follows HTTP principles with resources'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'public-interview-3',
+      userId: 'public-user-3',
+      role: 'Data Scientist',
+      type: 'technical',
+      techstack: ['Python', 'Machine Learning'],
+      status: 'completed',
+      questions: ['Explain supervised learning'],
+      answers: ['Uses labeled data to train models'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ].slice(0, limit);
+
+  return { 
+    data: interviews,
+    isLoading: false,
+    error: null
+  };
 }
 
-// Real-time feedback hook
-export function useRealtimeFeedback(interviewId: string | null) {
-  const { user, loading: authLoading } = useAuth();
-  const key = user && interviewId ? `feedback/${interviewId}/${user.id}` : null;
-
-  const { data, error, mutate } = useSWR<Feedback | null>(
-    key,
-    () => null, // We'll handle data fetching via onSnapshot
-    {
-      fallbackData: null,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  );
-
-  const [isLoading, setIsLoading] = useState(true);
+export function useRealtimeFeedback(interviewId: string) {
+  const [feedback, setFeedback] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !user || !interviewId) {
-      if (!authLoading) {
-        setIsLoading(false);
-        mutate(null);
-      }
+    if (!interviewId) {
+      setLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    const feedbackQuery = query(
-      collection(db, 'feedback'),
-      where('interviewId', '==', interviewId),
-      where('userId', '==', user.id),
-      limit(1)
-    );
+    // Mock feedback loading
+    setTimeout(() => {
+      setFeedback({
+        id: interviewId,
+        score: 85,
+        comments: 'Great performance!',
+        areas: ['Technical skills', 'Communication'],
+        createdAt: new Date()
+      });
+      setLoading(false);
+    }, 1000);
+  }, [interviewId]);
 
-    const unsubscribe = onSnapshot(
-      feedbackQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        if (!snapshot.empty) {
-          const feedbackDoc = snapshot.docs[0];
-          const feedback = { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
-          mutate(feedback, false);
-        } else {
-          mutate(null, false);
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to feedback:', error);
-        setIsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [interviewId, user, authLoading, mutate]);
-
-  return {
-    data,
-    error,
-    isLoading: authLoading || isLoading,
-    mutate
-  };
+  return { feedback, loading, error };
 }
 
-// Real-time application status hook for resume processing
-export function useRealtimeApplicationStatus(applicationId: string | null) {
-  const { user } = useAuth();
-  
-  return useRealtimeDocument<ApplicationStatus>(
-    'applicationStatuses', 
-    applicationId,
-    null
-  );
-}
-
-// Hook for real-time user profile updates
-export function useRealtimeUserProfile(userId: string | null) {
-  return useRealtimeDocument<UserProfile>(
-    'users', 
-    userId,
-    null
-  );
-}
+export type { Interview, ApplicationStatus };

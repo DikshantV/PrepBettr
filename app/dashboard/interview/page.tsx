@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
-import { getCurrentUser } from "@/lib/actions/auth.action";
+// Removed server-only import - auth handled by middleware and client auth state
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
 import { ResumePromptToast, useResumePromptToast } from "@/components/ResumePromptToast";
 import BanterLoader from "@/components/ui/BanterLoader";
@@ -56,17 +56,25 @@ const Page = () => {
     const { show: showToast, hideToast, showToast: showPromptToast } = useResumePromptToast(false);
 
     useEffect(() => {
+        // Check for user auth via API call instead of direct import
         const fetchUser = async () => {
             try {
-                const currentUser = await getCurrentUser();
-                if (!currentUser) {
+                const response = await fetch('/api/auth/user');
+                if (!response.ok) {
                     router.push('/sign-in');
                     return;
                 }
+                
+                const userData = await response.json();
+                if (!userData.user) {
+                    router.push('/sign-in');
+                    return;
+                }
+                
                 setUser({
-                    id: currentUser.id,
-                    name: currentUser.name || 'User',
-                    email: currentUser.email || ''
+                    id: userData.user.uid || userData.user.id,
+                    name: userData.user.name || userData.user.displayName || 'User',
+                    email: userData.user.email || ''
                 });
             } catch (error) {
                 console.error('Error fetching user:', error);

@@ -1,0 +1,194 @@
+name: 📝 Propose Configuration Change
+
+on:
+  workflow_dispatch:
+    inputs:
+      config_key:
+        description: 'Configuration key to update (e.g., features.autoApplyAzure)'
+        required: true
+        type: string
+      config_value:
+        description: 'New configuration value (JSON format for complex types)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+      sync_to_firebase:
+        description: 'Sync this config to Firebase Remote Config'
+        required: false
+        default: false
+        type: boolean
+      description:
+        description: 'Description of this configuration change'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  propose-config-change:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🏗️ Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install dependencies
+      run: npm ci
+      
+    - name: 🔍 Validate configuration key and value
+      run: |
+        echo "Validating configuration change..."
+        npx tsx scripts/validate-config.ts --validate-single \
+          --key="${{ github.event.inputs.config_key }}" \
+          --value="${{ github.event.inputs.config_value }}" \
+          --environment="${{ github.event.inputs.environment }}"
+          
+    - name: 📊 Generate configuration snapshot
+      id: snapshot
+      run: |
+        # Create configuration snapshot directory
+        mkdir -p .config-snapshots
+        
+        # Generate unique snapshot ID
+        SNAPSHOT_ID="config-$(date +%Y%m%d-%H%M%S)-$(echo $RANDOM | md5sum | head -c 8)"
+        echo "snapshot_id=$SNAPSHOT_ID" >> $GITHUB_OUTPUT
+        
+        # Create configuration snapshot
+        cat > .config-snapshots/$SNAPSHOT_ID.yaml << EOF
+        # Configuration Change Proposal
+        # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        # Proposed by: ${{ github.actor }}
+        # Environment: ${{ github.event.inputs.environment }}
+        
+        metadata:
+          snapshot_id: "$SNAPSHOT_ID"
+          proposed_by: "${{ github.actor }}"
+          proposed_at: "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          environment: "${{ github.event.inputs.environment }}"
+          description: "${{ github.event.inputs.description }}"
+          git_sha: "${{ github.sha }}"
+          workflow_run_id: "${{ github.run_id }}"
+        
+        change:
+          key: "${{ github.event.inputs.config_key }}"
+          value: ${{ github.event.inputs.config_value }}
+          sync_to_firebase: ${{ github.event.inputs.sync_to_firebase }}
+          
+        approval:
+          required: true
+          status: "pending"
+          approved_by: null
+          approved_at: null
+        EOF
+        
+        echo "Generated snapshot: $SNAPSHOT_ID"
+        
+    - name: 🔍 Get current configuration value
+      id: current
+      run: |
+        echo "Fetching current configuration value..."
+        CURRENT_VALUE=$(npx tsx scripts/validate-config.ts --get-current \
+          --key="${{ github.event.inputs.config_key }}" \
+          --environment="${{ github.event.inputs.environment }}" || echo "null")
+        echo "current_value=$CURRENT_VALUE" >> $GITHUB_OUTPUT
+        
+    - name: 📝 Create pull request branch
+      run: |
+        BRANCH_NAME="config/propose-${{ steps.snapshot.outputs.snapshot_id }}"
+        git checkout -b "$BRANCH_NAME"
+        git add .config-snapshots/
+        git config user.name "Config Management Bot"
+        git config user.email "config-bot@prepbettr.com"
+        git commit -m "📝 Propose config change: ${{ github.event.inputs.config_key }}
+
+        Configuration Change Proposal:
+        - Key: ${{ github.event.inputs.config_key }}
+        - Environment: ${{ github.event.inputs.environment }}
+        - Current Value: ${{ steps.current.outputs.current_value }}
+        - New Value: ${{ github.event.inputs.config_value }}
+        - Sync to Firebase: ${{ github.event.inputs.sync_to_firebase }}
+        - Description: ${{ github.event.inputs.description }}
+        
+        Snapshot ID: ${{ steps.snapshot.outputs.snapshot_id }}
+        Proposed by: ${{ github.actor }}"
+        
+        git push origin "$BRANCH_NAME"
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+        
+    - name: 🔄 Create Pull Request
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PR_BODY="## 📝 Configuration Change Proposal
+
+        **Snapshot ID:** \`${{ steps.snapshot.outputs.snapshot_id }}\`
+        **Proposed by:** @${{ github.actor }}
+        **Environment:** \`${{ github.event.inputs.environment }}\`
+
+        ### 🔧 Change Details
+        - **Configuration Key:** \`${{ github.event.inputs.config_key }}\`
+        - **Current Value:** \`${{ steps.current.outputs.current_value }}\`
+        - **New Value:** \`${{ github.event.inputs.config_value }}\`
+        - **Sync to Firebase:** ${{ github.event.inputs.sync_to_firebase }}
+
+        ### 📖 Description
+        ${{ github.event.inputs.description }}
+
+        ### ✅ Pre-deployment Validation
+        - [x] Configuration key validation passed
+        - [x] Value format validation passed
+        - [x] Schema validation passed
+        - [ ] **Approval Required** (🔒 Requires review from config maintainers)
+
+        ### 🚀 Next Steps
+        1. **Review & Approve** this PR to proceed with the configuration change
+        2. Upon merge, the configuration will be automatically applied to Azure App Configuration
+        3. If enabled, changes will be synced to Firebase Remote Config
+        4. Audit trail will be recorded in Cosmos DB
+
+        ### ⚠️ Important Notes
+        - This change will affect the **${{ github.event.inputs.environment }}** environment
+        - Rollback is available via the \`config-rollback.yml\` workflow
+        - Configuration changes are logged for compliance and debugging
+
+        ---
+        *Auto-generated by Config Management Pipeline*"
+
+        gh pr create \
+          --title "📝 Config Change: ${{ github.event.inputs.config_key }} [${{ github.event.inputs.environment }}]" \
+          --body "$PR_BODY" \
+          --base main \
+          --head "$BRANCH_NAME" \
+          --label "configuration" \
+          --label "needs-approval" \
+          --label "${{ github.event.inputs.environment }}" \
+          --reviewer "@prepbettr/config-maintainers"
+
+    - name: 📨 Post summary comment
+      run: |
+        echo "## 🎯 Configuration Change Proposed Successfully" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Snapshot ID:** \`${{ steps.snapshot.outputs.snapshot_id }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Configuration Key:** \`${{ github.event.inputs.config_key }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** \`${{ github.event.inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Current Value:** \`${{ steps.current.outputs.current_value }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**New Value:** \`${{ github.event.inputs.config_value }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "➡️ **Next:** Review and approve the created pull request to apply this configuration change." >> $GITHUB_STEP_SUMMARY

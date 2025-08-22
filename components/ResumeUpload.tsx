@@ -4,39 +4,80 @@ import { Button } from '@/components/ui/button';
 import BanterLoader from '@/components/ui/BanterLoader';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, loading }) => {
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
-    if (file) {
-      setFile(file);
-      setError(null);
+    const selectedFile = event.target.files ? event.target.files[0] : null;
+    if (selectedFile) {
+      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('File size cannot exceed 10MB.');
+        toast.error('File size cannot exceed 10MB.');
+        setFile(null);
+      } else {
+        setFile(selectedFile);
+        setError(null);
+      }
     }
   };
-
 
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file to upload.');
+      toast.warning('Please select a file to upload.');
       return;
     }
 
+    if (!user) {
+      setError('You must be logged in to upload a resume.');
+      toast.error('Authentication error. Please log in again.');
+      return;
+    }
+
+    // Get auth token from localStorage
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setError('Authentication token not found. Please log in again.');
+      toast.error('Authentication error. Please log in again.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
 
     try {
-
       const formData = new FormData();
       formData.append('file', file);
 
-      // TODO: Implement actual API call to upload the resume and extract the profile
-      // For now, immediately extract mock profile data
-      onProfileExtracted({ skills: ['JavaScript', 'React'], experience: [] }); // Mock response
-      setError(null);
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
+      const result = await response.json();
 
+      if (response.ok) {
+        toast.success('Resume uploaded and processed successfully!');
+        onProfileExtracted(result.extractedData);
+        console.log('File uploaded to:', result.fileUrl);
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
     } catch (err) {
-      setError('Failed to upload the file. Please try again.');
+      console.error(err);
+      const errorMessage = (err as Error).message || 'Failed to upload the file. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -53,9 +94,9 @@ export const ResumeUpload: React.FC<ResumeUploadProps> = ({ onProfileExtracted, 
         />
         {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       </div>
-      <Button onClick={handleUpload} disabled={loading || !file} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 disabled:bg-gray-700 disabled:text-gray-400">
-        {loading && <BanterLoader className="mr-2" />}
-        {loading ? 'Uploading...' : 'Upload and Extract'}</Button>
+      <Button onClick={handleUpload} disabled={loading || isUploading || !file} className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 disabled:bg-gray-700 disabled:text-gray-400">
+        {(loading || isUploading) && <BanterLoader className="mr-2" />}
+        {(loading || isUploading) ? 'Uploading...' : 'Upload and Extract'}</Button>
     </div>
   );
 };

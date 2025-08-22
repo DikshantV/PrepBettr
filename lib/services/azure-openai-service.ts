@@ -1,6 +1,16 @@
 import OpenAI from 'openai';
-import { fetchAzureSecrets } from '@/lib/azure-config';
 import { InterviewContext } from '@/lib/types/voice';
+
+// Client-side safety check
+const isClient = typeof window !== 'undefined';
+
+// Only import server-side dependencies when running on server
+let fetchAzureSecrets: any = null;
+
+if (!isClient) {
+  const azureConfig = require('@/lib/azure-config');
+  fetchAzureSecrets = azureConfig.fetchAzureSecrets;
+}
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -30,6 +40,11 @@ export class AzureOpenAIService {
    * Initialize the Azure OpenAI service
    */
   async initialize(): Promise<boolean> {
+    if (isClient) {
+      console.warn('[Azure OpenAI Service] Running on client side - service disabled');
+      return false;
+    }
+    
     try {
       const secrets = await fetchAzureSecrets();
       

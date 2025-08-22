@@ -1,12 +1,12 @@
 "use client";
 
-import { auth } from "@/firebase/client";
+import { auth, googleProvider } from "@/firebase/client";
 import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { googleProvider } from "@/firebase/client";
+import RedirectGuard from "@/lib/utils/redirect-guard";
 
 export default function GoogleSignInButton() {
   const router = useRouter();
@@ -16,31 +16,60 @@ export default function GoogleSignInButton() {
   // Handle redirect on successful sign-in
   useEffect(() => {
     if (signInSuccess) {
-      console.log('GoogleSignInButton: Redirecting to dashboard after successful sign-in');
+      console.log('GoogleSignInButton: Successful Google sign-in, preparing redirect to /dashboard');
       
-      // Use more robust redirect mechanism
-      const redirectToDashboard = () => {
-        try {
-          console.log('GoogleSignInButton: Attempting router.replace to /dashboard');
-          router.replace('/dashboard');
-        } catch (error) {
-          console.error('Router.replace failed:', error);
-          console.log('GoogleSignInButton: Fallback to window.location.href');
-          if (typeof window !== 'undefined') {
-            window.location.href = '/dashboard';
-          }
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/sign-in';
+      const targetPath = '/dashboard';
+      
+      // Check if redirect is allowed
+      if (!RedirectGuard.canRedirect(targetPath)) {
+        console.error('GoogleSignInButton: Redirect blocked by RedirectGuard - potential loop detected');
+        toast.error('Authentication successful, but unable to redirect. Please navigate to dashboard manually.');
+        return;
+      }
+      
+      // Record the redirect attempt
+      RedirectGuard.recordRedirect(currentPath, targetPath);
+      
+      // Add a delay to ensure cookie propagation
+      const redirectTimer = setTimeout(() => {
+        console.log('GoogleSignInButton: Executing redirect to /dashboard');
+        
+        // Use window.location.href for reliable full page navigation
+        // This ensures fresh authentication state and avoids router-based issues
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
         }
-      };
+      }, 500); // Increased delay for better cookie propagation
       
-      // Add additional delay to ensure cookie propagation and DOM updates
-      setTimeout(redirectToDashboard, 200);
+      // Cleanup timer if component unmounts
+      return () => clearTimeout(redirectTimer);
     }
-  }, [signInSuccess, router]);
+  }, [signInSuccess]);
 
   const handleGoogleSignIn = async () => {
     if (isLoading) return; // Prevent multiple clicks
     setIsLoading(true);
     console.log('Starting Google Sign In...');
+    
+    // Defensive checks for Firebase initialization
+    if (!auth) {
+      console.error('Firebase Auth not initialized');
+      toast.error('Authentication service not available. Please check your configuration.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!googleProvider) {
+      console.error('Google Auth Provider not initialized');
+      toast.error('Google authentication not available. Please check your configuration.');
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('Firebase Auth instance:', !!auth);
+    console.log('Google Provider instance:', !!googleProvider);
+    
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;

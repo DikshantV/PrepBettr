@@ -15,17 +15,17 @@ export function AuthSync() {
       if (process.env.NODE_ENV === 'development') {
         console.log('=== Auth Sync Debug ===');
         console.log('User from context:', user);
-        console.log('Firebase current user:', auth.currentUser);
+        console.log('Firebase current user:', auth?.currentUser);
         
-        debugFirebaseAuth();
+        debugFirebaseAuth(auth);
       }
 
       // If we have a user from server context but no Firebase user, 
       // there's an authentication mismatch
-      if (user && !auth.currentUser) {
+      if (user && auth && !auth.currentUser) {
         console.warn('Authentication mismatch detected: Server has user but Firebase client does not');
         console.warn('This may cause Firestore permission errors');
-        console.warn('User ID from server:', user.id);
+        console.warn('User ID from server:', user.uid);
         
         // Try to get a fresh token from the server to sync Firebase auth
         try {

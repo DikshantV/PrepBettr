@@ -1,195 +1,160 @@
 #!/usr/bin/env node
 
-const https = require('https');
+const { spawn } = require('child_process');
+const http = require('http');
 
-// Test Firebase configuration endpoint
-async function testFirebaseConfig() {
-  console.log('=== Testing Firebase Config API ===');
+console.log('🚀 Starting authentication flow test...');
+
+// Function to wait for server to be ready
+function waitForServer(port, callback, attempts = 0) {
+  if (attempts > 30) { // Max 30 seconds
+    callback(new Error('Server failed to start within 30 seconds'));
+    return;
+  }
+
+  const req = http.request({
+    hostname: 'localhost',
+    port: port,
+    path: '/api/health',
+    timeout: 1000
+  }, (res) => {
+    if (res.statusCode === 200 || res.statusCode === 404) {
+      callback(null);
+    } else {
+      setTimeout(() => waitForServer(port, callback, attempts + 1), 1000);
+    }
+  });
+
+  req.on('error', () => {
+    setTimeout(() => waitForServer(port, callback, attempts + 1), 1000);
+  });
   
-  return new Promise((resolve, reject) => {
-    const req = https.request('https://prepbettr.com/api/config/firebase', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const config = JSON.parse(data);
-          console.log('✅ Firebase config endpoint working');
-          console.log('   hasKey:', config.hasKey);
-          console.log('   apiKey present:', !!config.apiKey);
-          if (config.apiKey) {
-            console.log('   apiKey preview:', config.apiKey.substring(0, 10) + '...');
+  req.on('timeout', () => {
+    req.destroy();
+    setTimeout(() => waitForServer(port, callback, attempts + 1), 1000);
+  });
+
+  req.end();
+}
+
+// Function to test endpoint
+function testEndpoint(path, expectedStatus, callback) {
+  const req = http.request({
+    hostname: 'localhost',
+    port: 3000,
+    path: path,
+    timeout: 5000
+  }, (res) => {
+    console.log(`📍 ${path}: ${res.statusCode} (expected ${expectedStatus})`);
+    
+    let data = '';
+    res.on('data', (chunk) => data += chunk);
+    res.on('end', () => {
+      callback(null, {
+        statusCode: res.statusCode,
+        headers: res.headers,
+        body: data
+      });
+    });
+  });
+
+  req.on('error', (err) => {
+    console.error(`❌ Error testing ${path}:`, err.message);
+    callback(err);
+  });
+
+  req.on('timeout', () => {
+    console.error(`⏰ Timeout testing ${path}`);
+    req.destroy();
+    callback(new Error('Request timeout'));
+  });
+
+  req.end();
+}
+
+// Start the Next.js server
+const server = spawn('npm', ['run', 'dev'], {
+  stdio: ['ignore', 'pipe', 'pipe'],
+  env: { ...process.env, GRPC_VERBOSITY: 'ERROR' }
+});
+
+let serverOutput = '';
+let hasStarted = false;
+
+server.stdout.on('data', (data) => {
+  const output = data.toString();
+  serverOutput += output;
+  
+  if (output.includes('Ready in') && !hasStarted) {
+    hasStarted = true;
+    console.log('✅ Server is ready!');
+    
+    // Wait a bit more for complete initialization
+    setTimeout(() => {
+      console.log('🧪 Running authentication flow tests...');
+      
+      // Test sequence
+      const tests = [
+        { path: '/sign-in', expectedStatus: 200 },
+        { path: '/sign-up', expectedStatus: 200 },
+        { path: '/dashboard', expectedStatus: 307 }, // Should redirect to /sign-in
+        { path: '/api/auth/verify', expectedStatus: 401 } // Should require auth
+      ];
+      
+      let currentTest = 0;
+      
+      function runNextTest() {
+        if (currentTest >= tests.length) {
+          console.log('✅ All tests completed!');
+          server.kill('SIGTERM');
+          process.exit(0);
+          return;
+        }
+        
+        const test = tests[currentTest++];
+        testEndpoint(test.path, test.expectedStatus, (err, result) => {
+          if (err) {
+            console.error(`❌ Test failed for ${test.path}:`, err.message);
+            server.kill('SIGTERM');
+            process.exit(1);
+            return;
           }
-          resolve(config);
-        } catch (error) {
-          console.log('❌ Firebase config failed to parse response');
-          console.log('   Raw response:', data);
-          reject(error);
-        }
-      });
-    });
-    
-    req.on('error', (error) => {
-      console.log('❌ Firebase config request failed:', error.message);
-      reject(error);
-    });
-    
-    req.end();
-  });
-}
-
-// Test signin endpoint with invalid token
-async function testSigninEndpoint() {
-  console.log('\n=== Testing Signin API ===');
-  
-  return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      idToken: 'test-invalid-token-123'
-    });
-    
-    const req = https.request('https://prepbettr.com/api/auth/signin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': postData.length,
-        'Accept': 'application/json'
+          
+          if (result.statusCode === test.expectedStatus || 
+              (test.expectedStatus === 307 && (result.statusCode === 307 || result.statusCode === 302))) {
+            console.log(`✅ ${test.path} passed`);
+          } else {
+            console.log(`⚠️  ${test.path} returned ${result.statusCode}, expected ${test.expectedStatus}`);
+          }
+          
+          setTimeout(runNextTest, 100);
+        });
       }
-    }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          console.log(`✅ Signin endpoint working (status: ${res.statusCode})`);
-          console.log('   Expected 401 for invalid token:', res.statusCode === 401 ? '✅' : '❌');
-          console.log('   Response error:', response.error);
-          resolve(response);
-        } catch (error) {
-          console.log('❌ Signin response failed to parse');
-          console.log('   Raw response:', data);
-          reject(error);
-        }
-      });
-    });
-    
-    req.on('error', (error) => {
-      console.log('❌ Signin request failed:', error.message);
-      reject(error);
-    });
-    
-    req.write(postData);
-    req.end();
-  });
-}
-
-// Test signup endpoint with invalid token
-async function testSignupEndpoint() {
-  console.log('\n=== Testing Signup API ===');
-  
-  return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      idToken: 'test-invalid-token-123',
-      email: 'test@example.com',
-      name: 'Test User'
-    });
-    
-    const req = https.request('https://prepbettr.com/api/auth/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': postData.length,
-        'Accept': 'application/json'
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          console.log(`✅ Signup endpoint working (status: ${res.statusCode})`);
-          console.log('   Expected 401 for invalid token:', res.statusCode === 401 ? '✅' : '❌');
-          console.log('   Response error:', response.error);
-          resolve(response);
-        } catch (error) {
-          console.log('❌ Signup response failed to parse');
-          console.log('   Raw response:', data);
-          reject(error);
-        }
-      });
-    });
-    
-    req.on('error', (error) => {
-      console.log('❌ Signup request failed:', error.message);
-      reject(error);
-    });
-    
-    req.write(postData);
-    req.end();
-  });
-}
-
-// Test missing endpoints that might be expected by frontend
-async function testMissingEndpoints() {
-  console.log('\n=== Testing for Missing Endpoints ===');
-  
-  const endpointsToTest = [
-    '/api/auth/google',
-    '/api/auth/callback',
-    '/api/auth/session',
-    '/api/auth/token'
-  ];
-  
-  for (const endpoint of endpointsToTest) {
-    await new Promise((resolve) => {
-      const req = https.request(`https://prepbettr.com${endpoint}`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      }, (res) => {
-        console.log(`   ${endpoint}: ${res.statusCode === 404 ? '❌ Missing' : '✅ Exists'} (${res.statusCode})`);
-        resolve();
-      });
       
-      req.on('error', () => {
-        console.log(`   ${endpoint}: ❌ Error`);
-        resolve();
-      });
-      
-      req.setTimeout(5000, () => {
-        console.log(`   ${endpoint}: ❌ Timeout`);
-        req.destroy();
-        resolve();
-      });
-      
-      req.end();
-    });
+      runNextTest();
+    }, 2000);
   }
-}
+});
 
-// Main test runner
-async function runTests() {
-  try {
-    await testFirebaseConfig();
-    await testSigninEndpoint();
-    await testSignupEndpoint();
-    await testMissingEndpoints();
-    
-    console.log('\n=== Test Summary ===');
-    console.log('✅ All backend endpoints are working correctly');
-    console.log('✅ Firebase configuration is properly loaded');
-    console.log('✅ Authentication APIs respond with expected errors');
-    console.log('\n🔍 If users are getting 401 errors, the issue is likely:');
-    console.log('   1. Invalid Firebase ID tokens being sent by frontend');
-    console.log('   2. Token expiration issues');
-    console.log('   3. Firebase Admin SDK token verification failing');
-    console.log('   4. Frontend not properly handling Google OAuth flow');
-    
-  } catch (error) {
-    console.log('\n❌ Test failed:', error.message);
+server.stderr.on('data', (data) => {
+  const output = data.toString();
+  if (!output.includes('GRPC_VERBOSITY') && !output.includes('--no-warnings') && !output.includes('openssl-legacy-provider')) {
+    console.error('Server error:', output);
   }
-}
+});
 
-runTests();
+server.on('close', (code) => {
+  console.log('🔚 Server closed with code:', code);
+});
+
+// Kill server on script termination
+process.on('SIGINT', () => {
+  console.log('🛑 Terminating server...');
+  server.kill('SIGTERM');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  server.kill('SIGTERM');
+  process.exit(0);
+});

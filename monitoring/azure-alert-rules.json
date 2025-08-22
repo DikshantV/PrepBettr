@@ -1,0 +1,293 @@
+{
+  "alertRules": [
+    {
+      "name": "ConfigDriftDetected",
+      "description": "Alert when configuration drift is detected between Azure and Firebase",
+      "severity": 2,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "count",
+            "greater": 0
+          }
+        ]
+      },
+      "query": "customEvents | where name == \"Config.Drift.Detection\" | where customMeasurements.driftCount > 0 | summarize count() by bin(timestamp, 5m)",
+      "metricMeasureColumn": "count_",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT5M",
+      "evaluationFrequency": "PT5M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    },
+    {
+      "name": "ConfigHighErrorRate",
+      "description": "Alert when configuration service error rate exceeds 5%",
+      "severity": 1,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "ErrorRate",
+            "greater": 5.0
+          }
+        ]
+      },
+      "query": "requests | where name startswith \"Config-\" | summarize TotalRequests = count(), FailedRequests = countif(success == false) by bin(timestamp, 5m) | extend ErrorRate = FailedRequests * 100.0 / TotalRequests | where ErrorRate > 5",
+      "metricMeasureColumn": "ErrorRate",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT10M",
+      "evaluationFrequency": "PT5M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    },
+    {
+      "name": "ConfigHighLatency",
+      "description": "Alert when configuration service P95 latency exceeds 1000ms",
+      "severity": 2,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "P95Latency",
+            "greater": 1000
+          }
+        ]
+      },
+      "query": "requests | where name startswith \"Config-\" | summarize P95Latency = percentile(duration, 95) by bin(timestamp, 5m) | where P95Latency > 1000",
+      "metricMeasureColumn": "P95Latency",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT10M",
+      "evaluationFrequency": "PT5M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    },
+    {
+      "name": "ConfigSyncFailures",
+      "description": "Alert when Firebase synchronization fails",
+      "severity": 1,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "SyncFailures",
+            "greater": 0
+          }
+        ]
+      },
+      "query": "dependencies | where type == \"Firebase\" and name == \"Config.Sync\" | summarize SyncFailures = countif(success == false) by bin(timestamp, 5m) | where SyncFailures > 0",
+      "metricMeasureColumn": "SyncFailures",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT10M",
+      "evaluationFrequency": "PT5M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    },
+    {
+      "name": "ConfigCacheLowHitRatio",
+      "description": "Alert when configuration cache hit ratio drops below 80%",
+      "severity": 3,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "HitRatio",
+            "less": 80
+          }
+        ]
+      },
+      "query": "customEvents | where name == \"Config.Cache.Access\" | extend Hit = tobool(customDimensions.hit) | summarize CacheHits = countif(Hit == true), TotalAccess = count() by bin(timestamp, 10m) | extend HitRatio = CacheHits * 100.0 / TotalAccess | where HitRatio < 80",
+      "metricMeasureColumn": "HitRatio",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT15M",
+      "evaluationFrequency": "PT10M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    },
+    {
+      "name": "ConfigServiceHealthCheck",
+      "description": "Alert when configuration service health check fails",
+      "severity": 0,
+      "enabled": true,
+      "scopes": [
+        "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Insights/components/{app-insights-name}"
+      ],
+      "condition": {
+        "allOf": [
+          {
+            "field": "UnhealthyCount",
+            "greater": 0
+          }
+        ]
+      },
+      "query": "requests | where url contains \"/health\" | where name contains \"Config\" | summarize UnhealthyCount = countif(resultCode >= 500) by bin(timestamp, 5m) | where UnhealthyCount > 0",
+      "metricMeasureColumn": "UnhealthyCount",
+      "resourceIdColumn": "_ResourceId",
+      "dimensions": [],
+      "windowSize": "PT5M",
+      "evaluationFrequency": "PT5M",
+      "actions": [
+        {
+          "actionGroupId": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/microsoft.insights/actionGroups/ConfigCriticalAlerts",
+          "webHookProperties": {}
+        }
+      ]
+    }
+  ],
+  "actionGroups": [
+    {
+      "name": "ConfigAlerts",
+      "shortName": "ConfigAlerts",
+      "enabled": true,
+      "emailReceivers": [
+        {
+          "name": "DevTeam",
+          "emailAddress": "dev-team@prepbettr.com",
+          "useCommonAlertSchema": true
+        }
+      ],
+      "smsReceivers": [],
+      "webhookReceivers": [
+        {
+          "name": "SlackWebhook",
+          "serviceUri": "{SLACK_WEBHOOK_URL}",
+          "useCommonAlertSchema": true
+        }
+      ],
+      "azureFunctionReceivers": [],
+      "logicAppReceivers": []
+    },
+    {
+      "name": "ConfigCriticalAlerts",
+      "shortName": "ConfigCrit",
+      "enabled": true,
+      "emailReceivers": [
+        {
+          "name": "DevTeam",
+          "emailAddress": "dev-team@prepbettr.com",
+          "useCommonAlertSchema": true
+        },
+        {
+          "name": "OnCall",
+          "emailAddress": "oncall@prepbettr.com",
+          "useCommonAlertSchema": true
+        }
+      ],
+      "smsReceivers": [
+        {
+          "name": "OnCallSMS",
+          "countryCode": "1",
+          "phoneNumber": "+1234567890"
+        }
+      ],
+      "webhookReceivers": [
+        {
+          "name": "SlackCritical",
+          "serviceUri": "{SLACK_CRITICAL_WEBHOOK_URL}",
+          "useCommonAlertSchema": true
+        }
+      ],
+      "azureFunctionReceivers": [],
+      "logicAppReceivers": []
+    }
+  ],
+  "deployment": {
+    "instructions": [
+      "1. Replace {subscription-id}, {resource-group}, and {app-insights-name} with actual values",
+      "2. Replace {SLACK_WEBHOOK_URL} and {SLACK_CRITICAL_WEBHOOK_URL} with actual Slack webhook URLs",
+      "3. Update email addresses and phone numbers in action groups",
+      "4. Deploy using Azure CLI:",
+      "   az monitor alert create --resource-group {resource-group} --name ConfigDriftDetected --condition ...",
+      "5. Or use ARM templates for bulk deployment",
+      "6. Test alerts using the manual trigger endpoints in the config sync function"
+    ],
+    "armTemplate": {
+      "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "appInsightsName": {
+          "type": "string",
+          "metadata": {
+            "description": "Name of the Application Insights resource"
+          }
+        },
+        "slackWebhookUrl": {
+          "type": "secureString",
+          "metadata": {
+            "description": "Slack webhook URL for notifications"
+          }
+        }
+      },
+      "variables": {
+        "actionGroupName": "ConfigAlerts"
+      },
+      "resources": [
+        {
+          "type": "Microsoft.Insights/actionGroups",
+          "apiVersion": "2019-06-01",
+          "name": "[variables('actionGroupName')]",
+          "location": "Global",
+          "properties": {
+            "groupShortName": "ConfigAlert",
+            "enabled": true,
+            "emailReceivers": [
+              {
+                "name": "DevTeam",
+                "emailAddress": "dev-team@prepbettr.com",
+                "useCommonAlertSchema": true
+              }
+            ],
+            "webhookReceivers": [
+              {
+                "name": "SlackWebhook",
+                "serviceUri": "[parameters('slackWebhookUrl')]",
+                "useCommonAlertSchema": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -4,22 +4,16 @@ import { z } from "zod";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { auth } from "@/firebase/client";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useTelemetry } from "@/components/providers/TelemetryProvider";
-
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-} from "firebase/auth";
+import RedirectGuard from "@/lib/utils/redirect-guard";
 
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 
-import { signIn, signUp } from "@/lib/actions/auth.action";
 import FormField from "./FormField";
 import GoogleSignInButton from "./dynamic/GoogleSignInButtonDynamic";
 
@@ -54,69 +48,56 @@ const AuthForm = ({ type }: { type: FormType }) => {
             if (type === "sign-up") {
                 const { name, email, password } = data;
 
-                const userCredential = await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-                const result = await signUp({
-                    uid: userCredential.user.uid,
-                    name: name!,
-                    email,
-                    password,
+                // Call unified auth signup endpoint
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password }),
                 });
 
-                if (!result.success) {
-                    toast.error(result.message);
+                if (response.ok) {
+                    success = true;
+                    toast.success("Account created successfully. You can now sign in.");
+                    
+                    // Track successful sign up
+                    await trackUserAction('signup', 'auth', {
+                        method: 'email',
+                        hasName: (!!name).toString()
+                    });
+                    
+                    router.push("/sign-in");
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error || 'Failed to create account. Please try again.';
+                    toast.error(errorMessage);
                     // Track failed sign up
                     await trackFormSubmission('signup_form', false, {
-                        errorMessage: result.message,
+                        errorMessage,
                         duration: (Date.now() - startTime).toString()
                     });
                     return;
                 }
-
-                success = true;
-                toast.success("Account created successfully. You can now sign in.");
-                
-                // Track successful sign up
-                await trackUserAction('signup', 'auth', {
-                    method: 'email',
-                    hasName: (!!name).toString()
-                });
-                
-                router.push("/sign-in");
             } else {
                 const { email, password } = data;
 
-                const userCredential = await signInWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-                const idToken = await userCredential.user.getIdToken();
-                if (!idToken) {
-                    toast.error("Sign in Failed. Please try again.");
-                    // Track failed sign in
-                    await trackFormSubmission('signin_form', false, {
-                        errorMessage: 'No ID token received',
-                        duration: (Date.now() - startTime).toString()
-                    });
-                    return;
-                }
-
-                // Call the API endpoint directly
+                // Call unified auth signin endpoint
                 const response = await fetch('/api/auth/signin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ idToken }),
+                    body: JSON.stringify({ email, password }),
                 });
 
                 if (response.ok) {
+                    const result = await response.json();
+                    // Store auth token if provided
+                    if (result.token) {
+                        localStorage.setItem('auth_token', result.token);
+                    }
+                    
                     console.log('AuthForm: Sign in successful, redirecting to dashboard');
                     success = true;
                     toast.success("Signed in successfully.");
@@ -163,18 +144,36 @@ const AuthForm = ({ type }: { type: FormType }) => {
     // Handle redirect on successful sign-in
     useEffect(() => {
         if (signInSuccess) {
-            console.log('AuthForm: Attempting router.replace to /dashboard');
-            try {
-                router.replace('/dashboard');
-            } catch (error) {
-                console.error('Router.replace failed:', error);
-                console.log('AuthForm: Fallback to window.location.replace');
-                if (typeof window !== 'undefined') {
-                    window.location.replace('/dashboard');
-                }
+            console.log('AuthForm: Successful sign-in, preparing redirect to /dashboard');
+            
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/sign-in';
+            const targetPath = '/dashboard';
+            
+            // Check if redirect is allowed
+            if (!RedirectGuard.canRedirect(targetPath)) {
+                console.error('AuthForm: Redirect blocked by RedirectGuard - potential loop detected');
+                toast.error('Authentication successful, but unable to redirect. Please navigate to dashboard manually.');
+                return;
             }
+            
+            // Record the redirect attempt
+            RedirectGuard.recordRedirect(currentPath, targetPath);
+            
+            // Add a small delay to ensure cookie propagation
+            const redirectTimer = setTimeout(() => {
+                console.log('AuthForm: Executing redirect to /dashboard');
+                
+                // Use window.location.href instead of router to ensure full page navigation
+                // This prevents router-based issues and ensures fresh authentication state
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/dashboard';
+                }
+            }, 500); // Increased delay for better cookie propagation
+            
+            // Cleanup timer if component unmounts
+            return () => clearTimeout(redirectTimer);
         }
-    }, [signInSuccess, router]);
+    }, [signInSuccess]);
 
     const isSignIn = type === "sign-in";
 

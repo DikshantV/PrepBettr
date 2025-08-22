@@ -37,7 +37,7 @@ const InterviewCardClient = ({
     isCommunityCard = false,
 }: InterviewCardClientProps) => {
     const { user } = useAuth();
-    const userId = user?.id;
+    const userId = user?.uid;
     
     const { feedback, loading: feedbackLoading } = useServerFeedback(
         userId && interviewId ? interviewId : null

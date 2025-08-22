@@ -35,8 +35,8 @@ export default function InterviewCardRealtime({
   
   // Use real-time hook to get latest data
   const { 
-    data: interview, 
-    isLoading, 
+    interview, 
+    loading: isLoading, 
     error 
   } = useRealtimeInterview(interviewId);
 

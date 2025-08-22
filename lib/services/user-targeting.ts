@@ -50,7 +50,7 @@ export class UserTargetingService {
    * Get the current user's ID
    */
   getCurrentUserId(): string | null {
-    return auth.currentUser?.uid || null;
+    return auth?.currentUser?.uid || null;
   }
 
   /**
@@ -97,6 +97,21 @@ export class UserTargetingService {
       percentage: 5, // Start with 5% rollout
       featureName: 'portalIntegration'
     } as RolloutConfig,
+    
+    voiceInterview: {
+      percentage: 10, // Start with 10% rollout
+      featureName: 'voiceInterview'
+    } as RolloutConfig,
+    
+    premiumFeatures: {
+      percentage: 15, // Start with 15% rollout
+      featureName: 'premiumFeatures'
+    } as RolloutConfig,
+    
+    newUI: {
+      percentage: 20, // Start with 20% rollout
+      featureName: 'newUI'
+    } as RolloutConfig,
   };
 
   /**
@@ -106,6 +121,9 @@ export class UserTargetingService {
     return {
       autoApplyAzure: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.autoApplyAzure),
       portalIntegration: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.portalIntegration),
+      voiceInterview: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.voiceInterview),
+      premiumFeatures: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.premiumFeatures),
+      newUI: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.newUI),
     };
   }
 

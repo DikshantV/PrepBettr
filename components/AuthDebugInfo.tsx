@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DebugInfo {
@@ -10,38 +10,58 @@ interface DebugInfo {
   currentPath: string;
 }
 
+// Deep equality check for debug info to prevent unnecessary updates
+function deepEqual(a: DebugInfo | null, b: DebugInfo | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  
+  return (
+    a.cookieExists === b.cookieExists &&
+    a.cookieValue === b.cookieValue &&
+    a.currentPath === b.currentPath &&
+    JSON.stringify(a.authState) === JSON.stringify(b.authState)
+  );
+}
+
 export default function AuthDebugInfo() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const auth = useAuth();
 
-  useEffect(() => {
-    const updateDebugInfo = () => {
-      // Check for session cookie
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [name, value] = cookie.trim().split('=');
-        acc[name] = value;
-        return acc;
-      }, {} as Record<string, string>);
+  // Memoize auth state to prevent unnecessary updates
+  const memoizedAuthState = useMemo(() => ({
+    user: auth.user ? { uid: auth.user.uid, email: auth.user.email } : null,
+    loading: auth.loading,
+    isAuthenticated: auth.isAuthenticated
+  }), [auth.user?.uid, auth.user?.email, auth.loading, auth.isAuthenticated]);
 
-      setDebugInfo({
-        cookieExists: !!cookies.session,
-        cookieValue: cookies.session ? `${cookies.session.substring(0, 20)}...` : 'Not found',
-        authState: {
-          user: auth.user ? { uid: auth.user.uid, email: auth.user.email } : null,
-          loading: auth.loading,
-          isAuthenticated: auth.isAuthenticated
-        },
-        currentPath: window.location.pathname
-      });
+  const updateDebugInfo = useCallback(() => {
+    // Check for session cookie
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [name, value] = cookie.trim().split('=');
+      acc[name] = value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const newDebugInfo: DebugInfo = {
+      cookieExists: !!cookies.session,
+      cookieValue: cookies.session ? `${cookies.session.substring(0, 20)}...` : 'Not found',
+      authState: memoizedAuthState,
+      currentPath: window.location.pathname
     };
 
+    // Only update state if the debug info actually changed
+    setDebugInfo(prevDebugInfo => {
+      if (deepEqual(prevDebugInfo, newDebugInfo)) {
+        return prevDebugInfo; // No change, prevent re-render
+      }
+      return newDebugInfo;
+    });
+  }, [memoizedAuthState]);
+
+  useEffect(() => {
+    // Update immediately when memoized auth state changes
     updateDebugInfo();
-    
-    // Update on route changes
-    const interval = setInterval(updateDebugInfo, 1000);
-    
-    return () => clearInterval(interval);
-  }, [auth]);
+  }, [updateDebugInfo]); // Only depend on the memoized callback
 
   if (!debugInfo) return null;
 

@@ -1,0 +1,538 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 📊 PrepBettr Configuration Monitoring Dashboard\n\nThis dashboard provides comprehensive monitoring for the unified configuration management system, including drift detection, performance metrics, and alert status.\n\n---"
+      },
+      "name": "Title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "timeRange",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 3600000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "environment",
+            "version": "KqlParameterItem/1.0",
+            "name": "Environment",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "value": [
+              "production"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\"production\", \"staging\", \"development\"]"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "Parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let ConfigMetrics = requests\n| where timestamp {TimeRange}\n| where name startswith \"Config-\"\n| extend ConfigKey = tostring(customDimensions.configKey)\n| extend Operation = tostring(customDimensions.operation)\n| extend Service = tostring(customDimensions.service)\n| where Service == \"unified-config\";\n\nConfigMetrics\n| summarize \n    TotalRequests = count(),\n    SuccessfulRequests = countif(success == true),\n    FailedRequests = countif(success == false),\n    AvgLatency = avg(duration),\n    P95Latency = percentile(duration, 95)\n| extend \n    SuccessRate = round(SuccessfulRequests * 100.0 / TotalRequests, 2),\n    ErrorRate = round(FailedRequests * 100.0 / TotalRequests, 2)\n| project \n    [\"📊 Total Requests\"] = TotalRequests,\n    [\"✅ Success Rate (%)\"] = SuccessRate,\n    [\"❌ Error Rate (%)\"] = ErrorRate,\n    [\"⏱️ Avg Latency (ms)\"] = round(AvgLatency, 1),\n    [\"📈 P95 Latency (ms)\"] = round(P95Latency, 1)",
+        "size": 4,
+        "title": "🎯 Configuration Service Overview",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Column",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Value",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "customWidth": "100",
+      "name": "Overview Metrics"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == \"Config.Drift.Detection\"\n| extend DriftCount = toint(customMeasurements.driftCount)\n| extend TotalChecked = toint(customMeasurements.totalChecked)\n| extend DriftedKeys = tostring(customDimensions.driftedKeys)\n| where DriftCount > 0\n| project timestamp, DriftCount, TotalChecked, DriftedKeys\n| order by timestamp desc",
+        "size": 0,
+        "title": "🚨 Configuration Drift Detection",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "timestamp",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "20%"
+              }
+            },
+            {
+              "columnMatch": "DriftCount",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "redBright",
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "TotalChecked",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "DriftedKeys",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "50%"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "timestamp",
+              "label": "⏰ Timestamp"
+            },
+            {
+              "columnId": "DriftCount",
+              "label": "🔥 Drift Count"
+            },
+            {
+              "columnId": "TotalChecked",
+              "label": "📋 Total Checked"
+            },
+            {
+              "columnId": "DriftedKeys",
+              "label": "🔑 Drifted Keys"
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "Drift Detection"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == \"Config.Cache.Access\"\n| extend Hit = tobool(customDimensions.hit)\n| extend Key = tostring(customDimensions.key)\n| summarize \n    CacheHits = countif(Hit == true),\n    CacheMisses = countif(Hit == false),\n    TotalAccess = count()\n| extend HitRatio = round(CacheHits * 100.0 / TotalAccess, 2)\n| project \n    [\"💾 Cache Hits\"] = CacheHits,\n    [\"❌ Cache Misses\"] = CacheMisses,\n    [\"📊 Hit Ratio (%)\"] = HitRatio",
+        "size": 0,
+        "title": "💾 Cache Performance",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Column",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Value",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "customWidth": "50",
+      "name": "Cache Performance"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp {TimeRange}\n| where name startswith \"Config-\"\n| extend Operation = tostring(customDimensions.operation)\n| extend ConfigKey = tostring(customDimensions.configKey)\n| extend KeyNamespace = split(ConfigKey, \".\")[0]\n| summarize \n    RequestCount = count(),\n    AvgLatency = avg(duration),\n    SuccessRate = round(countif(success == true) * 100.0 / count(), 2)\nby Operation\n| order by RequestCount desc",
+        "size": 0,
+        "title": "📈 Requests by Operation",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart",
+        "chartSettings": {
+          "xAxis": "Operation",
+          "yAxis": [
+            "RequestCount"
+          ],
+          "group": null,
+          "size": null,
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Requests by Operation"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp {TimeRange}\n| where name startswith \"Config-\"\n| extend ConfigKey = tostring(customDimensions.configKey)\n| extend KeyNamespace = split(ConfigKey, \".\")[0]\n| summarize \n    RequestCount = count(),\n    AvgLatency = avg(duration)\nby KeyNamespace\n| top 10 by RequestCount desc",
+        "size": 0,
+        "title": "🔑 Most Accessed Configuration Namespaces",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      },
+      "customWidth": "50",
+      "name": "Top Config Namespaces"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "dependencies\n| where timestamp {TimeRange}\n| where type == \"Firebase\"\n| where name == \"Config.Sync\"\n| extend KeysSync = toint(customDimensions.keysSync)\n| extend SyncSuccess = success\n| summarize \n    TotalSyncs = count(),\n    SuccessfulSyncs = countif(SyncSuccess == true),\n    FailedSyncs = countif(SyncSuccess == false),\n    AvgDuration = avg(duration),\n    TotalKeysSync = sum(KeysSync)\n| extend SuccessRate = round(SuccessfulSyncs * 100.0 / TotalSyncs, 2)\n| project \n    [\"🔄 Total Syncs\"] = TotalSyncs,\n    [\"✅ Success Rate (%)\"] = SuccessRate,\n    [\"🔑 Keys Synced\"] = TotalKeysSync,\n    [\"⏱️ Avg Duration (ms)\"] = round(AvgDuration, 1)",
+        "size": 0,
+        "title": "🔄 Firebase Synchronization Status",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Column",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Value",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "customWidth": "100",
+      "name": "Firebase Sync Status"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp {TimeRange}\n| where name startswith \"Config-\"\n| extend Operation = tostring(customDimensions.operation)\n| make-series RequestCount = count() default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 5m by Operation",
+        "size": 0,
+        "title": "📊 Configuration Request Trends",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "customWidth": "50",
+      "name": "Request Trends"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"Config.Request.Latency\"\n| extend Operation = tostring(customDimensions.operation)\n| extend KeyNamespace = tostring(customDimensions.key)\n| make-series AvgLatency = avg(value) default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 5m by Operation",
+        "size": 0,
+        "title": "⏱️ Latency Trends by Operation",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      },
+      "customWidth": "50",
+      "name": "Latency Trends"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "exceptions\n| where timestamp {TimeRange}\n| where outerMessage contains \"Config Alert\"\n| extend AlertType = extract(@\"Config Alert \\[([^\\]]+)\\]\", 1, outerMessage)\n| extend AlertMessage = extract(@\"Config Alert \\[[^\\]]+\\]: (.+)\", 1, outerMessage)\n| extend Severity = tostring(customDimensions.severity)\n| extend Environment = tostring(customDimensions.environment)\n| project timestamp, Severity, AlertType, AlertMessage, Environment\n| order by timestamp desc",
+        "size": 0,
+        "title": "🚨 Configuration Alerts",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "timestamp",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "20%"
+              }
+            },
+            {
+              "columnMatch": "Severity",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "critical",
+                    "representation": "redBright",
+                    "text": "🔴 CRITICAL"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "high",
+                    "representation": "orange",
+                    "text": "🟠 HIGH"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "medium",
+                    "representation": "yellow",
+                    "text": "🟡 MEDIUM"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "low",
+                    "representation": "green",
+                    "text": "🟢 LOW"
+                  }
+                ],
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "AlertType",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "AlertMessage",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "40%"
+              }
+            },
+            {
+              "columnMatch": "Environment",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "10%"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "timestamp",
+              "label": "⏰ Timestamp"
+            },
+            {
+              "columnId": "Severity",
+              "label": "⚠️ Severity"
+            },
+            {
+              "columnId": "AlertType",
+              "label": "🏷️ Type"
+            },
+            {
+              "columnId": "AlertMessage",
+              "label": "💬 Message"
+            },
+            {
+              "columnId": "Environment",
+              "label": "🌍 Environment"
+            }
+          ]
+        }
+      },
+      "customWidth": "100",
+      "name": "Configuration Alerts"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == \"Config.Change\"\n| extend ConfigKey = tostring(customDimensions.key)\n| extend ChangedBy = tostring(customDimensions.changedBy)\n| extend Environment = tostring(customDimensions.environment)\n| extend ValueType = tostring(customDimensions.valueType)\n| project timestamp, ConfigKey, ChangedBy, Environment, ValueType\n| order by timestamp desc",
+        "size": 0,
+        "title": "📝 Recent Configuration Changes",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "timestamp",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "25%"
+              }
+            },
+            {
+              "columnMatch": "ConfigKey",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "30%"
+              }
+            },
+            {
+              "columnMatch": "ChangedBy",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "20%"
+              }
+            },
+            {
+              "columnMatch": "Environment",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "production",
+                    "representation": "redBright",
+                    "text": "🟥 PROD"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "staging",
+                    "representation": "yellow",
+                    "text": "🟨 STAGE"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "development",
+                    "representation": "green",
+                    "text": "🟩 DEV"
+                  }
+                ],
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "ValueType",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "10%"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "timestamp",
+              "label": "⏰ Timestamp"
+            },
+            {
+              "columnId": "ConfigKey",
+              "label": "🔑 Configuration Key"
+            },
+            {
+              "columnId": "ChangedBy",
+              "label": "👤 Changed By"
+            },
+            {
+              "columnId": "Environment",
+              "label": "🌍 Environment"
+            },
+            {
+              "columnId": "ValueType",
+              "label": "📊 Type"
+            }
+          ]
+        }
+      },
+      "customWidth": "100",
+      "name": "Configuration Changes"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

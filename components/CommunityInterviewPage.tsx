@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
-import { getCurrentUser } from "@/lib/actions/auth.action";
+// Removed server-only auth import - using API calls instead
 import BanterLoader from "@/components/ui/BanterLoader";
 import InterviewHeader from "@/app/dashboard/interview/[id]/InterviewHeader";
 import { useCommunityInterview } from "@/lib/hooks/useCommunityInterview";
@@ -57,17 +57,25 @@ const CommunityInterviewPage = ({
     const { interview: communityInterview, isLoading: communityLoading, isError: communityError } = useCommunityInterview(interviewId || null);
 
     useEffect(() => {
+        // Use API call instead of direct service import
         const fetchUser = async () => {
             try {
-                const currentUser = await getCurrentUser();
-                if (!currentUser) {
+                const response = await fetch('/api/auth/user');
+                if (!response.ok) {
                     router.push('/sign-in');
                     return;
                 }
+                
+                const userData = await response.json();
+                if (!userData.user) {
+                    router.push('/sign-in');
+                    return;
+                }
+                
                 setUser({
-                    id: currentUser.id,
-                    name: currentUser.name || 'User',
-                    email: currentUser.email || ''
+                    id: userData.user.uid || userData.user.id,
+                    name: userData.user.name || userData.user.displayName || 'User',
+                    email: userData.user.email || ''
                 });
             } catch (error) {
                 console.error('Error fetching user:', error);
