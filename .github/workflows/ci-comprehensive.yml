@@ -23,7 +23,7 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20.x'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: './azure'
   AZURE_STATIC_WEB_APPS_PACKAGE_PATH: './'
   BICEP_VERSION: 'latest'
@@ -76,7 +76,15 @@ jobs:
       run: npm ci
     
     - name: Run TypeScript compiler check
-      run: npx tsc --noEmit
+      run: |
+        # Run actual build verification (most important)
+        echo "Running build verification..."
+        npm run build || exit 1
+        
+        # Cleanup build output
+        rm -rf .next
+        
+        echo "✅ Build verification passed"
     
     - name: Check for TypeScript errors
       run: |

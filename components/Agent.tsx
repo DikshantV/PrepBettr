@@ -247,6 +247,7 @@ const Agent = ({
                 'Failed to generate feedback'
             );
         }
+        // No cleanup needed for this effect
     }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId]);
 
     /**
