@@ -15,7 +15,8 @@ interface TTSRequest {
  * Converts text to speech using Azure Speech Services
  */
 export async function POST(request: NextRequest) {
-  return handleAsyncError(async () => {
+  return handleAsyncError(
+    async () => {
     try {
       const body: TTSRequest = await request.json();
       const { text, voice = 'en-US-SaraNeural', rate = '1.0', pitch = '0Hz' } = body;
@@ -170,7 +171,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  });
+  },
+  'POST /api/voice/tts'
+  );
 }
 
 /**

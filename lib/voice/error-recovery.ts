@@ -132,14 +132,20 @@ export class VoiceInterviewErrorRecovery {
    * Update service health status
    */
   private updateServiceHealth(service: keyof ServiceHealth, status: ServiceHealth[keyof ServiceHealth]): void {
-    if (this.serviceHealth[service] !== status) {
-      this.serviceHealth[service] = status;
-      logger.info(`Service health updated`, { service, status });
+    // Validate status for network service (only accepts online/offline)
+    let validatedStatus = status;
+    if (service === 'network' && status === 'degraded') {
+      validatedStatus = 'offline'; // Degrade network service to offline
+    }
+    
+    if (this.serviceHealth[service] !== validatedStatus) {
+      (this.serviceHealth as any)[service] = validatedStatus;
+      logger.info(`Service health updated`, { service, status: validatedStatus });
       
       // Emit custom event for UI updates
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('serviceHealthChanged', {
-          detail: { service, status, allServices: this.serviceHealth }
+          detail: { service, status: validatedStatus, allServices: this.serviceHealth }
         }));
       }
     }
