@@ -97,16 +97,16 @@ class FirebaseUserService {
       const profileData = {
         email: userData.email,
         displayName: userData.displayName || userData.email.split('@')[0],
-        profilePictureUrl: null,
-        phoneNumber: userData.phoneNumber || null,
+        profilePictureUrl: undefined,
+        phoneNumber: userData.phoneNumber || undefined,
         emailVerified: userData.emailVerified || false,
         plan: userData.plan || 'free',
         createdAt: now,
         updatedAt: now,
-        about: null,
-        workplace: null,
+        about: undefined,
+        workplace: undefined,
         skills: [],
-        dateOfBirth: null
+        dateOfBirth: undefined
       };
 
       await firestore.collection('users').doc(uid).set(profileData);

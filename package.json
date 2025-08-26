@@ -4,6 +4,7 @@
  "private": true,
  "scripts": {
   "dev": "GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next dev",
+  "prebuild": "npm run check:routes",
   "build": "GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next build",
   "build:azure": "ENVIRONMENT=production BUILD_STANDALONE=true npm run build",
   "build:staging": "ENVIRONMENT=staging npm run build",
@@ -45,7 +46,9 @@
   "test:azure-openai": "tsx scripts/test-azure-openai-integration.ts",
   "test:resume-processing": "tsx scripts/test-resume-processing.ts",
   "test:voice-flow": "node scripts/test-voice-interview-flow.js",
+  "test:voice-system": "tsx scripts/test-voice-system.ts",
   "health:azure": "npm run check:azure && npm run test:azure-health && npm run test:azure-openai",
+  "check:routes": "tsx scripts/check-duplicate-routes.ts",
   "test:azure-app-config": "tsx scripts/test-azure-app-config.ts",
   "setup:azure-app-config": "tsx scripts/setup-azure-app-config.ts",
   "setup:azure-app-config:production": "tsx scripts/setup-azure-app-config-production.ts",

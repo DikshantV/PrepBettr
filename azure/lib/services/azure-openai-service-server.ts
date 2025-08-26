@@ -1,14 +1,5 @@
-/**
- * @deprecated This service is deprecated due to security concerns.
- * It attempts to initialize Azure OpenAI from browser environment variables,
- * which exposes credentials in the client-side code.
- * 
- * Use azure-openai-service-server.ts for server-side API routes instead.
- * This file is kept for backward compatibility but should not be used in production.
- */
-
 import { AzureOpenAI } from 'openai';
-import { fetchAzureSecrets } from '../../../lib/azure-config-browser';
+import { fetchAzureSecrets } from '../azure-config';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -40,7 +31,7 @@ export interface GenerationResponse {
   followUpSuggestions?: string[];
 }
 
-export class AzureOpenAIService {
+export class AzureOpenAIServiceServer {
   private client: AzureOpenAI | null = null;
   private isInitialized = false;
   private modelDeployment: string = 'gpt-4o'; // Store the deployment name as model
@@ -64,10 +55,11 @@ export class AzureOpenAIService {
   private candidateProfile: Record<string, string> = {};
 
   /**
-   * Initialize the Azure OpenAI service
+   * Initialize the Azure OpenAI service using server-side credential loading
    */
   async initialize(): Promise<boolean> {
     try {
+      console.log('🔑 Initializing Azure OpenAI service on server...');
       const secrets = await fetchAzureSecrets();
       
       if (!secrets.azureOpenAIKey || !secrets.azureOpenAIEndpoint || !secrets.azureOpenAIDeployment) {
@@ -80,19 +72,26 @@ export class AzureOpenAIService {
         endpoint: secrets.azureOpenAIEndpoint,
         deployment: secrets.azureOpenAIDeployment,
         apiVersion: '2024-02-15-preview', // Using stable API version
-        dangerouslyAllowBrowser: true
+        // Note: dangerouslyAllowBrowser is NOT set here since this is server-side only
       });
       
       // Store the deployment name for use as model in API calls
       this.modelDeployment = secrets.azureOpenAIDeployment;
 
       this.isInitialized = true;
-      console.log('✅ Azure OpenAI Service initialized');
+      console.log('✅ Azure OpenAI Service (server-side) initialized successfully');
       return true;
     } catch (error) {
-      console.error('❌ Failed to initialize Azure OpenAI Service:', error);
+      console.error('❌ Failed to initialize Azure OpenAI Service (server-side):', error);
       return false;
     }
+  }
+
+  /**
+   * Check if the service is ready to use
+   */
+  isReady(): boolean {
+    return this.isInitialized && this.client !== null;
   }
 
   /**
@@ -165,39 +164,6 @@ export class AzureOpenAIService {
   }
 
   /**
-   * Get system prompt based on interview context
-   */
-  private getSystemPrompt(): string {
-    const { type, position, company, difficulty, preliminaryCollected, currentQuestionCount, maxQuestions } = this.interviewContext;
-    
-    let basePrompt = `You are an AI interviewer conducting a ${type} interview. You should:\n\n1. Ask relevant, engaging questions\n2. Follow up on answers with clarifying questions\n3. Maintain a professional but friendly tone\n4. Keep responses concise and focused\n5. Adapt difficulty based on candidate responses\n\nInterview Flow Instructions:\n• Ask preliminary questions (role, tech stack, experience, skills) only once at the beginning\n• After preliminary data is collected (preliminaryCollected = ${preliminaryCollected}), switch to actual interview questions\n• Keep track of question numbers - you are currently on question ${(currentQuestionCount || 0) + 1} of ${maxQuestions}\n• Increment the question number each time you ask a new interview question\n• Stop asking questions after reaching ${maxQuestions} questions and thank the candidate for their time\n• Do NOT repeat preliminary questions once they have been collected\n• Do NOT exceed the maximum number of questions (${maxQuestions})\n\n`;
-
-    if (position) {
-      basePrompt += `Position: ${position}\n`;
-    }
-    if (company) {
-      basePrompt += `Company: ${company}\n`;
-    }
-    if (difficulty) {
-      basePrompt += `Difficulty Level: ${difficulty}\n`;
-    }
-
-    switch (type) {
-      case 'technical':
-        basePrompt += `\nFocus on technical skills, problem-solving, coding concepts, and system design. Ask about specific technologies, algorithms, and best practices.`;
-        break;
-      case 'behavioral':
-        basePrompt += `\nFocus on behavioral questions about teamwork, leadership, conflict resolution, and past experiences. Use the STAR method for evaluation.`;
-        break;
-      default:
-        basePrompt += `\nAsk a mix of questions about background, experience, goals, and general fit for the role.`;
-    }
-
-    basePrompt += `\n\nKeep your responses under 100 words and ask one question at a time.`;
-    return basePrompt;
-  }
-
-  /**
    * Start a new interview conversation
    */
   async startInterviewConversation(): Promise<GenerationResponse> {
@@ -253,7 +219,14 @@ export class AzureOpenAIService {
    * Process user response and generate next question or comment
    */
   async processUserResponse(userResponse: string): Promise<GenerationResponse> {
+    console.log('🧪 [AZURE OPENAI] Processing user response', { 
+      responseLength: userResponse.length, 
+      preliminaryCollected: this.interviewContext.preliminaryCollected,
+      currentQuestionCount: this.interviewContext.currentQuestionCount
+    });
+    
     if (!this.isInitialized || !this.client) {
+      console.error('❌ [AZURE OPENAI] Service not initialized');
       throw new Error('Azure OpenAI Service not initialized');
     }
 
@@ -315,6 +288,12 @@ export class AzureOpenAIService {
     this.conversationHistory.push({ role: 'user', content: userResponse });
 
     try {
+      console.log('🧪 [AZURE OPENAI] Calling OpenAI API with', {
+        model: this.modelDeployment,
+        messagesCount: this.conversationHistory.length,
+        currentQuestionCount: this.interviewContext.currentQuestionCount
+      });
+      
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
         messages: this.conversationHistory,
@@ -326,6 +305,11 @@ export class AzureOpenAIService {
       });
 
       const assistantResponse = completion.choices[0]?.message?.content || 'I\'m sorry, I didn\'t catch that. Could you repeat your answer?';
+      
+      console.log('✅ [AZURE OPENAI] Got response from OpenAI', {
+        responseLength: assistantResponse.length,
+        tokensUsed: completion.usage?.total_tokens || 'unknown'
+      });
       
       // Add assistant response to conversation history
       this.conversationHistory.push({ role: 'assistant', content: assistantResponse });
@@ -344,8 +328,28 @@ export class AzureOpenAIService {
         followUpSuggestions: this.generateFollowUpSuggestions()
       };
     } catch (error) {
-      console.error('❌ Error generating OpenAI response:', error);
-      throw new Error('Failed to generate response');
+      console.error('❌ [AZURE OPENAI] Error generating OpenAI response:', error);
+      
+      // Provide more detailed error information
+      if (error && typeof error === 'object' && 'status' in error) {
+        const apiError = error as any;
+        console.error('❌ [AZURE OPENAI] API Error Details:', {
+          status: apiError.status,
+          code: apiError.code,
+          type: apiError.type,
+          message: apiError.message
+        });
+        
+        if (apiError.status === 429) {
+          throw new Error('Rate limit exceeded - please try again in a moment');
+        } else if (apiError.status === 401) {
+          throw new Error('Authentication failed - please check Azure OpenAI credentials');
+        } else if (apiError.status === 404) {
+          throw new Error(`Model deployment '${this.modelDeployment}' not found`);
+        }
+      }
+      
+      throw new Error(`Failed to generate response: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -379,7 +383,6 @@ export class AzureOpenAIService {
 
   /**
    * Generate a domain-specific interview question based on context and conversation history
-   * This helper generates a single, concise question tailored to the interview type and candidate profile
    */
   async generateInterviewQuestion(): Promise<string> {
     if (!this.isInitialized || !this.client) {
@@ -407,154 +410,85 @@ export class AzureOpenAIService {
         
       case 'behavioral':
         questionPrompt += `Focus on behavioral assessment using STAR method.\n`;
-        questionPrompt += `Current role: ${currentRole || 'professional'}.\n`;
-        questionPrompt += `Experience: ${yearsExperience || 'several'} years.\n`;
-        questionPrompt += `Create STAR-format prompts about:\n`;
-        questionPrompt += `- Leadership and teamwork situations\n`;
-        questionPrompt += `- Conflict resolution examples\n`;
-        questionPrompt += `- Project management challenges\n`;
-        questionPrompt += `- Professional growth moments\n`;
+        questionPrompt += `Consider the candidate's role: ${currentRole || 'general position'}.\n`;
+        questionPrompt += `Ask about situations involving:\n`;
+        questionPrompt += `- Leadership and teamwork\n`;
+        questionPrompt += `- Conflict resolution\n`;
+        questionPrompt += `- Problem-solving under pressure\n`;
+        questionPrompt += `- Learning from failures\n`;
         break;
         
-      default: // 'general'
-        questionPrompt += `Focus on overall experience and motivation.\n`;
-        questionPrompt += `Role: ${currentRole || 'professional'}.\n`;
-        questionPrompt += `Skills: ${keySkills || 'various competencies'}.\n`;
-        questionPrompt += `Cover aspects such as:\n`;
-        questionPrompt += `- Career journey and transitions\n`;
-        questionPrompt += `- Professional motivations and goals\n`;
-        questionPrompt += `- Work style and preferences\n`;
-        questionPrompt += `- Learning and adaptation experiences\n`;
+      default:
+        questionPrompt += `Ask a general interview question.\n`;
+        questionPrompt += `Consider the candidate's background: ${currentRole || 'various roles'} with ${yearsExperience || 'some'} years experience.\n`;
+        questionPrompt += `Focus on motivation, goals, and cultural fit.\n`;
     }
-    
-    // Add difficulty adjustment
+
     if (difficulty) {
-      questionPrompt += `\nDifficulty level: ${difficulty}.`;
+      questionPrompt += `Difficulty level: ${difficulty}.\n`;
     }
     
-    // Add position context if available
     if (position) {
-      questionPrompt += `\nPosition being interviewed for: ${position}.`;
+      questionPrompt += `Position being interviewed for: ${position}.\n`;
     }
-    
-    // Add instruction for question format
-    questionPrompt += `\n\nRequirements:\n`;
-    questionPrompt += `- Make the question specific and actionable\n`;
-    questionPrompt += `- Keep it under 50 words\n`;
-    questionPrompt += `- Avoid yes/no questions\n`;
-    questionPrompt += `- Ensure it's appropriate for the experience level\n`;
-    
-    // Consider conversation history for context continuity
-    const recentContext = this.conversationHistory.slice(-4); // Last 2 exchanges
-    if (recentContext.length > 0) {
-      questionPrompt += `\n\nBuild upon but don't repeat topics from recent conversation.`;
-    }
+
+    questionPrompt += `\nReturn only the question text, no additional formatting or explanations.`;
 
     try {
-      // Create the messages array with system context and the prompt
-      const messages: ConversationMessage[] = [
-        {
-          role: 'system',
-          content: this.buildSystemContext()
-        },
-        ...recentContext,
-        {
-          role: 'user',
-          content: questionPrompt
-        }
-      ];
-
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
-        messages,
-        temperature: 0.8, // Slightly higher for more variety
+        messages: [{ role: 'user', content: questionPrompt }],
+        temperature: 0.8,
         max_tokens: 100,
         top_p: 0.9,
-        frequency_penalty: 0.3, // Reduce repetition
-        presence_penalty: 0.2,
       });
 
-      const question = completion.choices[0]?.message?.content || 
-        this.getFallbackQuestion();
-      
-      return question.trim();
+      const question = completion.choices[0]?.message?.content?.trim() || this.getFallbackQuestion();
+      return question;
     } catch (error) {
-      console.error('❌ Error generating interview question:', error);
-      // Return a fallback question based on type
+      console.warn('⚠️ Failed to generate interview question, using fallback');
       return this.getFallbackQuestion();
     }
   }
 
   /**
-   * Get a fallback question when generation fails
+   * Get fallback question when generation fails
    */
   private getFallbackQuestion(): string {
     const { type } = this.interviewContext;
-    const { currentRole, techStack, yearsExperience } = this.candidateProfile;
     
     switch (type) {
       case 'technical':
-        return `Can you describe a technical challenge you've faced with ${techStack || 'your current tech stack'} and how you solved it?`;
+        return "Tell me about a challenging technical problem you've solved recently.";
       case 'behavioral':
-        return `Tell me about a time when you had to work with a difficult team member. How did you handle the situation?`;
+        return "Can you describe a time when you had to work with a difficult team member?";
       default:
-        return `What interests you most about this opportunity and how does it align with your career goals?`;
+        return "What interests you most about this role?";
     }
   }
 
   /**
-   * Generate a completion for a given prompt
+   * Generate interview summary
    */
-  async generateCompletion(prompt: string): Promise<string> {
-    if (!this.isInitialized || !this.client) {
-      throw new Error('Azure OpenAI Service not initialized');
+  async generateInterviewSummary(): Promise<string | null> {
+    if (!this.isInitialized || !this.client || this.conversationHistory.length === 0) {
+      return null;
     }
+
+    const summaryPrompt = `Based on the following interview conversation, provide a brief summary of the candidate's performance, strengths, and areas for improvement. Keep it concise and professional.\n\nConversation:\n${this.conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}`;
 
     try {
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
-
-      return completion.choices[0]?.message?.content || 'Unable to generate completion.';
-    } catch (error) {
-      console.error('❌ Error generating completion:', error);
-      throw new Error('Failed to generate completion');
-    }
-  }
-
-  /**
-   * Generate interview summary and feedback
-   */
-  async generateInterviewSummary(): Promise<string> {
-    if (!this.isInitialized || !this.client) {
-      throw new Error('Azure OpenAI Service not initialized');
-    }
-
-    const summaryPrompt = {
-      role: 'system' as const,
-      content: `Based on the interview conversation, provide a brief summary of the candidate's performance, highlighting:\n1. Key strengths demonstrated\n2. Areas for improvement\n3. Overall assessment\n4. Recommendation\n\nKeep it concise and constructive (under 200 words).`
-    };
-
-    try {
-      const completion = await this.client.chat.completions.create({
-        model: this.modelDeployment,
-        messages: [...this.conversationHistory, summaryPrompt],
-        temperature: 0.3,
+        messages: [{ role: 'user', content: summaryPrompt }],
+        temperature: 0.5,
         max_tokens: 300,
       });
 
-      return completion.choices[0]?.message?.content || 'Unable to generate summary.';
+      return completion.choices[0]?.message?.content?.trim() || null;
     } catch (error) {
       console.error('❌ Error generating interview summary:', error);
-      throw new Error('Failed to generate summary');
+      return null;
     }
   }
 
@@ -562,38 +496,25 @@ export class AzureOpenAIService {
    * Get conversation history
    */
   getConversationHistory(): ConversationMessage[] {
-    return this.conversationHistory.filter(msg => msg.role !== 'system');
+    return this.conversationHistory;
   }
 
   /**
-   * Clear conversation history
+   * Reset the service state
    */
-  clearConversation(): void {
+  reset(): void {
     this.conversationHistory = [];
-    this.interviewContext.currentQuestionCount = 0;
-    this.interviewContext.preliminaryCollected = false;
     this.prelimIndex = 0;
     this.candidateProfile = {};
-    console.log('🧹 Conversation history cleared');
-  }
-
-  /**
-   * Check if service is ready
-   */
-  isReady(): boolean {
-    return this.isInitialized && this.client !== null;
-  }
-
-  /**
-   * Dispose of resources
-   */
-  dispose(): void {
-    this.client = null;
-    this.isInitialized = false;
-    this.conversationHistory = [];
-    console.log('🧹 Azure OpenAI Service disposed');
+    this.interviewContext = { 
+      type: 'general',
+      preliminaryCollected: false,
+      currentQuestionCount: 0,
+      maxQuestions: 10
+    };
+    console.log('🔄 Azure OpenAI Service state reset');
   }
 }
 
-// Export singleton instance
-export const azureOpenAIService = new AzureOpenAIService();
+// Create and export a singleton instance for use across the application
+export const azureOpenAIServiceServer = new AzureOpenAIServiceServer();
