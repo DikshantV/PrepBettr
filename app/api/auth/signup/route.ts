@@ -7,9 +7,19 @@ const SESSION_COOKIE_NAME = 'session';
 const SESSION_DURATION_S = 7 * 24 * 60 * 60; // 7 days
 
 export async function POST(request: NextRequest) {
-  console.log(`🆕 [${new Date().toISOString()}] AUTH SIGNUP POST called`);
+  const timestamp = new Date().toISOString();
+  console.log(`🆕 [${timestamp}] AUTH SIGNUP POST called`);
+  
   try {
     const { email, password, name, idToken } = await request.json();
+    
+    console.log(`🆕 [${timestamp}] Signup request details:`, {
+      hasEmail: !!email,
+      hasPassword: !!password,
+      hasName: !!name,
+      hasIdToken: !!idToken,
+      idTokenPrefix: idToken ? idToken.substring(0, 50) + '...' : 'none'
+    });
 
     if (!email) {
       return NextResponse.json(
@@ -24,18 +34,49 @@ export async function POST(request: NextRequest) {
 
     if (idToken) {
       // Handle Firebase ID token flow (for Google Sign-in)
-      console.log('🔐 Verifying Firebase ID token for Google Sign-up');
-      authResult = await verifyFirebaseToken(idToken);
+      console.log(`🔐 [${timestamp}] Verifying Firebase ID token for Google Sign-up`);
+      console.log(`🔐 [${timestamp}] ID Token format check:`, {
+        length: idToken.length,
+        parts: idToken.split('.').length,
+        startsCorrectly: idToken.startsWith('eyJ'),
+        preview: idToken.substring(0, 100) + '...'
+      });
+      
+      try {
+        authResult = await verifyFirebaseToken(idToken);
+        console.log(`🔐 [${timestamp}] Firebase token verification result:`, {
+          success: authResult.success,
+          hasUser: !!authResult.user,
+          uid: authResult.user?.uid,
+          error: authResult.error
+        });
+      } catch (verifyError) {
+        console.error(`🔐 [${timestamp}] Firebase token verification threw error:`, verifyError);
+        authResult = {
+          success: false,
+          user: null,
+          error: verifyError instanceof Error ? verifyError.message : 'Token verification failed'
+        };
+      }
       
       if (!authResult.success || !authResult.user) {
-        console.error('❌ Firebase ID token verification failed:', authResult.error);
+        console.error(`❌ [${timestamp}] Firebase ID token verification failed:`, {
+          error: authResult.error,
+          success: authResult.success,
+          hasUser: !!authResult.user
+        });
         return NextResponse.json(
-          { error: 'Invalid ID token' },
+          { error: `Invalid ID token: ${authResult.error}` },
           { status: 401 }
         );
       }
       
-      console.log(`✅ Firebase ID token verified for uid: ${authResult.user.uid}`);
+      console.log(`✅ [${timestamp}] Firebase ID token verified for uid: ${authResult.user.uid}`);
+      console.log(`✅ [${timestamp}] Token claims:`, {
+        email: authResult.user.email,
+        name: authResult.user.name,
+        emailVerified: authResult.user.email_verified
+      });
       
       // For Google sign-in, user already exists in Firebase Auth
       // We just need to ensure the profile exists in Firestore

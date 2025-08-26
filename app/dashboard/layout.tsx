@@ -8,21 +8,29 @@ import { AuthSync } from "@/components/AuthSync";
 import DashboardClient from "./DashboardClient";
 
 // Force dynamic rendering since we use cookies
-// export const dynamic = 'force-dynamic'; // Commented out for static export
-// export const revalidate = 0; // Commented out for static export
+export const dynamic = 'force-dynamic'; // Required for cookie access
+export const revalidate = 0; // Disable caching for auth
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export default async function Layout({ children }: DashboardLayoutProps) {
+  console.log('🏠 Dashboard layout: Starting authentication check...');
+  
   // Check authentication
-  if (!(await isAuthenticated())) {
+  const isAuth = await isAuthenticated();
+  console.log('🏠 Dashboard layout: Authentication result:', isAuth);
+  
+  if (!isAuth) {
+    console.log('🏠 Dashboard layout: User not authenticated, redirecting to sign-in');
     redirect('/sign-in');
   }
 
   // Get the current user to pass to the context
+  console.log('🏠 Dashboard layout: Getting current user...');
   const user = await getCurrentUser();
+  console.log('🏠 Dashboard layout: Current user:', user ? { uid: user.uid, email: user.email } : null);
   
   return (
     <AuthProvider initialUser={user}>

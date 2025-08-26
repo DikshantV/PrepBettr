@@ -61,7 +61,7 @@ class FirebaseUserService {
         return null;
       }
 
-      // Convert Firestore timestamps to Date objects
+      // Convert Firestore timestamps to Date objects (handle both Firestore Timestamp and regular dates)
       const profile: UserProfile = {
         uid,
         email: data.email,
@@ -70,8 +70,8 @@ class FirebaseUserService {
         phoneNumber: data.phoneNumber,
         emailVerified: data.emailVerified || false,
         plan: data.plan || 'free',
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date()),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt ? new Date(data.updatedAt) : new Date()),
         about: data.about,
         workplace: data.workplace,
         skills: data.skills || [],
