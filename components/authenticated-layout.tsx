@@ -20,8 +20,6 @@ import {
   User,
   Settings,
   FileText,
-  Shield,
-  Users,
   BarChart3,
   CreditCard,
   Search,
@@ -214,31 +212,6 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
     }
   };
 
-  // Check if current route is admin or account
-  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
-  
-  // Add admin items to navigation if on admin route
-  const navMainWithAdmin = isAdminRoute ? [
-    ...data.navMain,
-    {
-      title: "Administration",
-      url: "#",
-      icon: Shield,
-      isActive: false,
-      items: [
-        {
-          title: "Admin Dashboard",
-          url: "/admin",
-          icon: Shield,
-        },
-        {
-          title: "Subscriptions",
-          url: "/admin/subscriptions",
-          icon: Users,
-        },
-      ],
-    }
-  ] : data.navMain;
 
   return (
     <SidebarProvider 
@@ -281,7 +254,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
 
           {/* Navigation */}
           <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-6 group-data-[collapsible=icon]:flex-1">
-          {navMainWithAdmin.map((item) => (
+          {data.navMain.map((item) => (
             <Collapsible
               key={item.title}
               asChild
