@@ -8,6 +8,7 @@
   "build": "GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next build",
   "build:azure": "ENVIRONMENT=production BUILD_STANDALONE=true npm run build",
   "build:staging": "ENVIRONMENT=staging npm run build",
+  "build:check": "tsc --noEmit --skipLibCheck",
   "start": "GRPC_VERBOSITY=ERROR NODE_OPTIONS='--no-warnings --openssl-legacy-provider' next start",
   "lint": "next lint",
   "test": "jest",
