@@ -520,7 +520,7 @@ const Agent = ({
                             () => {
                                 dispatch({ type: 'RESET_TO_WAITING' });
                                 // Auto-start recording after opening message (first question)
-                                if (data.questionNumber <= 1 && !data.isComplete) {
+                                if ((data.questionNumber || 0) <= 1 && !data.isComplete) {
                                     logger.audio.record('Auto-starting recording after AI greeting');
                                     setTimeout(() => startRecording(), 1000); // Small delay
                                 }

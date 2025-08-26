@@ -8,8 +8,9 @@ import { handleAsyncError } from '@/lib/utils/error-utils';
  * Converts audio blobs to text using Azure Speech Services
  */
 export async function POST(request: NextRequest) {
-  return handleAsyncError(async () => {
-    logger.api.request('POST /api/voice/stream', 'Processing audio for speech-to-text');
+  return handleAsyncError(
+    async () => {
+      logger.api.request('POST /api/voice/stream', 'Processing audio for speech-to-text');
 
     try {
       const formData = await request.formData();
@@ -51,14 +52,14 @@ export async function POST(request: NextRequest) {
       // Configure Azure Speech SDK
       const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, speechRegion);
       speechConfig.speechRecognitionLanguage = 'en-US';
-      speechConfig.enableDictation = true;
+      speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceConnection_EnableAudioLogging, "false");
 
       // Create audio stream from buffer
       const audioFormat = SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
       const audioStream = SpeechSDK.AudioInputStream.createPushStream(audioFormat);
       
       // Push audio data to stream
-      audioStream.write(audioData);
+      audioStream.write(audioData.buffer);
       audioStream.close();
 
       const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(audioStream);
@@ -132,7 +133,9 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  });
+  },
+  'POST /api/voice/stream'
+  );
 }
 
 /**
