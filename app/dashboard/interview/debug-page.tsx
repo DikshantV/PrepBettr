@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Agent from "@/components/Agent";
 import { CodeEditorWrapper } from "@/components/CodeEditorWrapper";
-// Removed server-only import - auth handled by middleware and client auth state
 import PdfUploadButton from "@/components/dynamic/PdfUploadButtonDynamic";
-import BanterLoader from "@/components/ui/BanterLoader";
 
 const SUPPORTED_LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
@@ -19,12 +16,6 @@ const SUPPORTED_LANGUAGES = [
   { value: 'go', label: 'Go' },
   { value: 'ruby', label: 'Ruby' },
 ];
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
 
 interface ResumeData {
   questions: string[];
@@ -42,51 +33,19 @@ interface ResumeData {
   };
 }
 
-const Page = () => {
-    const router = useRouter();
+// DEBUG: Mock user without auth check
+const mockUser = {
+  id: 'debug-user-123',
+  name: 'Debug User',
+  email: 'debug@example.com'
+};
+
+const DebugPage = () => {
     const [isEditorExpanded, setIsEditorExpanded] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState('javascript');
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [resumeData, setResumeData] = useState<ResumeData | null>(null);
     
-
-    useEffect(() => {
-        // Check for user auth via API call instead of direct import
-        const fetchUser = async () => {
-            try {
-                const response = await fetch('/api/auth/user');
-                if (!response.ok) {
-                    console.error('Auth API failed with status:', response.status);
-                    router.push('/sign-in');
-                    return;
-                }
-                
-                const userData = await response.json();
-                if (!userData.user) {
-                    console.error('No user data received from auth API');
-                    router.push('/sign-in');
-                    return;
-                }
-                
-                setUser({
-                    id: userData.user.uid || userData.user.id,
-                    name: userData.user.name || userData.user.displayName || 'User',
-                    email: userData.user.email || ''
-                });
-                
-            } catch (error) {
-                console.error('Error fetching user:', error);
-                router.push('/sign-in');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUser();
-    }, [router]);
-
     // Handle successful resume upload
     const handleResumeUpload = (uploadResult: ResumeData) => {
         console.log('Resume uploaded successfully:', uploadResult);
@@ -96,18 +55,7 @@ const Page = () => {
     // Handle resume replacement
     const handleResumeReplaced = () => {
         console.log('Resume being replaced...');
-        // Could show a confirmation dialog here if needed
     };
-
-    if (isLoading) {
-        return (
-            <BanterLoader overlay />
-        );
-    }
-
-    if (!user) {
-        return null; // Redirecting to sign-in
-    }
 
     return (
         <div className="flex flex-col gap-8">
@@ -115,7 +63,7 @@ const Page = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-bold text-white">
-                            AI-Powered Mock Interview
+                            AI-Powered Mock Interview [DEBUG MODE]
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
@@ -132,7 +80,6 @@ const Page = () => {
                             onResumeReplaced={handleResumeReplaced}
                         />
                         <div className="flex items-center gap-2">
-
                             <button
                                 onClick={() => setIsEditorExpanded(!isEditorExpanded)}
                                 className="p-2 text-gray-300 hover:text-white rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors shadow-sm"
@@ -162,8 +109,8 @@ const Page = () => {
                 </div>
                 <div className="space-y-4">
                     <Agent
-                        userName={user.name}
-                        userId={user.id}
+                        userName={mockUser.name}
+                        userId={mockUser.id}
                         type="generate"
                         resumeInfo={resumeData?.extractedData}
                         resumeQuestions={resumeData?.questions}
@@ -225,4 +172,4 @@ const Page = () => {
     );
 };
 
-export default Page;
+export default DebugPage;

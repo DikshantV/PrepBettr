@@ -4,6 +4,12 @@ class AudioProcessor extends AudioWorkletProcessor {
         this.bufferSize = 4096;
         this.buffer = new Float32Array(this.bufferSize);
         this.bufferIndex = 0;
+        
+        // Voice activity detection
+        this.silenceThreshold = 0.01; // Same as audio-utils.ts
+        this.silenceFrames = 0;
+        this.maxSilenceFrames = 100; // ~2 seconds at 128 samples per frame
+        this.hasDetectedVoice = false;
     }
 
     process(inputs, outputs, parameters) {

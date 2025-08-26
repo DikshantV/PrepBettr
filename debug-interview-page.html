@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interview Page Debug</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #0a0a0a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 24px;
+        }
+        .button {
+            display: inline-block;
+            padding: 16px 32px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .center {
+            text-align: center;
+            padding: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="width: 48px; height: 48px; background-color: #4a5568; border-radius: 50%;"></div>
+            <div style="width: 1px; height: 40px; background-color: #4a5568;"></div>
+            <div>
+                <h2 style="margin: 0; font-size: 24px;">Frontend Developer Interview</h2>
+                <p style="margin: 4px 0 0 0; color: #a0a0a0;">Technical Interview</p>
+            </div>
+        </div>
+        
+        <div class="center">
+            <button class="button" onclick="alert('This would normally start the interview!')">
+                Start Interview
+            </button>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background-color: #2a2a2a; border-radius: 4px;">
+            <h3>Debug Info:</h3>
+            <p>✅ If you can see this page, HTML/CSS rendering works</p>
+            <p>🔍 If the actual interview page is blank, the issue is likely:</p>
+            <ul>
+                <li>JavaScript errors preventing React from rendering</li>
+                <li>CSS conflicts hiding the content</li>
+                <li>Component mounting issues</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        console.log('Debug page loaded successfully');
+        console.log('Screen dimensions:', window.innerWidth + 'x' + window.innerHeight);
+        console.log('User agent:', navigator.userAgent);
+    </script>
+</body>
+</html>

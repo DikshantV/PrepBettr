@@ -1,24 +1,49 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { azureInterviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
-import { 
-    SavedMessage, 
-    ConversationStartResponse, 
-    ConversationProcessResponse 
-} from "@/lib/types/voice";
-import { playAudioBuffer, validateAudioBuffer } from "@/lib/utils/audio-helpers";
-
-enum InterviewState {
-    READY = "READY",
-    ACTIVE = "ACTIVE",
-    FINISHED = "FINISHED",
-}
+import { logger } from "@/lib/utils/logger";
+import { handleAsyncError, showErrorNotification } from "@/lib/utils/error-utils";
+import {
+  AgentState,
+  InterviewState,
+  AudioState, 
+  agentReducer,
+  initialAgentState,
+  selectIsRecording,
+  selectIsProcessing,
+  selectIsSpeaking,
+  selectIsWaiting,
+  selectIsInterviewActive,
+  selectIsInterviewFinished,
+  selectShouldShowFeedback,
+  createStartInterviewAction,
+  createEndInterviewAction,
+  createAddUserMessageAction,
+  createAddAIMessageAction,
+  createUserSpokeAction
+} from "@/lib/voice/agent-state";
+import {
+  AUDIO_CONFIG,
+  prepareAudioForUpload,
+  createOptimizedAudioContext,
+  resumeAudioContext,
+  disposeAudioResources
+} from "@/lib/voice/audio-utils";
+import {
+  InterviewContext,
+  speechToText,
+  startConversation,
+  processAndPlayResponse,
+  endConversation,
+  playAIResponse,
+  playDirectAudioWithFallback
+} from "@/lib/voice/azure-adapters";
+import { SavedMessage } from "@/lib/types/voice";
 
 interface ExtractedResumeData {
     personalInfo?: {
@@ -62,472 +87,306 @@ const Agent = ({
     resumeQuestions,
 }: AgentProps) => {
     const router = useRouter();
-    const [interviewState, setInterviewState] = useState<InterviewState>(InterviewState.READY);
-    const [messages, setMessages] = useState<SavedMessage[]>([]);
-    const [isSpeaking, setIsSpeaking] = useState(false);
-    const [userImage, setUserImage] = useState<string>("");
-    const [feedbackGenerated, setFeedbackGenerated] = useState(false);
-    const [generatedFeedbackId, setGeneratedFeedbackId] = useState<string | null>(null);
-    const [isProcessingAI, setIsProcessingAI] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
-    const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-    const [isWaitingForUser, setIsWaitingForUser] = useState(false);
-    const [hasUserSpoken, setHasUserSpoken] = useState(false);
-    const [questionNumber, setQuestionNumber] = useState(0);
-    const [isInterviewComplete, setIsInterviewComplete] = useState(false);
+    const [state, dispatch] = useReducer(agentReducer, initialAgentState);
     
-    // Use useRef to persist audio nodes and prevent garbage collection
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-    const workletNodeRef = useRef<AudioWorkletNode | null>(null);
-    const audioStreamRef = useRef<MediaStream | null>(null);
-    const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Audio recording state
     const audioSamplesRef = useRef<Float32Array[]>([]);
     const isCurrentlyRecordingRef = useRef<boolean>(false);
-    const hasDetectedNonSilenceRef = useRef<boolean>(false);
-    const ringBufferRef = useRef<Float32Array[]>([]);
-
-    useEffect(() => {
-        fetch("/api/profile/me")
-            .then(async (res) => {
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data?.image) {
-                        setUserImage(data.image);
-                    }
-                }
-            })
-            .catch(console.error);
-    }, []);
+    const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const audioCleanupRef = useRef<(() => Promise<void>) | null>(null);
     
-    // Add visibility change listener to handle tab switches
+    // Voice activity detection state
+    const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastVoiceActivityRef = useRef<number>(0);
+    const SILENCE_DURATION_MS = 2000; // Stop recording after 2 seconds of silence
+
+    // Derived selectors from state
+    const isRecording = selectIsRecording(state);
+    const isProcessing = selectIsProcessing(state);
+    const isSpeaking = selectIsSpeaking(state);
+    const isWaiting = selectIsWaiting(state);
+    const isInterviewActive = selectIsInterviewActive(state);
+    const isInterviewFinished = selectIsInterviewFinished(state);
+    const shouldShowFeedback = selectShouldShowFeedback(state);
+
+    // Load user profile image with fallbacks
+    useEffect(() => {
+        const loadUserProfileImage = async () => {
+            try {
+                // Use existing auth endpoint that returns user data
+                const response = await fetch("/api/auth/user");
+                if (response.ok) {
+                    const userData = await response.json();
+                    const user = userData?.user;
+                    
+                    if (user) {
+                        // Try multiple sources for profile image
+                        const profileImage = 
+                            user.photoURL || // Firebase photoURL
+                            user.image || // Custom image field
+                            user.avatar || // Avatar field
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.name || userName)}&background=6366f1&color=fff&size=40`; // Generated avatar fallback
+                        
+                        if (profileImage) {
+                            dispatch({ type: 'SET_USER_IMAGE', payload: profileImage });
+                        }
+                    }
+                } else {
+                    // Silently fall back to generated avatar if auth fails
+                    const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
+                    dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
+                }
+            } catch (error) {
+                // Generate fallback avatar instead of logging error
+                // This prevents console spam for a non-critical feature
+                const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
+                dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
+            }
+        };
+        
+        // Add timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Profile image request timeout')), 5000);
+        });
+        
+        Promise.race([loadUserProfileImage(), timeoutPromise])
+            .catch(() => {
+                // Timeout fallback - use generated avatar
+                const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
+                dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
+            });
+    }, [userName]);
+    
+    // Handle tab visibility changes for audio context
     useEffect(() => {
         const handleVisibilityChange = () => {
-            if (!document.hidden && audioContextRef.current) {
-                // Resume AudioContext when tab becomes visible
-                if (audioContextRef.current.state === 'suspended') {
-                    audioContextRef.current.resume().then(() => {
-                        console.log('✅ AudioContext resumed after tab became visible');
-                    }).catch(error => {
-                        console.error('❌ Failed to resume AudioContext:', error);
-                    });
-                }
+            if (!document.hidden && (window as any).audioContext) {
+                handleAsyncError(
+                    () => resumeAudioContext((window as any).audioContext),
+                    'Failed to resume audio context on tab focus'
+                );
             }
         };
         
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    /**
-     * Get the best supported MIME type for MediaRecorder
-     */
-    const getSupportedMimeType = (): string | null => {
-        const preferredTypes = [
-            'audio/webm;codecs=pcm',     // Best: PCM in WebM container
-            'audio/wav',                 // Good: WAV format
-            'audio/webm;codecs=opus',    // Fallback: Opus in WebM (needs transcoding)
-            'audio/webm',                // Fallback: Default WebM
-            'audio/ogg;codecs=opus',     // Fallback: Opus in OGG (needs transcoding)
-            'audio/ogg',                 // Fallback: Default OGG
-        ];
-        
-        for (const mimeType of preferredTypes) {
-            if (MediaRecorder.isTypeSupported(mimeType)) {
-                console.log('✅ Selected MIME type:', mimeType);
-                return mimeType;
-            }
-        }
-        
-        console.warn('⚠️ No preferred MIME types supported, using default');
-        return null;
-    };
-
-    /**
-     * Maintain a ring-buffer of raw Float32 PCM chunks
-     */
-    let ringBuffer: Float32Array[] = [];
-    const ringBufferSize = 32; // Capacity to hold multiple chunks
-    let hasDetectedNonSilence = false;
-
-    const trimInitialSilence = (audioChunks: Float32Array[], sampleRate: number): Float32Array[] => {
-        const thresholdRMS = 0.01; // -40 dB ≈ 0.01 linear
-        const windowSamples = Math.floor(sampleRate * 0.2); // 200ms window
-        
-        // Concatenate all chunks for analysis
-        const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-        const combinedAudio = new Float32Array(totalLength);
-        let offset = 0;
-        for (const chunk of audioChunks) {
-            combinedAudio.set(chunk, offset);
-            offset += chunk.length;
-        }
-        
-        let startIndex = 0;
-        for (let i = 0; i <= combinedAudio.length - windowSamples; i += windowSamples / 4) { // 25% overlap
-            let windowRMS = 0;
-            for (let j = 0; j < windowSamples && (i + j) < combinedAudio.length; j++) {
-                windowRMS += combinedAudio[i + j] * combinedAudio[i + j];
-            }
-            windowRMS = Math.sqrt(windowRMS / windowSamples);
-
-            if (windowRMS > thresholdRMS) {
-                startIndex = i;
-                console.log(`🎤 Non-silence detected at sample ${startIndex}, RMS: ${windowRMS.toFixed(4)}`);
-                
-                // Set hasUserSpoken flag when non-silence is detected
-                if (!hasUserSpoken) {
-                    setHasUserSpoken(true);
-                    hasDetectedNonSilence = true;
-                    console.log('🎙️ First user speech detected - microphone will stop after AI response');
-                    console.debug('🔄 [USER_STATE] hasUserSpoken: false → true', {
-                        rmsValue: windowRMS.toFixed(4),
-                        threshold: thresholdRMS,
-                        timestamp: new Date().toISOString()
-                    });
-                }
-                break;
-            }
-        }
-
-        console.log(`Silence trimmed. Starting at sample: ${startIndex} of ${combinedAudio.length}`);
-        const trimmedAudio = combinedAudio.slice(startIndex);
-        
-        // Split back into chunks for consistent processing
-        const chunkSize = 4096;
-        const trimmedChunks: Float32Array[] = [];
-        for (let i = 0; i < trimmedAudio.length; i += chunkSize) {
-            const chunk = trimmedAudio.slice(i, i + chunkSize);
-            trimmedChunks.push(chunk);
-        }
-        
-        return trimmedChunks;
-    };
-
-    /**
-     * Convert Float32Array chunks to WAV blob
-     */
-    const convertToWav = (audioChunks: Float32Array[], sampleRate: number): Blob => {
-        const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-        const combinedAudio = new Float32Array(totalLength);
-        let offset = 0;
-        for (const chunk of audioChunks) {
-            combinedAudio.set(chunk, offset);
-            offset += chunk.length;
-        }
-
-        // Convert float samples to 16-bit PCM
-        const pcmData = new Int16Array(combinedAudio.length);
-        for (let i = 0; i < combinedAudio.length; i++) {
-            const sample = Math.max(-1, Math.min(1, combinedAudio[i]));
-            pcmData[i] = sample * 32767;
-        }
-
-        // Create WAV header
-        const wavHeader = new ArrayBuffer(44);
-        const view = new DataView(wavHeader);
-
-        const writeString = (offset: number, string: string) => {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        };
-
-        writeString(0, 'RIFF');
-        view.setUint32(4, 36 + pcmData.length * 2, true);
-        writeString(8, 'WAVE');
-        writeString(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, 1, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeString(36, 'data');
-        view.setUint32(40, pcmData.length * 2, true);
-
-        return new Blob([wavHeader, pcmData], { type: 'audio/wav' });
-    };
-
-    /**
-     * Send audio to backend for speech-to-text processing
-     */
-    const sendAudioToBackend = async (audioBlob: Blob): Promise<void> => {
+    const handleEndInterview = async (): Promise<void> => {
         try {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.wav');
-
-            console.log('📤 Uploading audio to speech-to-text service...');
+            logger.info('Ending interview', { totalMessages: state.messages.length, questionNumber: state.questionNumber });
             
-            // Retry logic with exponential backoff
-            let attempt = 0;
-            const maxAttempts = 3;
-            let result;
+            dispatch(createEndInterviewAction());
+            
+            // Generate summary if possible
+            await handleAsyncError(
+                async () => {
+                    const summaryData = await endConversation();
+                    if (summaryData.summary) {
+                        logger.info('Interview summary generated', { summaryLength: summaryData.summary.length });
+                    }
+                },
+                'Failed to generate interview summary'
+            );
+            
+            // Clean up audio resources
+            if (audioCleanupRef.current) {
+                await audioCleanupRef.current();
+                audioCleanupRef.current = null;
+            }
+            
+            // Clean up global window functions
+            delete (window as any).audioContext;
+            delete (window as any).startAudioContextRecording;
+            delete (window as any).stopAudioContextRecording;
+            
+            // Clear recording timeout if active
+            if (recordingTimeoutRef.current) {
+                clearTimeout(recordingTimeoutRef.current);
+                recordingTimeoutRef.current = null;
+            }
+            
+            logger.success('Interview ended successfully');
+        } catch (error) {
+            logger.error('Failed to end interview properly', error);
+            dispatch(createEndInterviewAction()); // Force end on error
+        }
+    };
 
-            while (attempt < maxAttempts) {
-                try {
-                    const response = await fetch('/api/voice/stream', {
-                        method: 'POST',
-                        body: formData,
+    // Auto-end interview when complete
+    useEffect(() => {
+        if (state.isInterviewComplete && isInterviewActive) {
+            logger.success('Interview completed - auto-ending in 2 seconds');
+            const timeoutId = setTimeout(() => {
+                handleEndInterview();
+            }, 2000);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [state.isInterviewComplete, isInterviewActive]);
+
+    // Generate feedback when interview finishes
+    useEffect(() => {
+        if (isInterviewFinished && state.messages.length > 0 && interviewId && type !== "generate") {
+            handleAsyncError(
+                async () => {
+                    const { success, feedbackId: id } = await createFeedback({
+                        interviewId: interviewId!,
+                        userId: userId!,
+                        transcript: state.messages,
+                        feedbackId,
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    result = await response.json();
-                    console.log('📥 Speech-to-text result:', result);
-                    break;
-                } catch (error) {
-                    attempt++;
-                    console.error(`❌ Attempt ${attempt} failed:`, error);
                     
-                    if (attempt < maxAttempts) {
-                        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-                        console.log(`⏳ Retrying in ${delay}ms...`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    } else {
-                        throw error;
+                    if (success && id) {
+                        dispatch({ 
+                            type: 'SET_FEEDBACK_GENERATED', 
+                            payload: { generated: true, id } 
+                        });
+                        logger.success('Feedback generated successfully', { id });
                     }
-                }
-            }
+                },
+                'Failed to generate feedback'
+            );
+        }
+    }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId]);
 
-            // Hard failure if text is undefined to prevent silent drops
-            if (result.text === undefined) {
-                throw new Error('Speech-to-text response missing text field - preventing silent drop');
-            }
+    /**
+     * Process audio recording and handle transcription
+     */
+    const processAudioRecording = async (audioChunks: Float32Array[], sampleRate: number): Promise<void> => {
+        const { blob, hasValidAudio } = prepareAudioForUpload(audioChunks, sampleRate);
+        
+        if (!hasValidAudio) {
+            logger.warn('No valid audio detected, resuming waiting state');
+            dispatch({ type: 'RESET_TO_WAITING' });
+            return;
+        }
 
-            const transcript = result.text;
-            if (!transcript || transcript.trim().length === 0) {
-                console.log('⚠️ Empty transcript received');
-                setIsWaitingForUser(true);
+        try {
+            // Convert to text
+            const transcript = await speechToText(blob);
+            
+            if (!transcript?.trim()) {
+                logger.warn('Empty transcript received');
+                dispatch({ type: 'RESET_TO_WAITING' });
                 return;
             }
 
-            console.log('✅ Transcript received:', transcript);
+            // Mark user as having spoken if first speech detected
+            if (!state.hasUserSpoken) {
+                dispatch(createUserSpokeAction());
+            }
 
-            // Process with AI (handleAIProcess will add both user and AI messages)
-            setIsProcessingAI(true);
-            await handleAIProcess(transcript);
+            // Process conversation with AI
+            await handleConversationTurn(transcript);
 
         } catch (error) {
-            console.error('❌ Error sending audio to backend:', error);
-            setIsWaitingForUser(true);
-            alert(`Error processing audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            logger.error('Audio processing failed', error);
+            dispatch({ type: 'RESET_TO_WAITING' });
+            showErrorNotification(error instanceof Error ? error : new Error('Audio processing failed'));
         }
     };
 
     /**
-     * Process user transcript with AI and get response
+     * Handle conversation turn with Azure services
      */
-    const handleAIProcess = async (userTranscript: string): Promise<void> => {
+    const handleConversationTurn = async (userTranscript: string): Promise<void> => {
         try {
-            const response = await fetch('/api/voice/conversation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: "process",
-                    userTranscript,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: response.statusText }));
-                throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('🤖 AI response received:', data);
-
-            // Append userTranscript to messages
-            const userMessage: SavedMessage = { role: "user", content: userTranscript };
+            console.log('🎯 [AGENT] Starting conversation turn with transcript:', userTranscript.substring(0, 50) + '...');
             
-            // Append AI reply to messages
-            const aiMessage: SavedMessage = { role: "assistant", content: data.message };
-            setMessages(prev => [...prev, userMessage, aiMessage]);
-
-            // Update questionNumber and isComplete
-            if (data.questionNumber !== undefined) {
-                setQuestionNumber(data.questionNumber);
-            }
-            if (data.isComplete !== undefined) {
-                setIsInterviewComplete(data.isComplete);
-            }
-
-            // Play reply audio if supplied, else TTS fallback
-            if (data.hasAudio && validateAudioBuffer(data.audioData)) {
-                try {
-                    setIsSpeaking(true);
-                    await playAudioBuffer(data.audioData!);
-                    setIsSpeaking(false);
-                    setIsProcessingAI(false);
-                    setIsWaitingForUser(true);
+            const response = await processAndPlayResponse(
+                userTranscript,
+                () => {
+                    console.log('🎯 [AGENT] AI response started - dispatching START_SPEAKING');
+                    dispatch({ type: 'START_SPEAKING' });
+                },
+                () => {
+                    console.log('🎯 [AGENT] AI response completed - dispatching RESET_TO_WAITING');
+                    dispatch({ type: 'RESET_TO_WAITING' });
                     
-                    // Auto-start recording if interview is not complete
-                    if (!isInterviewComplete && (window as any).startAudioContextRecording) {
-                        console.log('🎤 Auto-starting recording after AI response');
-                        console.debug('🔄 [AUTO_RECORD] Auto-starting recording', {
-                            isInterviewComplete,
-                            hasUserSpoken,
-                            questionNumber,
-                            timestamp: new Date().toISOString()
-                        });
-                        (window as any).startAudioContextRecording();
-                    }
-                } catch (audioError) {
-                    console.error('❌ Error playing direct audio, falling back to TTS:', audioError);
-                    setIsSpeaking(false);
-                    setIsProcessingAI(false);
-                    // TTS fallback
-                    await playAIResponse(data.message);
-                }
-            } else {
-                // TTS fallback
-                await playAIResponse(data.message);
-            }
-
-        } catch (error) {
-            console.error('❌ Error processing with AI:', error);
-            setIsProcessingAI(false);
-            setIsWaitingForUser(true);
-            
-            // Show user-friendly error message
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            alert(`Error processing your response: ${errorMessage}`);
-        }
-    };
-
-    /**
-     * Convert text to speech using Azure Speech Services and play it
-     */
-    const playAIResponse = async (text: string): Promise<void> => {
-        try {
-            setIsSpeaking(true);
-            
-            const response = await fetch('/api/voice/tts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+                    // Use response data after it's available
+                    setTimeout(() => {
+                        if (!response.isComplete && !state.isInterviewComplete && (window as any).startAudioContextRecording) {
+                            logger.audio.record('Auto-starting recording after AI response');
+                            setTimeout(() => {
+                                if ((window as any).startAudioContextRecording) {
+                                    console.log('🎯 [AGENT] Auto-starting recording after AI response');
+                                    (window as any).startAudioContextRecording();
+                                }
+                            }, 500);
+                        }
+                    }, 100); // Small delay to ensure response is available
                 },
-                body: JSON.stringify({ text }),
+                (error) => {
+                    console.warn('🎯 [AGENT] Audio playback had issues:', error.message);
+                    logger.warn('Audio playback had issues, continuing conversation', error);
+                    dispatch({ type: 'RESET_TO_WAITING' });
+                    
+                    // Use response data after it's available  
+                    setTimeout(() => {
+                        if (!response.isComplete && !state.isInterviewComplete && (window as any).startAudioContextRecording) {
+                            logger.audio.record('Continuing recording despite audio issues');
+                            setTimeout(() => {
+                                if ((window as any).startAudioContextRecording) {
+                                    console.log('🎯 [AGENT] Continuing recording despite audio issues');
+                                    (window as any).startAudioContextRecording();
+                                }
+                            }, 1000);
+                        }
+                    }, 100);
+                }
+            );
+
+            console.log('🎯 [AGENT] Got response:', {
+                questionNumber: response.questionNumber,
+                isComplete: response.isComplete,
+                userMessageLength: response.userMessage.content.length,
+                aiMessageLength: response.aiMessage.content.length
             });
 
-            if (!response.ok) {
-                throw new Error(`TTS failed: ${response.statusText}`);
+            const { userMessage, aiMessage, questionNumber, isComplete } = response;
+
+            // Update state with messages and progress
+            dispatch({ type: 'ADD_MESSAGES', payload: [userMessage, aiMessage] });
+            
+            if (questionNumber !== undefined) {
+                dispatch({ type: 'SET_QUESTION_NUMBER', payload: questionNumber });
+            }
+            
+            if (isComplete !== undefined) {
+                dispatch({ type: 'SET_INTERVIEW_COMPLETE', payload: isComplete });
             }
 
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-
-            audio.onended = () => {
-                console.log('🔊 AI response playback completed');
-                setIsSpeaking(false);
-                setIsProcessingAI(false);
-                setIsWaitingForUser(true);
-                
-                // Clean up the object URL
-                URL.revokeObjectURL(audioUrl);
-                
-                // Check for pending auto-start (from initial greeting)
-                if ((window as any).pendingAutoStart) {
-                    (window as any).pendingAutoStart();
-                    delete (window as any).pendingAutoStart;
-                } else if (!isInterviewComplete && (window as any).startAudioContextRecording) {
-                    // Auto-start recording if interview is not complete
-                    console.log('🎤 Auto-starting recording after AI response');
-                    console.debug('🔄 [AUTO_RECORD] Auto-starting recording after TTS', {
-                        isInterviewComplete,
-                        hasUserSpoken,
-                        questionNumber,
-                        timestamp: new Date().toISOString()
-                    });
-                    (window as any).startAudioContextRecording();
-                }
-            };
-
-            audio.onerror = (error) => {
-                console.error('❌ Audio playback error:', error);
-                setIsSpeaking(false);
-                setIsProcessingAI(false);
-                setIsWaitingForUser(true);
-                URL.revokeObjectURL(audioUrl);
-                
-                // Don't auto-start recording on error
-            };
-
-            await audio.play();
-            
         } catch (error) {
-            console.error('❌ Error playing AI response:', error);
-            setIsSpeaking(false);
-            setIsProcessingAI(false);
-            setIsWaitingForUser(true);
+            console.error('🎯 [AGENT] Conversation processing failed:', error);
+            logger.error('Conversation processing failed', error instanceof Error ? error : new Error('Conversation failed'));
+            dispatch({ type: 'RESET_TO_WAITING' });
+            showErrorNotification(error instanceof Error ? error : new Error('Conversation failed'));
         }
     };
 
-    const startInterview = async () => {
+    const handleStartInterview = async (): Promise<void> => {
         try {
-            console.log('🎙️ Starting Azure-powered voice interview...');
-            console.debug('🔄 [INTERVIEW_STATE] Starting interview', {
-                previousState: interviewState,
-                newState: InterviewState.ACTIVE,
+            logger.info('Starting Azure-powered voice interview', { userName, type, interviewId });
+            
+            dispatch(createStartInterviewAction());
+
+            // Setup optimized audio context
+            const { context, source, workletNode, cleanup } = await createOptimizedAudioContext();
+            
+            // Store cleanup function
+            audioCleanupRef.current = cleanup;
+            (window as any).audioContext = context;
+            
+            dispatch({ type: 'SET_AUDIO_STREAM', payload: context.state as any }); // Store reference
+
+            // Build interview context
+            const interviewContext: InterviewContext = {
                 userName,
-                type,
-                interviewId,
-                timestamp: new Date().toISOString()
-            });
-            
-            setInterviewState(InterviewState.ACTIVE);
-
-            // Step 1: Get microphone stream (permission already granted by parent)
-            console.log('🎤 Getting microphone stream...');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: false,
-                    sampleRate: 16000,
-                    channelCount: 1,
-                }
-            });
-            
-            audioStreamRef.current = stream;
-            setAudioStream(stream);
-            console.log('✅ Microphone stream obtained');
-
-            // Step 2: Setup audio context and worklet for recording
-            const context = new (window.AudioContext || (window as any).webkitAudioContext)({
-                sampleRate: 16000
-            });
-            audioContextRef.current = context;
-
-            // Load the audio processor worklet
-            await context.audioWorklet.addModule('/audio-processor.js');
-
-            const micSource = context.createMediaStreamSource(stream);
-            const workletNode = new AudioWorkletNode(context, 'audio-processor');
-            
-            micSourceRef.current = micSource;
-            workletNodeRef.current = workletNode;
-
-            micSource.connect(workletNode);
-
-            // Step 3: Build interview context and get AI intro
-            const interviewContext = {
-                userName,
-                questions: resumeQuestions || questions, // Prioritize resume-generated questions
+                questions: resumeQuestions || questions,
                 type,
                 userId,
                 interviewId,
                 feedbackId,
-                // Include resume information for better context
                 resumeInfo: resumeInfo ? {
                     hasResume: true,
                     candidateName: resumeInfo.personalInfo?.name || userName,
@@ -545,331 +404,154 @@ const Agent = ({
                 }
             };
 
-            const response = await fetch('/api/voice/conversation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: "start",
-                    interviewContext
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('🤖 AI start response received:', data);
-
-            const openingMessage = data.message;
-            setQuestionNumber(data.questionNumber || 0);
-            setIsInterviewComplete(data.isComplete || false);
-
-            // Add AI opening message to conversation
-            const aiMessage: SavedMessage = { role: "assistant", content: openingMessage };
-            setMessages(prev => [...prev, aiMessage]);
-
-            // Step 4: Play AI opening message and setup recording functions
-            // Store the function references for auto-start after playback
-            const autoStartAfterGreeting = () => {
-                if (data.questionNumber === 0 && (window as any).startAudioContextRecording) {
-                    console.log('🎤 Auto-starting recording after initial greeting');
-                    (window as any).startAudioContextRecording();
-                }
-            };
-
-            if (data.hasAudio && validateAudioBuffer(data.audioData)) {
-                try {
-                    setIsSpeaking(true);
-                    await playAudioBuffer(data.audioData!);
-                    setIsSpeaking(false);
-                    setIsWaitingForUser(true);
-                    
-            // Auto-start recording after initial greeting (questionNumber === 0)
-            console.debug('🔄 [AUTO_RECORD] Checking for auto-start after greeting', {
+            // Start conversation with Azure
+            console.log('🎯 [AGENT DEBUG] About to start conversation...');
+            const data = await startConversation(interviewContext);
+            console.log('🎯 [AGENT DEBUG] Received conversation data:', {
+                messageLength: data.message?.length,
                 questionNumber: data.questionNumber,
-                shouldAutoStart: data.questionNumber === 0,
-                timestamp: new Date().toISOString()
+                isComplete: data.isComplete,
+                hasAudio: data.hasAudio
             });
-            autoStartAfterGreeting();
-                } catch (audioError) {
-                    console.error('❌ Error playing direct audio, falling back to playAIResponse:', audioError);
-                    setIsSpeaking(false);
-                    // Fallback to existing playAIResponse
-                    // Temporarily store the auto-start function to be called after TTS playback
-                    (window as any).pendingAutoStart = autoStartAfterGreeting;
-                    await playAIResponse(openingMessage);
-                }
-            } else {
-                // Fallback to existing playAIResponse
-                // Temporarily store the auto-start function to be called after TTS playback
-                (window as any).pendingAutoStart = autoStartAfterGreeting;
-                await playAIResponse(openingMessage);
+            
+            // Update state with initial AI message and progress
+            console.log('🎯 [AGENT DEBUG] Adding AI message to state...');
+            dispatch(createAddAIMessageAction(data.message));
+            
+            if (data.questionNumber !== undefined) {
+                dispatch({ type: 'SET_QUESTION_NUMBER', payload: data.questionNumber });
+            }
+            
+            if (data.isComplete !== undefined) {
+                dispatch({ type: 'SET_INTERVIEW_COMPLETE', payload: data.isComplete });
             }
 
-            let recordingTimeoutId: NodeJS.Timeout | null = null;
-
-            // Handle audio data from worklet
+            // Setup audio recording handlers with voice activity detection
             workletNode.port.onmessage = (event) => {
-                if (event.data.type === 'audio') {
-                    const audioData = event.data.audioData as Float32Array;
+                if (event.data.type === 'audiodata' && isCurrentlyRecordingRef.current) {
+                    audioSamplesRef.current.push(new Float32Array(event.data.audioData));
+                    logger.audio.record(`Audio chunk received (${event.data.audioData.length} samples)`);
+                } else if (event.data.type === 'level') {
+                    const rms = event.data.rms;
                     
                     if (isCurrentlyRecordingRef.current) {
-                        audioSamplesRef.current.push(new Float32Array(audioData));
+                        if (rms > 0.01) {
+                            // Voice detected - reset silence timeout
+                            lastVoiceActivityRef.current = Date.now();
+                            if (silenceTimeoutRef.current) {
+                                clearTimeout(silenceTimeoutRef.current);
+                                silenceTimeoutRef.current = null;
+                            }
+                            logger.audio.record(`Voice activity: RMS ${rms.toFixed(4)}`);
+                        } else if (lastVoiceActivityRef.current > 0) {
+                            // Check if we've been silent for too long
+                            const silenceDuration = Date.now() - lastVoiceActivityRef.current;
+                            
+                            if (silenceDuration > SILENCE_DURATION_MS && !silenceTimeoutRef.current) {
+                                logger.audio.record('Voice activity stopped - auto-stopping recording');
+                                silenceTimeoutRef.current = setTimeout(() => {
+                                    if (isCurrentlyRecordingRef.current && (window as any).stopAudioContextRecording) {
+                                        logger.audio.record('Auto-stopping recording after silence');
+                                        (window as any).stopAudioContextRecording();
+                                    }
+                                }, 100); // Small delay to ensure clean stop
+                            }
+                        }
                     }
                 }
             };
 
-            const startAudioContextRecording = () => {
-                try {
-                    console.log('🎤 Starting recording...');
-                    console.debug('🔄 [RECORDING_STATE] Starting recording', {
-                        previousState: isCurrentlyRecordingRef.current,
-                        newState: true,
-                        isWaitingForUser: isWaitingForUser,
-                        hasUserSpoken: hasUserSpoken,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    audioSamplesRef.current = [];
-                    isCurrentlyRecordingRef.current = true;
-                    setIsRecording(true);
-                    setIsWaitingForUser(false);
-
-                    // Set a timeout to stop recording after 30 seconds
-                    recordingTimeoutId = setTimeout(() => {
-                        console.log('⏱️ Recording timeout reached');
-                        console.debug('⚠️ [RECORDING_TIMEOUT] 30 second timeout triggered', {
-                            samplesCollected: audioSamplesRef.current.length,
-                            timestamp: new Date().toISOString()
-                        });
-                        stopAudioContextRecording();
-                    }, 30000);
-                } catch (error) {
-                    console.error('❌ [ERROR] Failed to start recording:', error);
-                    console.debug('🔍 [ERROR_DETAILS]', {
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                        stack: error instanceof Error ? error.stack : undefined,
-                        timestamp: new Date().toISOString()
-                    });
-                    setIsRecording(false);
-                    setIsWaitingForUser(true);
-                }
-            };
-
-            const stopAudioContextRecording = () => {
-                if (!isCurrentlyRecordingRef.current) {
-                    console.log('⚠️ Recording already stopped');
-                    console.debug('🔍 [RECORDING_STATE] Stop called but recording already stopped', {
-                        timestamp: new Date().toISOString()
-                    });
-                    return;
-                }
-
-                try {
-                    console.log('⏹️ Stopping recording...');
-                    console.debug('🔄 [RECORDING_STATE] Stopping recording', {
-                        previousState: isCurrentlyRecordingRef.current,
-                        newState: false,
-                        samplesCollected: audioSamplesRef.current.length,
-                        hasUserSpoken: hasUserSpoken,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    isCurrentlyRecordingRef.current = false;
-                    setIsRecording(false);
-
-                    if (recordingTimeoutId) {
-                        clearTimeout(recordingTimeoutId);
-                        recordingTimeoutId = null;
-                    }
-
-                    if (audioSamplesRef.current.length > 0) {
-                        console.log(`📊 Processing ${audioSamplesRef.current.length} audio chunks`);
-                        console.debug('🎯 [AUDIO_PROCESSING] Starting audio processing', {
-                            chunks: audioSamplesRef.current.length,
-                            totalSamples: audioSamplesRef.current.reduce((acc, chunk) => acc + chunk.length, 0),
-                            sampleRate: context.sampleRate,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // Trim silence and convert to WAV
-                        const trimmedChunks = trimInitialSilence(audioSamplesRef.current, context.sampleRate);
-                        const audioBlob = convertToWav(trimmedChunks, context.sampleRate);
-                        
-                        console.debug('📤 [AUDIO_UPLOAD] Sending audio to backend', {
-                            blobSize: audioBlob.size,
-                            blobType: audioBlob.type,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // Send to backend for processing
-                        sendAudioToBackend(audioBlob);
-                    } else {
-                        console.log('⚠️ No audio data recorded');
-                        console.debug('🔍 [RECORDING_EMPTY] No audio samples collected', {
-                            timestamp: new Date().toISOString()
-                        });
-                        setIsWaitingForUser(true);
-                    }
-                } catch (error) {
-                    console.error('❌ [ERROR] Failed to stop recording:', error);
-                    console.debug('🔍 [ERROR_DETAILS]', {
-                        error: error instanceof Error ? error.message : 'Unknown error',
-                        stack: error instanceof Error ? error.stack : undefined,
-                        samplesCollected: audioSamplesRef.current.length,
-                        timestamp: new Date().toISOString()
-                    });
-                    setIsRecording(false);
-                    setIsWaitingForUser(true);
-                }
-            };
-
-            const cleanup = async () => {
-                console.log('🧹 Cleaning up audio resources...');
-                if (recordingTimeoutId) {
-                    clearTimeout(recordingTimeoutId);
-                    recordingTimeoutId = null;
-                }
-                micSource?.disconnect();
-                if (workletNode) {
-                    workletNode.port.onmessage = null;
-                }
-                // Guard AudioContext.close() calls
-                if (context && context.state !== 'closed') {
-                    await context.close();
-                }
-                stream.getTracks().forEach(track => track.stop());
-                setAudioStream(null);
-            };
-            
-            // Store functions for later cleanup
-            (window as any).audioRecorderCleanup = cleanup;
-            (window as any).startAudioContextRecording = startAudioContextRecording;
-            (window as any).stopAudioContextRecording = stopAudioContextRecording;
-            
-            console.log('✅ Voice interview started successfully');
-
-        } catch (error) {
-            console.error('❌ Error during voice interview start:', error);
-            setInterviewState(InterviewState.READY);
-            alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    };
-
-    const endInterview = async () => {
-        try {
-            console.log('🏁 Ending interview...');
-            console.debug('🔄 [INTERVIEW_STATE] Ending interview', {
-                previousState: interviewState,
-                newState: InterviewState.FINISHED,
-                totalMessages: messages.length,
-                hasUserSpoken,
-                questionNumber,
-                timestamp: new Date().toISOString()
-            });
-            
-            setInterviewState(InterviewState.FINISHED);
-            
-            // Call summary action (optional for future use)
-            try {
-                const summaryResponse = await fetch('/api/voice/conversation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: "summary",
-                    }),
-                });
+            const startRecording = () => {
+                if (isCurrentlyRecordingRef.current) return;
                 
-                if (summaryResponse.ok) {
-                    const summaryData = await summaryResponse.json();
-                    console.log('📋 Interview summary generated:', summaryData.summary);
-                    // Summary is available in summaryData.summary if needed in the future
-                } else {
-                    console.warn('⚠️ Failed to generate interview summary:', summaryResponse.statusText);
-                }
-            } catch (summaryError) {
-                console.warn('⚠️ Error generating interview summary:', summaryError);
-                // Continue with cleanup even if summary fails
-            }
-            
-            // Handle AudioContext cleanup
-            if ((window as any).audioRecorderCleanup) {
-                (window as any).audioRecorderCleanup();
-                delete (window as any).audioRecorderCleanup;
-                delete (window as any).startAudioContextRecording;
-                delete (window as any).stopAudioContextRecording;
-            }
-            
-            // Stop the audio stream if it exists
-            if (audioStream) {
-                audioStream.getTracks().forEach(track => track.stop());
-                setAudioStream(null);
-            }
-            
-            // Clean up AudioContext with guard
-            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-                await audioContextRef.current.close();
-                audioContextRef.current = null;
-            }
-            
-            setIsRecording(false);
-            setIsWaitingForUser(false);
-            setHasUserSpoken(false);
+                logger.audio.record('Starting audio recording');
+                audioSamplesRef.current = [];
+                isCurrentlyRecordingRef.current = true;
+                dispatch({ type: 'START_RECORDING' });
 
-            console.log('✅ Voice interview ended');
+                recordingTimeoutRef.current = setTimeout(() => {
+                    logger.warn('Recording timeout reached (8s)');
+                    stopRecording();
+                }, 30000); // Increased to 30 seconds for better user experience
+            };
+
+            const stopRecording = () => {
+                if (!isCurrentlyRecordingRef.current) return;
+                
+                logger.audio.record('Stopping audio recording');
+                isCurrentlyRecordingRef.current = false;
+                dispatch({ type: 'STOP_RECORDING' });
+                
+                if (recordingTimeoutRef.current) {
+                    clearTimeout(recordingTimeoutRef.current);
+                    recordingTimeoutRef.current = null;
+                }
+                
+                if (audioSamplesRef.current.length > 0) {
+                    processAudioRecording(audioSamplesRef.current, context.sampleRate);
+                }
+            };
+
+            // Store global functions for manual control
+            (window as any).startAudioContextRecording = startRecording;
+            (window as any).stopAudioContextRecording = stopRecording;
+
+            // Play opening message and setup auto-recording
+            await handleAsyncError(
+                async () => {
+                    if (data.hasAudio) {
+                        await playDirectAudioWithFallback(
+                            data.audioData!,
+                            data.message,
+                            () => dispatch({ type: 'START_SPEAKING' }),
+                            () => {
+                                dispatch({ type: 'RESET_TO_WAITING' });
+                                // Auto-start recording for initial greeting
+                                if (data.questionNumber === 0) {
+                                    logger.audio.record('Auto-starting recording after greeting');
+                                    startRecording();
+                                }
+                            }
+                        );
+                    } else {
+                        await playAIResponse(
+                            data.message,
+                            () => dispatch({ type: 'START_SPEAKING' }),
+                            () => {
+                                dispatch({ type: 'RESET_TO_WAITING' });
+                                // Auto-start recording after opening message (first question)
+                                if (data.questionNumber <= 1 && !data.isComplete) {
+                                    logger.audio.record('Auto-starting recording after AI greeting');
+                                    setTimeout(() => startRecording(), 1000); // Small delay
+                                }
+                            }
+                        );
+                    }
+                },
+                'Failed to play opening message'
+            );
+            
+            logger.success('Voice interview started successfully');
+
         } catch (error) {
-            console.error('Error ending interview:', error);
-            setInterviewState(InterviewState.FINISHED);
+            logger.error('Failed to start interview', error);
+            dispatch({ type: 'SET_INTERVIEW_STATE', payload: InterviewState.READY });
+            showErrorNotification(error instanceof Error ? error : new Error('Failed to start interview'));
         }
     };
 
-    // Auto-end interview when isInterviewComplete becomes true
+
+    // Cleanup on unmount
     useEffect(() => {
-        if (isInterviewComplete && interviewState === InterviewState.ACTIVE) {
-            console.log('🎉 Interview complete - auto-ending interview');
-            // Add a small delay to allow the final "thank you" message to play
-            setTimeout(() => {
-                endInterview();
-            }, 2000);
-        }
-    }, [isInterviewComplete, interviewState]);
-
-    useEffect(() => {
-
-        const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-            console.log("handleGenerateFeedback");
-
-            const { success, feedbackId: id } = await createFeedback({
-                interviewId: interviewId!,
-                userId: userId!,
-                transcript: messages,
-                feedbackId,
-            });
-
-            if (success && id) {
-                setFeedbackGenerated(true);
-                setGeneratedFeedbackId(id);
-                console.log("Feedback generated successfully:", id);
-            } else {
-                console.log("Error saving feedback");
+        return () => {
+            if (audioCleanupRef.current) {
+                audioCleanupRef.current();
+            }
+            if (recordingTimeoutRef.current) {
+                clearTimeout(recordingTimeoutRef.current);
             }
         };
-
-        if (interviewState === InterviewState.FINISHED) {
-            if (type === "generate") {
-                // For generate type, don't redirect anywhere - stay on current page
-                console.log("Interview generation completed");
-            } else if (interviewId && messages.length > 0) {
-                // Only generate feedback if we have an interviewId and messages
-                handleGenerateFeedback(messages);
-            }
-        }
-    }, [messages, interviewState, feedbackId, interviewId, router, type, userId]);
+    }, []);
 
     return (
         <>
@@ -887,19 +569,19 @@ const Agent = ({
                         {isSpeaking && <span className="animate-speak" />}
                     </div>
                     <h3>AI Interviewer</h3>
-                    {isProcessingAI && (
+                    {isProcessing && (
                         <div className="mt-2">
                             <span className="text-xs text-blue-600 dark:text-blue-400">Processing...</span>
                         </div>
                     )}
-                    {isWaitingForUser && (
+                    {isWaiting && (
                         <div className="mt-2">
                             <span className="text-xs text-green-600 dark:text-green-400 animate-pulse">
-                                {hasUserSpoken ? '🎤 Listening...' : '🎙️ Microphone open - speak anytime'}
+                                {state.hasUserSpoken ? '🎤 Listening...' : '🎙️ Ready to listen'}
                             </span>
                         </div>
                     )}
-                    {isRecording && !isWaitingForUser && (
+                    {isRecording && (
                         <div className="mt-2">
                             <span className="text-xs text-red-600 dark:text-red-400 animate-pulse">🔴 Recording...</span>
                         </div>
@@ -910,9 +592,9 @@ const Agent = ({
                 <div className="card-border">
                     <div className="card-content">
                         <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden">
-                            {userImage ? (
+                            {state.userImage ? (
                                 <Image
-                                    src={userImage}
+                                    src={state.userImage}
                                     alt="profile-image"
                                     fill
                                     sizes="120px"
@@ -948,14 +630,14 @@ const Agent = ({
                 </div>
             </div>
 
-            {messages.length > 0 && (
+            {state.messages.length > 0 && (
                 <div className="transcript-border">
                     <div className="dark-gradient rounded-2xl min-h-12 px-5 py-3 flex flex-col border-l-4 border-blue-500">
                         <div className="transcript-header mb-3">
                             <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 text-left">Live Transcript</h4>
                         </div>
                         <div className="transcript-messages max-h-40 overflow-y-auto space-y-2">
-                            {messages.map((message, index) => (
+                            {state.messages.map((message, index) => (
                                 <div 
                                     key={index}
                                     className={cn(
@@ -985,15 +667,16 @@ const Agent = ({
                 </div>
             )}
 
+            {/* Simple Interview Controls */}
             <div className="w-full flex justify-center gap-4">
-                {interviewState !== InterviewState.ACTIVE ? (
+                {!isInterviewActive ? (
                     <>
-                        <button className="relative btn-call" onClick={() => startInterview()}>
+                        <button className="relative btn-call" onClick={handleStartInterview}>
                             <span className="relative">
                                 Start Interview
                             </span>
                         </button>
-                        {feedbackGenerated && generatedFeedbackId && (
+                        {shouldShowFeedback && (
                             <button 
                                 className="btn-secondary" 
                                 onClick={() => router.push(`/dashboard/interview/${interviewId}/feedback`)}
@@ -1004,23 +687,11 @@ const Agent = ({
                     </>
                 ) : (
                     <>
-                        <button className="btn-disconnect" onClick={() => endInterview()}>
+                        <button className="btn-disconnect" onClick={handleEndInterview}>
                             End Interview
                         </button>
-                        {/* Debug button to manually stop recording */}
-                        {isRecording && (
-                            <button 
-                                className="btn-secondary" 
-                                onClick={() => {
-                                    console.log('🔧 Manual recording stop triggered');
-                                    if ((window as any).stopAudioContextRecording) {
-                                        (window as any).stopAudioContextRecording();
-                                    }
-                                }}
-                            >
-                                Stop & Process Audio
-                            </button>
-                        )}
+                        
+
                     </>
                 )}
             </div>
