@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
 import { TechIconName, techIconMap } from "./tech-icons";
-import { useServerFeedback } from "@/lib/hooks/useServerFeedback";
+import { useRealtimeFeedback } from "@/lib/hooks/useRealtimeFirestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { setCommunityInterviewInStorage } from "@/lib/utils/communityInterviewStorage";
 
@@ -39,8 +39,8 @@ const InterviewCardClient = ({
     const { user } = useAuth();
     const userId = user?.uid;
     
-    const { feedback, loading: feedbackLoading } = useServerFeedback(
-        userId && interviewId ? interviewId : null
+    const { feedback, loading: feedbackLoading } = useRealtimeFeedback(
+        userId && interviewId ? interviewId : ''
     );
 
     const normalizedType = /mix/gi.test(type) ? "Mixed" : type;

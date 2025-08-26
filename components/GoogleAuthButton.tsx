@@ -1,7 +1,6 @@
 "use client";
 
-import { auth, googleProvider } from "@/firebase/client";
-import { signInWithPopup } from "firebase/auth";
+import { authenticateWithGoogle, validateFirebaseIdToken } from "@/lib/firebase/auth.js";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -17,73 +16,40 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
 
-  // Handle redirect on successful authentication
-  useEffect(() => {
-    if (authSuccess) {
-      console.log(`GoogleAuthButton: Successful Google ${mode}, preparing redirect to /dashboard`);
-      
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : `/${mode}`;
-      const targetPath = '/dashboard';
-      
-      // Check if redirect is allowed
-      if (!RedirectGuard.canRedirect(targetPath)) {
-        console.error('GoogleAuthButton: Redirect blocked by RedirectGuard - potential loop detected');
-        toast.error('Authentication successful, but unable to redirect. Please navigate to dashboard manually.');
-        return;
-      }
-      
-      // Record the redirect attempt
-      RedirectGuard.recordRedirect(currentPath, targetPath);
-      
-      // Add a delay to ensure cookie propagation
-      const redirectTimer = setTimeout(() => {
-        console.log('GoogleAuthButton: Executing redirect to /dashboard');
-        
-        // Use window.location.href for reliable full page navigation
-        if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
-        }
-      }, 500);
-      
-      // Cleanup timer if component unmounts
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [authSuccess, mode]);
+  // Note: Redirect is now handled by middleware after successful authentication
+  // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
 
   const handleGoogleAuth = async () => {
     if (isLoading) return; // Prevent multiple clicks
     setIsLoading(true);
     console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
     
-    // Defensive checks for Firebase initialization
-    if (!auth) {
-      console.error('Firebase Auth not initialized');
-      toast.error('Authentication service not available. Please check your configuration.');
-      setIsLoading(false);
-      return;
-    }
-    
-    if (!googleProvider) {
-      console.error('Google Auth Provider not initialized');
-      toast.error('Google authentication not available. Please check your configuration.');
-      setIsLoading(false);
-      return;
-    }
+    // Use the Firebase auth helper for better error handling
     
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      console.log('Firebase auth successful, user:', user.uid);
+      console.log('🔐 Starting Google authentication using Firebase helper...');
+      const { user, idToken } = await authenticateWithGoogle();
+      
+      console.log('🔐 Firebase authentication successful:', {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        emailVerified: user.emailVerified
+      });
+      
+      // Validate the Firebase ID token
+      if (!validateFirebaseIdToken(idToken)) {
+        throw new Error('Invalid Firebase ID token received');
+      }
+      
+      console.log('🔐 Firebase ID token validated successfully');
+      console.log(`🔐 Attempting ${mode} with Firebase ID token...`);
       
       if (!user.email) {
         const error = new Error("No email provided by Google");
         console.error(error);
         throw error;
       }
-
-      // Get the ID token
-      const idToken = await user.getIdToken();
-      console.log(`Got ID token, attempting ${mode}...`);
       
       // Determine endpoint based on mode
       const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
@@ -101,23 +67,42 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
           }),
         });
 
-        console.log(`${mode} response status:`, authResponse.status);
+        console.log(`🔐 ${mode} response status:`, authResponse.status);
+        
+        if (!authResponse.ok) {
+          const errorText = await authResponse.text();
+          console.error(`🔐 ${mode} failed with status ${authResponse.status}:`, errorText);
+        }
         
         if (authResponse.ok) {
           const responseData = await authResponse.json();
-          console.log(`GoogleAuthButton: ${mode} successful, redirecting to dashboard`);
+          console.log(`🚀 GoogleAuthButton: ${mode} API call successful!`, {
+            status: authResponse.status,
+            hasToken: !!responseData.token,
+            hasUser: !!responseData.user,
+            responseKeys: Object.keys(responseData)
+          });
           
           // Store token in localStorage if provided
           if (responseData.token) {
             localStorage.setItem('auth_token', responseData.token);
+            console.log('🚀 Token stored in localStorage');
           }
           
+          console.log('🚀 About to show success toast and trigger redirect...');
           toast.success(mode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!');
           
-          // Add small delay to ensure session cookie is set before redirect
+          // Authentication successful! Let the middleware handle the redirect
+          console.log('🚀 Authentication successful! Cookie set, page will refresh to trigger middleware redirect...');
+          
+          // Just refresh the current page - the middleware will see the session cookie 
+          // and redirect authenticated users from /sign-in to /dashboard
           setTimeout(() => {
-            setAuthSuccess(true);
-          }, 100);
+            console.log('🚀 Refreshing page to allow middleware to handle redirect...');
+            window.location.reload();
+          }, 500);
+          
+          console.log('🚀 GoogleAuthButton: Returning from successful auth handler');
           return;
         }
 
@@ -143,11 +128,13 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
             }
             
             console.log('GoogleAuthButton: Sign in after signup conflict successful');
-            toast.success('Welcome back! Signed in successfully.');
+            toast.success('Welcome back! Signed in successfully!');
             
+            // Let middleware handle redirect after successful fallback sign-in
             setTimeout(() => {
-              setAuthSuccess(true);
-            }, 100);
+              console.log('🚀 Refreshing page to allow middleware redirect after signup conflict resolution...');
+              window.location.reload();
+            }, 500);
             return;
           }
         }
@@ -177,7 +164,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     }
   };
 
-  const buttonText = mode === 'signup' ? 'Sign up with Google' : 'Continue with Google';
+  const buttonText = 'Google';
   const loadingText = mode === 'signup' ? 'Creating account...' : 'Signing in...';
 
   return (

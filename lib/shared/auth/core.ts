@@ -124,10 +124,9 @@ export class UnifiedAuth {
     if (this.initialized) return;
 
     try {
-      // Initialize Firebase Auth
-      if (this.config.firebase) {
-        await this.initializeFirebase();
-      }
+      // Always initialize Firebase Auth (it's the primary provider)
+      console.log('🔥 UnifiedAuth: Starting initialization...');
+      await this.initializeFirebase();
 
       // Initialize Azure Auth (if needed)
       if (this.config.azure) {
@@ -135,8 +134,10 @@ export class UnifiedAuth {
       }
 
       this.initialized = true;
+      console.log('🔥 UnifiedAuth: Initialization completed successfully');
       this.log('info', 'UnifiedAuth initialized successfully');
     } catch (error) {
+      console.error('🔥 UnifiedAuth: Initialization failed:', error);
       this.log('error', 'Failed to initialize UnifiedAuth', { error });
       throw error;
     }
@@ -147,11 +148,28 @@ export class UnifiedAuth {
    */
   private async initializeFirebase(): Promise<void> {
     try {
+      console.log('🔥 UnifiedAuth: Initializing Firebase Admin SDK...');
+      
       // Use existing Firebase admin initialization
       const { getAdminAuth } = await import('@/lib/firebase/admin');
       this.firebaseAuth = await getAdminAuth();
+      
+      // Test the connection
+      try {
+        // Try to get a non-existent user to test connectivity
+        await this.firebaseAuth.getUser('test-connection-' + Date.now());
+      } catch (testError: any) {
+        if (testError.code === 'auth/user-not-found') {
+          console.log('🔥 UnifiedAuth: Firebase Admin SDK connection test successful');
+        } else {
+          console.warn('🔥 UnifiedAuth: Firebase Admin SDK connection test warning:', testError.message);
+        }
+      }
+      
+      console.log('🔥 UnifiedAuth: Firebase Auth initialized successfully');
       this.log('info', 'Firebase Auth initialized');
     } catch (error) {
+      console.error('🔥 UnifiedAuth: Firebase Auth initialization failed:', error);
       throw new UnifiedAuthError(
         AuthErrorCode.FIREBASE_ERROR,
         'Failed to initialize Firebase Auth',
@@ -254,13 +272,16 @@ export class UnifiedAuth {
       }
 
       if (!this.firebaseAuth) {
+        console.error('🔥 UnifiedAuth: Firebase Auth not initialized in verifyFirebaseToken');
         throw new UnifiedAuthError(AuthErrorCode.SERVICE_UNAVAILABLE, 'Firebase Auth not initialized');
       }
 
       this.log('debug', 'Verifying Firebase ID token', { tokenPrefix: idToken.substring(0, 20) + '...' });
+      console.log('🔥 UnifiedAuth: About to call firebaseAuth.verifyIdToken...');
       
       // Add additional validation options
       const decodedToken = await this.firebaseAuth.verifyIdToken(idToken, true);
+      console.log('🔥 UnifiedAuth: Firebase verifyIdToken successful');
       
       this.log('debug', 'Firebase token verification successful', { 
         uid: decodedToken.uid, 
