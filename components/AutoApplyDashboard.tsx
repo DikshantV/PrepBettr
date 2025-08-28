@@ -188,15 +188,27 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
 
   // WebSocket connection management
   const connectWebSocket = useCallback(() => {
+    // Skip WebSocket in development unless explicitly enabled
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const enableWebSocket = process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET === 'true';
+    
+    if (isDevelopment && !enableWebSocket) {
+      console.log('🔌 WebSocket disabled in development mode. Set NEXT_PUBLIC_ENABLE_WEBSOCKET=true to enable.');
+      setIsConnected(false);
+      return;
+    }
+
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     try {
-      // Connect to our production Azure Function WebSocket endpoint
+      // Connect to Azure Function WebSocket endpoint
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://prepbettr-auto-apply.azurewebsites.net/ws';
+      
+      console.log('🔗 Attempting to connect to WebSocket:', wsUrl);
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('🔗 WebSocket connected to auto-apply service');
+        console.log('✅ WebSocket connected to auto-apply service');
         setIsConnected(true);
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
@@ -209,28 +221,49 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
           const data = JSON.parse(event.data);
           handleWebSocketMessage(data);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.warn('⚠️ Error parsing WebSocket message:', error);
         }
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setIsConnected(false);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log('🔌 WebSocket disconnected');
+        // Provide more context for WebSocket errors
+        const errorMessage = isDevelopment 
+          ? 'WebSocket connection failed (expected in development mode)'
+          : 'WebSocket connection error - real-time features may be limited';
+        
+        console.warn('⚠️', errorMessage, error);
         setIsConnected(false);
         
-        // Attempt reconnection after delay
-        if (!reconnectTimeoutRef.current) {
+        // Don't attempt reconnection in development unless explicitly enabled
+        if (isDevelopment && !enableWebSocket) {
+          return;
+        }
+      };
+
+      wsRef.current.onclose = (event) => {
+        const reason = event.reason || 'Unknown reason';
+        const wasClean = event.wasClean ? 'clean' : 'unexpected';
+        
+        console.log(`🔌 WebSocket disconnected (${wasClean}): ${reason}`);
+        setIsConnected(false);
+        
+        // Only attempt reconnection if not in development or if explicitly enabled
+        const shouldReconnect = !isDevelopment || enableWebSocket;
+        
+        if (shouldReconnect && !reconnectTimeoutRef.current) {
+          const reconnectDelay = isDevelopment ? 10000 : 5000; // Longer delay in dev
           reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('🔄 Attempting to reconnect WebSocket...');
             connectWebSocket();
-          }, 5000);
+          }, reconnectDelay);
         }
       };
     } catch (error) {
-      console.error('Error connecting WebSocket:', error);
+      const errorMessage = isDevelopment
+        ? 'WebSocket connection failed (normal in development)'
+        : 'Error connecting WebSocket - using fallback mode';
+        
+      console.warn('⚠️', errorMessage, error);
       setIsConnected(false);
     }
   }, []);

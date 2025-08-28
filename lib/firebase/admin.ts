@@ -17,8 +17,13 @@ let getConfiguration: any = null;
 
 if (!isClient) {
   admin = require('firebase-admin');
-  const azureConfig = require('@/lib/azure-config');
-  getConfiguration = azureConfig.getConfiguration;
+  try {
+    const azureConfig = require('@/lib/azure-config');
+    getConfiguration = azureConfig.getConfiguration;
+  } catch (error) {
+    console.warn('🔥 Failed to load Azure configuration module:', error);
+    getConfiguration = null;
+  }
 }
 
 // Global Firebase Admin app instance
@@ -50,10 +55,16 @@ async function initializeFirebaseAdmin(): Promise<any> {
 
     // Get Firebase configuration from Azure Key Vault or environment variables
     let config: Record<string, string> = {};
-    try {
-      config = await getConfiguration();
-    } catch (configError) {
-      console.warn('🔥 Failed to get config from Azure, using environment variables:', configError);
+    
+    if (getConfiguration && typeof getConfiguration === 'function') {
+      try {
+        config = await getConfiguration();
+      } catch (configError) {
+        console.warn('🔥 Failed to get config from Azure, using environment variables:', configError);
+        config = {};
+      }
+    } else {
+      console.warn('🔥 Azure configuration function not available, using environment variables only');
       config = {};
     }
     
