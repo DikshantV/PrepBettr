@@ -12,22 +12,22 @@ export function SiteNavigation({ onDashboardClick }: SiteNavigationProps) {
   const navItems = [
     {
       name: 'Home',
-      link: '/marketing',
+      link: '/',
       icon: <Home className="h-5 w-5" />,
     },
     {
       name: 'Features',
-      link: '/marketing#features',
+      link: '/#features',
       icon: <BarChart className="h-5 w-5" />,
     },
     {
       name: 'Testimonials',
-      link: '/marketing#testimonials',
+      link: '/#testimonials',
       icon: <MessageSquare className="h-5 w-5" />,
     },
     {
       name: 'Pricing',
-      link: '/marketing#pricing',
+      link: '/#pricing',
       icon: <DollarSign className="h-5 w-5" />,
     }
   ];

@@ -30,9 +30,9 @@ export default function SettingsPage() {
       localStorage.clear();
       sessionStorage.clear();
       
-      // Call logout API and redirect to marketing page
+      // Call logout API and redirect to root page
       await fetch("/api/profile/logout", { method: "POST" });
-      router.push('/marketing');
+      router.push('/');
       router.refresh();
     } catch (error) {
       console.error('Error during logout:', error);

@@ -7,7 +7,7 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     try {
       await fetch("/api/profile/logout", { method: "POST" });
-      router.push("/marketing");
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error('Logout failed:', error);
