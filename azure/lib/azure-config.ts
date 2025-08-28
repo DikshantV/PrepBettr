@@ -16,6 +16,7 @@ interface AzureSecrets {
   azureStorageAccountKey?: string; // Azure Storage Account Key
   azureFormRecognizerEndpoint?: string; // Azure Form Recognizer Endpoint
   azureFormRecognizerKey?: string; // Azure Form Recognizer Key
+  theirStackApiKey?: string; // TheirStack job discovery API key
 }
 
 let cachedSecrets: AzureSecrets | null = null;
@@ -52,7 +53,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     const client = createKeyVaultClient();
 
     // Fetch all required secrets
-    const [speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment, azureOpenAIGpt35, azureOpenAIGpt4o, storageAccountName, storageAccountKey, formRecognizerEndpoint, formRecognizerKey] = await Promise.all([
+    const [speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment, azureOpenAIGpt35, azureOpenAIGpt4o, storageAccountName, storageAccountKey, formRecognizerEndpoint, formRecognizerKey, theirStackApiKey] = await Promise.all([
       client.getSecret('speech-key'),
       client.getSecret('speech-endpoint'),
       client.getSecret('azure-openai-key'),
@@ -63,7 +64,8 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       client.getSecret('azure-storage-account-name').catch(() => null), // Optional
       client.getSecret('azure-storage-account-key').catch(() => null), // Optional
       client.getSecret('azure-form-recognizer-endpoint').catch(() => null), // Optional
-      client.getSecret('azure-form-recognizer-key').catch(() => null) // Optional
+      client.getSecret('azure-form-recognizer-key').catch(() => null), // Optional
+      client.getSecret('theirstack-api-key').catch(() => null) // TheirStack API key
     ]);
 
     if (!speechKey.value || !speechEndpoint.value || !azureOpenAIKey.value || !azureOpenAIEndpoint.value || !azureOpenAIDeployment.value) {
@@ -81,7 +83,8 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureStorageAccountName: storageAccountName?.value,
       azureStorageAccountKey: storageAccountKey?.value,
       azureFormRecognizerEndpoint: formRecognizerEndpoint?.value,
-      azureFormRecognizerKey: formRecognizerKey?.value
+      azureFormRecognizerKey: formRecognizerKey?.value,
+      theirStackApiKey: theirStackApiKey?.value
     };
 
     console.log('✅ Azure secrets loaded successfully');
@@ -103,7 +106,8 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
       azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
       azureFormRecognizerEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
-      azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY
+      azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY,
+      theirStackApiKey: process.env.THEIRSTACK_API_KEY
     };
 
     if (!fallbackSecrets.speechKey || !fallbackSecrets.azureOpenAIKey) {
@@ -131,6 +135,11 @@ export async function initializeAzureEnvironment(): Promise<void> {
     process.env.AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
     process.env.AZURE_OPENAI_GPT35_DEPLOYMENT = secrets.azureOpenAIGpt35Deployment;
     process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT = secrets.azureOpenAIGpt4oDeployment;
+
+    // Set TheirStack API key
+    if (secrets.theirStackApiKey) {
+      process.env.THEIRSTACK_API_KEY = secrets.theirStackApiKey;
+    }
 
     // Set Azure OpenAI keys for public environment
     process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY = secrets.azureOpenAIKey;

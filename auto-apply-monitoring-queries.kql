@@ -1,0 +1,100 @@
+// Auto-Apply System Health Dashboard Queries
+
+// 1. Application Success Rate Over Time
+customEvents
+| where name in ("applicationSuccess", "applicationError")
+| where timestamp > ago(24h)
+| summarize 
+    Total = count(),
+    Successes = countif(name == "applicationSuccess"),
+    Failures = countif(name == "applicationError")
+    by bin(timestamp, 1h)
+| extend SuccessRate = (Successes * 100.0) / Total
+| render timechart 
+
+// 2. Portal Distribution (LinkedIn, Indeed, TheirStack, Generic)
+customEvents
+| where name == "applicationSuccess"
+| where timestamp > ago(24h)
+| extend portal = tostring(customDimensions.portal)
+| summarize count() by portal
+| render piechart
+
+// 3. Browser Launch Success/Failure Rate
+customEvents
+| where name in ("browserLaunch", "browserError")
+| where timestamp > ago(24h)
+| summarize 
+    Total = count(),
+    Errors = countif(name == "browserError")
+    by bin(timestamp, 1h)
+| extend ErrorRate = (Errors * 100.0) / Total
+| render timechart
+
+// 4. TheirStack Credit Usage Trend
+customMetrics
+| where name == "theirStackCreditsUsed"
+| where timestamp > ago(7d)
+| summarize TotalCredits = sum(value) by bin(timestamp, 6h)
+| extend UsagePercentage = TotalCredits / 1000 * 100
+| render timechart
+
+// 5. Application Processing Duration Distribution
+customMetrics
+| where name == "applicationDuration"
+| where timestamp > ago(24h)
+| summarize 
+    avg(value),
+    percentile(value, 50),
+    percentile(value, 90),
+    percentile(value, 95)
+    by bin(timestamp, 1h)
+| render timechart
+
+// 6. Health Status Over Time
+customEvents
+| where name == "healthCheck"
+| where timestamp > ago(24h)
+| extend 
+    status = tostring(customDimensions.status),
+    activeBrowsers = toint(customDimensions.activeBrowsers),
+    queuedOperations = toint(customDimensions.queuedOperations)
+| summarize 
+    avg(activeBrowsers),
+    avg(queuedOperations)
+    by bin(timestamp, 15m)
+| render timechart
+
+// 7. Top Error Messages
+customEvents
+| where name == "applicationError"
+| where timestamp > ago(24h)
+| extend errorMessage = tostring(customDimensions.errorMessage)
+| summarize Count = count() by errorMessage
+| order by Count desc
+| take 10
+
+// 8. Function Execution Duration
+requests
+| where timestamp > ago(24h)
+| where name in ("applicationWorker", "jobSearchWorker", "followUpWorker")
+| summarize 
+    avg(duration),
+    percentile(duration, 95)
+    by name, bin(timestamp, 1h)
+| render timechart
+
+// 9. Memory Usage Trend
+performanceCounters
+| where name == "Private Bytes"
+| where timestamp > ago(24h)
+| extend MemoryMB = value / 1048576
+| summarize avg(MemoryMB) by bin(timestamp, 15m)
+| render timechart
+
+// 10. Queue Message Processing Rate
+customMetrics
+| where name in ("queueMessagesProcessed", "queueMessagesReceived")
+| where timestamp > ago(24h)
+| summarize sum(value) by name, bin(timestamp, 1h)
+| render timechart

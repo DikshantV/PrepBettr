@@ -1,0 +1,512 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🤖 Auto-Apply with AI - Production Monitoring Dashboard\n\nThis dashboard provides comprehensive monitoring for the Auto-Apply automation system, tracking application success rates, browser resource usage, AI screening accuracy, and TheirStack API costs.\n\n---"
+      },
+      "name": "Title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "timeRange",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 3600000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 900000,
+                  "displayName": "Last 15 minutes"
+                },
+                {
+                  "durationMs": 1800000,
+                  "displayName": "Last 30 minutes"
+                },
+                {
+                  "durationMs": 3600000,
+                  "displayName": "Last hour"
+                },
+                {
+                  "durationMs": 14400000,
+                  "displayName": "Last 4 hours"
+                },
+                {
+                  "durationMs": 43200000,
+                  "displayName": "Last 12 hours"
+                },
+                {
+                  "durationMs": 86400000,
+                  "displayName": "Last day"
+                },
+                {
+                  "durationMs": 172800000,
+                  "displayName": "Last 2 days"
+                },
+                {
+                  "durationMs": 604800000,
+                  "displayName": "Last 7 days"
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "environment",
+            "version": "KqlParameterItem/1.0",
+            "name": "Environment",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "value": [
+              "production"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[\"production\", \"staging\", \"development\"]"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "Parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let AutoApplyMetrics = customMetrics\n| where timestamp {TimeRange}\n| where name startswith \"AutoApply.\"\n| extend MetricType = split(name, \".\")[1]\n| extend MetricName = split(name, \".\")[2];\n\nlet ApplicationMetrics = AutoApplyMetrics\n| where MetricType == \"Application\"\n| summarize \n    TotalApplications = countif(MetricName == \"Success\"),\n    SuccessfulApplications = sumif(value, MetricName == \"Success\" and value == 1),\n    FailedApplications = sumif(value, MetricName == \"Success\" and value == 0),\n    AvgDuration = avgif(value, MetricName == \"DurationMs\")\n| extend SuccessRate = round(SuccessfulApplications * 100.0 / TotalApplications, 1);\n\nlet BrowserMetrics = AutoApplyMetrics\n| where MetricType == \"Browser\"\n| summarize \n    AvgActiveBrowsers = avgif(value, MetricName == \"ActiveCount\"),\n    MaxQueueLength = maxif(value, MetricName == \"Length\"),\n    AvgMemoryUsage = avgif(value, MetricName == \"MemoryMb\"),\n    AvgLaunchTime = avgif(value, MetricName == \"LaunchTimeMs\");\n\nlet CostMetrics = AutoApplyMetrics\n| where MetricType == \"TheirStack\"\n| summarize \n    TotalCreditsUsed = sumif(value, MetricName == \"CreditsUsed\"),\n    TotalCostUSD = sumif(value, MetricName == \"CostUSD\"),\n    AvgResponseTime = avgif(value, MetricName == \"ResponseTimeMs\");\n\nApplicationMetrics\n| extend \n    [\"📊 Total Applications\"] = TotalApplications,\n    [\"✅ Success Rate (%)\"] = SuccessRate,\n    [\"❌ Failed Applications\"] = FailedApplications,\n    [\"⏱️ Avg Duration (ms)\"] = round(AvgDuration, 0)\n| project-away TotalApplications, SuccessfulApplications, FailedApplications, AvgDuration, SuccessRate\n| union (\n    BrowserMetrics\n    | extend \n        [\"🌐 Avg Active Browsers\"] = round(AvgActiveBrowsers, 1),\n        [\"📈 Max Queue Length\"] = MaxQueueLength,\n        [\"💾 Avg Memory (MB)\"] = round(AvgMemoryUsage, 0),\n        [\"🚀 Avg Launch Time (ms)\"] = round(AvgLaunchTime, 0)\n    | project-away AvgActiveBrowsers, MaxQueueLength, AvgMemoryUsage, AvgLaunchTime\n)\n| union (\n    CostMetrics\n    | extend \n        [\"💰 Credits Used\"] = TotalCreditsUsed,\n        [\"💵 Total Cost (USD)\"] = round(TotalCostUSD, 2),\n        [\"🔄 Avg API Response (ms)\"] = round(AvgResponseTime, 0)\n    | project-away TotalCreditsUsed, TotalCostUSD, AvgResponseTime\n)",
+        "size": 4,
+        "title": "🎯 Auto-Apply System Overview",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Column",
+            "formatter": 1
+          },
+          "leftContent": {
+            "columnMatch": "Value",
+            "formatter": 12,
+            "formatOptions": {
+              "palette": "auto"
+            }
+          },
+          "showBorder": true
+        }
+      },
+      "customWidth": "100",
+      "name": "Overview Metrics"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name in (\"AutoApply.Application.Success\", \"AutoApply.Application.Failed\")\n| extend Portal = tostring(properties.portal)\n| extend Success = iff(name == \"AutoApply.Application.Success\", 1, 0)\n| summarize \n    Applications = count(),\n    Successful = sum(Success),\n    Failed = sum(1 - Success)\n    by Portal\n| extend SuccessRate = round(Successful * 100.0 / Applications, 1)\n| order by Applications desc",
+        "size": 0,
+        "title": "📊 Application Success Rate by Portal",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart",
+        "chartSettings": {
+          "xAxis": "Portal",
+          "yAxis": [
+            "SuccessRate"
+          ],
+          "group": null,
+          "size": null,
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true,
+                "minimumFractionDigits": 1,
+                "maximumFractionDigits": 1
+              }
+            },
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Success Rate by Portal"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.Application.DurationMs\"\n| extend Portal = tostring(properties.portal)\n| summarize \n    AvgDuration = avg(value),\n    P50Duration = percentile(value, 50),\n    P95Duration = percentile(value, 95),\n    P99Duration = percentile(value, 99)\n    by Portal\n| project Portal, \n    [\"Avg (ms)\"] = round(AvgDuration, 0), \n    [\"P50 (ms)\"] = round(P50Duration, 0),\n    [\"P95 (ms)\"] = round(P95Duration, 0),\n    [\"P99 (ms)\"] = round(P99Duration, 0)\n| order by [\"Avg (ms)\"] desc",
+        "size": 0,
+        "title": "⏱️ Application Duration by Portal",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Portal",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "25%"
+              }
+            },
+            {
+              "columnMatch": "Avg (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed",
+                "customColumnWidthSetting": "18.75%"
+              }
+            },
+            {
+              "columnMatch": "P50 (ms)",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "18.75%"
+              }
+            },
+            {
+              "columnMatch": "P95 (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "orange",
+                "customColumnWidthSetting": "18.75%"
+              }
+            },
+            {
+              "columnMatch": "P99 (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "redBright",
+                "customColumnWidthSetting": "18.75%"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "Portal",
+              "label": "🌐 Portal"
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "Application Duration"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.Volume.DailyApplications\"\n| extend UserId = tostring(properties.userId)\n| extend UserTier = tostring(properties.userTier)\n| make-series DailyApplications = sum(value) default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 1h\n| render timechart",
+        "size": 0,
+        "title": "📈 Daily Application Volume Trend",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "linechart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Daily Volume Trend"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.Browser.ActiveCount\"\n| make-series ActiveBrowsers = avg(value) default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 5m\n| union (\n    customMetrics\n    | where timestamp {TimeRange}\n    | where name == \"AutoApply.Queue.Length\"\n    | make-series QueueLength = avg(value) default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 5m\n)\n| union (\n    customMetrics\n    | where timestamp {TimeRange}\n    | where name == \"AutoApply.Browser.MemoryMb\"\n    | make-series MemoryUsage = avg(value) default = 0 on timestamp from {TimeRange:start} to {TimeRange:end} step 5m\n)\n| render timechart",
+        "size": 0,
+        "title": "🌐 Browser Resource Usage Trends",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "linechart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "50",
+      "name": "Browser Resource Usage"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.Screening.Accuracy\"\n| extend Portal = tostring(properties.portal)\n| extend AccuracyBin = case(\n    value >= 90, \"90-100%\",\n    value >= 80, \"80-89%\", \n    value >= 70, \"70-79%\",\n    value >= 60, \"60-69%\",\n    \"<60%\"\n)\n| summarize Count = count() by AccuracyBin\n| order by AccuracyBin desc",
+        "size": 0,
+        "title": "🎯 AI Screening Accuracy Distribution",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "33",
+      "name": "Screening Accuracy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.TheirStack.CreditsUsed\"\n| extend UserId = tostring(properties.userId)\n| summarize TotalCredits = sum(value) by bin(timestamp, 1h)\n| extend CreditsBudget = 1000 // Monthly budget\n| extend UsagePercentage = round(TotalCredits * 100.0 / CreditsBudget, 1)\n| project timestamp, TotalCredits, UsagePercentage\n| render timechart",
+        "size": 0,
+        "title": "💰 TheirStack Credit Usage",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "linechart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 0,
+              "options": {
+                "style": "decimal",
+                "useGrouping": true
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "34",
+      "name": "Credit Usage"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customMetrics\n| where timestamp {TimeRange}\n| where name == \"AutoApply.TheirStack.CostUSD\"\n| summarize TotalCostUSD = sum(value) by bin(timestamp, 1h)\n| extend MonthlyCostBudget = 100.0 // Monthly budget in USD\n| extend CostPercentage = round(TotalCostUSD * 100.0 / MonthlyCostBudget, 1)\n| project timestamp, TotalCostUSD, CostPercentage\n| render timechart",
+        "size": 0,
+        "title": "💵 TheirStack API Costs (USD)",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "linechart",
+        "chartSettings": {
+          "ySettings": {
+            "numberFormatSettings": {
+              "unit": 17,
+              "options": {
+                "style": "currency",
+                "currency": "USD",
+                "useGrouping": true,
+                "minimumFractionDigits": 2,
+                "maximumFractionDigits": 2
+              }
+            }
+          }
+        }
+      },
+      "customWidth": "33",
+      "name": "API Costs"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "exceptions\n| where timestamp {TimeRange}\n| where outerMessage contains \"auto-apply\" or outerMessage contains \"AutoApply\" or outerMessage contains \"headless\"\n| extend ErrorType = case(\n    outerMessage contains \"Browser\", \"Browser Error\",\n    outerMessage contains \"Timeout\", \"Timeout Error\", \n    outerMessage contains \"Network\", \"Network Error\",\n    outerMessage contains \"Authentication\", \"Auth Error\",\n    \"Other Error\"\n)\n| summarize ErrorCount = count(), \n    SampleError = any(outerMessage),\n    LatestOccurrence = max(timestamp)\n    by ErrorType\n| order by ErrorCount desc",
+        "size": 0,
+        "title": "❌ Recent Errors & Exceptions",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "ErrorType",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "ErrorCount",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "redBright",
+                "customColumnWidthSetting": "10%"
+              }
+            },
+            {
+              "columnMatch": "SampleError",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "60%"
+              }
+            },
+            {
+              "columnMatch": "LatestOccurrence",
+              "formatter": 6,
+              "formatOptions": {
+                "customColumnWidthSetting": "15%"
+              }
+            }
+          ],
+          "labelSettings": [
+            {
+              "columnId": "ErrorType",
+              "label": "🏷️ Error Type"
+            },
+            {
+              "columnId": "ErrorCount",
+              "label": "🔢 Count"
+            },
+            {
+              "columnId": "SampleError",
+              "label": "📄 Sample Message"
+            },
+            {
+              "columnId": "LatestOccurrence",
+              "label": "🕐 Latest"
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "Recent Errors"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp {TimeRange}\n| where name == \"AutoApply.Portal.Summary\"\n| extend Portal = tostring(properties.portal)\n| extend Attempts = toint(properties.applicationAttempts)\n| extend Successes = toint(properties.successfulApplications)\n| extend AverageTime = toint(properties.averageTime)\n| extend CommonErrors = tostring(properties.commonErrors)\n| summarize \n    TotalAttempts = sum(Attempts),\n    TotalSuccesses = sum(Successes),\n    AvgTime = avg(AverageTime),\n    TopError = any(CommonErrors)\n    by Portal\n| extend SuccessRate = round(TotalSuccesses * 100.0 / TotalAttempts, 1)\n| project \n    Portal,\n    [\"Total Attempts\"] = TotalAttempts,\n    [\"Success Rate (%)\"] = SuccessRate,\n    [\"Avg Time (ms)\"] = round(AvgTime, 0),\n    [\"Common Error\"] = TopError\n| order by [\"Total Attempts\"] desc",
+        "size": 0,
+        "title": "🌐 Portal Performance Summary",
+        "timeContext": {
+          "durationMs": 3600000
+        },
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Portal",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "Total Attempts",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "blue",
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "Success Rate (%)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "greenRed",
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "Avg Time (ms)",
+              "formatter": 8,
+              "formatOptions": {
+                "palette": "orange",
+                "customColumnWidthSetting": "15%"
+              }
+            },
+            {
+              "columnMatch": "Common Error",
+              "formatter": 0,
+              "formatOptions": {
+                "customColumnWidthSetting": "40%"
+              }
+            }
+          ]
+        }
+      },
+      "customWidth": "50",
+      "name": "Portal Summary"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n\n## 🚨 Alert Thresholds\n\n- **Application Success Rate**: Alert if <90% in 15 minutes\n- **Browser Failure Rate**: Alert if >5% in 10 minutes  \n- **TheirStack Credits**: Alert if >80% monthly usage\n- **Queue Length**: Alert if >100 pending applications\n- **Function Errors**: Alert on any exceptions in applicationWorker\n\n## 📊 KPI Targets\n\n- **Daily Application Volume**: 50-200 applications/day\n- **Average Application Duration**: <120 seconds\n- **AI Screening Accuracy**: >85%\n- **Browser Resource Usage**: <512MB average\n- **TheirStack API Response**: <5 seconds average"
+      },
+      "name": "Footer Info"
+    }
+  ],
+  "isLocked": false,
+  "fallbackResourceIds": []
+}

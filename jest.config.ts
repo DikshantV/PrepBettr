@@ -13,16 +13,16 @@ const config: Config.InitialOptions = {
   // Test environment and setup
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFilesAfterEnv: [
-    '<rootDir>/tests/setup/global-setup.ts',
-    '<rootDir>/tests/setup/azure-mocks.ts',
-    '<rootDir>/tests/setup/performance-baseline.ts'
-  ],
+  // setupFilesAfterEnv: [
+  //   '<rootDir>/tests/global-setup.ts',
+  //   '<rootDir>/tests/setup/azure-mocks.ts',
+  //   '<rootDir>/tests/setup/performance-baseline.ts'
+  // ],
 
   // File patterns
   testMatch: [
-    '<rootDir>/tests/unit/**/*.test.ts',
-    '<rootDir>/tests/unit/**/*.test.js',
+    '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/tests/**/*.test.js',
     '<rootDir>/azure/**/__tests__/**/*.test.ts',
     '<rootDir>/lib/**/__tests__/**/*.test.ts'
   ],
@@ -64,6 +64,12 @@ const config: Config.InitialOptions = {
       functions: 90,
       lines: 90,
       statements: 90
+    },
+    './portals/': {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90
     }
   },
 
@@ -71,6 +77,7 @@ const config: Config.InitialOptions = {
   collectCoverageFrom: [
     'azure/**/*.{ts,js}',
     'lib/**/*.{ts,js}',
+    'portals/**/*.{ts,js}',
     'app/**/*.{ts,tsx}',
     'components/**/*.{ts,tsx}',
     '!**/*.d.ts',
@@ -85,22 +92,20 @@ const config: Config.InitialOptions = {
   // Module name mapping for path aliases
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@azure/(.*)$': '<rootDir>/azure/$1',
     '^@lib/(.*)$': '<rootDir>/lib/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1'
   },
 
   // Transform configuration
   transform: {
+    '^.+\\.(tsx|jsx)$': ['babel-jest', { configFile: './babel.config.jest.js' }],
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
-        compilerOptions: {
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true,
-          experimentalDecorators: true,
-          emitDecoratorMetadata: true,
-          resolveJsonModule: true
-        }
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true,
+        resolveJsonModule: true
       }
     }]
   },
@@ -110,9 +115,6 @@ const config: Config.InitialOptions = {
 
   // Globals for Azure service testing
   globals: {
-    'ts-jest': {
-      isolatedModules: true
-    },
     // Azure service endpoints for testing
     AZURE_TEST_CONFIG: {
       cosmosEndpoint: 'https://test-cosmos.documents.azure.com:443/',
@@ -124,23 +126,7 @@ const config: Config.InitialOptions = {
   },
 
   // Performance monitoring
-  reporters: [
-    'default',
-    ['jest-html-reporters', {
-      publicPath: '<rootDir>/coverage/html-report',
-      filename: 'test-report.html',
-      expand: true
-    }],
-    ['jest-junit', {
-      outputDirectory: '<rootDir>/coverage',
-      outputName: 'junit.xml',
-      classNameTemplate: '{classname}',
-      titleTemplate: '{title}',
-      ancestorSeparator: ' › '
-    }],
-    // Custom performance reporter
-    '<rootDir>/tests/reporters/performance-reporter.ts'
-  ],
+  reporters: ['default'],
 
   // Clear mocks between tests
   clearMocks: true,
@@ -158,10 +144,7 @@ const config: Config.InitialOptions = {
 
   // Cache configuration
   cache: true,
-  cacheDirectory: '<rootDir>/.jest-cache',
-
-  // Test result processor for custom metrics
-  testResultsProcessor: '<rootDir>/tests/processors/results-processor.ts'
+  cacheDirectory: '<rootDir>/.jest-cache'
 };
 
 export default config;

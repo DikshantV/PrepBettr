@@ -1,9 +1,12 @@
 const { app } = require('@azure/functions');
 const queueService = require('../lib/services/queue-service');
 const automationLogger = require('../lib/services/automation-logs');
+const autoApplyMetrics = require('../lib/utils/auto-apply-metrics');
 const OpenAI = require('openai');
 const { fetchAzureSecrets } = require('../lib/azure-config');
 const { v4: uuidv4 } = require('uuid');
+const headlessBrowserService = require('../lib/services/headless-browser-service');
+const { azureCosmosService } = require('../../lib/services/azure-cosmos-service');
 
 // Azure OpenAI client - will be initialized from Key Vault secrets
 let azureOpenAIClient = null;
@@ -96,17 +99,26 @@ app.storageQueue('applicationWorker', {
                     return;
                 }
 
-                // Check daily application limit
-                const todayApplications = await getTodayApplicationCount(userId);
-                if (todayApplications >= autoApplySettings.dailyApplicationLimit) {
-                    context.log(`User ${userId} has reached daily application limit`);
-                    await automationLogger.logWarning(
-                        'application_daily_limit_reached',
-                        'Daily application limit reached',
-                        { userId, todayApplications, dailyLimit: autoApplySettings.dailyApplicationLimit }
-                    );
-                    return;
-                }
+            // Check daily application limit
+            const todayApplications = await getTodayApplicationCount(userId);
+            if (todayApplications >= autoApplySettings.dailyApplicationLimit) {
+                context.log(`User ${userId} has reached daily application limit`);
+                await automationLogger.logWarning(
+                    'application_daily_limit_reached',
+                    'Daily application limit reached',
+                    { userId, todayApplications, dailyLimit: autoApplySettings.dailyApplicationLimit }
+                );
+                
+                // Track volume metrics
+                autoApplyMetrics.trackVolumeMetrics({
+                    userId,
+                    dailyApplications: todayApplications,
+                    dailyLimit: autoApplySettings.dailyApplicationLimit,
+                    userTier: 'free' // Would come from user profile
+                });
+                
+                return;
+            }
             }
 
             // Generate cover letter
@@ -129,6 +141,27 @@ app.storageQueue('applicationWorker', {
             if (applicationResult.success) {
                 // Log successful application
                 await automationLogger.logApplicationSubmitted(userId, jobId, applicationResult);
+                
+                // Track successful application metrics
+                autoApplyMetrics.trackApplicationAttempt({
+                    applicationId: applicationResult.applicationId,
+                    userId,
+                    jobId,
+                    portal: jobListing.jobPortal?.name || 'Unknown',
+                    success: true,
+                    duration: applicationResult.automationDetails?.duration,
+                    attempts: applicationResult.automationDetails?.attempts || 1,
+                    method: applicationResult.automationDetails?.method || 'headless_browser'
+                });
+                
+                // Track daily volume
+                const updatedTodayApplications = await getTodayApplicationCount(userId);
+                autoApplyMetrics.trackVolumeMetrics({
+                    userId,
+                    dailyApplications: updatedTodayApplications,
+                    dailyLimit: autoApplySettings.dailyApplicationLimit,
+                    userTier: 'free' // Would come from user profile
+                });
 
                 // Send application submitted notification
                 await sendApplicationSubmittedNotification(userId, {
@@ -157,6 +190,19 @@ app.storageQueue('applicationWorker', {
                     new Error(applicationResult.message),
                     { userId, jobId, applicationResult }
                 );
+                
+                // Track failed application metrics
+                autoApplyMetrics.trackApplicationAttempt({
+                    applicationId: applicationResult.applicationId,
+                    userId,
+                    jobId,
+                    portal: jobListing.jobPortal?.name || 'Unknown',
+                    success: false,
+                    duration: applicationResult.automationDetails?.duration,
+                    attempts: applicationResult.automationDetails?.attempts || 1,
+                    errorMessage: applicationResult.message,
+                    method: applicationResult.automationDetails?.method || 'headless_browser'
+                });
             }
 
         } catch (error) {
@@ -357,48 +403,139 @@ async function submitJobApplication(applicationData) {
     try {
         const { userId, jobId, jobListing, userProfile, coverLetter, resume, relevancyScore } = applicationData;
         
-        // TODO: Implement portal-specific application submission
-        // This would involve:
-        // 1. Portal-specific API calls (LinkedIn, Indeed, etc.)
-        // 2. Form filling automation (for portals without APIs)
-        // 3. File uploads (resume, cover letter)
-        // 4. Application tracking
+        // Check if this is a TheirStack job with easy_apply enabled
+        if (jobListing.easy_apply && 
+            (jobListing.jobPortal?.name === 'TheirStack' || jobListing.final_url)) {
+            
+            await automationLogger.logInfo(
+                'headless_application_initiated',
+                `Initiating headless application for job ${jobId}`,
+                { userId, jobId, portal: jobListing.jobPortal?.name }
+            );
 
+            // Use headless browser automation for easy apply jobs
+            const headlessResult = await headlessBrowserService.applyToJob(
+                jobListing, 
+                {
+                    ...userProfile,
+                    resume, // Use tailored resume
+                    coverLetter
+                },
+                {
+                    timeout: 120000, // 2 minute timeout for complex forms
+                    screenshots: true,
+                    retryOnFailure: true
+                }
+            );
+
+            if (headlessResult.success) {
+                // Store successful application in Azure Cosmos DB
+                const applicationRecord = {
+                    id: headlessResult.applicationId,
+                    userId,
+                    jobId,
+                    status: 'applied',
+                    appliedAt: new Date(),
+                    applicationMethod: 'headless_automation',
+                    portal: jobListing.jobPortal?.name || 'Unknown',
+                    jobTitle: jobListing.title,
+                    company: jobListing.company,
+                    jobUrl: jobListing.final_url,
+                    coverLetter,
+                    tailoredResume: resume,
+                    relevancyScore,
+                    automationDetails: {
+                        duration: headlessResult.duration,
+                        attempts: headlessResult.attempts,
+                        formData: headlessResult.formData,
+                        screenshotPath: headlessResult.screenshotPath
+                    },
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    _partitionKey: userId
+                };
+
+                await storeJobApplication(applicationRecord);
+
+                return {
+                    success: true,
+                    message: 'Application submitted successfully via headless automation',
+                    applicationId: headlessResult.applicationId,
+                    automationDetails: {
+                        duration: headlessResult.duration,
+                        attempts: headlessResult.attempts,
+                        method: 'headless_browser'
+                    }
+                };
+            } else {
+                // Headless automation failed, log and potentially fallback
+                await automationLogger.logError(
+                    'headless_application_failed',
+                    new Error(headlessResult.message),
+                    { 
+                        userId, 
+                        jobId, 
+                        duration: headlessResult.duration,
+                        attempts: headlessResult.attempts 
+                    }
+                );
+
+                return {
+                    success: false,
+                    message: `Headless application failed: ${headlessResult.message}`,
+                    applicationId: headlessResult.applicationId,
+                    automationDetails: {
+                        duration: headlessResult.duration,
+                        attempts: headlessResult.attempts,
+                        method: 'headless_browser',
+                        error: headlessResult.message
+                    }
+                };
+            }
+        }
+        
+        // Fallback to traditional application methods for non-easy-apply jobs
         const applicationId = uuidv4();
         
-        // Simulate application processing
-        const success = Math.random() > 0.1; // 90% success rate
-        
-        if (success) {
-            // Store application in database (TODO: implement proper storage)
-            await storeJobApplication({
-                id: applicationId,
-                userId,
-                jobId,
-                status: 'applied',
-                appliedAt: new Date().toISOString(),
-                coverLetter,
-                tailoredResume: resume,
-                relevancyScore,
-                portal: jobListing.jobPortal?.name,
-                jobTitle: jobListing.title,
-                company: jobListing.company
-            });
+        // For now, store as manual application pending user action
+        const applicationRecord = {
+            id: applicationId,
+            userId,
+            jobId,
+            status: 'pending_manual',
+            appliedAt: new Date(),
+            applicationMethod: 'manual_required',
+            portal: jobListing.jobPortal?.name || 'Unknown',
+            jobTitle: jobListing.title,
+            company: jobListing.company,
+            jobUrl: jobListing.final_url,
+            coverLetter,
+            tailoredResume: resume,
+            relevancyScore,
+            reason: 'Job does not support easy apply - manual application required',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            _partitionKey: userId
+        };
 
-            return {
-                success: true,
-                message: 'Application submitted successfully',
-                applicationId
-            };
-        } else {
-            return {
-                success: false,
-                message: 'Failed to submit application to job portal'
-            };
-        }
+        await storeJobApplication(applicationRecord);
+
+        return {
+            success: false, // Mark as false since manual action required
+            message: 'Job requires manual application - stored for user review',
+            applicationId,
+            requiresManualAction: true
+        };
 
     } catch (error) {
         console.error('Error submitting job application:', error);
+        
+        await automationLogger.logError(
+            'application_submission_error',
+            error,
+            { applicationData }
+        );
+
         return {
             success: false,
             message: error.message || 'Internal error during application submission'
@@ -464,18 +601,62 @@ async function getUserAutoApplySettings(userId) {
 }
 
 async function checkExistingApplication(userId, jobId) {
-    // TODO: Check database for existing applications
-    return null; // No existing application found
+    try {
+        await azureCosmosService.initialize();
+        
+        // Query for existing application by userId and jobId
+        const existingApplications = await azureCosmosService.queryDocuments(
+            'applications',
+            'SELECT * FROM c WHERE c.userId = @userId AND c.jobId = @jobId',
+            [
+                { name: '@userId', value: userId },
+                { name: '@jobId', value: jobId }
+            ]
+        );
+        
+        return existingApplications.length > 0 ? existingApplications[0] : null;
+    } catch (error) {
+        console.error('Error checking existing application:', error);
+        return null; // Return null on error to allow application to proceed
+    }
 }
 
 async function getTodayApplicationCount(userId) {
-    // TODO: Query database for today's applications
-    return Math.floor(Math.random() * 3); // Mock count
+    try {
+        await azureCosmosService.initialize();
+        
+        // Get start of today in UTC
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todayApplications = await azureCosmosService.queryDocuments(
+            'applications',
+            'SELECT VALUE COUNT(1) FROM c WHERE c.userId = @userId AND c.appliedAt >= @today',
+            [
+                { name: '@userId', value: userId },
+                { name: '@today', value: today }
+            ]
+        );
+        
+        return todayApplications[0] || 0;
+    } catch (error) {
+        console.error('Error getting today application count:', error);
+        return 0; // Return 0 on error to allow applications
+    }
 }
 
 async function storeJobApplication(applicationData) {
-    // TODO: Store in database (Firestore, etc.)
-    console.log('Storing job application:', applicationData);
+    try {
+        // Store application in Azure Cosmos DB
+        await azureCosmosService.initialize();
+        const applicationId = await azureCosmosService.createDocument('applications', applicationData);
+        
+        console.log(`✅ Job application stored in Cosmos DB: ${applicationId}`);
+        return applicationId;
+    } catch (error) {
+        console.error('❌ Failed to store job application in Cosmos DB:', error);
+        throw error;
+    }
 }
 
 /**
@@ -495,3 +676,12 @@ async function sendApplicationSubmittedNotification(userId, applicationData) {
         // Don't throw error here to avoid breaking the application workflow
     }
 }
+
+// Export functions for use in tests and other modules
+module.exports = {
+    submitJobApplication,
+    calculateJobRelevancy,
+    generateCoverLetter,
+    tailorResume,
+    initializeAzureOpenAI
+};

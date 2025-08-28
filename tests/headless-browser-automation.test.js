@@ -1,0 +1,939 @@
+const { describe, beforeAll, beforeEach, afterAll, afterEach, it, expect } = require('@jest/globals');
+
+// Mock dependencies
+jest.mock('playwright', () => ({
+  chromium: {
+    launch: jest.fn()
+  }
+}));
+
+jest.mock('bottleneck');
+jest.mock('@azure/storage-blob');
+jest.mock('../azure/lib/services/automation-logs');
+
+// Import after mocking
+const headlessBrowserService = require('../azure/lib/services/headless-browser-service');
+const { chromium } = require('playwright');
+const Bottleneck = require('bottleneck');
+
+describe('Headless Browser Automation', () => {
+  let mockBrowser;
+  let mockPage;
+  let mockLimiter;
+
+  beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Reset headless browser service state
+    headlessBrowserService.activeBrowsers = 0;
+    headlessBrowserService.browsers.clear();
+
+    // Mock browser and page
+    mockPage = {
+      goto: jest.fn(),
+      $: jest.fn(),
+      $$: jest.fn(),
+      title: jest.fn(),
+      url: jest.fn(),
+      screenshot: jest.fn(),
+      on: jest.fn(),
+      setDefaultTimeout: jest.fn(),
+      setDefaultNavigationTimeout: jest.fn(),
+      waitForTimeout: jest.fn(),
+      textContent: jest.fn()
+    };
+
+    mockBrowser = {
+      newPage: jest.fn().mockResolvedValue(mockPage),
+      close: jest.fn()
+    };
+
+    chromium.launch.mockResolvedValue(mockBrowser);
+
+    // Mock Bottleneck
+    mockLimiter = {
+      schedule: jest.fn((fn) => fn()),
+      counts: jest.fn().mockReturnValue({ RECEIVED: 0, DONE: 0 })
+    };
+    
+    Bottleneck.mockImplementation(() => mockLimiter);
+  });
+
+  describe('Service Initialization', () => {
+    it('should initialize with correct configuration', () => {
+      expect(headlessBrowserService.maxConcurrentBrowsers).toBe(5);
+      expect(headlessBrowserService.activeBrowsers).toBe(0);
+    });
+
+    it('should have proper health status when initialized', () => {
+      const health = headlessBrowserService.getHealthStatus();
+      
+      expect(health).toEqual({
+        activeBrowsers: 0,
+        maxConcurrentBrowsers: 5,
+        queuedOperations: 0,
+        status: 'healthy'
+      });
+    });
+  });
+
+  describe('Browser Management', () => {
+    it('should launch browser with correct configuration', async () => {
+      const browser = await headlessBrowserService.launchBrowser();
+      
+      expect(chromium.launch).toHaveBeenCalledWith({
+        headless: true,
+        args: expect.arrayContaining([
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage'
+        ]),
+        timeout: 60000,
+        viewport: { width: 1366, height: 768 }
+      });
+      
+      expect(browser).toBe(mockBrowser);
+    });
+
+    it('should track active browsers correctly', async () => {
+      // Reset the service state for this test
+      headlessBrowserService.activeBrowsers = 0;
+      headlessBrowserService.browsers.clear();
+      
+      const browser1 = await headlessBrowserService.launchBrowser();
+      expect(headlessBrowserService.activeBrowsers).toBe(1);
+      
+      const browser2 = await headlessBrowserService.launchBrowser();
+      expect(headlessBrowserService.activeBrowsers).toBe(2);
+      
+      await headlessBrowserService.closeBrowser(browser1);
+      expect(headlessBrowserService.activeBrowsers).toBe(1);
+    });
+
+    it('should enforce concurrent browser limits', async () => {
+      // Set up service to have max browsers already
+      headlessBrowserService.activeBrowsers = 5;
+      
+      await expect(headlessBrowserService.launchBrowser())
+        .rejects.toThrow('Maximum concurrent browsers (5) exceeded');
+    });
+  });
+
+  describe('Job Portal Detection', () => {
+    beforeEach(() => {
+      mockPage.url.mockReturnValue('https://linkedin.com/jobs/view/123456');
+      mockPage.title.mockResolvedValue('Software Engineer - LinkedIn');
+    });
+
+    it('should detect LinkedIn portal correctly', async () => {
+      const portalHandler = await headlessBrowserService.detectJobPortal(mockPage, {});
+      
+      expect(portalHandler).toEqual({
+        type: 'linkedin',
+        applyButtonSelector: 'button[aria-label*="Easy Apply"], .jobs-apply-button',
+        formSelectors: {
+          firstName: 'input[name*="firstName"], input[id*="firstName"]',
+          lastName: 'input[name*="lastName"], input[id*="lastName"]',
+          email: 'input[name*="email"], input[type="email"]',
+          phone: 'input[name*="phone"], input[type="tel"]',
+          resume: 'input[type="file"][accept*="pdf"], input[type="file"]'
+        },
+        submitSelector: 'button[aria-label*="Submit"], .artdeco-button--primary',
+        nextSelector: 'button[aria-label*="Next"], .artdeco-button--primary'
+      });
+    });
+
+    it('should detect Indeed portal correctly', async () => {
+      mockPage.url.mockReturnValue('https://indeed.com/viewjob?jk=123456');
+      mockPage.title.mockResolvedValue('Software Engineer - Indeed');
+      
+      const portalHandler = await headlessBrowserService.detectJobPortal(mockPage, {});
+      
+      expect(portalHandler.type).toBe('indeed');
+      expect(portalHandler.applyButtonSelector).toBe('button[data-jk], .ia-IndeedApplyButton');
+    });
+
+    it('should detect TheirStack portal correctly', async () => {
+      mockPage.url.mockReturnValue('https://theirstack.com/job/123456');
+      
+      const portalHandler = await headlessBrowserService.detectJobPortal(mockPage, {
+        jobPortal: { name: 'TheirStack' }
+      });
+      
+      expect(portalHandler.type).toBe('theirstack');
+    });
+
+    it('should fallback to generic portal handler for unknown sites', async () => {
+      mockPage.url.mockReturnValue('https://unknown-job-site.com/job/123456');
+      mockPage.title.mockResolvedValue('Software Engineer - Unknown Site');
+      
+      const portalHandler = await headlessBrowserService.detectJobPortal(mockPage, {});
+      
+      expect(portalHandler.type).toBe('generic');
+    });
+  });
+
+  describe('Application Form Filling', () => {
+    let portalHandler;
+    let userProfile;
+    let jobListing;
+
+    beforeEach(() => {
+      portalHandler = {
+        type: 'linkedin',
+        applyButtonSelector: '.apply-button',
+        formSelectors: {
+          firstName: 'input[name="firstName"]',
+          lastName: 'input[name="lastName"]',
+          email: 'input[name="email"]',
+          phone: 'input[name="phone"]'
+        }
+      };
+
+      userProfile = {
+        firstName: 'John',
+        lastName: 'Doe',
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+        phone: '+1234567890'
+      };
+
+      jobListing = {
+        title: 'Software Engineer',
+        company: 'Tech Corp'
+      };
+
+      // Mock DOM elements
+      const mockElement = {
+        fill: jest.fn(),
+        click: jest.fn()
+      };
+
+      mockPage.$.mockImplementation((selector) => {
+        return Promise.resolve(mockElement);
+      });
+    });
+
+    it('should fill form fields with user profile data', async () => {
+      const result = await headlessBrowserService.fillApplicationForm(
+        mockPage, 
+        portalHandler, 
+        jobListing, 
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(result).toEqual({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        phone: '+1234567890'
+      });
+
+      expect(mockPage.$).toHaveBeenCalledWith('input[name="firstName"]');
+      expect(mockPage.$).toHaveBeenCalledWith('input[name="lastName"]');
+      expect(mockPage.$).toHaveBeenCalledWith('input[name="email"]');
+      expect(mockPage.$).toHaveBeenCalledWith('input[name="phone"]');
+    });
+
+    it('should handle missing form fields gracefully', async () => {
+      mockPage.$.mockResolvedValue(null); // No matching element found
+
+      const result = await headlessBrowserService.fillApplicationForm(
+        mockPage, 
+        portalHandler, 
+        jobListing, 
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(result).toEqual({});
+    });
+
+    it('should click apply button if present', async () => {
+      const mockApplyButton = { click: jest.fn() };
+      mockPage.$.mockImplementation((selector) => {
+        if (selector === '.apply-button') {
+          return Promise.resolve(mockApplyButton);
+        }
+        return Promise.resolve({ fill: jest.fn() });
+      });
+
+      await headlessBrowserService.fillApplicationForm(
+        mockPage, 
+        portalHandler, 
+        jobListing, 
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(mockApplyButton.click).toHaveBeenCalled();
+      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(2000);
+    });
+  });
+
+  describe('Screening Questions', () => {
+    let portalHandler;
+    let userProfile;
+    let jobListing;
+
+    beforeEach(() => {
+      portalHandler = { type: 'linkedin' };
+      userProfile = {
+        skills: ['JavaScript', 'React'],
+        experienceYears: 5,
+        workAuthorization: 'Yes',
+        expectedSalary: '$100,000'
+      };
+      jobListing = {
+        title: 'Frontend Developer',
+        requirements: ['JavaScript', 'React']
+      };
+    });
+
+    it('should generate appropriate answers for experience questions', async () => {
+      const question = 'How many years of experience do you have with JavaScript?';
+      
+      const answer = await headlessBrowserService.generateScreeningAnswer(
+        question, 
+        jobListing, 
+        userProfile
+      );
+
+      expect(answer).toBe('5');
+    });
+
+    it('should generate appropriate answers for authorization questions', async () => {
+      const question = 'Are you authorized to work in the United States?';
+      
+      const answer = await headlessBrowserService.generateScreeningAnswer(
+        question, 
+        jobListing, 
+        userProfile
+      );
+
+      expect(answer).toBe('Yes');
+    });
+
+    it('should generate appropriate answers for salary questions', async () => {
+      const question = 'What is your expected salary range?';
+      
+      const answer = await headlessBrowserService.generateScreeningAnswer(
+        question, 
+        jobListing, 
+        userProfile
+      );
+
+      expect(answer).toBe('$100,000');
+    });
+
+    it('should default to positive responses for boolean questions', async () => {
+      const question = 'Do you have experience with React?';
+      
+      const answer = await headlessBrowserService.generateScreeningAnswer(
+        question, 
+        jobListing, 
+        userProfile
+      );
+
+      expect(answer).toBe('Yes');
+    });
+
+    it('should fallback to generic answer for unknown questions', async () => {
+      const question = 'Tell us about your favorite programming language';
+      
+      const answer = await headlessBrowserService.generateScreeningAnswer(
+        question, 
+        jobListing, 
+        userProfile
+      );
+
+      expect(answer).toBe('Please see resume for details');
+    });
+
+    it('should handle screening questions on the page', async () => {
+      const mockQuestionElement = {
+        textContent: jest.fn().mockReturnValue('How many years of JavaScript experience do you have?'),
+        $: jest.fn().mockResolvedValue({
+          getAttribute: jest.fn().mockReturnValue('text'),
+          fill: jest.fn()
+        })
+      };
+
+      mockPage.$$.mockResolvedValue([mockQuestionElement]);
+
+      const result = await headlessBrowserService.handleScreeningQuestions(
+        mockPage,
+        portalHandler,
+        jobListing,
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(result).toHaveProperty('question_0');
+      expect(result.question_0.question).toContain('JavaScript experience');
+      expect(result.question_0.answer).toBe('5');
+    });
+  });
+
+  describe('Resume Upload', () => {
+    let portalHandler;
+    let userProfile;
+
+    beforeEach(() => {
+      portalHandler = {
+        formSelectors: {
+          resume: 'input[type="file"]'
+        }
+      };
+
+      userProfile = {
+        id: 'user-123',
+        resume: 'User resume content here...'
+      };
+
+      // Mock file system operations
+      const fs = require('fs');
+      jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should upload resume when file input is present', async () => {
+      const mockFileInput = {
+        setInputFiles: jest.fn()
+      };
+
+      mockPage.$.mockResolvedValue(mockFileInput);
+
+      const result = await headlessBrowserService.uploadResume(
+        mockPage,
+        portalHandler,
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(result).toBe(true);
+      expect(mockFileInput.setInputFiles).toHaveBeenCalledWith('/tmp/resume_test-app-123.txt');
+    });
+
+    it('should handle missing file input gracefully', async () => {
+      mockPage.$.mockResolvedValue(null);
+
+      const result = await headlessBrowserService.uploadResume(
+        mockPage,
+        portalHandler,
+        userProfile,
+        'test-app-123'
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('should handle missing resume file gracefully', async () => {
+      const mockFileInput = { setInputFiles: jest.fn() };
+      mockPage.$.mockResolvedValue(mockFileInput);
+
+      // User profile without resume
+      const emptyProfile = { id: 'user-123' };
+
+      const result = await headlessBrowserService.uploadResume(
+        mockPage,
+        portalHandler,
+        emptyProfile,
+        'test-app-123'
+      );
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Application Submission', () => {
+    let portalHandler;
+
+    beforeEach(() => {
+      portalHandler = {
+        submitSelector: 'button[type="submit"]'
+      };
+    });
+
+    it('should submit application successfully', async () => {
+      const mockSubmitButton = { click: jest.fn() };
+      mockPage.$.mockImplementation((selector) => {
+        if (selector === 'button[type="submit"]') {
+          return Promise.resolve(mockSubmitButton);
+        }
+        if (selector === 'text="Application submitted"') {
+          return Promise.resolve({}); // Success indicator found
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await headlessBrowserService.submitApplication(
+        mockPage,
+        portalHandler,
+        'test-app-123'
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Application submitted successfully');
+      expect(mockSubmitButton.click).toHaveBeenCalled();
+    });
+
+    it('should handle missing submit button', async () => {
+      mockPage.$.mockResolvedValue(null);
+
+      const result = await headlessBrowserService.submitApplication(
+        mockPage,
+        portalHandler,
+        'test-app-123'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Submission failed: Submit button not found');
+    });
+
+    it('should detect submission errors', async () => {
+      const mockSubmitButton = { click: jest.fn() };
+      mockPage.$.mockImplementation((selector) => {
+        if (selector === 'button[type="submit"]') {
+          return Promise.resolve(mockSubmitButton);
+        }
+        if (selector === '[class*="error"]') {
+          return Promise.resolve({ textContent: jest.fn().mockReturnValue('Application failed') });
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await headlessBrowserService.submitApplication(
+        mockPage,
+        portalHandler,
+        'test-app-123'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Application failed');
+    });
+  });
+
+  describe('End-to-End Application Flow', () => {
+    let jobListing;
+    let userProfile;
+
+    beforeEach(() => {
+      jobListing = {
+        id: 'job-123',
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        final_url: 'https://linkedin.com/jobs/view/123456',
+        easy_apply: true,
+        jobPortal: { name: 'LinkedIn' }
+      };
+
+      userProfile = {
+        id: 'user-123',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        phone: '+1234567890',
+        resume: 'User resume content...'
+      };
+
+      // Mock successful flow
+      mockPage.url.mockReturnValue('https://linkedin.com/jobs/view/123456');
+      mockPage.title.mockResolvedValue('Software Engineer - LinkedIn');
+      mockPage.goto.mockResolvedValue(undefined);
+      mockPage.screenshot.mockResolvedValue(undefined);
+
+      // Mock form elements
+      const mockElement = {
+        fill: jest.fn(),
+        click: jest.fn(),
+        setInputFiles: jest.fn()
+      };
+
+      mockPage.$.mockImplementation((selector) => {
+        if (selector.includes('text="Application submitted"') || selector.includes('[class*="success"]') || selector.includes('[class*="confirmation"]')) {
+          return Promise.resolve({ textContent: jest.fn().mockReturnValue('Application submitted successfully') }); // Success indicator
+        }
+        return Promise.resolve(mockElement);
+      });
+
+      mockPage.$$.mockResolvedValue([]); // No screening questions
+    });
+
+    it('should complete full application flow successfully', async () => {
+      const result = await headlessBrowserService.applyToJob(
+        jobListing,
+        userProfile,
+        { screenshots: true }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.applicationId).toBeDefined();
+      expect(result.message).toBe('Application submitted successfully');
+      expect(result.duration).toBeGreaterThan(0);
+      expect(result.attempts).toBe(1);
+
+      // Verify browser lifecycle
+      expect(chromium.launch).toHaveBeenCalled();
+      expect(mockBrowser.newPage).toHaveBeenCalled();
+      expect(mockPage.goto).toHaveBeenCalledWith(
+        jobListing.final_url,
+        { waitUntil: 'networkidle', timeout: 30000 }
+      );
+      expect(mockBrowser.close).toHaveBeenCalled();
+    });
+
+    it('should reject jobs without easy_apply', async () => {
+      jobListing.easy_apply = false;
+
+      const result = await headlessBrowserService.applyToJob(
+        jobListing,
+        userProfile
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('does not support easy apply');
+    });
+
+    it('should reject jobs without URL', async () => {
+      jobListing.final_url = null;
+
+      const result = await headlessBrowserService.applyToJob(
+        jobListing,
+        userProfile
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Job URL is required');
+    });
+
+    it('should retry failed applications with exponential backoff', async () => {
+      // Mock first two attempts to fail, third to succeed
+      let attemptCount = 0;
+      chromium.launch.mockImplementation(() => {
+        attemptCount++;
+        if (attemptCount <= 2) {
+          throw new Error(`Attempt ${attemptCount} failed`);
+        }
+        return Promise.resolve(mockBrowser);
+      });
+
+      const result = await headlessBrowserService.applyToJob(
+        jobListing,
+        userProfile
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.attempts).toBe(3);
+      expect(chromium.launch).toHaveBeenCalledTimes(3);
+    });
+
+    it('should fail after maximum retry attempts', async () => {
+      // Mock all attempts to fail
+      chromium.launch.mockRejectedValue(new Error('Persistent failure'));
+
+      const result = await headlessBrowserService.applyToJob(
+        jobListing,
+        userProfile
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.attempts).toBe(3);
+      expect(result.message).toContain('Application failed after 3 attempts');
+    });
+  });
+
+  describe('Rate Limiting and Concurrency', () => {
+    it('should enforce rate limiting through Bottleneck', async () => {
+      const jobListing = {
+        id: 'job-123',
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        final_url: 'https://example.com/job',
+        easy_apply: true,
+        jobPortal: { name: 'Generic' }
+      };
+      const userProfile = {
+        id: 'user-123',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com'
+      };
+
+      // Mock page navigation and success detection
+      mockPage.url.mockReturnValue('https://example.com/job');
+      mockPage.title.mockResolvedValue('Software Engineer - Tech Corp');
+      mockPage.goto.mockResolvedValue(undefined);
+      
+      // Mock success detection
+      mockPage.$.mockImplementation((selector) => {
+        if (selector.includes('text="Application submitted"') || selector.includes('[class*="success"]')) {
+          return Promise.resolve({ textContent: jest.fn().mockReturnValue('Application submitted successfully') });
+        }
+        return Promise.resolve({ fill: jest.fn(), click: jest.fn() });
+      });
+      
+      mockPage.$$.mockResolvedValue([]); // No screening questions
+
+      await headlessBrowserService.applyToJob(jobListing, userProfile);
+
+      expect(mockLimiter.schedule).toHaveBeenCalled();
+    });
+
+    it('should track concurrent browser usage', async () => {
+      const initialCount = headlessBrowserService.activeBrowsers;
+      
+      await headlessBrowserService.launchBrowser();
+      
+      expect(headlessBrowserService.activeBrowsers).toBe(initialCount + 1);
+      
+      const health = headlessBrowserService.getHealthStatus();
+      expect(health.activeBrowsers).toBe(initialCount + 1);
+      expect(health.status).toBe('healthy');
+    });
+
+    it('should show at-capacity status when limit reached', async () => {
+      headlessBrowserService.activeBrowsers = 5;
+      
+      const health = headlessBrowserService.getHealthStatus();
+      expect(health.status).toBe('at-capacity');
+    });
+  });
+
+  describe('Screenshot and Debugging', () => {
+    it('should capture screenshots at different stages', async () => {
+      mockPage.screenshot.mockResolvedValue(undefined);
+
+      const screenshotPath = await headlessBrowserService.captureScreenshot(
+        mockPage,
+        'test-app-123',
+        'initial'
+      );
+
+      expect(screenshotPath).toContain('screenshot_test-app-123_initial_');
+      expect(mockPage.screenshot).toHaveBeenCalledWith({
+        path: screenshotPath,
+        fullPage: true
+      });
+    });
+
+    it('should handle screenshot errors gracefully', async () => {
+      mockPage.screenshot.mockRejectedValue(new Error('Screenshot failed'));
+
+      const screenshotPath = await headlessBrowserService.captureScreenshot(
+        mockPage,
+        'test-app-123',
+        'error'
+      );
+
+      expect(screenshotPath).toBeNull();
+    });
+  });
+
+  describe('Cleanup and Resource Management', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should clean up idle browsers', async () => {
+      const mockBrowserData = {
+        browser: mockBrowser,
+        createdAt: Date.now() - (6 * 60 * 1000), // 6 minutes ago
+        lastActivity: Date.now() - (6 * 60 * 1000)
+      };
+
+      headlessBrowserService.browsers.set('test-browser', mockBrowserData);
+
+      await headlessBrowserService.cleanup();
+
+      expect(mockBrowser.close).toHaveBeenCalled();
+    });
+
+    it('should not clean up active browsers', async () => {
+      const mockBrowserData = {
+        browser: mockBrowser,
+        createdAt: Date.now() - (2 * 60 * 1000), // 2 minutes ago (within threshold)
+        lastActivity: Date.now() - (2 * 60 * 1000)
+      };
+
+      headlessBrowserService.browsers.set('active-browser', mockBrowserData);
+
+      await headlessBrowserService.cleanup();
+
+      expect(mockBrowser.close).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Application Worker Integration', () => {
+  let mockAzureCosmosService;
+  let mockHeadlessBrowserService;
+
+  beforeAll(() => {
+    // Mock Azure Cosmos service
+    mockAzureCosmosService = {
+      initialize: jest.fn(),
+      createDocument: jest.fn().mockResolvedValue('app-123'),
+      queryDocuments: jest.fn().mockResolvedValue([])
+    };
+
+    // Mock the require calls with correct path
+    jest.doMock('../lib/services/azure-cosmos-service', () => ({
+      azureCosmosService: mockAzureCosmosService
+    }));
+
+    // Mock headless browser service
+    mockHeadlessBrowserService = {
+      applyToJob: jest.fn()
+    };
+
+    jest.doMock('../azure/lib/services/headless-browser-service', () => mockHeadlessBrowserService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should integrate with Azure Cosmos DB for application storage', async () => {
+    mockHeadlessBrowserService.applyToJob.mockResolvedValue({
+      success: true,
+      applicationId: 'app-123',
+      duration: 5000,
+      attempts: 1,
+      formData: { firstName: 'John', lastName: 'Doe' },
+      screenshotPath: '/tmp/screenshot.png'
+    });
+
+    const { submitJobApplication } = require('../azure/applicationWorker');
+    
+    const applicationData = {
+      userId: 'user-123',
+      jobId: 'job-123',
+      jobListing: {
+        easy_apply: true,
+        final_url: 'https://example.com/job',
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        jobPortal: { name: 'TheirStack' }
+      },
+      userProfile: {
+        id: 'user-123',
+        name: 'John Doe',
+        email: 'john.doe@example.com'
+      },
+      coverLetter: 'Dear Hiring Manager...',
+      resume: 'Resume content...',
+      relevancyScore: 85
+    };
+
+    const result = await submitJobApplication(applicationData);
+
+    expect(result.success).toBe(true);
+    expect(mockHeadlessBrowserService.applyToJob).toHaveBeenCalledWith(
+      applicationData.jobListing,
+      expect.objectContaining({
+        ...applicationData.userProfile,
+        resume: applicationData.resume,
+        coverLetter: applicationData.coverLetter
+      }),
+      expect.objectContaining({
+        timeout: 120000,
+        screenshots: true,
+        retryOnFailure: true
+      })
+    );
+
+    expect(mockAzureCosmosService.createDocument).toHaveBeenCalledWith(
+      'applications',
+      expect.objectContaining({
+        id: 'app-123',
+        userId: 'user-123',
+        jobId: 'job-123',
+        status: 'applied',
+        applicationMethod: 'headless_automation',
+        automationDetails: expect.objectContaining({
+          duration: 5000,
+          attempts: 1
+        }),
+        _partitionKey: 'user-123'
+      })
+    );
+  });
+
+  it('should handle headless automation failures gracefully', async () => {
+    mockHeadlessBrowserService.applyToJob.mockResolvedValue({
+      success: false,
+      applicationId: 'app-failed-123',
+      message: 'Submit button not found',
+      duration: 3000,
+      attempts: 2
+    });
+
+    const { submitJobApplication } = require('../azure/applicationWorker');
+    
+    const applicationData = {
+      userId: 'user-123',
+      jobId: 'job-123',
+      jobListing: {
+        easy_apply: true,
+        final_url: 'https://example.com/job',
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        jobPortal: { name: 'TheirStack' }
+      },
+      userProfile: { id: 'user-123' },
+      coverLetter: 'Cover letter...',
+      resume: 'Resume...',
+      relevancyScore: 75
+    };
+
+    const result = await submitJobApplication(applicationData);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Submit button not found');
+    expect(result.automationDetails.attempts).toBe(2);
+  });
+
+  it('should fallback to manual application for non-easy-apply jobs', async () => {
+    const { submitJobApplication } = require('../azure/applicationWorker');
+    
+    const applicationData = {
+      userId: 'user-123',
+      jobId: 'job-123',
+      jobListing: {
+        easy_apply: false, // Not easy apply
+        final_url: 'https://example.com/job',
+        title: 'Software Engineer',
+        company: 'Tech Corp'
+      },
+      userProfile: { id: 'user-123' },
+      coverLetter: 'Cover letter...',
+      resume: 'Resume...',
+      relevancyScore: 85
+    };
+
+    const result = await submitJobApplication(applicationData);
+
+    expect(result.success).toBe(false);
+    expect(result.requiresManualAction).toBe(true);
+    expect(result.message).toContain('manual application');
+    expect(mockHeadlessBrowserService.applyToJob).not.toHaveBeenCalled();
+    
+    expect(mockAzureCosmosService.createDocument).toHaveBeenCalledWith(
+      'applications',
+      expect.objectContaining({
+        status: 'pending_manual',
+        applicationMethod: 'manual_required'
+      })
+    );
+  });
+});

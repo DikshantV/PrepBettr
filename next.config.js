@@ -2,6 +2,7 @@
 const nextConfig = {
   // Enable standalone output for Azure App Service deployment
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  
   eslint: {
     // Temporarily ignore ESLint errors during build to check React icons fix
     ignoreDuringBuilds: true,

@@ -5,6 +5,15 @@ const OpenAI = require('openai');
 const { fetchAzureSecrets } = require('../lib/azure-config');
 const { v4: uuidv4 } = require('uuid');
 
+// Import TheirStack portal
+let getTheirStackPortal;
+try {
+    ({ getTheirStackPortal } = require('../../portals/theirstack'));
+} catch (error) {
+    console.warn('⚠️ TheirStack portal not available:', error.message);
+    getTheirStackPortal = null;
+}
+
 // Azure OpenAI client - will be initialized from Key Vault secrets
 let azureOpenAIClient = null;
 
@@ -128,31 +137,57 @@ app.storageQueue('jobSearchWorker', {
  */
 async function searchJobsAcrossPortals(userId, filters) {
     const allJobs = [];
+    const searchedPortals = [];
     const mockJobs = await getMockJobListings(); // Fallback to mock data
 
     try {
-        // TODO: Implement actual portal integrations
-        // For now, we'll filter and return mock data based on the search criteria
-        
-        const filteredJobs = filterJobsBySearchCriteria(mockJobs, filters);
-        allJobs.push(...filteredJobs);
+        // Try TheirStack portal first
+        if (getTheirStackPortal) {
+            try {
+                console.log('🔍 Searching TheirStack for jobs...');
+                const theirStackPortal = getTheirStackPortal();
+                
+                if (theirStackPortal.isConfigured()) {
+                    const theirStackJobs = await theirStackPortal.searchJobs(userId, filters);
+                    allJobs.push(...theirStackJobs);
+                    searchedPortals.push('TheirStack');
+                    console.log(`✅ Found ${theirStackJobs.length} jobs from TheirStack`);
+                } else {
+                    console.warn('⚠️ TheirStack not configured, skipping');
+                }
+            } catch (error) {
+                console.error('❌ TheirStack search failed:', error.message);
+                // Continue to fallback options
+            }
+        }
 
-        console.log(`Found ${allJobs.length} jobs across portals for user ${userId}`);
+        // If TheirStack didn't return enough jobs or failed, use mock data as fallback
+        if (allJobs.length === 0) {
+            console.log('🔄 Falling back to mock job data');
+            const filteredJobs = filterJobsBySearchCriteria(mockJobs, filters);
+            allJobs.push(...filteredJobs);
+            searchedPortals.push('Mock');
+        }
+
+        console.log(`Found ${allJobs.length} total jobs across portals for user ${userId}`);
 
         return {
             jobs: allJobs,
             totalCount: allJobs.length,
-            searchedPortals: filters.portals || ['LinkedIn', 'Indeed'],
+            searchedPortals,
             searchedAt: new Date().toISOString()
         };
 
     } catch (error) {
         console.error('Error searching across portals:', error);
-        // Return mock data as fallback
+        
+        // Final fallback to mock data
+        console.log('🔄 Using mock data as final fallback');
+        const fallbackJobs = filterJobsBySearchCriteria(mockJobs, filters);
         return {
-            jobs: filterJobsBySearchCriteria(mockJobs, filters),
-            totalCount: mockJobs.length,
-            searchedPortals: ['mock'],
+            jobs: fallbackJobs,
+            totalCount: fallbackJobs.length,
+            searchedPortals: ['Mock (Fallback)'],
             searchedAt: new Date().toISOString()
         };
     }

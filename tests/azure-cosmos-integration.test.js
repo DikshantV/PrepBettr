@@ -1,0 +1,875 @@
+const { describe, beforeAll, beforeEach, afterAll, afterEach, it, expect, jest } = require('@jest/globals');
+
+// Mock Azure Cosmos DB dependencies
+jest.mock('@azure/cosmos', () => {
+  const mockCosmosClient = {
+    database: jest.fn(),
+    databases: {
+      createIfNotExists: jest.fn()
+    }
+  };
+  
+  const mockDatabase = {
+    container: jest.fn(),
+    containers: {
+      createIfNotExists: jest.fn()
+    }
+  };
+  
+  const mockContainer = {
+    items: {
+      create: jest.fn(),
+      query: jest.fn(),
+      upsert: jest.fn()
+    },
+    item: jest.fn().mockReturnValue({
+      read: jest.fn(),
+      replace: jest.fn(),
+      delete: jest.fn()
+    })
+  };
+  
+  mockCosmosClient.database.mockReturnValue(mockDatabase);
+  mockDatabase.container.mockReturnValue(mockContainer);
+  
+  return {
+    CosmosClient: jest.fn(() => mockCosmosClient)
+  };
+});
+
+jest.mock('@azure/identity');
+
+// Import after mocking
+const { azureCosmosService } = require('../azure/lib/services/azure-cosmos-service');
+const { CosmosClient } = require('@azure/cosmos');
+
+describe('Azure Cosmos DB Service', () => {
+  let mockClient;
+  let mockDatabase;
+  let mockContainer;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Set up mocks
+    mockContainer = {
+      items: {
+        create: jest.fn(),
+        query: jest.fn(),
+        upsert: jest.fn()
+      },
+      item: jest.fn().mockReturnValue({
+        read: jest.fn(),
+        replace: jest.fn(),
+        delete: jest.fn()
+      })
+    };
+    
+    mockDatabase = {
+      container: jest.fn().mockReturnValue(mockContainer),
+      containers: {
+        createIfNotExists: jest.fn().mockResolvedValue({ container: mockContainer })
+      }
+    };
+    
+    mockClient = {
+      database: jest.fn().mockReturnValue(mockDatabase),
+      databases: {
+        createIfNotExists: jest.fn().mockResolvedValue({ database: mockDatabase })
+      }
+    };
+    
+    CosmosClient.mockReturnValue(mockClient);
+  });
+
+  describe('Service Initialization', () => {
+    it('should initialize with correct Azure Cosmos DB configuration', async () => {
+      const config = {
+        endpoint: 'https://test-cosmosdb.documents.azure.com:443/',
+        databaseId: 'prepbettr-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' },
+          users: { partitionKey: '/id' },
+          jobs: { partitionKey: '/id' }
+        }
+      };
+
+      await azureCosmosService.initialize(config);
+
+      expect(CosmosClient).toHaveBeenCalledWith({
+        endpoint: config.endpoint,
+        credential: expect.any(Object)
+      });
+
+      expect(mockClient.databases.createIfNotExists).toHaveBeenCalledWith({
+        id: config.databaseId
+      });
+
+      // Verify containers are created
+      expect(mockDatabase.containers.createIfNotExists).toHaveBeenCalledWith({
+        id: 'applications',
+        partitionKey: { paths: ['/userId'] }
+      });
+
+      expect(mockDatabase.containers.createIfNotExists).toHaveBeenCalledWith({
+        id: 'users',
+        partitionKey: { paths: ['/id'] }
+      });
+
+      expect(mockDatabase.containers.createIfNotExists).toHaveBeenCalledWith({
+        id: 'jobs',
+        partitionKey: { paths: ['/id'] }
+      });
+    });
+
+    it('should handle initialization errors gracefully', async () => {
+      const config = {
+        endpoint: 'invalid-endpoint',
+        databaseId: 'test-db',
+        containerConfigs: {}
+      };
+
+      mockClient.databases.createIfNotExists.mockRejectedValue(new Error('Invalid endpoint'));
+
+      await expect(azureCosmosService.initialize(config))
+        .rejects.toThrow('Invalid endpoint');
+    });
+  });
+
+  describe('Document Creation', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should create application document successfully', async () => {
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        jobId: 'job-789',
+        status: 'applied',
+        applicationMethod: 'headless_automation',
+        jobTitle: 'Software Engineer',
+        companyName: 'Tech Corp',
+        appliedAt: new Date().toISOString(),
+        automationDetails: {
+          duration: 5000,
+          attempts: 1,
+          formData: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@example.com'
+          },
+          screenshotPath: '/tmp/screenshot_app-123.png'
+        },
+        _partitionKey: 'user-456'
+      };
+
+      mockContainer.items.create.mockResolvedValue({
+        resource: applicationData,
+        statusCode: 201
+      });
+
+      const result = await azureCosmosService.createDocument('applications', applicationData);
+
+      expect(result).toBe('app-123');
+      expect(mockContainer.items.create).toHaveBeenCalledWith(applicationData);
+    });
+
+    it('should handle creation errors with proper error mapping', async () => {
+      const applicationData = {
+        id: 'app-invalid',
+        userId: 'user-456',
+        jobId: 'job-789',
+        _partitionKey: 'user-456'
+      };
+
+      mockContainer.items.create.mockRejectedValue({
+        code: 409,
+        message: 'Conflict: Document with id already exists'
+      });
+
+      await expect(azureCosmosService.createDocument('applications', applicationData))
+        .rejects.toThrow('Document with id already exists');
+    });
+
+    it('should auto-generate timestamps for applications', async () => {
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        jobId: 'job-789',
+        status: 'applied',
+        _partitionKey: 'user-456'
+      };
+
+      mockContainer.items.create.mockResolvedValue({
+        resource: { ...applicationData, createdAt: expect.any(String) },
+        statusCode: 201
+      });
+
+      await azureCosmosService.createDocument('applications', applicationData);
+
+      expect(mockContainer.items.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...applicationData,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String)
+        })
+      );
+    });
+  });
+
+  describe('Document Retrieval', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should retrieve document by ID and partition key', async () => {
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        jobId: 'job-789',
+        status: 'applied',
+        jobTitle: 'Software Engineer',
+        companyName: 'Tech Corp'
+      };
+
+      const mockItem = {
+        read: jest.fn().mockResolvedValue({
+          resource: applicationData,
+          statusCode: 200
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.getDocument('applications', 'app-123', 'user-456');
+
+      expect(result).toEqual(applicationData);
+      expect(mockContainer.item).toHaveBeenCalledWith('app-123', 'user-456');
+      expect(mockItem.read).toHaveBeenCalled();
+    });
+
+    it('should return null for non-existent documents', async () => {
+      const mockItem = {
+        read: jest.fn().mockRejectedValue({
+          code: 404,
+          message: 'Not Found'
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.getDocument('applications', 'non-existent', 'user-456');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('Document Querying', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should query applications by user ID', async () => {
+      const applications = [
+        {
+          id: 'app-123',
+          userId: 'user-456',
+          jobId: 'job-789',
+          status: 'applied',
+          jobTitle: 'Software Engineer',
+          companyName: 'Tech Corp'
+        },
+        {
+          id: 'app-124',
+          userId: 'user-456',
+          jobId: 'job-790',
+          status: 'pending',
+          jobTitle: 'Frontend Developer',
+          companyName: 'Web Inc'
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: applications
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.queryDocuments(
+        'applications',
+        'SELECT * FROM c WHERE c.userId = @userId',
+        [{ name: '@userId', value: 'user-456' }]
+      );
+
+      expect(result).toEqual(applications);
+      expect(mockContainer.items.query).toHaveBeenCalledWith({
+        query: 'SELECT * FROM c WHERE c.userId = @userId',
+        parameters: [{ name: '@userId', value: 'user-456' }]
+      });
+    });
+
+    it('should query applications by status', async () => {
+      const appliedApplications = [
+        {
+          id: 'app-123',
+          userId: 'user-456',
+          status: 'applied',
+          jobTitle: 'Software Engineer'
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: appliedApplications
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.queryDocuments(
+        'applications',
+        'SELECT * FROM c WHERE c.userId = @userId AND c.status = @status',
+        [
+          { name: '@userId', value: 'user-456' },
+          { name: '@status', value: 'applied' }
+        ]
+      );
+
+      expect(result).toEqual(appliedApplications);
+    });
+
+    it('should handle complex queries with joins and aggregation', async () => {
+      const aggregateResult = [
+        {
+          userId: 'user-456',
+          totalApplications: 5,
+          successfulApplications: 3,
+          successRate: 0.6
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: aggregateResult
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const query = `
+        SELECT 
+          c.userId,
+          COUNT(1) as totalApplications,
+          SUM(CASE WHEN c.status = 'applied' THEN 1 ELSE 0 END) as successfulApplications,
+          AVG(CASE WHEN c.status = 'applied' THEN 1.0 ELSE 0.0 END) as successRate
+        FROM c 
+        WHERE c.userId = @userId 
+        GROUP BY c.userId
+      `;
+
+      const result = await azureCosmosService.queryDocuments(
+        'applications',
+        query,
+        [{ name: '@userId', value: 'user-456' }]
+      );
+
+      expect(result).toEqual(aggregateResult);
+    });
+
+    it('should support pagination for large result sets', async () => {
+      const page1Results = Array(100).fill(0).map((_, i) => ({
+        id: `app-${i}`,
+        userId: 'user-456',
+        status: 'applied'
+      }));
+
+      const mockQueryIterator = {
+        hasMoreResults: jest.fn().mockReturnValueOnce(true).mockReturnValueOnce(false),
+        executeNext: jest.fn()
+          .mockResolvedValueOnce({
+            resources: page1Results.slice(0, 50),
+            continuationToken: 'token-1'
+          })
+          .mockResolvedValueOnce({
+            resources: page1Results.slice(50),
+            continuationToken: null
+          })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.queryDocuments(
+        'applications',
+        'SELECT * FROM c WHERE c.userId = @userId',
+        [{ name: '@userId', value: 'user-456' }],
+        { maxItemCount: 50, enableCrossPartitionQuery: true }
+      );
+
+      expect(result).toHaveLength(100);
+      expect(mockQueryIterator.executeNext).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Document Updates', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should update application document successfully', async () => {
+      const updatedData = {
+        id: 'app-123',
+        userId: 'user-456',
+        status: 'interview_scheduled',
+        interviewDetails: {
+          scheduledAt: '2024-02-15T10:00:00Z',
+          interviewType: 'video',
+          interviewerName: 'Jane Smith'
+        },
+        updatedAt: new Date().toISOString()
+      };
+
+      const mockItem = {
+        replace: jest.fn().mockResolvedValue({
+          resource: updatedData,
+          statusCode: 200
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.updateDocument(
+        'applications',
+        'app-123',
+        'user-456',
+        updatedData
+      );
+
+      expect(result).toEqual(updatedData);
+      expect(mockContainer.item).toHaveBeenCalledWith('app-123', 'user-456');
+      expect(mockItem.replace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...updatedData,
+          updatedAt: expect.any(String)
+        })
+      );
+    });
+
+    it('should handle partial updates with proper merging', async () => {
+      const existingDocument = {
+        id: 'app-123',
+        userId: 'user-456',
+        status: 'applied',
+        jobTitle: 'Software Engineer',
+        companyName: 'Tech Corp',
+        appliedAt: '2024-01-15T10:00:00Z'
+      };
+
+      const partialUpdate = {
+        status: 'interview_scheduled',
+        interviewDetails: {
+          scheduledAt: '2024-02-15T10:00:00Z'
+        }
+      };
+
+      const mockItem = {
+        read: jest.fn().mockResolvedValue({
+          resource: existingDocument,
+          statusCode: 200
+        }),
+        replace: jest.fn().mockResolvedValue({
+          resource: { ...existingDocument, ...partialUpdate },
+          statusCode: 200
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.updateDocument(
+        'applications',
+        'app-123',
+        'user-456',
+        partialUpdate,
+        { merge: true }
+      );
+
+      expect(mockItem.read).toHaveBeenCalled();
+      expect(mockItem.replace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...existingDocument,
+          ...partialUpdate,
+          updatedAt: expect.any(String)
+        })
+      );
+    });
+  });
+
+  describe('Document Deletion', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should delete document successfully', async () => {
+      const mockItem = {
+        delete: jest.fn().mockResolvedValue({
+          statusCode: 204
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.deleteDocument('applications', 'app-123', 'user-456');
+
+      expect(result).toBe(true);
+      expect(mockContainer.item).toHaveBeenCalledWith('app-123', 'user-456');
+      expect(mockItem.delete).toHaveBeenCalled();
+    });
+
+    it('should handle deletion of non-existent documents', async () => {
+      const mockItem = {
+        delete: jest.fn().mockRejectedValue({
+          code: 404,
+          message: 'Not Found'
+        })
+      };
+
+      mockContainer.item.mockReturnValue(mockItem);
+
+      const result = await azureCosmosService.deleteDocument('applications', 'non-existent', 'user-456');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Application-Specific Operations', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should count applications by user and status', async () => {
+      const countResult = [{ count: 15 }];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: countResult
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.countApplications('user-456', 'applied');
+
+      expect(result).toBe(15);
+      expect(mockContainer.items.query).toHaveBeenCalledWith({
+        query: 'SELECT VALUE COUNT(1) FROM c WHERE c.userId = @userId AND c.status = @status',
+        parameters: [
+          { name: '@userId', value: 'user-456' },
+          { name: '@status', value: 'applied' }
+        ]
+      });
+    });
+
+    it('should get application statistics for user', async () => {
+      const statsResult = [
+        {
+          totalApplications: 50,
+          appliedCount: 35,
+          pendingCount: 10,
+          rejectedCount: 5,
+          averageRelevancyScore: 82.5,
+          automationSuccessRate: 0.85
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: statsResult
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.getApplicationStats('user-456');
+
+      expect(result).toEqual(statsResult[0]);
+
+      const expectedQuery = `
+        SELECT 
+          COUNT(1) as totalApplications,
+          SUM(CASE WHEN c.status = 'applied' THEN 1 ELSE 0 END) as appliedCount,
+          SUM(CASE WHEN c.status = 'pending' THEN 1 ELSE 0 END) as pendingCount,
+          SUM(CASE WHEN c.status = 'rejected' THEN 1 ELSE 0 END) as rejectedCount,
+          AVG(c.relevancyScore) as averageRelevancyScore,
+          AVG(CASE WHEN c.automationDetails.success = true THEN 1.0 ELSE 0.0 END) as automationSuccessRate
+        FROM c 
+        WHERE c.userId = @userId
+      `;
+
+      expect(mockContainer.items.query).toHaveBeenCalledWith({
+        query: expectedQuery.trim(),
+        parameters: [{ name: '@userId', value: 'user-456' }]
+      });
+    });
+
+    it('should get recent applications for user', async () => {
+      const recentApplications = [
+        {
+          id: 'app-123',
+          userId: 'user-456',
+          jobTitle: 'Software Engineer',
+          companyName: 'Tech Corp',
+          status: 'applied',
+          appliedAt: '2024-01-15T10:00:00Z'
+        },
+        {
+          id: 'app-124',
+          userId: 'user-456',
+          jobTitle: 'Frontend Developer',
+          companyName: 'Web Inc',
+          status: 'pending',
+          appliedAt: '2024-01-14T15:30:00Z'
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: recentApplications
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.getRecentApplications('user-456', 10);
+
+      expect(result).toEqual(recentApplications);
+      expect(mockContainer.items.query).toHaveBeenCalledWith({
+        query: 'SELECT * FROM c WHERE c.userId = @userId ORDER BY c.appliedAt DESC OFFSET 0 LIMIT @limit',
+        parameters: [
+          { name: '@userId', value: 'user-456' },
+          { name: '@limit', value: 10 }
+        ]
+      });
+    });
+
+    it('should check for duplicate applications', async () => {
+      const existingApplications = [
+        {
+          id: 'app-existing',
+          userId: 'user-456',
+          jobId: 'job-789',
+          status: 'applied'
+        }
+      ];
+
+      const mockQueryIterator = {
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: existingApplications
+        })
+      };
+
+      mockContainer.items.query.mockReturnValue(mockQueryIterator);
+
+      const result = await azureCosmosService.isDuplicateApplication('user-456', 'job-789');
+
+      expect(result).toBe(true);
+      expect(mockContainer.items.query).toHaveBeenCalledWith({
+        query: 'SELECT c.id FROM c WHERE c.userId = @userId AND c.jobId = @jobId',
+        parameters: [
+          { name: '@userId', value: 'user-456' },
+          { name: '@jobId', value: 'job-789' }
+        ]
+      });
+    });
+  });
+
+  describe('Error Handling and Retry Logic', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should handle throttling with exponential backoff', async () => {
+      let attemptCount = 0;
+      mockContainer.items.create.mockImplementation(() => {
+        attemptCount++;
+        if (attemptCount <= 2) {
+          const error = new Error('Request rate too large');
+          error.code = 429;
+          error.retryAfterInMilliseconds = 1000;
+          throw error;
+        }
+        return Promise.resolve({
+          resource: { id: 'app-123' },
+          statusCode: 201
+        });
+      });
+
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        _partitionKey: 'user-456'
+      };
+
+      const result = await azureCosmosService.createDocument('applications', applicationData);
+
+      expect(result).toBe('app-123');
+      expect(attemptCount).toBe(3);
+      expect(mockContainer.items.create).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle connection errors gracefully', async () => {
+      mockContainer.items.create.mockRejectedValue(new Error('Connection timeout'));
+
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        _partitionKey: 'user-456'
+      };
+
+      await expect(azureCosmosService.createDocument('applications', applicationData))
+        .rejects.toThrow('Connection timeout');
+    });
+
+    it('should provide detailed error information for debugging', async () => {
+      const cosmosError = {
+        code: 400,
+        message: 'Bad Request: Invalid property name',
+        activityId: '12345-67890-abcdef',
+        requestCharge: 2.5
+      };
+
+      mockContainer.items.create.mockRejectedValue(cosmosError);
+
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        _partitionKey: 'user-456'
+      };
+
+      try {
+        await azureCosmosService.createDocument('applications', applicationData);
+      } catch (error) {
+        expect(error.code).toBe(400);
+        expect(error.message).toContain('Invalid property name');
+        expect(error.activityId).toBe('12345-67890-abcdef');
+        expect(error.requestCharge).toBe(2.5);
+      }
+    });
+  });
+
+  describe('Performance and Monitoring', () => {
+    beforeEach(async () => {
+      await azureCosmosService.initialize({
+        endpoint: 'https://test.documents.azure.com:443/',
+        databaseId: 'test-db',
+        containerConfigs: {
+          applications: { partitionKey: '/userId' }
+        }
+      });
+    });
+
+    it('should track request units (RU) consumption', async () => {
+      mockContainer.items.create.mockResolvedValue({
+        resource: { id: 'app-123' },
+        statusCode: 201,
+        requestCharge: 5.2
+      });
+
+      const applicationData = {
+        id: 'app-123',
+        userId: 'user-456',
+        _partitionKey: 'user-456'
+      };
+
+      const result = await azureCosmosService.createDocument('applications', applicationData);
+
+      // Verify that RU consumption is tracked
+      expect(azureCosmosService.getMetrics().totalRequestUnits).toBeGreaterThan(0);
+      expect(azureCosmosService.getMetrics().operationCounts.create).toBe(1);
+    });
+
+    it('should provide performance metrics', () => {
+      const metrics = azureCosmosService.getMetrics();
+
+      expect(metrics).toEqual(
+        expect.objectContaining({
+          totalRequestUnits: expect.any(Number),
+          operationCounts: expect.objectContaining({
+            create: expect.any(Number),
+            read: expect.any(Number),
+            update: expect.any(Number),
+            delete: expect.any(Number),
+            query: expect.any(Number)
+          }),
+          averageLatency: expect.any(Number),
+          errorCounts: expect.objectContaining({
+            throttling: expect.any(Number),
+            timeout: expect.any(Number),
+            serverError: expect.any(Number)
+          })
+        })
+      );
+    });
+
+    it('should support health checks', async () => {
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: jest.fn().mockResolvedValue({
+          resources: [{ count: 1 }]
+        })
+      });
+
+      const healthStatus = await azureCosmosService.healthCheck();
+
+      expect(healthStatus).toEqual({
+        status: 'healthy',
+        database: 'connected',
+        containers: 'accessible',
+        lastCheck: expect.any(String),
+        metrics: expect.any(Object)
+      });
+    });
+  });
+});

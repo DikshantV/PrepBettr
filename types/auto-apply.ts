@@ -84,7 +84,7 @@ export interface JobListing {
 }
 
 export interface JobPortal {
-  name: 'LinkedIn' | 'Indeed' | 'Glassdoor' | 'AngelList' | 'RemoteOK' | 'ZipRecruiter' | 'Monster' | 'CareerBuilder';
+  name: 'LinkedIn' | 'Indeed' | 'Glassdoor' | 'AngelList' | 'RemoteOK' | 'ZipRecruiter' | 'Monster' | 'CareerBuilder' | 'TheirStack';
   logo: string;
   website: string;
   supportsAutoApply: boolean;
@@ -359,6 +359,12 @@ export const JOB_PORTALS: JobPortal[] = [
     logo: '/icons/remoteok.svg',
     website: 'https://remoteok.io',
     supportsAutoApply: false
+  },
+  {
+    name: 'TheirStack',
+    logo: '/icons/theirstack.svg',
+    website: 'https://theirstack.com',
+    supportsAutoApply: true
   }
 ];
 

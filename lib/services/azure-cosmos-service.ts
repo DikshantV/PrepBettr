@@ -112,6 +112,25 @@ export interface ApplicationDocument {
   status: string;
   appliedAt: Date;
   coverLetter?: string;
+  tailoredResume?: string;
+  relevancyScore?: number;
+  applicationMethod?: 'headless_automation' | 'manual_required' | 'api_integration';
+  portal?: string;
+  jobTitle?: string;
+  company?: string;
+  jobUrl?: string;
+  reason?: string;
+  automationDetails?: {
+    duration?: number;
+    attempts?: number;
+    formData?: Record<string, any>;
+    screenshotPath?: string;
+    portalType?: string;
+    screeningAnswers?: Record<string, any>;
+    resumeUploaded?: boolean;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
   _partitionKey?: string;
 }
 

@@ -137,10 +137,13 @@ describe('Azure Services Health Check', () => {
     it('should successfully initialize Azure Speech Service', async () => {
       const initialized = await azureSpeechService.initialize();
       
-      if (process.env.CI && !process.env.AZURE_SPEECH_KEY) {
-        // In CI without credentials, initialization might fail
-        console.warn('⚠️ Skipping in CI without Azure credentials');
+      // Check if we have speech credentials available
+      const secrets = await fetchAzureSecrets();
+      if (!secrets.speechKey || !secrets.speechEndpoint) {
+        // Without credentials, initialization should fail gracefully
+        console.warn('⚠️ Speech credentials not available - initialization expected to fail');
         expect(initialized).toBe(false);
+        expect(azureSpeechService.isReady()).toBe(false);
       } else {
         expect(initialized).toBe(true);
         expect(azureSpeechService.isReady()).toBe(true);

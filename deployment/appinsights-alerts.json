@@ -1,0 +1,351 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": "prepbettr-insights",
+      "metadata": {
+        "description": "Name of the Application Insights resource"
+      }
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "defaultValue": "PrepBettr-Production",
+      "metadata": {
+        "description": "Resource group name"
+      }
+    },
+    "actionGroupName": {
+      "type": "string",
+      "defaultValue": "prepbettr-alerts",
+      "metadata": {
+        "description": "Name of the action group for notifications"
+      }
+    },
+    "emailAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "Email address for alert notifications"
+      }
+    },
+    "slackWebhookUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Slack webhook URL for notifications"
+      }
+    }
+  },
+  "variables": {
+    "applicationInsightsResourceId": "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]",
+    "actionGroupResourceId": "[resourceId('microsoft.insights/actionGroups', parameters('actionGroupName'))]"
+  },
+  "resources": [
+    {
+      "type": "microsoft.insights/actionGroups",
+      "apiVersion": "2019-06-01",
+      "name": "[parameters('actionGroupName')]",
+      "location": "Global",
+      "properties": {
+        "groupShortName": "theirstack",
+        "enabled": true,
+        "emailReceivers": [
+          {
+            "name": "Email Alert",
+            "emailAddress": "[parameters('emailAddress')]",
+            "useCommonAlertSchema": true
+          }
+        ],
+        "webhookReceivers": "[if(empty(parameters('slackWebhookUrl')), createArray(), createArray(createObject('name', 'Slack Alert', 'serviceUri', parameters('slackWebhookUrl'), 'useCommonAlertSchema', true)))]"
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-CreditUsage-Warning",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack Credit Usage Warning (80%)",
+        "description": "Alert when TheirStack credit usage exceeds 80% of monthly quota",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT15M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customMetrics\n| where name == \"theirStackCreditsUsed\"\n| where timestamp > ago(1d)\n| summarize CurrentUsage = sum(value) by bin(timestamp, 1h)\n| extend UsagePercentage = CurrentUsage / 1000 * 100\n| where UsagePercentage >= 80",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "UsagePercentage",
+              "operator": "GreaterThanOrEqual",
+              "threshold": 80,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackCreditWarning",
+            "Threshold": "80%",
+            "Priority": "Medium"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-CreditUsage-Critical",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack Credit Usage Critical (95%)",
+        "description": "Critical alert when TheirStack credit usage exceeds 95% of monthly quota",
+        "severity": 0,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customMetrics\n| where name == \"theirStackCreditsUsed\"\n| where timestamp > ago(1d)\n| summarize CurrentUsage = sum(value) by bin(timestamp, 1h)\n| extend UsagePercentage = CurrentUsage / 1000 * 100\n| where UsagePercentage >= 95",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "UsagePercentage",
+              "operator": "GreaterThanOrEqual",
+              "threshold": 95,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackCreditCritical",
+            "Threshold": "95%",
+            "Priority": "Critical"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-ErrorRate-High",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack High Error Rate (>5%)",
+        "description": "Alert when TheirStack search error rate exceeds 5%",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customEvents\n| where name in (\"theirStackSearchSuccess\", \"theirStackSearchError\")\n| where timestamp > ago(15m)\n| summarize \n    TotalEvents = count(),\n    ErrorEvents = countif(name == \"theirStackSearchError\")\n| extend ErrorRate = (ErrorEvents * 100.0) / TotalEvents\n| where ErrorRate > 5",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "ErrorRate",
+              "operator": "GreaterThan",
+              "threshold": 5,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackErrorRate",
+            "Threshold": "5%",
+            "Priority": "High"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-RateLimit-Frequent",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack Frequent Rate Limiting",
+        "description": "Alert when TheirStack rate limiting occurs frequently",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customEvents\n| where name == \"theirStackSearchError\"\n| where tostring(customDimensions.statusCode) == \"429\"\n| where timestamp > ago(15m)\n| summarize RateLimitEvents = count()\n| where RateLimitEvents >= 5",
+              "timeAggregation": "Total",
+              "metricMeasureColumn": "RateLimitEvents",
+              "operator": "GreaterThanOrEqual",
+              "threshold": 5,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackRateLimit",
+            "Threshold": "5 events in 15 minutes",
+            "Priority": "Medium"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-API-Unavailable",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack API Unavailable",
+        "description": "Alert when TheirStack API is completely unavailable",
+        "severity": 0,
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customEvents\n| where name == \"theirStackSearchError\"\n| where tostring(customDimensions.statusCode) in (\"500\", \"502\", \"503\", \"504\")\n| where timestamp > ago(5m)\n| summarize ServerErrorCount = count()\n| where ServerErrorCount >= 3",
+              "timeAggregation": "Total",
+              "metricMeasureColumn": "ServerErrorCount",
+              "operator": "GreaterThanOrEqual",
+              "threshold": 3,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackAPIUnavailable",
+            "Threshold": "3 server errors in 5 minutes",
+            "Priority": "Critical"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    },
+    {
+      "type": "microsoft.insights/scheduledQueryRules",
+      "apiVersion": "2021-08-01",
+      "name": "TheirStack-ResponseTime-Slow",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[variables('actionGroupResourceId')]"
+      ],
+      "properties": {
+        "displayName": "TheirStack Slow Response Times",
+        "description": "Alert when TheirStack API response times are consistently slow",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "customEvents\n| where name == \"theirStackSearchSuccess\"\n| where timestamp > ago(15m)\n| extend ResponseTime = todouble(customDimensions.responseTime)\n| where isnotnull(ResponseTime)\n| summarize AvgResponseTime = avg(ResponseTime)\n| where AvgResponseTime > 10000",
+              "timeAggregation": "Average",
+              "metricMeasureColumn": "AvgResponseTime",
+              "operator": "GreaterThan",
+              "threshold": 10000,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 2,
+                "minFailingPeriodsToAlert": 2
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[variables('actionGroupResourceId')]"
+          ],
+          "customProperties": {
+            "AlertType": "TheirStackSlowResponse",
+            "Threshold": "10 seconds average",
+            "Priority": "Medium"
+          }
+        },
+        "scopes": [
+          "[variables('applicationInsightsResourceId')]"
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "actionGroupResourceId": {
+      "type": "string",
+      "value": "[variables('actionGroupResourceId')]"
+    },
+    "alertNames": {
+      "type": "array",
+      "value": [
+        "TheirStack-CreditUsage-Warning",
+        "TheirStack-CreditUsage-Critical", 
+        "TheirStack-ErrorRate-High",
+        "TheirStack-RateLimit-Frequent",
+        "TheirStack-API-Unavailable",
+        "TheirStack-ResponseTime-Slow"
+      ]
+    }
+  }
+}

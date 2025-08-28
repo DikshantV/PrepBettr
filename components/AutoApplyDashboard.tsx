@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   AutoApplyDashboardProps,
   JobListing,
@@ -18,7 +18,14 @@ import { SettingsForm } from './SettingsForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Search, Settings, BarChart3, Download, Upload, Play, Pause } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Bot, Search, Settings, BarChart3, Download, Upload, Play, Pause, 
+  AlertTriangle, CheckCircle, Clock, Eye, TrendingUp, CreditCard,
+  Activity, Globe, Zap, RefreshCw, X, ExternalLink
+} from 'lucide-react';
 
 // Mock job data for demonstration
 const mockJobs: JobListing[] = [
@@ -102,18 +109,206 @@ const mockJobs: JobListing[] = [
   }
 ];
 
+// Real-time application tracking interface
+interface ApplicationUpdate {
+  id: string;
+  status: 'in_progress' | 'success' | 'failed' | 'retry';
+  portal: string;
+  jobTitle: string;
+  company: string;
+  timestamp: string;
+  errorMessage?: string;
+  screenshotUrl?: string;
+  duration?: number;
+}
+
+// TheirStack credit monitoring interface
+interface CreditUsage {
+  used: number;
+  total: number;
+  percentage: number;
+  monthlyReset: string;
+  lastUpdated: string;
+}
+
+// Real-time statistics interface
+interface RealTimeStats {
+  totalApplications: number;
+  todayApplications: number;
+  weeklyApplications: number;
+  pendingApplications: number;
+  interviewRequests: number;
+  averageRelevancyScore: number;
+  successRate: number;
+  portalStats: {
+    linkedin: { applications: number; successRate: number };
+    indeed: { applications: number; successRate: number };
+    theirstack: { applications: number; successRate: number };
+    generic: { applications: number; successRate: number };
+  };
+  creditUsage: CreditUsage;
+}
+
 export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProfile, settings }) => {
   const [jobListings, setJobListings] = useState<JobListing[]>(mockJobs);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [currentSettings, setCurrentSettings] = useState<AutoApplySettings>(settings);
-  const [activeTab, setActiveTab] = useState<string>('search');
-  const [stats, setStats] = useState({
-    totalApplications: 127,
-    pendingApplications: 23,
-    interviewRequests: 8,
-    averageRelevancyScore: 82
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  
+  // Real-time state management
+  const [realTimeStats, setRealTimeStats] = useState<RealTimeStats>({
+    totalApplications: 0,
+    todayApplications: 0,
+    weeklyApplications: 0,
+    pendingApplications: 0,
+    interviewRequests: 0,
+    averageRelevancyScore: 0,
+    successRate: 0,
+    portalStats: {
+      linkedin: { applications: 0, successRate: 0 },
+      indeed: { applications: 0, successRate: 0 },
+      theirstack: { applications: 0, successRate: 0 },
+      generic: { applications: 0, successRate: 0 }
+    },
+    creditUsage: {
+      used: 0,
+      total: 1000,
+      percentage: 0,
+      monthlyReset: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    }
   });
+  
+  const [applicationUpdates, setApplicationUpdates] = useState<ApplicationUpdate[]>([]);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // WebSocket connection management
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    try {
+      // Connect to our production Azure Function WebSocket endpoint
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://prepbettr-auto-apply.azurewebsites.net/ws';
+      wsRef.current = new WebSocket(wsUrl);
+
+      wsRef.current.onopen = () => {
+        console.log('🔗 WebSocket connected to auto-apply service');
+        setIsConnected(true);
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsConnected(false);
+      };
+
+      wsRef.current.onclose = () => {
+        console.log('🔌 WebSocket disconnected');
+        setIsConnected(false);
+        
+        // Attempt reconnection after delay
+        if (!reconnectTimeoutRef.current) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectWebSocket();
+          }, 5000);
+        }
+      };
+    } catch (error) {
+      console.error('Error connecting WebSocket:', error);
+      setIsConnected(false);
+    }
+  }, []);
+
+  // Handle incoming WebSocket messages
+  const handleWebSocketMessage = useCallback((data: any) => {
+    setLastUpdate(new Date());
+    
+    switch (data.type) {
+      case 'application_update':
+        setApplicationUpdates(prev => [data.payload, ...prev.slice(0, 19)]); // Keep last 20
+        break;
+        
+      case 'stats_update':
+        setRealTimeStats(prev => ({ ...prev, ...data.payload }));
+        break;
+        
+      case 'credit_usage':
+        setRealTimeStats(prev => ({
+          ...prev,
+          creditUsage: data.payload
+        }));
+        break;
+        
+      case 'job_listings_update':
+        setJobListings(data.payload);
+        break;
+        
+      default:
+        console.log('Unknown message type:', data.type);
+    }
+  }, []);
+
+  // Load initial data from API
+  const loadInitialData = useCallback(async () => {
+    try {
+      // Load real-time statistics
+      const statsResponse = await fetch('/api/auto-apply/stats');
+      if (statsResponse.ok) {
+        const stats = await statsResponse.json();
+        setRealTimeStats(stats);
+      }
+
+      // Load recent application updates
+      const updatesResponse = await fetch('/api/auto-apply/recent-updates');
+      if (updatesResponse.ok) {
+        const updates = await updatesResponse.json();
+        setApplicationUpdates(updates);
+      }
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+    }
+  }, []);
+
+  // Initialize WebSocket and load data on mount
+  useEffect(() => {
+    loadInitialData();
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [connectWebSocket, loadInitialData]);
+
+  // View screenshot for failed applications
+  const viewScreenshot = (screenshotUrl: string) => {
+    window.open(screenshotUrl, '_blank');
+  };
+
+  // Clear application update
+  const dismissUpdate = (updateId: string) => {
+    setApplicationUpdates(prev => prev.filter(update => update.id !== updateId));
+  };
 
   const handleSearch = async (filters: JobSearchFilters) => {
     setSearchLoading(true);
@@ -158,7 +353,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
       ));
       
       // Update stats
-      setStats(prev => ({ ...prev, totalApplications: prev.totalApplications + 1 }));
+      setRealTimeStats(prev => ({ ...prev, totalApplications: prev.totalApplications + 1 }));
       
     } catch (error) {
       console.error('Application failed:', error);
@@ -235,7 +430,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
     
     const reportData = {
       userProfile,
-      stats,
+      stats: realTimeStats,
       jobListings,
       settings: currentSettings,
       generatedAt: new Date().toISOString()
@@ -271,7 +466,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
             <BarChart3 className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalApplications}</div>
+            <div className="text-2xl font-bold text-white">{realTimeStats.totalApplications}</div>
             <p className="text-xs text-gray-400">
               +12 from last week
             </p>
@@ -284,7 +479,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
             <Bot className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.pendingApplications}</div>
+            <div className="text-2xl font-bold text-white">{realTimeStats.pendingApplications}</div>
             <p className="text-xs text-gray-400">
               Awaiting response
             </p>
@@ -297,7 +492,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
             <Search className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.interviewRequests}</div>
+            <div className="text-2xl font-bold text-white">{realTimeStats.interviewRequests}</div>
             <p className="text-xs text-gray-400">
               6.3% response rate
             </p>
@@ -310,7 +505,7 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
             <BarChart3 className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.averageRelevancyScore}%</div>
+            <div className="text-2xl font-bold text-white">{realTimeStats.averageRelevancyScore}%</div>
             <p className="text-xs text-gray-400">
               +2% improvement
             </p>
@@ -353,14 +548,333 @@ export const AutoApplyDashboard: React.FC<AutoApplyDashboardProps> = ({ userProf
         )}
       </Card>
 
-      {/* Main Tabs - Dark theme with accessible contrast */}
+      {/* Connection Status */}
+      <div className="flex items-center gap-2 text-sm">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+        <span className="text-gray-400">
+          {isConnected ? 'Connected to auto-apply service' : 'Disconnected'}
+        </span>
+        <span className="text-gray-500">•</span>
+        <span className="text-gray-500">Last update: {lastUpdate.toLocaleTimeString()}</span>
+      </div>
+
+      {/* TheirStack Credit Warning */}
+      {realTimeStats.creditUsage.percentage >= 80 && (
+        <Alert className="bg-yellow-900 border-yellow-600">
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <AlertDescription className="text-yellow-100">
+            <strong>TheirStack Credit Warning:</strong> You have used {realTimeStats.creditUsage.percentage}% 
+            ({realTimeStats.creditUsage.used}/{realTimeStats.creditUsage.total}) of your monthly credits. 
+            Credits reset on {new Date(realTimeStats.creditUsage.monthlyReset).toLocaleDateString()}.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Main Tabs - Enhanced with dashboard */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-gray-600">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-800 border border-gray-600">
+          <TabsTrigger value="dashboard" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Dashboard</TabsTrigger>
           <TabsTrigger value="search" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Job Search</TabsTrigger>
           <TabsTrigger value="profile" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Profile</TabsTrigger>
           <TabsTrigger value="settings" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Settings</TabsTrigger>
           <TabsTrigger value="analytics" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">Analytics</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="dashboard" className="space-y-4">
+          {/* Real-time Statistics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-white">Total Applications</CardTitle>
+                <Activity className="h-4 w-4 text-blue-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{realTimeStats.totalApplications}</div>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span>Today: {realTimeStats.todayApplications}</span>
+                  <span>•</span>
+                  <span>Week: {realTimeStats.weeklyApplications}</span>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-white">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-yellow-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{realTimeStats.pendingApplications}</div>
+                <p className="text-xs text-gray-400">
+                  Awaiting response
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-white">Interviews</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{realTimeStats.interviewRequests}</div>
+                <p className="text-xs text-gray-400">
+                  {realTimeStats.successRate}% success rate
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-white">Avg. Relevancy</CardTitle>
+                <TrendingUp className="h-4 w-4 text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{realTimeStats.averageRelevancyScore}%</div>
+                <Progress value={realTimeStats.averageRelevancyScore} className="mt-2 bg-gray-700" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* TheirStack Credit Usage */}
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <CreditCard className="h-5 w-5 text-green-400" />
+                TheirStack Credit Usage
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Monthly credit consumption for job portal access
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300">Used Credits</span>
+                  <span className="text-sm font-semibold text-white">
+                    {realTimeStats.creditUsage.used} / {realTimeStats.creditUsage.total}
+                  </span>
+                </div>
+                <Progress 
+                  value={realTimeStats.creditUsage.percentage} 
+                  className="bg-gray-700"
+                />
+                <div className="flex justify-between items-center text-xs text-gray-400">
+                  <span>{realTimeStats.creditUsage.percentage}% used</span>
+                  <span>Resets: {new Date(realTimeStats.creditUsage.monthlyReset).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Portal Performance */}
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Globe className="h-5 w-5 text-blue-400" />
+                Job Portal Performance
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Applications and success rates by platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(realTimeStats.portalStats).map(([portal, stats]) => (
+                  <div key={portal} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        portal === 'linkedin' ? 'bg-blue-500' :
+                        portal === 'indeed' ? 'bg-blue-600' :
+                        portal === 'theirstack' ? 'bg-green-500' :
+                        'bg-gray-500'
+                      }`} />
+                      <span className="text-sm font-medium text-white capitalize">{portal}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <div>Applications: <span className="text-white">{stats.applications}</span></div>
+                      <div>Success: <span className="text-white">{stats.successRate}%</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Real-time Application Updates */}
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Zap className="h-5 w-5 text-yellow-400" />
+                Live Application Updates
+                {applicationUpdates.length > 0 && (
+                  <Badge variant="secondary" className="bg-blue-600 text-white">
+                    {applicationUpdates.length}
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Real-time status of application submissions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {applicationUpdates.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No recent application updates</p>
+                  <p className="text-xs">Updates will appear here when auto-apply is active</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {applicationUpdates.map((update) => (
+                    <div key={update.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-800 border border-gray-600">
+                      <div className={`w-2 h-2 rounded-full mt-2 ${
+                        update.status === 'success' ? 'bg-green-500' :
+                        update.status === 'failed' ? 'bg-red-500' :
+                        update.status === 'in_progress' ? 'bg-yellow-500' :
+                        'bg-blue-500'
+                      }`} />
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-white truncate">
+                            {update.jobTitle} at {update.company}
+                          </span>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs border ${
+                              update.status === 'success' ? 'border-green-500 text-green-400' :
+                              update.status === 'failed' ? 'border-red-500 text-red-400' :
+                              update.status === 'in_progress' ? 'border-yellow-500 text-yellow-400' :
+                              'border-blue-500 text-blue-400'
+                            }`}
+                          >
+                            {update.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span>{update.portal}</span>
+                          <span>•</span>
+                          <span>{new Date(update.timestamp).toLocaleTimeString()}</span>
+                          {update.duration && (
+                            <>
+                              <span>•</span>
+                              <span>{update.duration}s</span>
+                            </>
+                          )}
+                        </div>
+                        
+                        {update.errorMessage && (
+                          <div className="mt-2 text-xs text-red-400">
+                            Error: {update.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {update.screenshotUrl && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => viewScreenshot(update.screenshotUrl!)}
+                            className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dismissUpdate(update.id)}
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  onClick={() => setActiveTab('search')} 
+                  className="w-full justify-start bg-gray-800 hover:bg-gray-700 text-white border-gray-600"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Search New Jobs
+                </Button>
+                <Button 
+                  onClick={() => setActiveTab('settings')} 
+                  className="w-full justify-start bg-gray-800 hover:bg-gray-700 text-white border-gray-600"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Update Preferences
+                </Button>
+                <Button 
+                  onClick={downloadSummaryReport} 
+                  className="w-full justify-start bg-gray-800 hover:bg-gray-700 text-white border-gray-600"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">System Health</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Auto-Apply Engine</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${currentSettings.isEnabled ? 'bg-green-500' : 'bg-gray-500'}`} />
+                    <span className="text-xs text-gray-400">
+                      {currentSettings.isEnabled ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">WebSocket Connection</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-xs text-gray-400">
+                      {isConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">TheirStack API</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs text-gray-400">Operational</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={connectWebSocket} 
+                  size="sm" 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Connection
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
         
         <TabsContent value="search" className="space-y-4">
           <JobFilters

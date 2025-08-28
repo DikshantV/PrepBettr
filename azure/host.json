@@ -10,7 +10,8 @@
     },
     "logLevel": {
       "default": "Information",
-      "Host.Aggregator": "Trace"
+      "Host.Aggregator": "Trace",
+      "Microsoft.Azure.WebJobs.Script.WebHost.Diagnostics.SystemLoggerProvider": "Information"
     }
   },
   "extensionBundle": {
@@ -18,6 +19,10 @@
     "version": "[3.*, 4.0.0)"
   },
   "functionTimeout": "00:10:00",
+  "concurrency": {
+    "dynamicConcurrencyEnabled": true,
+    "maximumFunctionConcurrency": 5
+  },
   "http": {
     "routePrefix": "api",
     "maxOutstandingRequests": 500,
@@ -26,15 +31,33 @@
   },
   "queues": {
     "maxPollingInterval": "00:00:02",
-    "visibilityTimeout": "00:00:30",
-    "batchSize": 16,
-    "maxDequeueCount": 5,
-    "newBatchThreshold": 8
+    "visibilityTimeout": "00:02:00",
+    "batchSize": 8,
+    "maxDequeueCount": 3,
+    "newBatchThreshold": 4
   },
   "retry": {
     "strategy": "exponentialBackoff",
-    "maxRetryCount": 3,
+    "maxRetryCount": 2,
     "minimumInterval": "00:00:05",
-    "maximumInterval": "00:05:00"
+    "maximumInterval": "00:02:00"
+  },
+  "managedDependency": {
+    "enabled": true
+  },
+  "customHandler": {
+    "description": {
+      "defaultExecutablePath": "node",
+      "workingDirectory": "",
+      "arguments": []
+    },
+    "enableForwardingHttpRequest": false
+  },
+  "healthMonitor": {
+    "enabled": true,
+    "healthCheckInterval": "00:00:10",
+    "healthCheckWindow": "00:02:00",
+    "healthCheckThreshold": 6,
+    "counterThreshold": 0.80
   }
 }

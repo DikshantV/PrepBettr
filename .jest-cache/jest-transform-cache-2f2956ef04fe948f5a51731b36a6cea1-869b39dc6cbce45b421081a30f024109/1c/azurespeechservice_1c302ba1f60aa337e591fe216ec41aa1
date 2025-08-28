@@ -1,0 +1,206 @@
+1fe88c49c87445a05617dcf5b6de62dd
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.azureSpeechService = exports.AzureSpeechService = void 0;
+const SpeechSDK = __importStar(require("microsoft-cognitiveservices-speech-sdk"));
+const azure_config_browser_1 = require("../../../lib/azure-config-browser");
+class AzureSpeechService {
+    constructor() {
+        this.speechConfig = null;
+        this.recognizer = null;
+        this.synthesizer = null;
+        this.isInitialized = false;
+    }
+    /**
+     * Initialize the Azure Speech Service
+     */
+    async initialize() {
+        var _a;
+        try {
+            const secrets = await (0, azure_config_browser_1.fetchAzureSecrets)();
+            if (!secrets.speechKey || !secrets.speechEndpoint) {
+                console.warn('⚠️ Azure Speech credentials not available');
+                return false;
+            }
+            // Extract region from endpoint (e.g., https://westus.api.cognitive.microsoft.com -> westus)
+            const region = ((_a = secrets.speechEndpoint.match(/https:\/\/([^.]+)/)) === null || _a === void 0 ? void 0 : _a[1]) || 'westus';
+            this.speechConfig = SpeechSDK.SpeechConfig.fromSubscription(secrets.speechKey, region);
+            this.speechConfig.speechRecognitionLanguage = 'en-US';
+            this.speechConfig.speechSynthesisVoiceName = 'en-US-SaraNeural';
+            this.isInitialized = true;
+            console.log('✅ Azure Speech Service initialized');
+            return true;
+        }
+        catch (error) {
+            console.error('❌ Failed to initialize Azure Speech Service:', error);
+            return false;
+        }
+    }
+    /**
+     * Start continuous speech recognition
+     */
+    async startContinuousRecognition(onRecognized, onError) {
+        if (!this.isInitialized || !this.speechConfig) {
+            console.error('❌ Azure Speech Service not initialized');
+            return false;
+        }
+        try {
+            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+            this.recognizer = new SpeechSDK.SpeechRecognizer(this.speechConfig, audioConfig);
+            this.recognizer.recognized = (s, e) => {
+                var _a;
+                if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech && e.result.text) {
+                    onRecognized({
+                        text: e.result.text,
+                        confidence: ((_a = e.result.properties) === null || _a === void 0 ? void 0 : _a.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult)) ? 1.0 : 0.8,
+                        reason: 'RecognizedSpeech'
+                    });
+                }
+            };
+            this.recognizer.canceled = (s, e) => {
+                console.log(`❌ Recognition canceled: ${e.reason}`);
+                if (e.reason === SpeechSDK.CancellationReason.Error && onError) {
+                    onError(e.errorDetails || 'Unknown error');
+                }
+                this.stopContinuousRecognition();
+            };
+            this.recognizer.sessionStopped = (s, e) => {
+                console.log('🛑 Recognition session stopped');
+                this.stopContinuousRecognition();
+            };
+            await this.recognizer.startContinuousRecognitionAsync();
+            console.log('🎤 Started continuous speech recognition');
+            return true;
+        }
+        catch (error) {
+            console.error('❌ Failed to start speech recognition:', error);
+            if (onError) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                onError(errorMessage || 'Failed to start speech recognition');
+            }
+            return false;
+        }
+    }
+    /**
+     * Stop continuous speech recognition
+     */
+    async stopContinuousRecognition() {
+        if (this.recognizer) {
+            try {
+                await this.recognizer.stopContinuousRecognitionAsync();
+                this.recognizer.close();
+                this.recognizer = null;
+                console.log('🛑 Stopped speech recognition');
+            }
+            catch (error) {
+                console.error('❌ Error stopping speech recognition:', error);
+            }
+        }
+    }
+    /**
+     * Synthesize speech from text
+     */
+    async synthesizeSpeech(text, options = {}) {
+        if (!this.isInitialized || !this.speechConfig) {
+            console.error('❌ Azure Speech Service not initialized');
+            return null;
+        }
+        try {
+            const audioConfig = SpeechSDK.AudioConfig.fromDefaultSpeakerOutput();
+            this.synthesizer = new SpeechSDK.SpeechSynthesizer(this.speechConfig, audioConfig);
+            const voiceName = options.voiceName || 'en-US-SaraNeural';
+            const rate = options.rate || '1.0';
+            const pitch = options.pitch || '0Hz';
+            const ssml = `
+        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+          <voice name="${voiceName}">
+            <prosody rate="${rate}" pitch="${pitch}">
+              ${text}
+            </prosody>
+          </voice>
+        </speak>
+      `;
+            return new Promise((resolve, reject) => {
+                this.synthesizer.speakSsmlAsync(ssml, (result) => {
+                    var _a;
+                    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                        console.log('✅ Speech synthesis completed');
+                        resolve(result.audioData);
+                    }
+                    else {
+                        console.error('❌ Speech synthesis failed:', result.errorDetails);
+                        reject(new Error(result.errorDetails || 'Speech synthesis failed'));
+                    }
+                    (_a = this.synthesizer) === null || _a === void 0 ? void 0 : _a.close();
+                    this.synthesizer = null;
+                }, (error) => {
+                    var _a;
+                    console.error('❌ Speech synthesis error:', error);
+                    reject(error);
+                    (_a = this.synthesizer) === null || _a === void 0 ? void 0 : _a.close();
+                    this.synthesizer = null;
+                });
+            });
+        }
+        catch (error) {
+            console.error('❌ Failed to synthesize speech:', error);
+            return null;
+        }
+    }
+    /**
+     * Check if the service is initialized and ready
+     */
+    isReady() {
+        return this.isInitialized && this.speechConfig !== null;
+    }
+    /**
+     * Clean up resources
+     */
+    dispose() {
+        this.stopContinuousRecognition();
+        if (this.synthesizer) {
+            this.synthesizer.close();
+            this.synthesizer = null;
+        }
+        this.speechConfig = null;
+        this.isInitialized = false;
+        console.log('🧹 Azure Speech Service disposed');
+    }
+}
+exports.AzureSpeechService = AzureSpeechService;
+// Export singleton instance
+exports.azureSpeechService = new AzureSpeechService();
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzL2Rpa3NoYW50dmFzaGlzdGhhL1ByZXBCZXR0ci9henVyZS9saWIvc2VydmljZXMvYXp1cmUtc3BlZWNoLXNlcnZpY2UudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsa0ZBQW9FO0FBQ3BFLDRFQUFzRTtBQWN0RSxNQUFhLGtCQUFrQjtJQUEvQjtRQUNVLGlCQUFZLEdBQWtDLElBQUksQ0FBQztRQUNuRCxlQUFVLEdBQXNDLElBQUksQ0FBQztRQUNyRCxnQkFBVyxHQUF1QyxJQUFJLENBQUM7UUFDdkQsa0JBQWEsR0FBRyxLQUFLLENBQUM7SUFnTGhDLENBQUM7SUE5S0M7O09BRUc7SUFDSCxLQUFLLENBQUMsVUFBVTs7UUFDZCxJQUFJLENBQUM7WUFDSCxNQUFNLE9BQU8sR0FBRyxNQUFNLElBQUEsd0NBQWlCLEdBQUUsQ0FBQztZQUUxQyxJQUFJLENBQUMsT0FBTyxDQUFDLFNBQVMsSUFBSSxDQUFDLE9BQU8sQ0FBQyxjQUFjLEVBQUUsQ0FBQztnQkFDbEQsT0FBTyxDQUFDLElBQUksQ0FBQywyQ0FBMkMsQ0FBQyxDQUFDO2dCQUMxRCxPQUFPLEtBQUssQ0FBQztZQUNmLENBQUM7WUFFRCw0RkFBNEY7WUFDNUYsTUFBTSxNQUFNLEdBQUcsQ0FBQSxNQUFBLE9BQU8sQ0FBQyxjQUFjLENBQUMsS0FBSyxDQUFDLG1CQUFtQixDQUFDLDBDQUFHLENBQUMsQ0FBQyxLQUFJLFFBQVEsQ0FBQztZQUVsRixJQUFJLENBQUMsWUFBWSxHQUFHLFNBQVMsQ0FBQyxZQUFZLENBQUMsZ0JBQWdCLENBQUMsT0FBTyxDQUFDLFNBQVMsRUFBRSxNQUFNLENBQUMsQ0FBQztZQUN2RixJQUFJLENBQUMsWUFBWSxDQUFDLHlCQUF5QixHQUFHLE9BQU8sQ0FBQztZQUN0RCxJQUFJLENBQUMsWUFBWSxDQUFDLHdCQUF3QixHQUFHLGtCQUFrQixDQUFDO1lBRWhFLElBQUksQ0FBQyxhQUFhLEdBQUcsSUFBSSxDQUFDO1lBQzFCLE9BQU8sQ0FB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QUFDLENBQ0YsQ0FBQztZQUNKLENBQUMsQ0FBQyxDQUFDO1FBQ0wsQ0FBQztRQUFDLE9BQU8sS0FBSyxFQUFFLENBQUM7WUFDZixPQUFPLENBQUMsS0FBSyxDQUFDLGdDQUFnQyxFQUFFLEtBQUssQ0FBQyxDQUFDO1lBQ3ZELE9BQU8sSUFBSSxDQUFDO1FBQ2QsQ0FBQztJQUNILENBQUM7SUFFRDs7T0FFRztJQUNILE9BQU87UUFDTCxPQUFPLElBQUksQ0FBQyxhQUFhLElBQUksSUFBSSxDQUFDLFlBQVksS0FBSyxJQUFJLENBQUM7SUFDMUQsQ0FBQztJQUVEOztPQUVHO0lBQ0gsT0FBTztRQUNMLElBQUksQ0FBQyx5QkFBeUIsRUFBRSxDQUFDO1FBQ2pDLElBQUksSUFBSSxDQUFDLFdBQVcsRUFBRSxDQUFDO1lBQ3JCLElBQUksQ0FBQyxXQUFXLENBQUMsS0FBSyxFQUFFLENBQUM7WUFDekIsSUFBSSxDQUFDLFdBQVcsR0FBRyxJQUFJLENBQUM7UUFDMUIsQ0FBQztRQUNELElBQUksQ0FBQyxZQUFZLEdBQUcsSUFBSSxDQUFDO1FBQ3pCLElBQUksQ0FBQyxhQUFhLEdBQUcsS0FBSyxDQUFDO1FBQzNCLE9BQU8sQ0FBQyxHQUFHLENBQUMsa0NBQWtDLENBQUMsQ0FBQztJQUNsRCxDQUFDO0NBQ0Y7QUFwTEQsZ0RBb0xDO0FBRUQsNEJBQTRCO0FBQ2YsUUFBQSxrQkFBa0IsR0FBRyxJQUFJLGtCQUFrQixFQUFFLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL1VzZXJzL2Rpa3NoYW50dmFzaGlzdGhhL1ByZXBCZXR0ci9henVyZS9saWIvc2VydmljZXMvYXp1cmUtc3BlZWNoLXNlcnZpY2UudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0ICogYXMgU3BlZWNoU0RLIGZyb20gJ21pY3Jvc29mdC1jb2duaXRpdmVzZXJ2aWNlcy1zcGVlY2gtc2RrJztcbmltcG9ydCB7IGZldGNoQXp1cmVTZWNyZXRzIH0gZnJvbSAnLi4vLi4vLi4vbGliL2F6dXJlLWNvbmZpZy1icm93c2VyJztcblxuZXhwb3J0IGludGVyZmFjZSBTcGVlY2hSZWNvZ25pdGlvblJlc3VsdCB7XG4gIHRleHQ6IHN0cmluZztcbiAgY29uZmlkZW5jZTogbnVtYmVyO1xuICByZWFzb246IHN0cmluZztcbn1cblxuZXhwb3J0IGludGVyZmFjZSBTcGVlY2hTeW50aGVzaXNPcHRpb25zIHtcbiAgdm9pY2VOYW1lPzogc3RyaW5nO1xuICByYXRlPzogc3RyaW5nO1xuICBwaXRjaD86IHN0cmluZztcbn1cblxuZXhwb3J0IGNsYXNzIEF6dXJlU3BlZWNoU2VydmljZSB7XG4gIHByaXZhdGUgc3BlZWNoQ29uZmlnOiBTcGVlY2hTREsuU3BlZWNoQ29uZmlnIHwgbnVsbCA9IG51bGw7XG4gIHByaXZhdGUgcmVjb2duaXplcjogU3BlZWNoU0RLLlNwZWVjaFJlY29nbml6ZXIgfCBudWxsID0gbnVsbDtcbiAgcHJpdmF0ZSBzeW50aGVzaXplcjogU3BlZWNoU0RLLlNwZWVjaFN5bnRoZXNpemVyIHwgbnVsbCA9IG51bGw7XG4gIHByaXZhdGUgaXNJbml0aWFsaXplZCA9IGZhbHNlO1xuXG4gIC8qKlxuICAgKiBJbml0aWFsaXplIHRoZSBBenVyZSBTcGVlY2ggU2VydmljZVxuICAgKi9cbiAgYXN5bmMgaW5pdGlhbGl6ZSgpOiBQcm9taXNlPGJvb2xlYW4+IHtcbiAgICB0cnkge1xuICAgICAgY29uc3Qgc2VjcmV0cyA9IGF3YWl0IGZldGNoQXp1cmVTZWNyZXRzKCk7XG4gICAgICBcbiAgICAgIGlmICghc2VjcmV0cy5zcGVlY2hLZXkgfHwgIXNlY3JldHMuc3BlZWNoRW5kcG9pbnQpIHtcbiAgICAgICAgY29uc29sZS53YXJuKCfimqDvuI8gQXp1cmUgU3BlZWNoIGNyZWRlbnRpYWxzIG5vdCBhdmFpbGFibGUnKTtcbiAgICAgICAgcmV0dXJuIGZhbHNlO1xuICAgICAgfVxuXG4gICAgICAvLyBFeHRyYWN0IHJlZ2lvbiBmcm9tIGVuZHBvaW50IChlLmcuLCBodHRwczovL3dlc3R1cy5hcGkuY29nbml0aXZlLm1pY3Jvc29mdC5jb20gLT4gd2VzdHVzKVxuICAgICAgY29uc3QgcmVnaW9uID0gc2VjcmV0cy5zcGVlY2hFbmRwb2ludC5tYXRjaCgvaHR0cHM6XFwvXFwvKFteLl0rKS8pPy5bMV0gfHwgJ3dlc3R1cyc7XG5cbiAgICAgIHRoaXMuc3BlZWNoQ29uZmlnID0gU3BlZWNoU0RLLlNwZWVjaENvbmZpZy5mcm9tU3Vic2NyaXB0aW9uKHNlY3JldHMuc3BlZWNoS2V5LCByZWdpb24pO1xuICAgICAgdGhpcy5zcGVlY2hDb25maWcuc3BlZWNoUmVjb2duaXRpb25MYW5ndWFnZSA9ICdlbi1VUyc7XG4gICAgICB0aGlzLnNwZWVjaENvbmZpZy5zcGVlY2hTeW50aGVzaXNWb2ljZU5hbWUgPSAnZW4tVVMtU2FyYU5ldXJhbCc7XG5cbiAgICAgIHRoaXMuaXNJbml0aWFsaXplZCA9IHRydWU7XG4gICAgICBjb25zb2xlLmxvZygn4pyFIEF6dXJlIFNwZWVjaCBTZXJ2aWNlIGluaXRpYWxpemVkJyk7XG4gICAgICByZXR1cm4gdHJ1ZTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgY29uc29sZS5lcnJvcign4p2MIEZhaWxlZCB0byBpbml0aWFsaXplIEF6dXJlIFNwZWVjaCBTZXJ2aWNlOicsIGVycm9yKTtcbiAgICAgIHJldHVybiBmYWxzZTtcbiAgICB9XG4gIH1cblxuICAvKipcbiAgICogU3RhcnQgY29udGludW91cyBzcGVlY2ggcmVjb2duaXRpb25cbiAgICovXG4gIGFzeW5jIHN0YXJ0Q29udGludW91c1JlY29nbml0aW9uKFxuICAgIG9uUmVjb2duaXplZDogKHJlc3VsdDogU3BlZWNoUmVjb2duaXRpb25SZXN1bHQpID0+IHZvaWQsXG4gICAgb25FcnJvcj86IChlcnJvcjogc3RyaW5nKSA9PiB2b2lkXG4gICk6IFByb21pc2U8Ym9vbGVhbj4ge1xuICAgIGlmICghdGhpcy5pc0luaXRpYWxpemVkIHx8ICF0aGlzLnNwZWVjaENvbmZpZykge1xuICAgICAgY29uc29sZS5lcnJvcign4p2MIEF6dXJlIFNwZWVjaCBTZXJ2aWNlIG5vdCBpbml0aWFsaXplZCcpO1xuICAgICAgcmV0dXJuIGZhbHNlO1xuICAgIH1cblxuICAgIHRyeSB7XG4gICAgICBjb25zdCBhdWRpb0NvbmZpZyA9IFNwZWVjaFNESy5BdWRpb0NvbmZpZy5mcm9tRGVmYXVsdE1pY3JvcGhvbmVJbnB1dCgpO1xuICAgICAgdGhpcy5yZWNvZ25pemVyID0gbmV3IFNwZWVjaFNESy5TcGVlY2hSZWNvZ25pemVyKHRoaXMuc3BlZWNoQ29uZmlnLCBhdWRpb0NvbmZpZyk7XG5cbiAgICAgIHRoaXMucmVjb2duaXplci5yZWNvZ25pemVkID0gKHMsIGUpID0+IHtcbiAgICAgICAgaWYgKGUucmVzdWx0LnJlYXNvbiA9PT0gU3BlZWNoU0RLLlJlc3VsdFJlYXNvbi5SZWNvZ25pemVkU3BlZWNoICYmIGUucmVzdWx0LnRleHQpIHtcbiAgICAgICAgICBvblJlY29nbml6ZWQoe1xuICAgICAgICAgICAgdGV4dDogZS5yZXN1bHQudGV4dCxcbiAgICAgICAgICAgIGNvbmZpZGVuY2U6IGUucmVzdWx0LnByb3BlcnRpZXM/LmdldFByb3BlcnR5KFNwZWVjaFNESy5Qcm9wZXJ0eUlkLlNwZWVjaFNlcnZpY2VSZXNwb25zZV9Kc29uUmVzdWx0KSA/IDEuMCA6IDAuOCxcbiAgICAgICAgICAgIHJlYXNvbjogJ1JlY29nbml6ZWRTcGVlY2gnXG4gICAgICAgICAgfSk7XG4gICAgICAgIH1cbiAgICAgIH07XG5cbiAgICAgIHRoaXMucmVjb2duaXplci5jYW5jZWxlZCA9IChzLCBlKSA9PiB7XG4gICAgICAgIGNvbnNvbGUubG9nKGDinYwgUmVjb2duaXRpb24gY2FuY2VsZWQ6ICR7ZS5yZWFzb259YCk7XG4gICAgICAgIGlmIChlLnJlYXNvbiA9PT0gU3BlZWNoU0RLLkNhbmNlbGxhdGlvblJlYXNvbi5FcnJvciAmJiBvbkVycm9yKSB7XG4gICAgICAgICAgb25FcnJvcihlLmVycm9yRGV0YWlscyB8fCAnVW5rbm93biBlcnJvcicpO1xuICAgICAgICB9XG4gICAgICAgIHRoaXMuc3RvcENvbnRpbnVvdXNSZWNvZ25pdGlvbigpO1xuICAgICAgfTtcblxuICAgICAgdGhpcy5yZWNvZ25pemVyLnNlc3Npb25TdG9wcGVkID0gKHMsIGUpID0+IHtcbiAgICAgICAgY29uc29sZS5sb2coJ/Cfm5EgUmVjb2duaXRpb24gc2Vzc2lvbiBzdG9wcGVkJyk7XG4gICAgICAgIHRoaXMuc3RvcENvbnRpbnVvdXNSZWNvZ25pdGlvbigpO1xuICAgICAgfTtcblxuICAgICAgYXdhaXQgdGhpcy5yZWNvZ25pemVyLnN0YXJ0Q29udGludW91c1JlY29nbml0aW9uQXN5bmMoKTtcbiAgICAgIGNvbnNvbGUubG9nKCfwn46kIFN0YXJ0ZWQgY29udGludW91cyBzcGVlY2ggcmVjb2duaXRpb24nKTtcbiAgICAgIHJldHVybiB0cnVlO1xuICAgIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgICBjb25zb2xlLmVycm9yKCfinYwgRmFpbGVkIHRvIHN0YXJ0IHNwZWVjaCByZWNvZ25pdGlvbjonLCBlcnJvcik7XG4gICAgICBpZiAob25FcnJvcikge1xuICAgICAgICBjb25zdCBlcnJvck1lc3NhZ2UgPSBlcnJvciBpbnN0YW5jZW9mIEVycm9yID8gZXJyb3IubWVzc2FnZSA6IFN0cmluZyhlcnJvcik7XG4gICAgICAgIG9uRXJyb3IoZXJyb3JNZXNzYWdlIHx8ICdGYWlsZWQgdG8gc3RhcnQgc3BlZWNoIHJlY29nbml0aW9uJyk7XG4gICAgICB9XG4gICAgICByZXR1cm4gZmFsc2U7XG4gICAgfVxuICB9XG5cbiAgLyoqXG4gICAqIFN0b3AgY29udGludW91cyBzcGVlY2ggcmVjb2duaXRpb25cbiAgICovXG4gIGFzeW5jIHN0b3BDb250aW51b3VzUmVjb2duaXRpb24oKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgaWYgKHRoaXMucmVjb2duaXplcikge1xuICAgICAgdHJ5IHtcbiAgICAgICAgYXdhaXQgdGhpcy5yZWNvZ25pemVyLnN0b3BDb250aW51b3VzUmVjb2duaXRpb25Bc3luYygpO1xuICAgICAgICB0aGlzLnJlY29nbml6ZXIuY2xvc2UoKTtcbiAgICAgICAgdGhpcy5yZWNvZ25pemVyID0gbnVsbDtcbiAgICAgICAgY29uc29sZS5sb2coJ/Cfm5EgU3RvcHBlZCBzcGVlY2ggcmVjb2duaXRpb24nKTtcbiAgICAgIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgICAgIGNvbnNvbGUuZXJyb3IoJ+KdjCBFcnJvciBzdG9wcGluZyBzcGVlY2ggcmVjb2duaXRpb246JywgZXJyb3IpO1xuICAgICAgfVxuICAgIH1cbiAgfVxuXG4gIC8qKlxuICAgKiBTeW50aGVzaXplIHNwZWVjaCBmcm9tIHRleHRcbiAgICovXG4gIGFzeW5jIHN5bnRoZXNpemVTcGVlY2goXG4gICAgdGV4dDogc3RyaW5nLFxuICAgIG9wdGlvbnM6IFNwZWVjaFN5bnRoZXNpc09wdGlvbnMgPSB7fVxuICApOiBQcm9taXNlPEFycmF5QnVmZmVyIHwgbnVsbD4ge1xuICAgIGlmICghdGhpcy5pc0luaXRpYWxpemVkIHx8ICF0aGlzLnNwZWVjaENvbmZpZykge1xuICAgICAgY29uc29sZS5lcnJvcign4p2MIEF6dXJlIFNwZWVjaCBTZXJ2aWNlIG5vdCBpbml0aWFsaXplZCcpO1xuICAgICAgcmV0dXJuIG51bGw7XG4gICAgfVxuXG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IGF1ZGlvQ29uZmlnID0gU3BlZWNoU0RLLkF1ZGlvQ29uZmlnLmZyb21EZWZhdWx0U3BlYWtlck91dHB1dCgpO1xuICAgICAgdGhpcy5zeW50aGVzaXplciA9IG5ldyBTcGVlY2hTREsuU3BlZWNoU3ludGhlc2l6ZXIodGhpcy5zcGVlY2hDb25maWcsIGF1ZGlvQ29uZmlnKTtcblxuICAgICAgY29uc3Qgdm9pY2VOYW1lID0gb3B0aW9ucy52b2ljZU5hbWUgfHwgJ2VuLVVTLVNhcmFOZXVyYWwnO1xuICAgICAgY29uc3QgcmF0ZSA9IG9wdGlvbnMucmF0ZSB8fCAnMS4wJztcbiAgICAgIGNvbnN0IHBpdGNoID0gb3B0aW9ucy5waXRjaCB8fCAnMEh6JztcblxuICAgICAgY29uc3Qgc3NtbCA9IGBcbiAgICAgICAgPHNwZWFrIHZlcnNpb249XCIxLjBcIiB4bWxucz1cImh0dHA6Ly93d3cudzMub3JnLzIwMDEvMTAvc3ludGhlc2lzXCIgeG1sOmxhbmc9XCJlbi1VU1wiPlxuICAgICAgICAgIDx2b2ljZSBuYW1lPVwiJHt2b2ljZU5hbWV9XCI+XG4gICAgICAgICAgICA8cHJvc29keSByYXRlPVwiJHtyYXRlfVwiIHBpdGNoPVwiJHtwaXRjaH1cIj5cbiAgICAgICAgICAgICAgJHt0ZXh0fVxuICAgICAgICAgICAgPC9wcm9zb2R5PlxuICAgICAgICAgIDwvdm9pY2U+XG4gICAgICAgIDwvc3BlYWs+XG4gICAgICBgO1xuXG4gICAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4ge1xuICAgICAgICB0aGlzLnN5bnRoZXNpemVyIS5zcGVha1NzbWxBc3luYyhcbiAgICAgICAgICBzc21sLFxuICAgICAgICAgIChyZXN1bHQpID0+IHtcbiAgICAgICAgICAgIGlmIChyZXN1bHQucmVhc29uID09PSBTcGVlY2hTREsuUmVzdWx0UmVhc29uLlN5bnRoZXNpemluZ0F1ZGlvQ29tcGxldGVkKSB7XG4gICAgICAgICAgICAgIGNvbnNvbGUubG9nKCfinIUgU3BlZWNoIHN5bnRoZXNpcyBjb21wbGV0ZWQnKTtcbiAgICAgICAgICAgICAgcmVzb2x2ZShyZXN1bHQuYXVkaW9EYXRhKTtcbiAgICAgICAgICAgIH0gZWxzZSB7XG4gICAgICAgICAgICAgIGNvbnNvbGUuZXJyb3IoJ+KdjCBTcGVlY2ggc3ludGhlc2lzIGZhaWxlZDonLCByZXN1bHQuZXJyb3JEZXRhaWxzKTtcbiAgICAgICAgICAgICAgcmVqZWN0KG5ldyBFcnJvcihyZXN1bHQuZXJyb3JEZXRhaWxzIHx8ICdTcGVlY2ggc3ludGhlc2lzIGZhaWxlZCcpKTtcbiAgICAgICAgICAgIH1cbiAgICAgICAgICAgIHRoaXMuc3ludGhlc2l6ZXI/LmNsb3NlKCk7XG4gICAgICAgICAgICB0aGlzLnN5bnRoZXNpemVyID0gbnVsbDtcbiAgICAgICAgICB9LFxuICAgICAgICAgIChlcnJvcikgPT4ge1xuICAgICAgICAgICAgY29uc29sZS5lcnJvcign4p2MIFNwZWVjaCBzeW50aGVzaXMgZXJyb3I6JywgZXJyb3IpO1xuICAgICAgICAgICAgcmVqZWN0KGVycm9yKTtcbiAgICAgICAgICAgIHRoaXMuc3ludGhlc2l6ZXI/LmNsb3NlKCk7XG4gICAgICAgICAgICB0aGlzLnN5bnRoZXNpemVyID0gbnVsbDtcbiAgICAgICAgICB9XG4gICAgICAgICk7XG4gICAgICB9KTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgY29uc29sZS5lcnJvcign4p2MIEZhaWxlZCB0byBzeW50aGVzaXplIHNwZWVjaDonLCBlcnJvcik7XG4gICAgICByZXR1cm4gbnVsbDtcbiAgICB9XG4gIH1cblxuICAvKipcbiAgICogQ2hlY2sgaWYgdGhlIHNlcnZpY2UgaXMgaW5pdGlhbGl6ZWQgYW5kIHJlYWR5XG4gICAqL1xuICBpc1JlYWR5KCk6IGJvb2xlYW4ge1xuICAgIHJldHVybiB0aGlzLmlzSW5pdGlhbGl6ZWQgJiYgdGhpcy5zcGVlY2hDb25maWcgIT09IG51bGw7XG4gIH1cblxuICAvKipcbiAgICogQ2xlYW4gdXAgcmVzb3VyY2VzXG4gICAqL1xuICBkaXNwb3NlKCk6IHZvaWQge1xuICAgIHRoaXMuc3RvcENvbnRpbnVvdXNSZWNvZ25pdGlvbigpO1xuICAgIGlmICh0aGlzLnN5bnRoZXNpemVyKSB7XG4gICAgICB0aGlzLnN5bnRoZXNpemVyLmNsb3NlKCk7XG4gICAgICB0aGlzLnN5bnRoZXNpemVyID0gbnVsbDtcbiAgICB9XG4gICAgdGhpcy5zcGVlY2hDb25maWcgPSBudWxsO1xuICAgIHRoaXMuaXNJbml0aWFsaXplZCA9IGZhbHNlO1xuICAgIGNvbnNvbGUubG9nKCfwn6e5IEF6dXJlIFNwZWVjaCBTZXJ2aWNlIGRpc3Bvc2VkJyk7XG4gIH1cbn1cblxuLy8gRXhwb3J0IHNpbmdsZXRvbiBpbnN0YW5jZVxuZXhwb3J0IGNvbnN0IGF6dXJlU3BlZWNoU2VydmljZSA9IG5ldyBBenVyZVNwZWVjaFNlcnZpY2UoKTtcbiJdLCJ2ZXJzaW9uIjozfQ==
