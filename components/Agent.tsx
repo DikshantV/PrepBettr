@@ -568,25 +568,10 @@ const Agent = ({
                             className="object-cover"
                         />
                         {isSpeaking && <span className="animate-speak" />}
+                        {isProcessing && <span className="animate-speak bg-blue-500" />}
+                        {isRecording && <span className="animate-speak bg-red-500" />}
                     </div>
                     <h3>AI Interviewer</h3>
-                    {isProcessing && (
-                        <div className="mt-2">
-                            <span className="text-xs text-blue-600 dark:text-blue-400">Processing...</span>
-                        </div>
-                    )}
-                    {isWaiting && (
-                        <div className="mt-2">
-                            <span className="text-xs text-green-600 dark:text-green-400 animate-pulse">
-                                {state.hasUserSpoken ? '🎤 Listening...' : '🎙️ Ready to listen'}
-                            </span>
-                        </div>
-                    )}
-                    {isRecording && (
-                        <div className="mt-2">
-                            <span className="text-xs text-red-600 dark:text-red-400 animate-pulse">🔴 Recording...</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* User Profile Card */}
@@ -607,7 +592,7 @@ const Agent = ({
                                     }}
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full">
                                     <svg 
                                         className="w-12 h-12 text-gray-500" 
                                         aria-hidden="true" 
