@@ -36,7 +36,8 @@ export interface EnvironmentConfig {
     functions: ServiceConfig;
     appConfiguration: ServiceConfig;
     speech: ServiceConfig;
-    openai: ServiceConfig;
+    foundry: ServiceConfig;
+    openai: ServiceConfig; // Legacy - deprecated
   };
   
   // Migration Settings
@@ -157,9 +158,25 @@ export const DEFAULT_DEVELOPMENT_CONFIG: EnvironmentConfig = {
         endpoint: process.env.AZURE_SPEECH_ENDPOINT
       }
     },
+    foundry: {
+      provider: 'azure',
+      enabled: true, // Migrated from legacy OpenAI
+      config: {
+        apiKey: process.env.AZURE_FOUNDRY_API_KEY,
+        endpoint: process.env.AZURE_FOUNDRY_ENDPOINT,
+        projectId: process.env.AZURE_FOUNDRY_PROJECT_ID,
+        resourceGroup: process.env.AZURE_FOUNDRY_RESOURCE_GROUP,
+        region: process.env.AZURE_FOUNDRY_REGION,
+        models: {
+          chat: process.env.AZURE_FOUNDRY_DEFAULT_CHAT_MODEL || 'gpt-4o',
+          embedding: process.env.AZURE_FOUNDRY_DEFAULT_EMBEDDING_MODEL || 'text-embedding-3-large'
+        }
+      }
+    },
+    // Legacy OpenAI (deprecated)
     openai: {
       provider: 'azure',
-      enabled: true, // Already in use
+      enabled: false, // Deprecated - use foundry instead
       config: {
         key: process.env.AZURE_OPENAI_KEY,
         endpoint: process.env.AZURE_OPENAI_ENDPOINT,
@@ -407,10 +424,21 @@ AZURE_SUBSCRIPTION_ID=your-subscription-id
 # Azure AI Services
 AZURE_SPEECH_KEY=your-speech-key
 AZURE_SPEECH_REGION=your-speech-region
-AZURE_OPENAI_KEY=your-openai-key
-AZURE_OPENAI_ENDPOINT=https://your-openai.openai.azure.com
-AZURE_OPENAI_GPT35_DEPLOYMENT=gpt-35-turbo
-AZURE_OPENAI_GPT4O_DEPLOYMENT=gpt-4o
+
+# Azure AI Foundry (replaces legacy OpenAI)
+AZURE_FOUNDRY_API_KEY=your-foundry-api-key
+AZURE_FOUNDRY_ENDPOINT=https://your-foundry.services.ai.azure.com
+AZURE_FOUNDRY_PROJECT_ID=your-foundry-project-id
+AZURE_FOUNDRY_RESOURCE_GROUP=your-resource-group
+AZURE_FOUNDRY_REGION=your-region
+AZURE_FOUNDRY_DEFAULT_CHAT_MODEL=gpt-4o
+AZURE_FOUNDRY_DEFAULT_EMBEDDING_MODEL=text-embedding-3-large
+
+# Legacy Azure OpenAI (deprecated - remove after migration)
+# AZURE_OPENAI_KEY=your-legacy-openai-key
+# AZURE_OPENAI_ENDPOINT=https://your-openai.openai.azure.com
+# AZURE_OPENAI_GPT35_DEPLOYMENT=gpt-35-turbo
+# AZURE_OPENAI_GPT4O_DEPLOYMENT=gpt-4o
 
 # Azure Form Recognizer
 AZURE_FORM_RECOGNIZER_ENDPOINT=https://your-formrecognizer.cognitiveservices.azure.com

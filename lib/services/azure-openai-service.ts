@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { MigrationOpenAIClient as OpenAI } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { InterviewContext } from '@/lib/types/voice';
 
 // Client-side safety check

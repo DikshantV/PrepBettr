@@ -11,6 +11,7 @@
  */
 
 import { azureOpenAIService } from '../lib/services/azure-openai-service';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureSpeechService } from '../azure/lib/services/azure-speech-service';
 import { fetchAzureSecrets, getAzureConfig } from '../lib/azure-config';
 import { fetchAzureSecrets as fetchBrowserSecrets } from '../lib/azure-config-browser';

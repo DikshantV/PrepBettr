@@ -6,6 +6,7 @@
  */
 
 import { azureSpeechService } from '../lib/services/azure-speech-service';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIService } from '../lib/services/azure-openai-service';
 
 interface TestResult {

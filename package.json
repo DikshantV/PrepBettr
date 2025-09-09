@@ -108,7 +108,16 @@
   "config:validate:staging": "tsx scripts/deployment/app-config-manager.ts validate staging",
   "config:validate:prod": "tsx scripts/deployment/app-config-manager.ts validate prod",
   "secrets:rotate:staging": "tsx scripts/deployment/app-config-manager.ts rotate staging --dry-run",
-  "secrets:rotate:prod": "tsx scripts/deployment/app-config-manager.ts rotate prod --dry-run"
+  "secrets:rotate:prod": "tsx scripts/deployment/app-config-manager.ts rotate prod --dry-run",
+  "migrate:openai:inventory": "tsx scripts/migration/create-inventory.ts",
+  "migrate:openai": "tsx scripts/migration/codemods/replace-openai.ts",
+  "migrate:openai:all": "npm run migrate:openai:inventory && npm run migrate:openai",
+  "test:azure-foundry": "tsx scripts/test-azure-foundry.ts",
+  "test:azure-foundry-voice": "tsx scripts/test-azure-foundry-voice.ts",
+  "test:voice-foundry": "jest --config tests/azure-ai-foundry/voice/jest.config.js",
+  "test:voice-foundry:watch": "jest --config tests/azure-ai-foundry/voice/jest.config.js --watch",
+  "test:voice-foundry:coverage": "jest --config tests/azure-ai-foundry/voice/jest.config.js --coverage",
+  "test:e2e:voice:foundry": "playwright test tests/e2e/voice-interview-foundry.spec.ts"
  },
  "dependencies": {
   "@aws-sdk/client-ses": "^3.857.0",

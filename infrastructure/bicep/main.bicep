@@ -16,33 +16,16 @@ param storageAccountSkuName string = 'Standard_LRS'
 @description('Key Vault SKU')
 param keyVaultSkuName string = 'standard'
 
-@description('Azure OpenAI Model deployments')
-param openAiDeployments array = [
-  {
-    name: 'gpt-4'
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-4'
-      version: '0613'
-    }
-    sku: {
-      name: 'Standard'
-      capacity: 30
-    }
-  }
-  {
-    name: 'gpt-35-turbo'
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-35-turbo'
-      version: '0125'
-    }
-    sku: {
-      name: 'Standard'
-      capacity: 120
-    }
-  }
-]
+@description('Azure AI Foundry configuration')
+param foundryConfig object = {
+  projectId: 'prepbettr-interview-agents'
+  resourceGroup: 'PrepBettr_group'
+  region: 'eastus'
+  apiVersion: '2024-02-15-preview'
+}
+
+@description('Legacy Azure OpenAI Model deployments (deprecated)')
+param legacyOpenAiDeployments array = []
 
 // Variables
 var uniqueSuffix = substring(uniqueString(resourceGroup().id), 0, 6)
@@ -50,7 +33,8 @@ var storageAccountName = '${appNamePrefix}${environment}${uniqueSuffix}'
 var functionAppName = '${appNamePrefix}-functions-${environment}-${uniqueSuffix}'
 var keyVaultName = '${appNamePrefix}-kv-${environment}-${uniqueSuffix}'
 var appInsightsName = '${appNamePrefix}-insights-${environment}-${uniqueSuffix}'
-var cognitiveServicesName = '${appNamePrefix}-openai-${environment}-${uniqueSuffix}'
+var foundryServicesName = '${appNamePrefix}-foundry-${environment}-${uniqueSuffix}'
+var legacyCognitiveServicesName = '${appNamePrefix}-openai-${environment}-${uniqueSuffix}'
 var speechServicesName = '${appNamePrefix}-speech-${environment}-${uniqueSuffix}'
 var formRecognizerName = '${appNamePrefix}-form-${environment}-${uniqueSuffix}'
 var servicePlanName = '${appNamePrefix}-plan-${environment}-${uniqueSuffix}'
@@ -199,12 +183,24 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: appInsights.properties.ConnectionString
         }
         {
-          name: 'AZURE_OPENAI_ENDPOINT'
-          value: cognitiveServices.properties.endpoint
+          name: 'AZURE_FOUNDRY_ENDPOINT'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=azure-foundry-endpoint)'
         }
         {
-          name: 'AZURE_OPENAI_KEY'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=azure-openai-key)'
+          name: 'AZURE_FOUNDRY_API_KEY'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=azure-foundry-api-key)'
+        }
+        {
+          name: 'AZURE_FOUNDRY_PROJECT_ID'
+          value: foundryConfig.projectId
+        }
+        {
+          name: 'AZURE_FOUNDRY_RESOURCE_GROUP'
+          value: foundryConfig.resourceGroup
+        }
+        {
+          name: 'AZURE_FOUNDRY_REGION'
+          value: foundryConfig.region
         }
         {
           name: 'AZURE_SPEECH_KEY'
@@ -268,16 +264,20 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
-// Azure OpenAI Cognitive Services
-resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: cognitiveServicesName
+// Azure AI Foundry Services (replaces legacy OpenAI)
+// Note: Azure AI Foundry resources are managed separately through the Azure AI Studio portal
+// This section maintains compatibility for key vault secrets only
+
+// Legacy Azure OpenAI Cognitive Services (deprecated - kept for transition)
+resource legacyCognitiveServices 'Microsoft.CognitiveServices/accounts@2023-05-01' = if(length(legacyOpenAiDeployments) > 0) {
+  name: legacyCognitiveServicesName
   location: location
   sku: {
     name: 'S0'
   }
   kind: 'OpenAI'
   properties: {
-    customSubDomainName: cognitiveServicesName
+    customSubDomainName: legacyCognitiveServicesName
     networkAcls: {
       defaultAction: 'Allow'
       virtualNetworkRules: []
@@ -288,9 +288,9 @@ resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   }
 }
 
-// OpenAI Model Deployments
-resource openAiModelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [for deployment in openAiDeployments: {
-  parent: cognitiveServices
+// Legacy OpenAI Model Deployments (deprecated)
+resource legacyOpenAiModelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [for deployment in legacyOpenAiDeployments: if(length(legacyOpenAiDeployments) > 0) {
+  parent: legacyCognitiveServices
   name: deployment.name
   sku: deployment.sku
   properties: {
@@ -365,11 +365,26 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     }
   }
 
-  // Store secrets
-  resource azureOpenAiKeySecret 'secrets' = {
-    name: 'azure-openai-key'
+  // Store secrets for Azure AI Foundry
+  resource azureFoundryEndpointSecret 'secrets' = {
+    name: 'azure-foundry-endpoint'
     properties: {
-      value: cognitiveServices.listKeys().key1
+      value: 'https://prepbettr-ai-foundry.services.ai.azure.com/'
+    }
+  }
+  
+  resource azureFoundryApiKeySecret 'secrets' = {
+    name: 'azure-foundry-api-key'
+    properties: {
+      value: '285fe419a2784fd2bba7f439477a518e' // This should be replaced with actual key
+    }
+  }
+
+  // Legacy Azure OpenAI key (deprecated)
+  resource legacyAzureOpenAiKeySecret 'secrets' = if(length(legacyOpenAiDeployments) > 0) {
+    name: 'azure-openai-key-legacy'
+    properties: {
+      value: legacyCognitiveServices.listKeys().key1
     }
   }
 
@@ -445,18 +460,19 @@ resource functionAppErrorRate 'Microsoft.Insights/metricAlerts@2018-03-01' = {
   }
 }
 
-resource cognitiveServicesThrottling 'Microsoft.Insights/metricAlerts@2018-03-01' = {
-  name: '${cognitiveServicesName}-throttling'
+// Azure AI Foundry throttling monitoring (resource scope updated)
+resource foundryThrottling 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${foundryServicesName}-throttling'
   location: 'Global'
   properties: {
-    description: 'High throttling rate in Cognitive Services'
+    description: 'High throttling rate in Azure AI Foundry Services'
     severity: 1
     enabled: true
-    scopes: [cognitiveServices.id]
+    scopes: [resourceGroup().id] // Monitor at resource group level for AI Foundry
     evaluationFrequency: 'PT1M'
     windowSize: 'PT5M'
     criteria: {
-      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      'odata.type': 'Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria'
       allOf: [
         {
           threshold: 10
@@ -466,6 +482,7 @@ resource cognitiveServicesThrottling 'Microsoft.Insights/metricAlerts@2018-03-01
           operator: 'GreaterThan'
           timeAggregation: 'Total'
           criterionType: 'StaticThresholdCriterion'
+          dimensions: []
         }
       ]
     }
@@ -482,7 +499,8 @@ output functionAppName string = functionApp.name
 output functionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
 output storageAccountName string = storageAccount.name
 output keyVaultName string = keyVault.name
-output cognitiveServicesEndpoint string = cognitiveServices.properties.endpoint
+output foundryEndpoint string = 'https://prepbettr-ai-foundry.services.ai.azure.com/'
+output legacyCognitiveServicesEndpoint string = length(legacyOpenAiDeployments) > 0 ? legacyCognitiveServices.properties.endpoint : ''
 output speechServicesEndpoint string = speechServices.properties.endpoint
 output formRecognizerEndpoint string = formRecognizer.properties.endpoint
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey

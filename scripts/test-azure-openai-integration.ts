@@ -11,6 +11,7 @@
  */
 
 import { initializeAzureEnvironment, getAzureConfig } from '../azure/lib/azure-config';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIService } from '../lib/services/azure-openai-service';
 import { enhancedAzureOpenAIService } from '../lib/services/azure-openai-enhanced';
 import { AzureOpenAIAdapter } from '../lib/ai/azureOpenAI';

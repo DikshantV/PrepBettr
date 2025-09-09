@@ -4,6 +4,10 @@ import Image from "next/image";
 import { useReducer, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
+// Feature flag support for Azure AI Foundry voice system
+import { useFeatureFlag } from "@/lib/hooks/useUnifiedConfig";
+import FoundryVoiceAgent from "./FoundryVoiceAgent";
+
 import { cn } from "@/lib/utils";
 import { createFeedback } from "@/lib/actions/general.action";
 import { logger } from "@/lib/utils/logger";
@@ -86,6 +90,40 @@ const Agent = ({
     resumeInfo,
     resumeQuestions,
 }: AgentProps) => {
+    // Check for Azure AI Foundry voice system feature flag
+    const { enabled: useFoundryVoice, loading: flagLoading } = useFeatureFlag('voiceInterviewV2');
+    
+    // Show loading state while feature flag is being fetched
+    if (flagLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-lg text-gray-600 dark:text-gray-300">
+                    Loading interview system...
+                </div>
+            </div>
+        );
+    }
+    
+    // Use Azure AI Foundry voice system if feature flag is enabled
+    if (useFoundryVoice) {
+        console.log('🚀 [Agent] Using Azure AI Foundry voice system');
+        return (
+            <FoundryVoiceAgent
+                userName={userName}
+                userId={userId}
+                interviewId={interviewId}
+                feedbackId={feedbackId}
+                type={type}
+                questions={questions}
+                resumeInfo={resumeInfo}
+                resumeQuestions={resumeQuestions}
+            />
+        );
+    }
+    
+    // Fall back to legacy Speech SDK + OpenAI system
+    console.log('📻 [Agent] Using legacy Speech SDK + OpenAI system');
+    
     const router = useRouter();
     const [state, dispatch] = useReducer(agentReducer, initialAgentState);
     
