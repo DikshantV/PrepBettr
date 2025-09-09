@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { MigrationOpenAIClient as OpenAI } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 
 // Environment variables for Azure OpenAI configuration
 const AZURE_OPENAI_KEY = process.env.AZURE_OPENAI_KEY;

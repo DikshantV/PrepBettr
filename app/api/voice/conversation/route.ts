@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIServiceServer } from '@/azure/lib/services/azure-openai-service-server';
 import { logger } from '@/lib/utils/logger';
 import { InterviewContext } from '@/lib/voice/azure-adapters';

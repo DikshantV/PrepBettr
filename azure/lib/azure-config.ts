@@ -76,7 +76,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIKey: azureOpenAIKey.value,
       azureOpenAIEndpoint: azureOpenAIEndpoint.value,
       azureOpenAIDeployment: azureOpenAIDeployment.value,
-      azureOpenAIGpt35Deployment: azureOpenAIGpt35?.value || 'gpt-35-turbo',
+      azureOpenAIGpt35Deployment: azureOpenAIGpt35?.value || 'gpt-4o',
       azureOpenAIGpt4oDeployment: azureOpenAIGpt4o?.value || 'gpt-4o',
       azureStorageAccountName: storageAccountName?.value,
       azureStorageAccountKey: storageAccountKey?.value,
@@ -98,7 +98,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIKey: process.env.AZURE_OPENAI_KEY || '',
       azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
       azureOpenAIDeployment: process.env.AZURE_OPENAI_DEPLOYMENT || '',
-      azureOpenAIGpt35Deployment: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      azureOpenAIGpt35Deployment: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
       azureOpenAIGpt4oDeployment: process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o',
       azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
       azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
@@ -164,7 +164,7 @@ export function getAzureConfig() {
     },
     deployments: {
       default: process.env.AZURE_OPENAI_DEPLOYMENT,
-      gpt35Turbo: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      gpt35Turbo: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
       gpt4o: process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
     }
   };

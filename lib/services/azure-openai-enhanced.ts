@@ -6,7 +6,7 @@
  * - gpt-4o: Advanced reasoning for complex tasks (cover letters, resume tailoring)
  */
 
-import OpenAI from 'openai';
+import { MigrationOpenAIClient as OpenAI } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { fetchAzureSecrets } from '@/lib/azure-config-browser';
 
 interface ModelConfiguration {
@@ -31,7 +31,7 @@ export class EnhancedAzureOpenAIService {
   private taskConfigurations: TaskConfigurations = {
     // Fast tasks - use gpt-35-turbo for efficiency
     'relevancy': {
-      deployment: 'gpt-35-turbo',
+      deployment: 'gpt-4o',
       temperature: 0.1,      // Low temperature for consistent scoring
       maxTokens: 50,         // Short numeric response
       topP: 0.9,
@@ -40,7 +40,7 @@ export class EnhancedAzureOpenAIService {
     },
     
     'questions': {
-      deployment: 'gpt-35-turbo',
+      deployment: 'gpt-4o',
       temperature: 0.5,      // Moderate creativity for question variety
       maxTokens: 300,        // Multiple questions
       topP: 0.9,
@@ -92,7 +92,7 @@ export class EnhancedAzureOpenAIService {
 
       // Initialize clients for different deployments
       const deployments = [
-        { name: 'gpt-35-turbo', deployment: this.secrets.azureOpenAIGpt35Deployment || 'gpt-35-turbo' },
+        { name: 'gpt-4o', deployment: this.secrets.azureOpenAIGpt35Deployment || 'gpt-4o' },
         { name: 'gpt-4o', deployment: this.secrets.azureOpenAIGpt4oDeployment || 'gpt-4o' },
         { name: 'default', deployment: this.secrets.azureOpenAIDeployment }
       ];

@@ -600,8 +600,9 @@ jobs:
       run: npm run test:azure-health
       env:
         CI: true
-        AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY || 'mock-key' }}
-        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT || 'https://test.openai.azure.com' }}
+        AZURE_FOUNDRY_API_KEY: ${{ secrets.AZURE_FOUNDRY_API_KEY || 'mock-key' }}
+        AZURE_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_FOUNDRY_ENDPOINT || 'https://test.cognitiveservices.azure.com' }}
+        AZURE_FOUNDRY_PROJECT_ID: ${{ secrets.AZURE_FOUNDRY_PROJECT_ID || 'test-project' }}
         AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY || 'mock-speech-key' }}
         SPEECH_ENDPOINT: ${{ secrets.SPEECH_ENDPOINT || 'https://eastus.api.cognitive.microsoft.com' }}
 

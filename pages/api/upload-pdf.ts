@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { IncomingForm, File } from 'formidable';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';

@@ -1,4 +1,5 @@
 import { ResumeData } from './resume-export-service';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIService } from './azure-openai-service';
 
 export interface KeywordAnalysis {

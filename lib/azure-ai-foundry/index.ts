@@ -1,51 +1,153 @@
 /**
- * Azure AI Foundry Integration for PrepBettr
+ * Azure AI Foundry Integration Index
  * 
- * This module provides integration with Azure AI Foundry services including:
- * - AI Projects client for managing foundry projects
- * - AI Agents for conversation handling
- * - Model management and deployment
- * - Type definitions and configuration
- * 
- * @module azure-ai-foundry
+ * Main entry point for Azure AI Foundry functionality in PrepBettr.
+ * Exports all configuration, client, types, and utility functions.
  */
 
-// Configuration
-export * from './config/foundry-config';
+// Configuration exports
+export {
+  getFoundryConfig,
+  clearFoundryConfigCache,
+  validateFoundryConfig,
+  getModelConfig,
+  getDefaultModel,
+  getDefaultModelConfigurations,
+  getDefaultConnectionSettings,
+  getEnvironmentDefaults,
+  getFoundryConfigForEnvironment,
+  type FoundryConfig,
+  type ModelConfig,
+  type RetryPolicy,
+  type ConnectionSettings
+} from './config/foundry-config';
 
 // Client exports
-export * from './clients/foundryClient';
+export {
+  FoundryClientBase
+} from './clients/foundry-client';
 
-// Type definitions (excluding FoundryConfig to avoid duplicate export)
+// Model manager exports
+export {
+  FoundryModelManager,
+  type ModelUsageEntry,
+  type ModelPerformanceMetrics,
+  type ModelSelectionCriteria
+} from './managers/model-manager';
+
+// Type definitions exports
 export type {
-  AIProjectClient,
-  AgentsClient,
-  FoundryChatRequest,
-  FoundryChatMessage,
-  FoundryChatResponse,
-  FoundryChatChoice,
-  FoundryUsage,
-  FoundryAgent,
-  FoundryTool,
-  FoundryFunction,
+  FoundryResourceId,
   FoundryProject,
-  FoundryModelDeployment,
+  ModelDeployment,
+  CompletionRequest,
+  CompletionResponse,
+  CompletionChoice,
+  ChatCompletionRequest,
+  ChatMessage,
+  ChatFunction,
+  ChatCompletionResponse,
+  ChatCompletionChoice,
+  TokenUsage,
+  FoundryAgent,
+  AgentCapability,
+  AgentTool,
+  AgentConfiguration,
+  AgentSession,
+  AgentMessage,
+  ToolCall,
+  EvaluationMetrics,
+  EvaluationRun,
+  EvaluationResult,
   FoundryError,
-  FoundryConnectionStatus,
-  FoundryHealthCheck,
-  FoundryRequestOptions,
-  PrepBettrInterviewContext,
-  PrepBettrFoundryResponse,
-} from './types';
+  RateLimitInfo,
+  UsageStatistics,
+  HealthStatus,
+  StreamEvent,
+  StreamingCompletionChunk,
+  PaginatedResponse,
+  OperationStatus,
+  ApiVersionInfo,
+  FoundryClientOptions,
+  RequestOptions
+} from './types/foundry-types';
 
-// TODO: Add exports for agents when implemented
-// export * from './agents';
+/**
+ * Convenience function to create a ready-to-use model manager
+ */
+export async function createFoundryModelManager(): Promise<FoundryModelManager> {
+  const manager = new FoundryModelManager();
+  await manager.init();
+  return manager;
+}
 
-// TODO: Add exports for models when implemented  
-// export * from './models';
+/**
+ * Convenience function to create a ready-to-use foundry client
+ */
+export async function createFoundryClient(): Promise<FoundryClientBase> {
+  const client = new FoundryClientBase();
+  await client.init();
+  return client;
+}
 
-// Re-export commonly used types from Azure packages
-export type {
-  AzureKeyCredential,
-  TokenCredential,
-} from '@azure/core-auth';
+/**
+ * Quick configuration check for Azure AI Foundry setup
+ */
+export async function checkFoundrySetup(): Promise<{
+  configured: boolean;
+  hasEndpoint: boolean;
+  hasApiKey: boolean;
+  modelCount: number;
+  errors: string[];
+}> {
+  try {
+    const config = await getFoundryConfig();
+    const validation = validateFoundryConfig(config);
+    
+    return {
+      configured: validation.isValid,
+      hasEndpoint: !!config.endpoint,
+      hasApiKey: !!config.apiKey,
+      modelCount: Object.keys(config.models).length,
+      errors: validation.errors
+    };
+  } catch (error: any) {
+    return {
+      configured: false,
+      hasEndpoint: false,
+      hasApiKey: false,
+      modelCount: 0,
+      errors: [error.message || 'Configuration loading failed']
+    };
+  }
+}
+
+/**
+ * Get recommended Azure AI Foundry environment variables
+ */
+export function getRequiredEnvironmentVariables(): string[] {
+  return [
+    'AZURE_FOUNDRY_ENDPOINT',
+    'AZURE_FOUNDRY_API_KEY',
+    'AZURE_FOUNDRY_PROJECT_ID',
+    'AZURE_FOUNDRY_RESOURCE_GROUP',
+    'AZURE_FOUNDRY_REGION'
+  ];
+}
+
+/**
+ * Check if Azure AI Foundry is properly configured
+ */
+export function isFoundryConfigured(): boolean {
+  const requiredVars = getRequiredEnvironmentVariables();
+  return requiredVars.some(varName => !!process.env[varName]);
+}
+
+// Default export with main utilities
+export default {
+  createFoundryModelManager,
+  createFoundryClient,
+  checkFoundrySetup,
+  getRequiredEnvironmentVariables,
+  isFoundryConfigured
+};
