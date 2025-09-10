@@ -1,0 +1,86 @@
+name: "question-templates"
+description: "Templates for generating interview questions across different categories"
+version: "1.0.0"
+metadata:
+  categories: ["technical", "behavioral", "system_design", "cultural_fit"]
+  difficulty_levels: ["junior", "mid", "senior", "principal"]
+
+variables:
+  base_instruction: "Generate interview questions that are relevant, challenging, and fair."
+  question_count: 5
+  time_limit: "3-5 minutes per question"
+
+template: |
+  {{base_instruction}}
+
+  **Question Generation Parameters:**
+  - Role: {{role | capitalize}}
+  - Category: {{category | capitalize}}
+  - Difficulty: {{difficulty | capitalize}} Level
+  - Count: {{count | default(question_count)}} questions
+  - Expected Duration: {{time_limit}}
+
+  {{#if tech_stack}}
+  **Technical Requirements:**
+  {{#each tech_stack}}
+  - {{uppercase(@value)}}
+  {{/each}}
+  {{/if}}
+
+  {{#if category === "technical"}}
+  **Technical Question Guidelines:**
+  - Focus on practical problem-solving scenarios
+  - Include both theoretical knowledge and hands-on experience
+  - {{#if difficulty === "junior"}}Emphasize fundamental concepts and basic implementations{{/if}}
+  - {{#if difficulty === "mid"}}Include system integration and optimization scenarios{{/if}}
+  - {{#if difficulty === "senior"}}Focus on architecture decisions and trade-offs{{/if}}
+  - {{#if difficulty === "principal"}}Emphasize strategic technical leadership and innovation{{/if}}
+  - Avoid overly obscure or trick questions
+  - Allow for multiple valid approaches
+  {{/if}}
+
+  {{#if category === "behavioral"}}
+  **Behavioral Question Guidelines:**
+  - Use STAR method framework (Situation, Task, Action, Result)
+  - Focus on past experiences and concrete examples
+  - {{#if experience_level}}Tailor complexity to {{experience_level}} experience level{{/if}}
+  - Include questions about:
+    * Leadership and teamwork
+    * Problem-solving under pressure
+    * Conflict resolution
+    * Learning and adaptation
+    * Communication skills
+  {{/if}}
+
+  {{#if category === "system_design"}}
+  **System Design Question Guidelines:**
+  - Start with high-level requirements gathering
+  - Progress through architectural decisions
+  - Include scalability and performance considerations
+  - {{#if difficulty === "junior"}}Focus on basic system components and interactions{{/if}}
+  - {{#if difficulty !== "junior"}}Include advanced topics like caching, load balancing, data consistency{{/if}}
+  - Allow for iterative refinement and trade-off discussions
+  {{/if}}
+
+  {{#if category === "cultural_fit"}}
+  **Cultural Fit Question Guidelines:**
+  - Assess alignment with company values
+  - Understand working style preferences
+  - Evaluate collaboration and communication approach
+  - Include scenario-based questions
+  - Keep questions inclusive and bias-free
+  {{/if}}
+
+  {{#if custom_requirements}}
+  **Additional Requirements:**
+  {{custom_requirements}}
+  {{/if}}
+
+  **Output Format:**
+  For each question, provide:
+  1. The question text
+  2. Key points to look for in answers
+  3. Suggested follow-up questions
+  4. Estimated difficulty level (1-5 scale)
+
+  Generate {{count | default(question_count)}} distinct, high-quality questions that assess different aspects of the {{role}} role requirements.
