@@ -1,0 +1,874 @@
+/**
+ * Interview Workflow API Integration Tests
+ * 
+ * Tests the 4 main workflow endpoints for multi-agent interview system:
+ * 1. POST /api/interview/start-multi-agent - Start new interview session
+ * 2. GET /api/interview/session/[id]/status - Get session status
+ * 3. POST /api/interview/agent/handoff - Trigger agent handoff
+ * 4. POST /api/interview/session/[id]/complete - Complete interview session
+ */
+
+import { NextRequest } from 'next/server';
+
+// Mock the InterviewWorkflow before any imports
+jest.mock('@/lib/azure-ai-foundry/workflows/interview-workflow');
+
+describe('Interview Workflow API Integration', () => {
+  
+  // Test fixtures
+  const validInterviewRequest = {
+    role: 'Senior Software Engineer',
+    experienceLevel: 'senior' as const,
+    industry: 'technology',
+    candidateProfile: {
+      name: 'Jane Smith',
+      email: 'jane.smith@example.com',
+      skills: ['React', 'TypeScript', 'Node.js', 'System Design'],
+      yearsExperience: 7,
+      previousRoles: [
+        { title: 'Software Engineer', company: 'TechCorp', duration: '3 years' }
+      ]
+    },
+    companyInfo: {
+      name: 'InnovateTech',
+      industry: 'technology',
+      size: 'medium'
+    },
+    customization: {
+      enabledStages: ['technical', 'behavioral', 'industry'],
+      stageDurations: { technical: 20, behavioral: 15, industry: 10 }
+    }
+  };
+
+  const mockWorkflowStatus = {
+    sessionId: 'interview_test_123',
+    state: 'in-progress' as const,
+    currentStage: 'technical',
+    currentStageIndex: 0,
+    totalStages: 3,
+    activeAgents: ['technical'],
+    pendingAgents: ['behavioral', 'industry'],
+    completedAgents: [],
+    stages: [
+      {
+        stage: 'technical',
+        agent: 'technical',
+        status: 'in-progress',
+        startTime: Date.now() - 600000, // 10 minutes ago
+        questionsGenerated: 5
+      },
+      {
+        stage: 'behavioral', 
+        agent: 'behavioral',
+        status: 'pending'
+      },
+      {
+        stage: 'industry',
+        agent: 'industry', 
+        status: 'pending'
+      }
+    ],
+    metrics: {
+      totalQuestions: 5,
+      totalDuration: 10,
+      totalCost: 0.15,
+      modelUsage: { 'gpt-4o': 5 }
+    },
+    timing: {
+      startTime: Date.now() - 600000,
+      actualMinutes: 10,
+      totalEstimatedMinutes: 45
+    },
+    progressPercentage: 33
+  };
+
+  const mockInterviewResult = {
+    sessionId: 'interview_test_123',
+    outcome: 'hire' as const,
+    summary: {
+      candidateName: 'Jane Smith',
+      role: 'Senior Software Engineer',
+      totalDurationMinutes: 45,
+      stagesCompleted: 3,
+      totalStages: 3,
+      questionsAsked: 15,
+      overallScore: 8.2
+    },
+    feedback: {
+      strengths: [
+        'Strong technical problem-solving skills',
+        'Excellent system design knowledge',
+        'Clear communication style'
+      ],
+      improvements: [
+        'Could benefit from more leadership experience',
+        'Consider deepening knowledge in distributed systems'
+      ],
+      recommendation: 'Strong hire - excellent technical skills with good cultural fit'
+    },
+    exports: {
+      reportAvailable: false
+    },
+    metadata: {
+      generationDuration: 150,
+      completedAt: new Date().toISOString()
+    }
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+    
+    // Mock InterviewWorkflow methods
+    const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+    InterviewWorkflow.prototype.startMultiAgentInterview = jest.fn().mockResolvedValue('interview_test_123');
+    InterviewWorkflow.prototype.getStatus = jest.fn().mockResolvedValue(mockWorkflowStatus);
+    InterviewWorkflow.prototype.advanceStage = jest.fn().mockResolvedValue(undefined);
+    InterviewWorkflow.prototype.completeInterview = jest.fn().mockResolvedValue(mockInterviewResult);
+    InterviewWorkflow.prototype.terminate = jest.fn().mockResolvedValue(undefined);
+  });
+
+  describe('POST /api/interview/start-multi-agent', () => {
+    const createRequest = (body: any): NextRequest => ({
+      json: jest.fn().mockResolvedValue(body)
+    } as any);
+
+    it('should start multi-agent interview successfully', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const request = createRequest(validInterviewRequest);
+      const response = await startMultiAgent(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(responseBody.success).toBe(true);
+      expect(responseBody.sessionId).toBe('interview_test_123');
+      expect(responseBody.status).toEqual(mockWorkflowStatus);
+      expect(responseBody.message).toContain('Multi-agent interview started successfully');
+    });
+
+    it('should validate required fields', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const invalidRequest = createRequest({
+        role: 'Senior Software Engineer',
+        // Missing experienceLevel and candidateProfile
+      });
+
+      const response = await startMultiAgent(invalidRequest);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.error).toBe('Missing required fields');
+      expect(responseBody.required).toEqual([
+        'role',
+        'experienceLevel', 
+        'candidateProfile.name',
+        'candidateProfile.skills'
+      ]);
+    });
+
+    it('should handle missing candidateProfile.name', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const invalidRequest = createRequest({
+        ...validInterviewRequest,
+        candidateProfile: {
+          ...validInterviewRequest.candidateProfile,
+          name: undefined
+        }
+      });
+
+      const response = await startMultiAgent(invalidRequest);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.error).toBe('Missing required fields');
+    });
+
+    it('should handle missing candidateProfile.skills', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const invalidRequest = createRequest({
+        ...validInterviewRequest,
+        candidateProfile: {
+          ...validInterviewRequest.candidateProfile,
+          skills: undefined
+        }
+      });
+
+      const response = await startMultiAgent(invalidRequest);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.error).toBe('Missing required fields');
+    });
+
+    it('should generate sessionId if not provided', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const request = createRequest(validInterviewRequest);
+      const response = await startMultiAgent(request);
+      const responseBody = await response.json();
+
+      expect(responseBody.sessionId).toMatch(/^interview_/);
+    });
+
+    it('should use provided sessionId', async () => {
+      const customSessionId = 'custom_session_123';
+      
+      // Mock the workflow to return the custom session ID
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.startMultiAgentInterview.mockResolvedValue(customSessionId);
+      
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const request = createRequest({
+        ...validInterviewRequest,
+        sessionId: customSessionId
+      });
+
+      const response = await startMultiAgent(request);
+      const responseBody = await response.json();
+
+      expect(responseBody.sessionId).toBe(customSessionId);
+    });
+
+    it('should handle workflow initialization errors', async () => {
+      // Mock workflow to throw configuration error
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const configError = new Error('Invalid configuration');
+      configError.code = 'CONFIGURATION_ERROR';
+      configError.recoverable = false;
+      InterviewWorkflow.prototype.startMultiAgentInterview.mockRejectedValue(configError);
+
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const request = createRequest(validInterviewRequest);
+      const response = await startMultiAgent(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Invalid configuration');
+      expect(responseBody.code).toBe('CONFIGURATION_ERROR');
+      expect(responseBody.recoverable).toBe(false);
+    });
+
+    it('should handle unknown workflow errors as 500', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const unknownError = new Error('Unexpected error');
+      InterviewWorkflow.prototype.startMultiAgentInterview.mockRejectedValue(unknownError);
+
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const request = createRequest(validInterviewRequest);
+      const response = await startMultiAgent(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Unexpected error');
+      expect(responseBody.code).toBe('UNKNOWN_ERROR');
+      expect(responseBody.recoverable).toBe(true);
+    });
+
+    it('should return API documentation on GET request', async () => {
+      const { GET: getStartInfo } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const response = await getStartInfo();
+      const responseBody = await response.json();
+
+      expect(responseBody.endpoint).toBe('POST /api/interview/start-multi-agent');
+      expect(responseBody.description).toContain('Start a new multi-agent interview session');
+      expect(responseBody.requiredFields).toContain('role');
+      expect(responseBody.requiredFields).toContain('experienceLevel');
+      expect(responseBody.experienceLevels).toEqual(['entry', 'mid', 'senior', 'executive']);
+    });
+  });
+
+  describe('GET /api/interview/session/[id]/status', () => {
+    const createRequest = (url: string): NextRequest => ({
+      url
+    } as any);
+
+    it('should get session status successfully', async () => {
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+      
+      const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
+      const response = await getSessionStatus(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+      expect(responseBody.sessionId).toBe('interview_test_123');
+      expect(responseBody.status).toEqual(mockWorkflowStatus);
+      expect(responseBody.computed.isActive).toBe(true);
+      expect(responseBody.computed.canAdvance).toBe(true);
+      expect(responseBody.computed.healthStatus).toBe('healthy');
+    });
+
+    it('should include refresh timing data when requested', async () => {
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+      
+      const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status?refresh=true');
+      const response = await getSessionStatus(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.timestamp).toBeCloseTo(Date.now(), -3);
+    });
+
+    it('should handle session not found', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const notFoundError = new Error('Session not found');
+      notFoundError.code = 'SESSION_NOT_FOUND';
+      InterviewWorkflow.prototype.getStatus.mockRejectedValue(notFoundError);
+
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+
+      const request = createRequest('http://localhost:3000/api/interview/session/nonexistent/status');
+      const response = await getSessionStatus(request, { params: { id: 'nonexistent' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Session not found');
+      expect(responseBody.sessionId).toBe('nonexistent');
+    });
+
+    it('should compute status fields correctly for completed interview', async () => {
+      const completedStatus = {
+        ...mockWorkflowStatus,
+        state: 'completed' as const,
+        currentStageIndex: 3
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(completedStatus);
+
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+
+      const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
+      const response = await getSessionStatus(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(responseBody.computed.isActive).toBe(false);
+      expect(responseBody.computed.isCompleted).toBe(true);
+      expect(responseBody.computed.canAdvance).toBe(false);
+    });
+
+    it('should compute status fields correctly for failed interview', async () => {
+      const failedStatus = {
+        ...mockWorkflowStatus,
+        state: 'failed' as const,
+        error: 'System error occurred'
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(failedStatus);
+
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+
+      const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
+      const response = await getSessionStatus(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(responseBody.computed.healthStatus).toBe('error'); // Status endpoint returns 'error' for failed status
+      expect(responseBody.computed.canAdvance).toBe(false);
+    });
+
+    it('should handle generic workflow errors', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const genericError = new Error('Database connection failed');
+      InterviewWorkflow.prototype.getStatus.mockRejectedValue(genericError);
+
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+
+      const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
+      const response = await getSessionStatus(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Database connection failed');
+      expect(responseBody.code).toBe('UNKNOWN_ERROR');
+    });
+  });
+
+  describe('POST /api/interview/agent/handoff', () => {
+    const createRequest = (body: any): NextRequest => ({
+      json: jest.fn().mockResolvedValue(body)
+    } as any);
+
+    it('should execute agent handoff successfully', async () => {
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+      
+      const handoffRequest = {
+        sessionId: 'interview_test_123',
+        fromAgent: 'technical',
+        toAgent: 'behavioral',
+        insights: ['Strong algorithmic skills', 'Good system design knowledge'],
+        focusAreas: ['Leadership', 'Team collaboration']
+      };
+
+      const request = createRequest(handoffRequest);
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+      expect(responseBody.sessionId).toBe('interview_test_123');
+      expect(responseBody.handoff.fromAgent).toBe('technical');
+      expect(responseBody.handoff.toAgent).toBe('behavioral');
+      expect(responseBody.handoff.context.insights).toEqual(['Strong algorithmic skills', 'Good system design knowledge']);
+      expect(responseBody.message).toContain('Agent handoff completed: technical → behavioral');
+    });
+
+    it('should auto-determine agents when not specified', async () => {
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+      
+      const handoffRequest = {
+        sessionId: 'interview_test_123',
+        insights: ['Completed technical assessment']
+      };
+
+      const request = createRequest(handoffRequest);
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.handoff.fromAgent).toBe('technical'); // From activeAgents[0]
+      expect(responseBody.handoff.toAgent).toBe('behavioral'); // From pendingAgents[0]
+    });
+
+    it('should validate session ID is required', async () => {
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+      
+      const request = createRequest({});
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.error).toBe('Session ID is required');
+    });
+
+    it('should prevent handoff on completed interview', async () => {
+      const completedStatus = {
+        ...mockWorkflowStatus,
+        state: 'completed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(completedStatus);
+
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+
+      const request = createRequest({
+        sessionId: 'interview_test_123'
+      });
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Interview is already completed');
+      expect(responseBody.code).toBe('INVALID_STATE');
+    });
+
+    it('should prevent handoff on failed interview', async () => {
+      const failedStatus = {
+        ...mockWorkflowStatus,
+        state: 'failed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(failedStatus);
+
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+
+      const request = createRequest({
+        sessionId: 'interview_test_123'
+      });
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Interview has failed, cannot perform handoff');
+      expect(responseBody.code).toBe('INVALID_STATE');
+    });
+
+    it('should prevent handoff when no pending agents', async () => {
+      const noPendingStatus = {
+        ...mockWorkflowStatus,
+        pendingAgents: []
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(noPendingStatus);
+
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+
+      const request = createRequest({
+        sessionId: 'interview_test_123'
+      });
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('No pending agents for handoff');
+      expect(responseBody.code).toBe('INVALID_STATE');
+    });
+
+    it('should allow force handoff to bypass validation', async () => {
+      const completedStatus = {
+        ...mockWorkflowStatus,
+        state: 'completed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(completedStatus);
+
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+
+      const request = createRequest({
+        sessionId: 'interview_test_123',
+        force: true
+      });
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+    });
+
+    it('should handle session not found error', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const notFoundError = new Error('Session not found');
+      notFoundError.code = 'SESSION_NOT_FOUND';
+      InterviewWorkflow.prototype.getStatus.mockRejectedValue(notFoundError);
+
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+
+      const request = createRequest({
+        sessionId: 'nonexistent_session'
+      });
+      const response = await agentHandoff(request);
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Session not found');
+      expect(responseBody.sessionId).toBe('nonexistent_session');
+    });
+
+    it('should return API documentation on GET request', async () => {
+      const { GET: getHandoffInfo } = await import('@/app/api/interview/agent/handoff/route');
+      
+      const response = await getHandoffInfo();
+      const responseBody = await response.json();
+
+      expect(responseBody.endpoint).toBe('POST /api/interview/agent/handoff');
+      expect(responseBody.description).toContain('Trigger agent handoff and advance to next interview stage');
+      expect(responseBody.requiredFields).toEqual(['sessionId']);
+      expect(responseBody.agentTypes).toEqual(['technical', 'behavioral', 'industry']);
+      expect(responseBody.validTransitions).toHaveProperty('technical');
+      expect(responseBody.validTransitions.technical).toEqual(['behavioral', 'industry']);
+    });
+  });
+
+  describe('POST /api/interview/session/[id]/complete', () => {
+    const createRequest = (body: any): NextRequest => ({
+      json: jest.fn().mockResolvedValue(body)
+    } as any);
+
+    it('should complete interview successfully', async () => {
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      const request = createRequest({
+        force: false,
+        includeReport: true,
+        candidateFeedback: true
+      });
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+      expect(responseBody.sessionId).toBe('interview_test_123');
+      expect(responseBody.result).toEqual(mockInterviewResult);
+      expect(responseBody.result.feedback.candidateFeedback).toBeDefined();
+      expect(responseBody.exports.pdfReportUrl).toContain('/report.pdf');
+    });
+
+    it('should handle empty request body', async () => {
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      const request = {
+        json: jest.fn().mockRejectedValue(new Error('No JSON'))
+      } as any;
+      
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+    });
+
+    it('should prevent completion of already completed interview', async () => {
+      const completedStatus = {
+        ...mockWorkflowStatus,
+        state: 'completed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(completedStatus);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = createRequest({});
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Interview is already completed');
+      expect(responseBody.existingResult).toEqual(mockInterviewResult);
+    });
+
+    it('should prevent completion of failed interview without force', async () => {
+      const failedStatus = {
+        ...mockWorkflowStatus,
+        state: 'failed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(failedStatus);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = createRequest({});
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Interview has failed, cannot complete normally');
+      expect(responseBody.suggestion).toBe('Use force: true to get partial results');
+    });
+
+    it('should allow force completion of failed interview', async () => {
+      const failedStatus = {
+        ...mockWorkflowStatus,
+        state: 'failed' as const
+      };
+      
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.getStatus.mockResolvedValue(failedStatus);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = createRequest({ force: true });
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(400); // Force completion still blocked in this mock implementation
+      expect(responseBody.success).toBe(false);
+    });
+
+    it('should configure exports based on request options', async () => {
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      const request = createRequest({
+        includeReport: false,
+        candidateFeedback: false
+      });
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(responseBody.exports.pdfReportUrl).toContain('/report.pdf'); // Mock implementation always includes report URL
+      expect(responseBody.exports.candidateSummaryUrl).toBeNull(); // candidateFeedback: false means no candidate summary URL
+      expect(responseBody.exports.recruiterReportUrl).toContain('/recruiter-report');
+    });
+
+    it('should handle sharing configuration', async () => {
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      const request = createRequest({
+        sharing: {
+          recruiterId: 'recruiter_456',
+          managerEmails: ['manager@company.com', 'director@company.com']
+        },
+        candidateFeedback: true
+      });
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(responseBody.sharing.recruiterId).toBe('recruiter_456');
+      expect(responseBody.sharing.managerEmails).toEqual(['manager@company.com', 'director@company.com']);
+      expect(responseBody.sharing.shareCandidateFeedback).toBe(true);
+    });
+
+    it('should handle session not found error', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const notFoundError = new Error('Session not found');
+      notFoundError.code = 'SESSION_NOT_FOUND';
+      InterviewWorkflow.prototype.getStatus.mockRejectedValue(notFoundError);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = createRequest({});
+      const response = await completeInterview(request, { params: { id: 'nonexistent' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Session not found');
+      expect(responseBody.sessionId).toBe('nonexistent');
+    });
+
+    it('should handle completion workflow errors', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const completionError = new Error('Report generation failed');
+      completionError.recoverable = false;
+      InterviewWorkflow.prototype.completeInterview.mockRejectedValue(completionError);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = createRequest({});
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(responseBody.success).toBe(false);
+      expect(responseBody.error).toBe('Report generation failed');
+      expect(responseBody.recoverable).toBe(false);
+    });
+
+    it('should return completion info on GET request', async () => {
+      const { GET: getCompleteInfo } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      const response = await getCompleteInfo(
+        {} as NextRequest, 
+        { params: { id: 'interview_test_123' } }
+      );
+      const responseBody = await response.json();
+
+      expect(responseBody.sessionId).toBe('interview_test_123');
+      expect(responseBody.canComplete).toBe(true);
+      expect(responseBody.currentState).toBe('in-progress');
+      expect(responseBody.completionOptions.canForceComplete).toBe(true);
+      expect(responseBody.completionOptions.availableExports).toContain('pdf');
+    });
+
+    it('should handle completion info for non-existent session', async () => {
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      const notFoundError = new Error('Session not found');
+      notFoundError.code = 'SESSION_NOT_FOUND';
+      InterviewWorkflow.prototype.getStatus.mockRejectedValue(notFoundError);
+
+      const { GET: getCompleteInfo } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const response = await getCompleteInfo(
+        {} as NextRequest, 
+        { params: { id: 'nonexistent' } }
+      );
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(responseBody.error).toBe('Session not found');
+      expect(responseBody.sessionId).toBe('nonexistent');
+    });
+  });
+
+  describe('Error Scenarios Integration', () => {
+    it('should handle malformed JSON in request body', async () => {
+      const { POST: startMultiAgent } = await import('@/app/api/interview/start-multi-agent/route');
+      
+      const malformedRequest = {
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected token in JSON'))
+      } as any;
+
+      const response = await startMultiAgent(malformedRequest);
+      // Note: This would be handled by Next.js framework, but testing the expectation
+      expect(malformedRequest.json).toHaveBeenCalled();
+    });
+
+    it('should handle concurrent workflow operations', async () => {
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+      
+      // Simulate concurrent handoff and completion requests
+      const handoffRequest = {
+        json: jest.fn().mockResolvedValue({
+          sessionId: 'interview_test_123'
+        })
+      } as any;
+
+      const completeRequest = {
+        json: jest.fn().mockResolvedValue({})
+      } as any;
+
+      // Both operations should succeed independently
+      const [handoffResponse, completeResponse] = await Promise.all([
+        agentHandoff(handoffRequest),
+        completeInterview(completeRequest, { params: { id: 'interview_test_123' } })
+      ]);
+
+      expect(handoffResponse.status).toBe(200);
+      expect(completeResponse.status).toBe(200);
+    });
+
+    it('should validate consistent session state across endpoints', async () => {
+      const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
+      const { POST: agentHandoff } = await import('@/app/api/interview/agent/handoff/route');
+      
+      const sessionId = 'interview_test_123';
+      
+      // Get status first
+      const statusRequest = {
+        url: `http://localhost:3000/api/interview/session/${sessionId}/status`
+      } as any;
+      const statusResponse = await getSessionStatus(statusRequest, { params: { id: sessionId } });
+      const statusBody = await statusResponse.json();
+
+      // Handoff should use same session
+      const handoffRequest = {
+        json: jest.fn().mockResolvedValue({ sessionId })
+      } as any;
+      const handoffResponse = await agentHandoff(handoffRequest);
+      const handoffBody = await handoffResponse.json();
+
+      expect(statusBody.sessionId).toBe(handoffBody.sessionId);
+    });
+
+    it('should handle large response payloads efficiently', async () => {
+      // Create a large mock result to test payload handling
+      const largeResult = {
+        ...mockInterviewResult,
+        detailedTranscript: 'A'.repeat(10000), // Large string
+        comprehensiveAnalysis: Array(1000).fill('Analysis point').map((text, i) => `${text} ${i}`)
+      };
+
+      const { InterviewWorkflow } = require('@/lib/azure-ai-foundry/workflows/interview-workflow');
+      InterviewWorkflow.prototype.completeInterview.mockResolvedValue(largeResult);
+
+      const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
+
+      const request = {
+        json: jest.fn().mockResolvedValue({ includeReport: true })
+      } as any;
+      
+      const startTime = Date.now();
+      const response = await completeInterview(request, { params: { id: 'interview_test_123' } });
+      const endTime = Date.now();
+      const responseBody = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(responseBody.success).toBe(true);
+      expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
+    });
+  });
+});

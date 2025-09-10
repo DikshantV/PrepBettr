@@ -1,4 +1,5 @@
 import { WorkExperience, Education, Project } from '../services/azure-ai-service';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIService } from '../services/azure-openai-service';
 
 export interface ParsedResumeData {

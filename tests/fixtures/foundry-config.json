@@ -1,0 +1,35 @@
+{
+  "endpoint": "https://test-foundry.cognitiveservices.azure.com",
+  "apiKey": "test-api-key-12345",
+  "projectId": "test-project-id",
+  "resourceGroup": "test-rg",
+  "region": "eastus",
+  "models": {
+    "test-gpt-4o": {
+      "modelName": "test-gpt-4o",
+      "deploymentId": "gpt-4o-deployment",
+      "capabilities": ["text-generation", "coding"],
+      "maxTokens": 128000,
+      "costPerToken": 0.005,
+      "isDefault": true
+    },
+    "test-phi-4": {
+      "modelName": "test-phi-4",
+      "deploymentId": "phi-4-deployment",
+      "capabilities": ["text-generation"],
+      "maxTokens": 32000,
+      "costPerToken": 0.001,
+      "isDefault": false
+    }
+  },
+  "connection": {
+    "timeout": 30000,
+    "retryPolicy": {
+      "maxRetries": 3,
+      "baseDelay": 1000,
+      "maxDelay": 10000,
+      "exponentialBase": 2,
+      "jitter": true
+    }
+  }
+}

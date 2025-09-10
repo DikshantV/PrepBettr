@@ -65,7 +65,7 @@ export default function DashboardClientRealtime() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="dashboard">
       {/* Hero Section */}
       <section className="card-cta">
         <div className="flex flex-col gap-6 max-w-lg">

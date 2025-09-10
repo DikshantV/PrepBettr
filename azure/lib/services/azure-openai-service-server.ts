@@ -1,4 +1,4 @@
-import { AzureOpenAI } from 'openai';
+import { MigrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { fetchAzureSecrets } from '../azure-config';
 
 export interface ConversationMessage {
@@ -32,7 +32,7 @@ export interface GenerationResponse {
 }
 
 export class AzureOpenAIServiceServer {
-  private client: AzureOpenAI | null = null;
+  private client: MigrationOpenAIClient | null = null;
   private isInitialized = false;
   private modelDeployment: string = 'gpt-4o'; // Store the deployment name as model
   private conversationHistory: ConversationMessage[] = [];
@@ -67,13 +67,8 @@ export class AzureOpenAIServiceServer {
         return false;
       }
 
-      this.client = new AzureOpenAI({
-        apiKey: secrets.azureOpenAIKey,
-        endpoint: secrets.azureOpenAIEndpoint,
-        deployment: secrets.azureOpenAIDeployment,
-        apiVersion: '2024-02-15-preview', // Using stable API version
-        // Note: dangerouslyAllowBrowser is NOT set here since this is server-side only
-      });
+      this.client = new MigrationOpenAIClient();
+      await this.client.init(); // Initialize the migration client
       
       // Store the deployment name for use as model in API calls
       this.modelDeployment = secrets.azureOpenAIDeployment;

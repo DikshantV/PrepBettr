@@ -3,6 +3,47 @@
 import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { AuthenticatedUser } from '@/lib/middleware/authMiddleware-unified';
 
+/**
+ * Refresh the current Firebase auth token
+ */
+async function refreshAuthToken(): Promise<string | null> {
+  try {
+    // Import Firebase auth dynamically to avoid SSR issues
+    const { getCurrentUserIdToken } = await import('@/lib/firebase/auth.js');
+    
+    console.log('🔄 Attempting to refresh Firebase ID token...');
+    
+    // Force refresh the Firebase ID token
+    const freshToken = await getCurrentUserIdToken(true);
+    
+    if (freshToken) {
+      // Update localStorage with the new token
+      localStorage.setItem('auth_token', freshToken);
+      console.log('✅ Firebase ID token refreshed successfully');
+      return freshToken;
+    } else {
+      console.warn('⚠️ No fresh token returned from Firebase');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Token refresh failed:', error);
+    
+    // If Firebase auth is not available or user is not signed in,
+    // clear the auth state completely
+    if (error instanceof Error && error.message.includes('No Firebase user signed in')) {
+      localStorage.removeItem('auth_token');
+      // Clear all caches
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('auth_verification_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+    
+    return null;
+  }
+}
+
 // Define the auth context interface using our unified user type
 interface AuthContextType {
   user: AuthenticatedUser | null;
@@ -119,8 +160,63 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
             if (mounted) {
               setUser(userData.user);
             }
+          } else if (response.status === 401) {
+            // Token is invalid/expired, check if server suggests refresh
+            const errorData = await response.json().catch(() => ({}));
+            const shouldRefresh = errorData.shouldRefresh !== false; // Default to true
+            
+            console.log('🔄 Token expired/invalid:', errorData.error || 'Unknown error');
+            
+            if (shouldRefresh) {
+              console.log('🔄 Attempting token refresh...');
+            
+              try {
+                const refreshed = await refreshAuthToken();
+                if (refreshed && mounted) {
+                  // Retry verification with new token
+                  const retryResponse = await fetch('/api/auth/verify', {
+                    headers: {
+                      'Authorization': `Bearer ${refreshed}`
+                    }
+                  });
+                  
+                  if (retryResponse.ok) {
+                    const userData = await retryResponse.json();
+                    
+                    // Cache successful verification with new token
+                    const newCacheKey = `auth_verification_${refreshed.substring(0, 10)}`;
+                    const cacheData = {
+                      verified: true,
+                      user: userData.user,
+                      timestamp: Date.now()
+                    };
+                    localStorage.setItem(newCacheKey, JSON.stringify(cacheData));
+                    
+                    if (mounted) {
+                      setUser(userData.user);
+                    }
+                    return;
+                  }
+                }
+              } catch (refreshError) {
+                console.error('🔄 Token refresh failed:', refreshError);
+              }
+            }
+            
+            // If refresh failed or not recommended, clear auth state
+            localStorage.removeItem('auth_token');
+            // Clear all verification caches
+            Object.keys(localStorage).forEach(key => {
+              if (key.startsWith('auth_verification_')) {
+                localStorage.removeItem(key);
+              }
+            });
+            
+            if (mounted) {
+              setUser(null);
+            }
           } else {
-            // Cache failed verification temporarily (1 min)
+            // Other error, cache failed verification temporarily (1 min)
             const cacheData = {
               verified: false,
               user: null,

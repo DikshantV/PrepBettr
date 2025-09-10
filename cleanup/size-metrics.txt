@@ -1,0 +1,35 @@
+# PrepBettr Repository Size Cleanup Metrics
+
+## Baseline Metrics (Before Cleanup)
+- Repository total size: 4.3G
+- File count (excluding node_modules): 5,594
+- Tag created: cleanup-baseline-$(date +%Y%m%d)
+
+## Major Directories Before Cleanup:
+- node_modules: 2.0G (excluded from cleanup)
+- azure/: 222M 
+- docs/: 1.4M
+- service-audit/: 1.0M
+- tests/: 912K
+- scripts/: 792K
+- components/: 732K
+- app/: 520K
+- cleanup/: 220K
+- azure-migration/: 216K
+
+## Post-Cleanup Metrics (Final):
+- Repository size after cleanup: 4.3G (same due to .next and .git)
+- File count after cleanup: 5,349 files
+- File reduction: 245 files removed (5,594 → 5,349)
+
+## Cleaned Up:
+- audit/reporting directories: service-audit/, security-audit/, reports/
+- infrastructure directories: infrastructure/, monitoring/, azure-migration/
+- backup/deployment directories: backups/, screenshots/, deployment/
+- legacy test files from root level
+- shell scripts and temporary files
+- token files and temporary configuration
+- legacy TypeScript build files and package backups
+- docs/archive/ directory (82 legacy documentation files)
+- empty uploads/ directory
+- dependency cleanup: removed @firebase/rules-unit-testing, @testing-library/react-hooks, supertest

@@ -1,0 +1,79 @@
+# Environment Variables Analysis
+
+## Summary
+- Total unique env vars found in code: 737
+- Variables defined in .env.example: 51
+- Framework/system variables: ~600 (Next.js, Azure, Firebase, Node.js internals)
+- Application-specific variables: ~137
+
+## Confirmed Application Variables (Keep These)
+### Azure Services (Production Critical)
+- AZURE_OPENAI_API_KEY
+- AZURE_OPENAI_ENDPOINT
+- AZURE_SPEECH_KEY
+- AZURE_SPEECH_REGION
+- AZURE_SPEECH_ENDPOINT
+- AZURE_COSMOS_CONNECTION_STRING
+- AZURE_COSMOS_ENDPOINT
+- AZURE_COSMOS_KEY
+- AZURE_KEY_VAULT_URL
+- AZURE_TENANT_ID
+- AZURE_CLIENT_ID
+- AZURE_CLIENT_SECRET
+- AZURE_STORAGE_CONNECTION_STRING
+- AZURE_APPLICATION_INSIGHTS_CONNECTION_STRING
+
+### Firebase (Authentication)
+- NEXT_PUBLIC_FIREBASE_API_KEY
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID
+- FIREBASE_PROJECT_ID
+- FIREBASE_CLIENT_EMAIL
+- FIREBASE_PRIVATE_KEY
+
+### Application Configuration
+- NODE_ENV
+- NEXT_PUBLIC_APP_URL
+- ENVIRONMENT
+- BUILD_STANDALONE
+
+## Potentially Unused Variables (Safe to Remove from Configs)
+
+### Legacy OpenAI (Replaced by Azure OpenAI)
+- OPENAI_API_KEY
+- SPEECH_KEY (replaced by AZURE_SPEECH_KEY)
+- SPEECH_ENDPOINT (replaced by AZURE_SPEECH_ENDPOINT)
+
+### Unused AWS Services
+- AWS_ACCESS_KEY_ID (only used in examples/unused code)
+- AWS_SECRET_ACCESS_KEY
+- AWS_SES_REGION
+- AWS_SES_FROM_EMAIL
+
+### Unused External Services
+- SLACK_WEBHOOK_URL (not referenced in production code)
+- REDIS_HOST
+- REDIS_PASSWORD
+- REDIS_PORT
+- REDIS_SSL
+
+### Test/Development Only Variables (Can remove from production)
+- TEST_USER_EMAIL
+- TEST_USER_PASSWORD
+- DEBUG_AUTH
+- USE_AZURE_MOCK
+
+## Variables to Keep in .env.example (Required for Production)
+The current .env.example file appears accurate and contains the essential variables needed for production deployment.
+
+## Variables to Remove from Configurations
+1. Legacy OpenAI references
+2. Unused AWS SES configuration (unless email notifications are implemented)
+3. Redis configuration (no Redis usage found in codebase)
+4. Slack webhook configuration (unused)
+5. Test-only variables in production configs
+
+## Recommendations
+1. Remove unused AWS, Redis, and Slack configurations from production configs
+2. Keep all Azure service variables - they are production critical
+3. Audit any custom environment variables added outside of .env.example
+4. Consider adding validation for required environment variables on startup

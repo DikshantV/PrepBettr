@@ -1,0 +1,105 @@
+{
+  "meta": {
+    "generated_at": "2025-09-10T10:25:41Z",
+    "analysis_tool": "ts-prune",
+    "total_unused_exports": 972,
+    "requires_manual_review": true
+  },
+  "safe_to_remove": {
+    "test_utilities": [
+      "tests/global-setup.ts:6 - default",
+      "tests/global-teardown.ts:6 - default",
+      "tests/setup/azure-mocks.ts:337 - resetAzureMocks",
+      "tests/setup/azure-mocks.ts:362 - MockHelpers",
+      "tests/setup/performance-baseline.ts:353 - PerformanceUtils",
+      "tests/utils/foundry-fixtures.ts:580 - default",
+      "tests/e2e/utils/browser-test-shims.ts:185 - initializeTestHelpers"
+    ],
+    "config_defaults": [
+      "jest.config.ts:167 - default",
+      "playwright.config.production.ts:7 - default",
+      "playwright.config.ts:12 - default"
+    ],
+    "legacy_migration_code": [
+      "azure-migration/lib/index.ts:98 - setupMigration",
+      "azure-migration/lib/index.ts:136 - checkMigrationHealth",
+      "azure-migration/lib/index.ts:151 - emergencyRollback",
+      "azure-migration/tests/testing-infrastructure.ts:913 - default"
+    ],
+    "unused_ui_components": [
+      "components/AuthDebug.tsx:8 - AuthDebug",
+      "components/AuthDebugInfo.tsx:26 - default",
+      "components/UserProfile.tsx:12 - default",
+      "components/CodeEditorWrapper.tsx:42 - default",
+      "components/ResumeProcessingStatus.tsx:21 - default"
+    ]
+  },
+  "requires_manual_review": {
+    "core_middleware": [
+      {
+        "file": "middleware.ts:103 - middleware",
+        "reason": "Core Next.js middleware - verify usage before removal"
+      },
+      {
+        "file": "middleware.ts:169 - config",
+        "reason": "Middleware configuration - required for Next.js"
+      }
+    ],
+    "auth_system": [
+      {
+        "file": "lib/auth-unified.ts:26 - verifySession",
+        "reason": "Core authentication function - used in API routes"
+      },
+      {
+        "file": "lib/auth-unified.ts:50 - requireAuth",
+        "reason": "Critical auth middleware - verify usage"
+      },
+      {
+        "file": "contexts/AuthContext.tsx:298 - AuthContext",
+        "reason": "Main auth context - check for dynamic imports"
+      }
+    ],
+    "api_routes": [
+      {
+        "file": "pages/api/feature-flags.ts:9 - default",
+        "reason": "API endpoint - may be called externally"
+      },
+      {
+        "file": "pages/api/parse-pdf.ts:23 - default",
+        "reason": "PDF processing endpoint - verify if still needed"
+      },
+      {
+        "file": "app/api/health/route.ts:93 - GET",
+        "reason": "Health check endpoint - likely used by monitoring"
+      }
+    ],
+    "azure_services": [
+      {
+        "file": "lib/azure-config.ts:53 - clearAzureSecretsCache",
+        "reason": "Azure configuration management - production critical"
+      },
+      {
+        "file": "lib/services/azure-ai-service.ts:651 - azureAIService",
+        "reason": "Main Azure AI service - core functionality"
+      }
+    ]
+  },
+  "deprecated_but_keep": {
+    "pages_router_api": [
+      {
+        "file": "pages/api/upload-pdf.ts:19 - default",
+        "reason": "Legacy Pages Router API - kept for backward compatibility"
+      },
+      {
+        "file": "pages/api/auth/user.ts:8 - default",
+        "reason": "Legacy auth endpoint - may still be used by clients"
+      }
+    ]
+  },
+  "summary": {
+    "safe_to_remove_count": 25,
+    "requires_review_count": 15,
+    "deprecated_but_keep_count": 2,
+    "recommendation": "Focus on removing safe items first, then manually verify each requires_review item before deletion"
+  }
+}

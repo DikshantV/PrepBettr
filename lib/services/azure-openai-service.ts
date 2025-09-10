@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { MigrationOpenAIClient as OpenAI } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { InterviewContext } from '@/lib/types/voice';
 
 // Client-side safety check
@@ -54,14 +54,8 @@ export class AzureOpenAIService {
       }
 
       this.deployment = secrets.azureOpenAIDeployment;
-      this.client = new OpenAI({
-        apiKey: secrets.azureOpenAIKey,
-        baseURL: `${secrets.azureOpenAIEndpoint}/openai/deployments/${secrets.azureOpenAIDeployment}`,
-        defaultQuery: { 'api-version': '2025-01-01-preview' }, // Latest API version for gpt-4o support
-        defaultHeaders: {
-          'api-key': secrets.azureOpenAIKey,
-        },
-      });
+      this.client = new OpenAI();
+      await this.client.init(); // Initialize the migration client
 
       // Test the connection with a simple request
       try {
