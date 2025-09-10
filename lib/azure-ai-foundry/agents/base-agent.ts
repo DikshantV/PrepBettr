@@ -106,24 +106,32 @@ export abstract class BaseAgent implements FoundryAgent {
       
       const prompt = this.buildQuestionsPrompt(context);
       
-      const response = await this.foundryClient.createChatCompletion({
-        model: this.modelName,
-        messages: [
-          {
-            role: 'system',
-            content: this.instructions
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
+      const response = await this.foundryClient.request(`/chat/completions`, {
+        method: 'POST',
+        body: {
+          model: this.modelName,
+          messages: [
+            {
+              role: 'system',
+              content: this.instructions
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        }
       });
 
-      const questionsText = response.choices[0]?.message?.content || '';
-      return this.parseQuestionsFromResponse(questionsText, context);
+      const questionsText = response.data?.choices?.[0]?.message?.content || response.raw || '';
+      const questions = this.parseQuestionsFromResponse(questionsText, context);
+      
+      // Log usage for monitoring
+      this.logUsage(context, response.data);
+      
+      return questions;
       
     } catch (error) {
       console.error(`❌ Error generating questions for ${this.metadata.name}:`, error);
@@ -260,6 +268,50 @@ Return questions in JSON format:
       Math.floor(remainingTime / avgTimePerQuestion)
     );
     return Math.max(1, maxQuestions);
+  }
+
+  /**
+   * Log usage metrics for monitoring and cost tracking
+   */
+  protected logUsage(context: InterviewContext, responseData: any): void {
+    try {
+      const usage = responseData?.usage;
+      if (usage) {
+        console.log(`📊 ${this.metadata.name} usage - Tokens: ${usage.total_tokens} (${usage.prompt_tokens}+${usage.completion_tokens})`);
+        
+        // TODO: Integrate with Application Insights or monitoring service
+        // trackEvent('agent_usage', {
+        //   agent: this.metadata.name,
+        //   sessionId: context.sessionId,
+        //   tokens: usage.total_tokens,
+        //   model: this.modelName
+        // });
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to log usage for ${this.metadata.name}:`, error);
+    }
+  }
+
+  /**
+   * Handle errors with context-aware logging
+   */
+  protected handleError(error: Error, context: InterviewContext, operation: string): void {
+    console.error(`❌ ${this.metadata.name} error in ${operation}:`, {
+      error: error.message,
+      sessionId: context.sessionId,
+      agent: this.metadata.name,
+      operation,
+      timestamp: new Date().toISOString()
+    });
+    
+    // TODO: Integrate with error tracking service
+    // reportError(error, {
+    //   context: `agent_${operation}`,
+    //   metadata: {
+    //     agent: this.metadata.name,
+    //     sessionId: context.sessionId
+    //   }
+    // });
   }
 
   // ===== ABSTRACT METHODS =====

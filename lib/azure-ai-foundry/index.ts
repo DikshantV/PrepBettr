@@ -24,8 +24,22 @@ export {
 
 // Client exports
 export {
-  FoundryClientBase
+  FoundryClientBase,
+  type FoundryClientOptions,
+  type FoundryRequestOptions,
+  type FoundryResponse,
+  type AIProjectClient,
+  type AgentsClient
 } from './clients/foundry-client';
+
+// Migration wrapper exports
+export {
+  MigrationOpenAIClient,
+  migrationOpenAIClient,
+  type ChatCompletionMessage,
+  type ChatCompletionCreateParams,
+  type ChatCompletionResponse
+} from './clients/migration-wrapper';
 
 // Model manager exports
 export {
@@ -71,6 +85,94 @@ export type {
   FoundryClientOptions,
   RequestOptions
 } from './types/foundry-types';
+
+// Agent system exports
+export {
+  BaseAgent,
+  generateQuestionId,
+  calculateInterviewProgress,
+  getEstimatedRemainingTime,
+  type Question,
+  type InterviewContext,
+  type SessionState,
+  type AgentMetadata,
+  type FoundryAgent
+} from './agents/base-agent';
+
+export {
+  TechnicalInterviewer
+} from './agents/technical-interviewer';
+
+export {
+  BehavioralInterviewer
+} from './agents/behavioral-interviewer';
+
+export {
+  IndustryExpert
+} from './agents/industry-expert';
+
+export {
+  AgentFactory,
+  createAgent,
+  getAvailableAgentTypes,
+  type AgentType,
+  type AgentConfig
+} from './agents/agent-factory';
+
+// Voice system exports
+export {
+  VoiceSession
+} from './voice/voice-session';
+
+export {
+  VoiceLiveClient,
+  getVoiceLiveClient,
+  type VoiceSessionOptions,
+  type AudioFrame,
+  type VoiceWebSocketMessage
+} from './voice/voice-live-client';
+
+export {
+  voiceTelemetry,
+  VoiceTelemetry,
+  type VoiceAudioError,
+  type VoiceSessionError
+} from './voice/voice-telemetry';
+
+export * from './voice/types';
+
+// Workflow system exports
+export {
+  InterviewWorkflow
+} from './workflows/interview-workflow';
+
+export * from './workflows/workflow-types';
+
+// Environment configuration exports
+export * from './config/environment';
+
+// Error handling exports
+export {
+  FoundryError,
+  FoundryClientError,
+  FoundryConfigError,
+  VoiceError,
+  VoiceSessionError,
+  VoiceAudioError,
+  AgentError,
+  createFoundryClientError,
+  createFoundryConfigError,
+  createVoiceSessionError,
+  createVoiceAudioError,
+  createAgentError,
+  isFoundryError,
+  isFoundryClientError,
+  isVoiceError,
+  isVoiceSessionError,
+  isVoiceAudioError,
+  isAgentError,
+  isRetryableError
+} from './errors/foundry-errors';
 
 /**
  * Convenience function to create a ready-to-use model manager
