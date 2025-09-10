@@ -1,514 +1,501 @@
 /**
- * Voice Telemetry Module
- * Comprehensive logging, error reporting, and performance metrics for voice interactions
+ * Azure AI Foundry Voice Telemetry
+ * 
+ * Provides structured logging, error handling, and metrics collection
+ * specifically for the voice system with Application Insights integration.
  */
 
-import { reportError } from '@/lib/utils/error-utils';
+import { logger } from '@/lib/utils/logger';
+import { reportError, showErrorNotification } from '@/lib/utils/error-utils';
 
-// ===== TELEMETRY EVENT TYPES =====
-
-interface TelemetryEvent {
-  eventType: string;
+// Type definitions for telemetry events
+export interface VoiceTelemetryEvent {
+  name: string;
   timestamp: number;
-  sessionId: string;
-  data: Record<string, any>;
-}
-
-interface ClientCreationEvent {
-  endpoint: string;
-  deploymentId: string;
-  voice: string;
-}
-
-interface ConnectionEvent {
-  endpoint: string;
-  attempt?: number;
   sessionId?: string;
+  userId?: string;
+  properties?: Record<string, any>;
+  measurements?: Record<string, number>;
 }
 
-interface ConnectionFailureEvent {
-  reason: string;
-  attempt: number;
+export interface ConnectionMetrics {
+  connectionTime: number;
+  retryCount: number;
+  reconnectCount: number;
+  disconnectionReason?: string;
+  networkLatency?: number;
 }
 
-interface ConnectionClosedEvent {
-  code: number;
-  reason: string;
-  wasClean: boolean;
+export interface AudioMetrics {
+  sttLatency: number;      // Speech-to-text latency
+  ttsLatency: number;      // Text-to-speech latency
+  audioQuality: number;    // 0-1 quality score
+  voiceActivity: number;   // Voice activity detection score
+  bufferUnderruns: number; // Audio buffer issues
 }
 
-interface SessionEvent {
-  sessionId: string;
-  deploymentId?: string;
-  voice?: string;
-  temperature?: number;
-  maxTokens?: number;
+export interface SessionMetrics {
+  sessionDuration: number;
+  messageCount: number;
+  transcriptAccuracy: number;
+  errorCount: number;
+  userSatisfaction?: number;
 }
 
-interface SessionReadyEvent {
-  sessionId: string;
-  azureSessionId: string;
-  model: string;
-  voice: string;
-}
-
-interface TranscriptEvent {
-  sessionId: string;
-  transcript: string;
-  length: number;
-  timestamp: number;
-}
-
-interface AudioEvent {
-  sessionId: string;
-  audioSize: number;
-  timestamp: number;
-}
-
-interface SessionEndEvent {
-  sessionId: string;
-  duration: number;
-  reason: string;
-  closeCode?: number;
-}
-
-interface ConfigUpdateEvent {
-  sessionId: string;
-  changes: Record<string, any>;
-}
-
-interface ReconnectionEvent {
-  attempt: number;
-  delay: number;
-  maxAttempts: number;
-}
-
-interface MessageEvent {
-  type: string;
-  sessionId: string;
-  timestamp: number;
-}
-
-// ===== TELEMETRY COLLECTION CLASS =====
-
-class VoiceTelemetryCollector {
-  private events: TelemetryEvent[] = [];
-  private sessionMetrics: Map<string, any> = new Map();
-  private performanceMarkers: Map<string, number> = new Map();
-  private errorCount = 0;
-  private warningCount = 0;
-
-  /**
-   * Track client creation
-   */
-  trackClientCreation(event: ClientCreationEvent): void {
-    this.addEvent('client_created', 'global', event);
-    console.log('🎤 [VOICE] Client created', {
-      endpoint: event.endpoint,
-      deployment: event.deploymentId,
-      voice: event.voice
-    });
+/**
+ * Voice system specific errors with context
+ */
+export class VoiceConnectionError extends Error {
+  constructor(
+    message: string,
+    public sessionId?: string,
+    public retryCount?: number,
+    public lastError?: Error
+  ) {
+    super(message);
+    this.name = 'VoiceConnectionError';
   }
+}
 
-  /**
-   * Track connection attempts
-   */
-  trackConnectionAttempt(event: ConnectionEvent): void {
-    this.addEvent('connection_attempt', event.sessionId || 'unknown', event);
-    console.log('🔗 [VOICE] Connection attempt', {
-      endpoint: event.endpoint,
-      attempt: event.attempt
-    });
+export class VoiceAudioError extends Error {
+  constructor(
+    message: string,
+    public sessionId?: string,
+    public audioContext?: any,
+    public sampleRate?: number
+  ) {
+    super(message);
+    this.name = 'VoiceAudioError';
   }
+}
 
-  /**
-   * Track successful connections
-   */
-  trackConnectionSuccess(event: ConnectionEvent): void {
-    this.addEvent('connection_success', event.sessionId || 'unknown', event);
-    console.log('✅ [VOICE] Connected successfully', {
-      endpoint: event.endpoint,
-      sessionId: event.sessionId
-    });
+export class VoiceSessionError extends Error {
+  constructor(
+    message: string,
+    public sessionId?: string,
+    public sessionState?: string,
+    public lastAction?: string
+  ) {
+    super(message);
+    this.name = 'VoiceSessionError';
   }
+}
+
+/**
+ * Voice Telemetry Service
+ */
+export class VoiceTelemetryService {
+  private events: VoiceTelemetryEvent[] = [];
+  private sessionStartTime: number = 0;
+  private lastEventTime: number = 0;
+  
+  // Metrics aggregation
+  private connectionMetrics: Partial<ConnectionMetrics> = {};
+  private audioMetrics: Partial<AudioMetrics> = {};
+  private sessionMetrics: Partial<SessionMetrics> = {};
 
   /**
-   * Track connection failures
+   * Initialize telemetry for a session
    */
-  trackConnectionFailure(error: Error, context: ConnectionFailureEvent): void {
-    this.errorCount++;
-    this.addEvent('connection_failure', 'unknown', {
-      error: error.message,
-      ...context
-    });
+  startSession(sessionId: string, userId?: string): void {
+    this.sessionStartTime = Date.now();
+    this.lastEventTime = this.sessionStartTime;
     
-    console.error('❌ [VOICE] Connection failed', {
-      error: error.message,
-      reason: context.reason,
-      attempt: context.attempt
+    this.logEvent('voice_session_started', {
+      sessionId,
+      userId,
+      userAgent: navigator.userAgent,
+      timestamp: this.sessionStartTime
     });
 
-    // Report to application insights or external service
-    reportError(error, {
-      context: 'voice_connection',
-      metadata: context
-    });
+    // Initialize metrics
+    this.connectionMetrics = {};
+    this.audioMetrics = { bufferUnderruns: 0 };
+    this.sessionMetrics = { messageCount: 0, errorCount: 0 };
   }
 
   /**
-   * Track connection closures
+   * Log connection events with metrics
    */
-  trackConnectionClosed(event: ConnectionClosedEvent): void {
-    this.addEvent('connection_closed', 'unknown', event);
-    console.log('🔌 [VOICE] Connection closed', {
-      code: event.code,
-      reason: event.reason,
-      wasClean: event.wasClean
-    });
-  }
+  logConnectionEvent(
+    event: 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'failed',
+    sessionId: string,
+    metrics?: Partial<ConnectionMetrics>
+  ): void {
+    const now = Date.now();
+    const latency = now - this.lastEventTime;
 
-  /**
-   * Track session creation
-   */
-  trackSessionCreated(event: { sessionId: string; config: any }): void {
-    this.sessionMetrics.set(event.sessionId, {
-      createdAt: Date.now(),
-      config: event.config,
-      transcriptCount: 0,
-      audioResponseCount: 0,
-      errors: []
+    this.logEvent(`voice_connection_${event}`, {
+      sessionId,
+      latency,
+      ...metrics
+    }, {
+      connection_time: metrics?.connectionTime || 0,
+      retry_count: metrics?.retryCount || 0,
+      network_latency: metrics?.networkLatency || latency
     });
 
-    this.addEvent('session_created', event.sessionId, event.config);
-    console.log('🎯 [VOICE] Session created', {
-      sessionId: event.sessionId,
-      config: event.config
-    });
-  }
+    // Update connection metrics
+    Object.assign(this.connectionMetrics, metrics);
 
-  /**
-   * Track session start
-   */
-  trackSessionStart(event: SessionEvent): void {
-    this.addEvent('session_started', event.sessionId, event);
-    this.updateSessionMetrics(event.sessionId, { startedAt: Date.now() });
-    
-    console.log('🚀 [VOICE] Session started', {
-      sessionId: event.sessionId,
-      voice: event.voice,
-      deployment: event.deploymentId
-    });
-  }
-
-  /**
-   * Track session ready
-   */
-  trackSessionReady(event: SessionReadyEvent): void {
-    this.addEvent('session_ready', event.sessionId, event);
-    this.updateSessionMetrics(event.sessionId, { 
-      readyAt: Date.now(),
-      azureSessionId: event.azureSessionId,
-      model: event.model
-    });
-
-    console.log('🔥 [VOICE] Session ready', {
-      sessionId: event.sessionId,
-      azureSessionId: event.azureSessionId,
-      model: event.model,
-      voice: event.voice
-    });
-  }
-
-  /**
-   * Track transcript events
-   */
-  trackTranscript(event: TranscriptEvent): void {
-    this.addEvent('transcript_received', event.sessionId, event);
-    this.updateSessionMetrics(event.sessionId, (metrics: any) => ({
-      ...metrics,
-      transcriptCount: (metrics.transcriptCount || 0) + 1,
-      lastTranscriptAt: event.timestamp
-    }));
-
-    console.log('📝 [VOICE] Transcript received', {
-      sessionId: event.sessionId,
-      length: event.length,
-      preview: event.transcript.substring(0, 50) + (event.length > 50 ? '...' : '')
-    });
-  }
-
-  /**
-   * Track audio responses
-   */
-  trackAudioResponse(event: AudioEvent): void {
-    this.addEvent('audio_response_received', event.sessionId, event);
-    this.updateSessionMetrics(event.sessionId, (metrics: any) => ({
-      ...metrics,
-      audioResponseCount: (metrics.audioResponseCount || 0) + 1,
-      lastAudioAt: event.timestamp
-    }));
-
-    console.log('🎵 [VOICE] Audio response received', {
-      sessionId: event.sessionId,
-      audioSize: event.audioSize
-    });
-  }
-
-  /**
-   * Track audio sent
-   */
-  trackAudioSent(event: AudioEvent): void {
-    this.addEvent('audio_sent', event.sessionId, event);
-    console.log('📤 [VOICE] Audio sent', {
-      sessionId: event.sessionId,
-      audioSize: event.audioSize
-    });
-  }
-
-  /**
-   * Track text sent
-   */
-  trackTextSent(event: { sessionId: string; textLength: number; timestamp: number }): void {
-    this.addEvent('text_sent', event.sessionId, event);
-    console.log('💬 [VOICE] Text sent', {
-      sessionId: event.sessionId,
-      textLength: event.textLength
-    });
-  }
-
-  /**
-   * Track session end
-   */
-  trackSessionEnd(event: SessionEndEvent): void {
-    this.addEvent('session_ended', event.sessionId, event);
-    
-    const metrics = this.sessionMetrics.get(event.sessionId);
-    if (metrics) {
-      metrics.endedAt = Date.now();
-      metrics.duration = event.duration;
-      metrics.endReason = event.reason;
+    // Log specific connection issues
+    if (event === 'failed' || event === 'disconnected') {
+      this.sessionMetrics.errorCount = (this.sessionMetrics.errorCount || 0) + 1;
+      
+      if (metrics?.disconnectionReason) {
+        logger.warn(`Voice connection ${event}: ${metrics.disconnectionReason}`, {
+          sessionId,
+          retryCount: metrics.retryCount,
+          ...metrics
+        });
+      }
     }
 
-    console.log('🏁 [VOICE] Session ended', {
-      sessionId: event.sessionId,
-      duration: event.duration,
-      reason: event.reason
-    });
+    this.lastEventTime = now;
   }
 
   /**
-   * Track configuration updates
+   * Log audio processing events with performance metrics
    */
-  trackConfigUpdate(event: ConfigUpdateEvent): void {
-    this.addEvent('config_updated', event.sessionId, event);
-    console.log('⚙️ [VOICE] Configuration updated', {
-      sessionId: event.sessionId,
-      changes: event.changes
+  logAudioEvent(
+    event: 'stt_start' | 'stt_complete' | 'tts_start' | 'tts_complete' | 'audio_error' | 'buffer_underrun',
+    sessionId: string,
+    metrics?: Partial<AudioMetrics>
+  ): void {
+    const now = Date.now();
+    const eventLatency = now - this.lastEventTime;
+
+    this.logEvent(`voice_audio_${event}`, {
+      sessionId,
+      eventLatency,
+      ...metrics
+    }, {
+      stt_latency: metrics?.sttLatency || 0,
+      tts_latency: metrics?.ttsLatency || 0,
+      audio_quality: metrics?.audioQuality || 0,
+      voice_activity: metrics?.voiceActivity || 0
     });
+
+    // Update audio metrics
+    Object.assign(this.audioMetrics, metrics);
+
+    // Track buffer issues
+    if (event === 'buffer_underrun') {
+      this.audioMetrics.bufferUnderruns = (this.audioMetrics.bufferUnderruns || 0) + 1;
+      logger.warn('Audio buffer underrun detected', { sessionId, ...metrics });
+    }
+
+    // Log performance warnings
+    if (metrics?.sttLatency && metrics.sttLatency > 2000) {
+      logger.warn('High STT latency detected', { 
+        sessionId, 
+        latency: metrics.sttLatency,
+        threshold: 2000 
+      });
+    }
+
+    if (metrics?.ttsLatency && metrics.ttsLatency > 1500) {
+      logger.warn('High TTS latency detected', { 
+        sessionId, 
+        latency: metrics.ttsLatency,
+        threshold: 1500 
+      });
+    }
+
+    this.lastEventTime = now;
   }
 
   /**
-   * Track reconnection attempts
+   * Log transcript events with accuracy metrics
    */
-  trackReconnectionAttempt(event: ReconnectionEvent): void {
-    this.addEvent('reconnection_attempt', 'unknown', event);
-    console.log('🔄 [VOICE] Reconnection attempt', {
-      attempt: event.attempt,
-      delay: event.delay,
-      maxAttempts: event.maxAttempts
+  logTranscriptEvent(
+    event: 'transcript_partial' | 'transcript_final' | 'transcript_error',
+    sessionId: string,
+    text: string,
+    confidence?: number
+  ): void {
+    this.logEvent(`voice_${event}`, {
+      sessionId,
+      textLength: text.length,
+      confidence,
+      preview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+    }, {
+      text_length: text.length,
+      confidence: confidence || 0
     });
-  }
 
-  /**
-   * Track messages received
-   */
-  trackMessageReceived(event: MessageEvent): void {
-    this.addEvent('message_received', event.sessionId, event);
-    // Only log non-routine message types to avoid spam
-    if (!['response.audio.delta', 'input_audio_buffer.append'].includes(event.type)) {
-      console.log('📨 [VOICE] Message received', {
-        type: event.type,
-        sessionId: event.sessionId
+    // Track message count and accuracy
+    if (event === 'transcript_final') {
+      this.sessionMetrics.messageCount = (this.sessionMetrics.messageCount || 0) + 1;
+      
+      if (confidence) {
+        const currentAccuracy = this.sessionMetrics.transcriptAccuracy || 0;
+        const messageCount = this.sessionMetrics.messageCount || 1;
+        this.sessionMetrics.transcriptAccuracy = (currentAccuracy * (messageCount - 1) + confidence) / messageCount;
+      }
+    }
+
+    // Log low confidence warnings
+    if (confidence && confidence < 0.7) {
+      logger.warn('Low transcript confidence', { 
+        sessionId, 
+        confidence, 
+        text: text.substring(0, 100),
+        threshold: 0.7 
       });
     }
   }
 
   /**
-   * Track performance latency
+   * Log session lifecycle events
    */
-  trackLatency(operation: string, duration: number): void {
-    this.performanceMarkers.set(`${operation}_${Date.now()}`, duration);
-    
-    if (duration > 200) { // Log slow operations
-      console.warn('⚠️ [VOICE] Slow operation detected', {
-        operation,
-        duration: Math.round(duration)
-      });
+  logSessionEvent(
+    event: 'session_created' | 'session_active' | 'session_stopped' | 'session_error',
+    sessionId: string,
+    details?: Record<string, any>
+  ): void {
+    const now = Date.now();
+    const sessionDuration = this.sessionStartTime ? now - this.sessionStartTime : 0;
+
+    this.logEvent(`voice_${event}`, {
+      sessionId,
+      sessionDuration,
+      ...details
+    }, {
+      session_duration: sessionDuration,
+      message_count: this.sessionMetrics.messageCount || 0,
+      error_count: this.sessionMetrics.errorCount || 0
+    });
+
+    // Update session metrics
+    if (event === 'session_stopped') {
+      this.sessionMetrics.sessionDuration = sessionDuration;
+      this.generateSessionSummary(sessionId);
     }
   }
 
   /**
-   * Track errors with context
+   * Handle and log voice system errors with context
    */
-  trackError(error: Error, category: string, context: Record<string, any> = {}): void {
-    this.errorCount++;
-    
-    const errorData = {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      category,
-      ...context
+  logError(
+    error: Error | VoiceConnectionError | VoiceAudioError | VoiceSessionError,
+    sessionId?: string,
+    context?: string,
+    shouldNotifyUser = false
+  ): void {
+    const errorContext = {
+      sessionId,
+      context,
+      errorType: error.constructor.name,
+      ...(error as any).additionalContext
     };
 
-    this.addEvent('error', context.sessionId || 'unknown', errorData);
-    
-    // Update session metrics
-    if (context.sessionId) {
-      this.updateSessionMetrics(context.sessionId, (metrics: any) => ({
-        ...metrics,
-        errors: [...(metrics.errors || []), errorData]
-      }));
+    // Log structured error
+    this.logEvent('voice_error', {
+      sessionId,
+      errorMessage: error.message,
+      errorType: error.constructor.name,
+      context,
+      stack: error.stack?.substring(0, 500) // Truncate stack trace
+    });
+
+    // Report to centralized error handling
+    reportError(error, context || 'Voice System Error', errorContext);
+
+    // Update error count
+    this.sessionMetrics.errorCount = (this.sessionMetrics.errorCount || 0) + 1;
+
+    // Show user notification for critical errors
+    if (shouldNotifyUser) {
+      let userMessage = 'Voice system error occurred';
+      
+      if (error instanceof VoiceConnectionError) {
+        userMessage = 'Connection to voice service lost. Attempting to reconnect...';
+      } else if (error instanceof VoiceAudioError) {
+        userMessage = 'Audio processing error. Please check your microphone permissions.';
+      } else if (error instanceof VoiceSessionError) {
+        userMessage = 'Voice session error. Please try restarting the interview.';
+      }
+
+      showErrorNotification(userMessage, context);
+    }
+  }
+
+  /**
+   * Log performance metrics
+   */
+  logPerformanceMetric(
+    metricName: string,
+    value: number,
+    sessionId?: string,
+    unit = 'ms'
+  ): void {
+    this.logEvent('voice_performance_metric', {
+      sessionId,
+      metricName,
+      value,
+      unit
+    }, {
+      [metricName]: value
+    });
+
+    // Log performance warnings
+    const thresholds: Record<string, number> = {
+      'connection_time': 3000,
+      'stt_latency': 2000,
+      'tts_latency': 1500,
+      'session_init_time': 5000
+    };
+
+    if (thresholds[metricName] && value > thresholds[metricName]) {
+      logger.warn(`Performance threshold exceeded: ${metricName}`, {
+        sessionId,
+        value,
+        threshold: thresholds[metricName],
+        unit
+      });
+    }
+  }
+
+  /**
+   * Generate session summary for analytics
+   */
+  private generateSessionSummary(sessionId: string): void {
+    const summary = {
+      sessionId,
+      duration: this.sessionMetrics.sessionDuration || 0,
+      messageCount: this.sessionMetrics.messageCount || 0,
+      errorCount: this.sessionMetrics.errorCount || 0,
+      transcriptAccuracy: this.sessionMetrics.transcriptAccuracy || 0,
+      connectionRetries: this.connectionMetrics.retryCount || 0,
+      audioBufferIssues: this.audioMetrics.bufferUnderruns || 0,
+      averageSttLatency: this.audioMetrics.sttLatency || 0,
+      averageTtsLatency: this.audioMetrics.ttsLatency || 0
+    };
+
+    this.logEvent('voice_session_summary', summary, summary);
+
+    logger.info('Voice session summary', summary);
+  }
+
+  /**
+   * Core event logging with Application Insights integration
+   */
+  private logEvent(
+    name: string,
+    properties?: Record<string, any>,
+    measurements?: Record<string, number>
+  ): void {
+    const event: VoiceTelemetryEvent = {
+      name,
+      timestamp: Date.now(),
+      properties,
+      measurements
+    };
+
+    // Store locally
+    this.events.push(event);
+
+    // Keep only last 100 events in memory
+    if (this.events.length > 100) {
+      this.events = this.events.slice(-100);
     }
 
-    console.error('💥 [VOICE] Error tracked', {
-      category,
-      message: error.message,
-      sessionId: context.sessionId
-    });
+    // Log to console for development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 [VoiceTelemetry] ${name}`, properties, measurements);
+    }
 
-    // Report to external error tracking service
-    reportError(error, {
-      context: `voice_${category}`,
-      metadata: context
-    });
+    // TODO: Integration with Azure Application Insights
+    // if (window.appInsights) {
+    //   window.appInsights.trackEvent({
+    //     name: `voice_${name}`,
+    //     properties,
+    //     measurements
+    //   });
+    // }
+
+    // Standard logging
+    logger.info(`Voice telemetry: ${name}`, { properties, measurements });
   }
 
   /**
-   * Get session metrics
+   * Get current session metrics
    */
-  getSessionMetrics(sessionId: string): any {
-    return this.sessionMetrics.get(sessionId) || null;
-  }
-
-  /**
-   * Get all session metrics
-   */
-  getAllSessionMetrics(): Record<string, any> {
-    const result: Record<string, any> = {};
-    this.sessionMetrics.forEach((metrics, sessionId) => {
-      result[sessionId] = metrics;
-    });
-    return result;
-  }
-
-  /**
-   * Get performance summary
-   */
-  getPerformanceSummary(): any {
-    const latencies = Array.from(this.performanceMarkers.values());
-    
+  getMetrics(): {
+    connection: ConnectionMetrics;
+    audio: AudioMetrics;
+    session: SessionMetrics;
+  } {
     return {
-      totalSessions: this.sessionMetrics.size,
-      totalEvents: this.events.length,
-      errorCount: this.errorCount,
-      warningCount: this.warningCount,
-      averageLatency: latencies.length > 0 ? 
-        latencies.reduce((a, b) => a + b, 0) / latencies.length : 0,
-      maxLatency: Math.max(...latencies, 0),
-      minLatency: latencies.length > 0 ? Math.min(...latencies) : 0
+      connection: this.connectionMetrics as ConnectionMetrics,
+      audio: this.audioMetrics as AudioMetrics,
+      session: this.sessionMetrics as SessionMetrics
     };
   }
 
   /**
    * Export telemetry data for analysis
    */
-  exportTelemetryData(): any {
-    return {
-      events: this.events,
-      sessionMetrics: this.getAllSessionMetrics(),
-      performance: this.getPerformanceSummary(),
-      exportedAt: Date.now()
-    };
+  exportTelemetryData(): VoiceTelemetryEvent[] {
+    return [...this.events];
   }
 
   /**
-   * Clear old data to prevent memory leaks
+   * Clear telemetry data
    */
-  cleanup(olderThanMs: number = 3600000): void { // Default 1 hour
-    const cutoff = Date.now() - olderThanMs;
-    
-    // Remove old events
-    this.events = this.events.filter(event => event.timestamp > cutoff);
-    
-    // Remove old session metrics
-    this.sessionMetrics.forEach((metrics, sessionId) => {
-      if (metrics.createdAt < cutoff) {
-        this.sessionMetrics.delete(sessionId);
-      }
-    });
-    
-    // Clear old performance markers
-    this.performanceMarkers.clear();
-    
-    console.log('🧹 [VOICE] Telemetry cleanup completed', {
-      remainingEvents: this.events.length,
-      remainingSessions: this.sessionMetrics.size
-    });
-  }
-
-  // ===== PRIVATE METHODS =====
-
-  private addEvent(eventType: string, sessionId: string, data: any): void {
-    this.events.push({
-      eventType,
-      timestamp: Date.now(),
-      sessionId,
-      data
-    });
-
-    // Prevent memory leaks by limiting event history
-    if (this.events.length > 1000) {
-      this.events = this.events.slice(-500); // Keep last 500 events
-    }
-  }
-
-  private updateSessionMetrics(sessionId: string, update: any | ((current: any) => any)): void {
-    const current = this.sessionMetrics.get(sessionId) || {};
-    const newMetrics = typeof update === 'function' ? update(current) : { ...current, ...update };
-    this.sessionMetrics.set(sessionId, newMetrics);
+  clearTelemetryData(): void {
+    this.events = [];
+    this.connectionMetrics = {};
+    this.audioMetrics = { bufferUnderruns: 0 };
+    this.sessionMetrics = { messageCount: 0, errorCount: 0 };
   }
 }
 
-// ===== EXPORT SINGLETON INSTANCE =====
-
-export const voiceTelemetry = new VoiceTelemetryCollector();
-
-// ===== UTILITY FUNCTIONS =====
+// Singleton instance
+let voiceTelemetryInstance: VoiceTelemetryService | null = null;
 
 /**
- * Initialize telemetry cleanup interval
+ * Get shared VoiceTelemetryService instance
  */
-export function initializeVoiceTelemetry(): void {
-  // Clean up old data every 30 minutes
-  setInterval(() => {
-    voiceTelemetry.cleanup();
-  }, 30 * 60 * 1000);
-
-  console.log('📊 [VOICE] Telemetry system initialized');
+export function getVoiceTelemetry(): VoiceTelemetryService {
+  if (!voiceTelemetryInstance) {
+    voiceTelemetryInstance = new VoiceTelemetryService();
+  }
+  return voiceTelemetryInstance;
 }
 
 /**
- * Get voice system health status
+ * Utility functions for common voice telemetry operations
  */
-export function getVoiceSystemHealth(): any {
-  const summary = voiceTelemetry.getPerformanceSummary();
-  
-  return {
-    status: summary.errorCount === 0 ? 'healthy' : 'degraded',
-    activeSessions: summary.totalSessions,
-    errorRate: summary.totalEvents > 0 ? summary.errorCount / summary.totalEvents : 0,
-    averageLatency: summary.averageLatency,
-    lastUpdated: Date.now()
-  };
-}
+export const VoiceTelemetry = {
+  // Connection tracking
+  trackConnection: (event: 'connecting' | 'connected' | 'disconnected', sessionId: string, metrics?: Partial<ConnectionMetrics>) => {
+    getVoiceTelemetry().logConnectionEvent(event, sessionId, metrics);
+  },
+
+  // Audio performance tracking
+  trackAudioLatency: (type: 'stt' | 'tts', latency: number, sessionId: string) => {
+    const metrics = type === 'stt' ? { sttLatency: latency } : { ttsLatency: latency };
+    getVoiceTelemetry().logAudioEvent(`${type}_complete`, sessionId, metrics);
+  },
+
+  // Error tracking with user notifications
+  trackError: (error: Error, sessionId?: string, context?: string, notifyUser = false) => {
+    getVoiceTelemetry().logError(error, sessionId, context, notifyUser);
+  },
+
+  // Performance monitoring
+  trackPerformance: (metric: string, value: number, sessionId?: string) => {
+    getVoiceTelemetry().logPerformanceMetric(metric, value, sessionId);
+  },
+
+  // Session lifecycle
+  startSession: (sessionId: string, userId?: string) => {
+    getVoiceTelemetry().startSession(sessionId, userId);
+  },
+
+  endSession: (sessionId: string) => {
+    getVoiceTelemetry().logSessionEvent('session_stopped', sessionId);
+  }
+};

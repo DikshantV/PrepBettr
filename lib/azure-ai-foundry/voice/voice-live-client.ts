@@ -1,443 +1,495 @@
 /**
- * Voice Live Client - Azure AI Foundry WebSocket Integration
- * Handles real-time voice communication with Azure OpenAI Realtime API
+ * Azure AI Foundry Voice Live Client
+ * 
+ * Provides real-time voice streaming capabilities using Azure AI Foundry's voice services.
+ * Features WebSocket-based audio streaming, exponential backoff retry logic, and session management.
  */
 
-import { ConfigOptions, FoundryVoiceSession, FoundryVoiceError } from './types';
-import { voiceTelemetry } from './voice-telemetry';
+import { getEnv, type VoiceEnvironmentConfig, validateVoiceConfig } from './foundry-environment';
+import { VoiceTelemetry, VoiceConnectionError } from './voice-telemetry';
 
-export class ConnectionError extends Error {
-  constructor(message: string, public code?: string) {
-    super(message);
-    this.name = 'ConnectionError';
+/**
+ * Voice session options for creating new sessions
+ */
+export interface VoiceSessionOptions {
+  voiceName?: string;
+  locale?: string;
+  speakingRate?: number;
+  emotionalTone?: string;
+  audioSettings?: {
+    noiseSuppression?: boolean;
+    echoCancellation?: boolean;
+    interruptionDetection?: boolean;
+    sampleRate?: number;
+  };
+}
+
+/**
+ * Voice session metadata returned when creating a session
+ */
+export interface VoiceSession {
+  sessionId: string;
+  wsUrl: string;
+  options: VoiceSessionOptions;
+  createdAt: Date;
+}
+
+/**
+ * Voice settings that can be updated at runtime
+ */
+export interface VoiceSettings {
+  voiceName?: string;
+  speakingRate?: number;
+  emotionalTone?: string;
+}
+
+/**
+ * WebSocket connection state
+ */
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed';
+
+/**
+ * WebSocket message types for Azure AI Foundry voice service
+ */
+export interface VoiceWebSocketMessage {
+  type: 'audio' | 'transcript' | 'response' | 'control' | 'error' | 'config';
+  data?: any;
+  sessionId?: string;
+  timestamp?: number;
+}
+
+/**
+ * Audio frame data for streaming
+ */
+export interface AudioFrame {
+  audioData: ArrayBuffer | Uint8Array;
+  timestamp: number;
+  sampleRate: number;
+  channels: number;
+}
+
+/**
+ * WebSocket Manager with exponential backoff and retry logic
+ */
+class WebSocketManager {
+  private ws: WebSocket | null = null;
+  private connectionState: ConnectionState = 'disconnected';
+  private retryCount = 0;
+  private readonly maxRetries = 5;
+  private readonly baseDelay = 1000; // 1 second
+  private readonly maxDelay = 30000; // 30 seconds
+  private retryTimeoutId: NodeJS.Timeout | null = null;
+
+  private eventListeners = new Map<string, Set<(data: any) => void>>();
+
+  constructor(
+    private url: string,
+    private protocols?: string[]
+  ) {}
+
+  /**
+   * Connect to WebSocket with retry logic
+   */
+  async connect(): Promise<void> {
+    if (this.connectionState === 'connected' || this.connectionState === 'connecting') {
+      return;
+    }
+
+    this.connectionState = 'connecting';
+    console.log(`🔌 [WebSocketManager] Connecting to ${this.url}...`);
+    
+    // Track connection attempt
+    const connectionStartTime = Date.now();
+    VoiceTelemetry.trackConnection('connecting', 'websocket', { retryCount: this.retryCount });
+
+    try {
+      this.ws = new WebSocket(this.url, this.protocols);
+      
+      this.ws.onopen = () => {
+        const connectionTime = Date.now() - connectionStartTime;
+        console.log('✅ [WebSocketManager] Connected successfully');
+        this.connectionState = 'connected';
+        this.retryCount = 0; // Reset retry count on successful connection
+        
+        // Track successful connection
+        VoiceTelemetry.trackConnection('connected', 'websocket', { 
+          connectionTime,
+          retryCount: 0 
+        });
+        
+        this.emit('connected', null);
+      };
+
+      this.ws.onclose = (event) => {
+        console.log(`🔌 [WebSocketManager] Connection closed: ${event.code} ${event.reason}`);
+        this.connectionState = 'disconnected';
+        
+        // Track disconnection with reason
+        VoiceTelemetry.trackConnection('disconnected', 'websocket', {
+          disconnectionReason: `${event.code}: ${event.reason}`,
+          retryCount: this.retryCount
+        });
+        
+        this.emit('disconnected', { code: event.code, reason: event.reason });
+        
+        // Auto-retry if not a normal closure
+        if (event.code !== 1000 && this.retryCount < this.maxRetries) {
+          this.scheduleReconnect();
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('❌ [WebSocketManager] Connection error:', error);
+        this.connectionState = 'error';
+        this.emit('error', error);
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message: VoiceWebSocketMessage = JSON.parse(event.data);
+          console.log(`📨 [WebSocketManager] Received message type: ${message.type}`);
+          this.emit('message', message);
+          this.emit(message.type, message.data);
+        } catch (error) {
+          console.error('❌ [WebSocketManager] Failed to parse message:', error);
+          // Handle binary audio data
+          if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+            this.emit('binaryData', event.data);
+          }
+        }
+      };
+
+      // Wait for connection to establish or fail
+      await this.waitForConnection();
+
+    } catch (error) {
+      console.error('❌ [WebSocketManager] Connection failed:', error);
+      this.connectionState = 'error';
+      
+      // Track connection failure
+      const connectionError = new VoiceConnectionError(
+        `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+        'websocket',
+        this.retryCount,
+        error instanceof Error ? error : undefined
+      );
+      
+      VoiceTelemetry.trackError(connectionError, 'websocket', 'WebSocket Connection', false);
+      
+      if (this.retryCount < this.maxRetries) {
+        this.scheduleReconnect();
+      } else {
+        throw connectionError;
+      }
+    }
+  }
+
+  /**
+   * Send data through WebSocket
+   */
+  send(data: string | ArrayBuffer | Uint8Array): boolean {
+    if (this.connectionState !== 'connected' || !this.ws) {
+      console.warn('⚠️ [WebSocketManager] Cannot send: not connected');
+      return false;
+    }
+
+    try {
+      this.ws.send(data);
+      return true;
+    } catch (error) {
+      console.error('❌ [WebSocketManager] Send failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send audio frame with proper formatting
+   */
+  sendAudioFrame(frame: AudioFrame): boolean {
+    const message: VoiceWebSocketMessage = {
+      type: 'audio',
+      data: {
+        audioData: Array.from(new Uint8Array(frame.audioData)),
+        timestamp: frame.timestamp,
+        sampleRate: frame.sampleRate,
+        channels: frame.channels
+      },
+      timestamp: Date.now()
+    };
+
+    return this.send(JSON.stringify(message));
+  }
+
+  /**
+   * Close WebSocket connection
+   */
+  close(code: number = 1000, reason: string = 'Normal closure'): void {
+    console.log(`🔌 [WebSocketManager] Closing connection: ${code} ${reason}`);
+    
+    if (this.retryTimeoutId) {
+      clearTimeout(this.retryTimeoutId);
+      this.retryTimeoutId = null;
+    }
+
+    if (this.ws) {
+      this.connectionState = 'closed';
+      this.ws.close(code, reason);
+      this.ws = null;
+    }
+
+    this.eventListeners.clear();
+  }
+
+  /**
+   * Get current connection state
+   */
+  getState(): ConnectionState {
+    return this.connectionState;
+  }
+
+  /**
+   * Add event listener
+   */
+  on(event: string, callback: (data: any) => void): void {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, new Set());
+    }
+    this.eventListeners.get(event)!.add(callback);
+  }
+
+  /**
+   * Remove event listener
+   */
+  off(event: string, callback: (data: any) => void): void {
+    this.eventListeners.get(event)?.delete(callback);
+  }
+
+  /**
+   * Emit event to listeners
+   */
+  private emit(event: string, data: any): void {
+    this.eventListeners.get(event)?.forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error(`❌ [WebSocketManager] Event listener error for ${event}:`, error);
+      }
+    });
+  }
+
+  /**
+   * Wait for WebSocket connection to establish
+   */
+  private waitForConnection(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Connection timeout'));
+      }, 10000); // 10 second timeout
+
+      const onConnected = () => {
+        clearTimeout(timeout);
+        this.off('connected', onConnected);
+        this.off('error', onError);
+        resolve();
+      };
+
+      const onError = (error: any) => {
+        clearTimeout(timeout);
+        this.off('connected', onConnected);
+        this.off('error', onError);
+        reject(error);
+      };
+
+      this.on('connected', onConnected);
+      this.on('error', onError);
+    });
+  }
+
+  /**
+   * Schedule reconnection with exponential backoff
+   */
+  private scheduleReconnect(): void {
+    this.retryCount++;
+    const delay = Math.min(
+      this.baseDelay * Math.pow(2, this.retryCount - 1) + Math.random() * 1000,
+      this.maxDelay
+    );
+
+    console.log(`🔄 [WebSocketManager] Scheduling reconnect attempt ${this.retryCount}/${this.maxRetries} in ${delay}ms`);
+    
+    this.retryTimeoutId = setTimeout(() => {
+      this.connect().catch(error => {
+        console.error('❌ [WebSocketManager] Reconnection failed:', error);
+      });
+    }, delay);
   }
 }
 
+/**
+ * Azure AI Foundry Voice Live Client
+ */
 export class VoiceLiveClient {
-  private ws: WebSocket | null = null;
-  private config: ConfigOptions;
-  private isConnectionActive = false;
-  private reconnectAttempts = 0;
-  private reconnectTimer: NodeJS.Timeout | null = null;
-
-  // Public configuration
-  public enableAutoReconnect = false;
-  public maxReconnectAttempts = 3;
-
-  // Event handlers
-  public onSessionCreated: ((session: FoundryVoiceSession) => void) | null = null;
-  public onTranscript: ((transcript: string) => void) | null = null;
-  public onAudioDelta: ((audioData: string) => void) | null = null;
-  public onTextDelta: ((textDelta: string) => void) | null = null;
-  public onError: ((error: FoundryVoiceError) => void) | null = null;
-  public onDisconnect: ((code: number, reason: string) => void) | null = null;
-
-  constructor(config: ConfigOptions) {
-    this.config = this.validateConfig(config);
-    voiceTelemetry.trackClientCreation({
-      endpoint: config.endpoint,
-      deploymentId: config.deploymentId,
-      voice: config.voice
-    });
-  }
-
-  private validateConfig(config: ConfigOptions): ConfigOptions {
-    if (!config.apiKey || config.apiKey.trim() === '') {
-      throw new Error('API key is required');
-    }
-
-    if (!config.endpoint || !config.endpoint.startsWith('wss://')) {
-      throw new Error('Invalid endpoint format');
-    }
-
-    if (config.temperature < 0 || config.temperature > 1) {
-      throw new Error('Temperature must be between 0 and 1');
-    }
-
-    if (config.maxTokens <= 0) {
-      throw new Error('maxTokens must be greater than 0');
-    }
-
-    return config;
-  }
+  private config: VoiceEnvironmentConfig | null = null;
+  private activeSessions = new Map<string, VoiceSession>();
 
   /**
-   * Connect to Azure AI Foundry WebSocket
+   * Initialize the client with configuration
    */
-  public async connect(): Promise<void> {
-    if (this.isConnectionActive) {
-      console.warn('Connection already active');
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        voiceTelemetry.trackConnectionAttempt({
-          endpoint: this.config.endpoint,
-          attempt: this.reconnectAttempts + 1
-        });
-
-        const wsUrl = this.buildWebSocketUrl();
-        this.ws = new WebSocket(wsUrl, ['azure-openai-realtime']);
-
-        const connectionTimeout = setTimeout(() => {
-          if (this.ws) {
-            this.ws.close();
-            const error = new ConnectionError('Connection timeout');
-            voiceTelemetry.trackConnectionFailure(error, {
-              reason: 'timeout',
-              attempt: this.reconnectAttempts + 1
-            });
-            reject(error);
-          }
-        }, 10000); // 10 second timeout
-
-        this.ws.onopen = () => {
-          clearTimeout(connectionTimeout);
-          this.isConnectionActive = true;
-          this.reconnectAttempts = 0;
-          
-          voiceTelemetry.trackConnectionSuccess({
-            endpoint: this.config.endpoint,
-            sessionId: `foundry-${Date.now()}`
-          });
-
-          // Send session configuration
-          this.sendSessionConfig();
-          resolve();
-        };
-
-        this.ws.onmessage = (event) => {
-          this.handleMessage(event);
-        };
-
-        this.ws.onclose = (event) => {
-          clearTimeout(connectionTimeout);
-          this.isConnectionActive = false;
-          
-          voiceTelemetry.trackConnectionClosed({
-            code: event.code,
-            reason: event.reason,
-            wasClean: event.wasClean
-          });
-
-          if (this.onDisconnect) {
-            this.onDisconnect(event.code, event.reason);
-          }
-
-          // Attempt reconnection if enabled and not a clean close
-          if (this.enableAutoReconnect && !event.wasClean && event.code !== 1000) {
-            this.attemptReconnect();
-          }
-        };
-
-        this.ws.onerror = (event) => {
-          clearTimeout(connectionTimeout);
-          const error = new ConnectionError('WebSocket connection failed');
-          voiceTelemetry.trackConnectionFailure(error, {
-            reason: 'websocket_error',
-            attempt: this.reconnectAttempts + 1
-          });
-          reject(error);
-        };
-
-      } catch (error) {
-        const connectionError = error instanceof Error ? error : new Error('Unknown connection error');
-        voiceTelemetry.trackConnectionFailure(connectionError, {
-          reason: 'setup_error',
-          attempt: this.reconnectAttempts + 1
-        });
-        reject(connectionError);
-      }
-    });
-  }
-
-  /**
-   * Disconnect from WebSocket
-   */
-  public disconnect(): void {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-
-    if (this.ws && this.isConnectionActive) {
-      this.ws.close(1000, 'Client disconnect');
-    }
-
-    this.ws = null;
-    this.isConnectionActive = false;
-    this.reconnectAttempts = 0;
-  }
-
-  /**
-   * Check if connection is active
-   */
-  public get isConnected(): boolean {
-    return this.isConnectionActive && this.ws?.readyState === WebSocket.OPEN;
-  }
-
-  /**
-   * Send audio data to the session
-   */
-  public sendAudio(audioData: ArrayBuffer): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected');
-    }
-
-    const base64Audio = this.arrayBufferToBase64(audioData);
+  async init(forceRefresh = false): Promise<void> {
+    console.log('🔧 [VoiceLiveClient] Initializing...');
     
-    const message = {
-      type: 'input_audio_buffer.append',
-      audio: base64Audio
-    };
-
-    this.ws!.send(JSON.stringify(message));
+    this.config = await getEnv(forceRefresh);
     
-    voiceTelemetry.trackAudioSent({
-      sessionId: this.getSessionId(),
-      audioSize: audioData.byteLength,
-      timestamp: Date.now()
-    });
+    const validation = validateVoiceConfig(this.config);
+    if (!validation.isValid) {
+      throw new Error(`Invalid voice configuration: ${validation.errors.join(', ')}`);
+    }
+
+    console.log('✅ [VoiceLiveClient] Initialized successfully');
   }
 
   /**
-   * Commit audio buffer for processing
+   * Create a new voice session with default settings
    */
-  public commitAudio(): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected');
+  async createSession(options: VoiceSessionOptions = {}): Promise<VoiceSession> {
+    if (!this.config) {
+      await this.init();
     }
 
-    const message = {
-      type: 'input_audio_buffer.commit'
-    };
-
-    this.ws!.send(JSON.stringify(message));
-  }
-
-  /**
-   * Clear audio buffer
-   */
-  public clearAudioBuffer(): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected');
-    }
-
-    const message = {
-      type: 'input_audio_buffer.clear'
-    };
-
-    this.ws!.send(JSON.stringify(message));
-  }
-
-  /**
-   * Send text message to the session
-   */
-  public sendText(text: string): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected');
-    }
-
-    // Create conversation item
-    const createMessage = {
-      type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: text
-          }
-        ]
+    // Apply default settings
+    const sessionOptions: VoiceSessionOptions = {
+      voiceName: options.voiceName || 'neural-hd-professional',
+      locale: options.locale || 'en-US',
+      speakingRate: options.speakingRate || 1.0,
+      emotionalTone: options.emotionalTone || 'neutral',
+      audioSettings: {
+        noiseSuppression: true,
+        echoCancellation: true,
+        interruptionDetection: true,
+        sampleRate: 16000,
+        ...options.audioSettings
       }
     };
 
-    this.ws!.send(JSON.stringify(createMessage));
+    console.log('🎤 [VoiceLiveClient] Creating voice session with options:', sessionOptions);
 
-    // Trigger response
-    const responseMessage = {
-      type: 'response.create'
-    };
-
-    this.ws!.send(JSON.stringify(responseMessage));
-
-    voiceTelemetry.trackTextSent({
-      sessionId: this.getSessionId(),
-      textLength: text.length,
-      timestamp: Date.now()
-    });
-  }
-
-  /**
-   * Update session settings
-   */
-  public updateSession(settings: Partial<ConfigOptions>): void {
-    if (!this.isConnected) {
-      throw new Error('WebSocket is not connected');
-    }
-
-    const sessionUpdate: any = {
-      type: 'session.update',
-      session: {}
-    };
-
-    if (settings.temperature !== undefined) {
-      sessionUpdate.session.temperature = settings.temperature;
-    }
-
-    if (settings.maxTokens !== undefined) {
-      sessionUpdate.session.max_response_output_tokens = settings.maxTokens;
-    }
-
-    if (settings.voice !== undefined) {
-      sessionUpdate.session.voice = settings.voice;
-    }
-
-    this.ws!.send(JSON.stringify(sessionUpdate));
-
-    voiceTelemetry.trackConfigUpdate({
-      sessionId: this.getSessionId(),
-      changes: settings
-    });
-  }
-
-  private buildWebSocketUrl(): string {
-    const url = new URL(this.config.endpoint);
-    url.searchParams.set('api-version', '2024-10-01-preview');
-    url.searchParams.set('deployment', this.config.deploymentId);
-    url.searchParams.set('api-key', this.config.apiKey);
-    
-    return url.toString();
-  }
-
-  private sendSessionConfig(): void {
-    const sessionConfig = {
-      type: 'session.update',
-      session: {
-        modalities: ['text', 'audio'],
-        instructions: this.config.instructionMessage || this.config.systemMessage,
-        voice: this.config.voice,
-        input_audio_format: this.config.inputAudioFormat,
-        output_audio_format: this.config.outputAudioFormat,
-        input_audio_transcription: {
-          model: 'whisper-1'
-        },
-        turn_detection: this.config.turnDetection,
-        tool_choice: 'auto',
-        temperature: this.config.temperature,
-        max_response_output_tokens: this.config.maxTokens
-      }
-    };
-
-    this.ws!.send(JSON.stringify(sessionConfig));
-  }
-
-  private handleMessage(event: MessageEvent): void {
     try {
-      const data = JSON.parse(event.data);
-      
-      voiceTelemetry.trackMessageReceived({
-        type: data.type,
-        sessionId: this.getSessionId(),
-        timestamp: Date.now()
+      // Call Azure AI Foundry API to create session
+      const response = await fetch(`${this.config!.endpoint}/openai/realtime/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.config!.apiKey,
+          'X-Project-ID': this.config!.projectId
+        },
+        body: JSON.stringify({
+          model: this.config!.deploymentName || 'gpt-4o-realtime-preview',
+          voice: sessionOptions.voiceName,
+          input_audio_format: 'pcm16',
+          output_audio_format: 'pcm16',
+          turn_detection: sessionOptions.audioSettings?.interruptionDetection ? {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 800
+          } : null,
+          tools: [],
+          tool_choice: 'none',
+          temperature: 0.7,
+          max_response_output_tokens: 4096
+        })
       });
 
-      switch (data.type) {
-        case 'session.created':
-          if (this.onSessionCreated) {
-            this.onSessionCreated(data.session);
-          }
-          break;
-
-        case 'conversation.item.input_audio_transcription.completed':
-          if (this.onTranscript) {
-            this.onTranscript(data.transcript);
-          }
-          break;
-
-        case 'response.audio.delta':
-          if (this.onAudioDelta) {
-            this.onAudioDelta(data.delta);
-          }
-          break;
-
-        case 'error':
-          if (this.onError) {
-            this.onError(data.error);
-          }
-          break;
-          
-        case 'session.updated':
-          // Session configuration updated
-          voiceTelemetry.trackSessionEvent({
-            eventType: 'SESSION_UPDATED',
-            sessionId: this.getSessionId()
-          });
-          break;
-          
-        case 'response.text.delta':
-          // Text response streaming delta
-          if (this.onTextDelta) {
-            this.onTextDelta(data.delta || '');
-          }
-          break;
-          
-        case 'response.audio.done':
-          // Audio generation complete
-          voiceTelemetry.trackAudioEvent({
-            eventType: 'AUDIO_GENERATION_COMPLETE',
-            sessionId: this.getSessionId(),
-            durationMs: 0
-          });
-          break;
-
-        default:
-          console.warn('Unknown event type:', data.type);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Session creation failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
+
+      const sessionData = await response.json();
+      
+      const session: VoiceSession = {
+        sessionId: sessionData.id,
+        wsUrl: sessionData.websocket_url,
+        options: sessionOptions,
+        createdAt: new Date()
+      };
+
+      // Store session for later reference
+      this.activeSessions.set(session.sessionId, session);
+
+      console.log(`✅ [VoiceLiveClient] Session created: ${session.sessionId}`);
+      return session;
+
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      console.error('❌ [VoiceLiveClient] Session creation failed:', error);
+      throw error;
     }
   }
 
-  private attemptReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      return;
+  /**
+   * Create WebSocket manager for a session
+   */
+  createWebSocketManager(session: VoiceSession): WebSocketManager {
+    return new WebSocketManager(session.wsUrl, ['realtime']);
+  }
+
+  /**
+   * Update voice settings for active sessions
+   */
+  updateSettings(sessionId: string, settings: Partial<VoiceSettings>): boolean {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      console.warn(`⚠️ [VoiceLiveClient] Session not found: ${sessionId}`);
+      return false;
     }
 
-    const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
-    this.reconnectAttempts++;
+    // Update session options
+    Object.assign(session.options, settings);
 
-    voiceTelemetry.trackReconnectionAttempt({
-      attempt: this.reconnectAttempts,
-      delay: delay,
-      maxAttempts: this.maxReconnectAttempts
-    });
-
-    this.reconnectTimer = setTimeout(async () => {
-      try {
-        await this.connect();
-        console.log(`Reconnected successfully after ${this.reconnectAttempts} attempts`);
-      } catch (error) {
-        console.error(`Reconnection attempt ${this.reconnectAttempts} failed:`, error);
-        this.attemptReconnect();
-      }
-    }, delay);
+    console.log(`🔧 [VoiceLiveClient] Updated settings for session ${sessionId}:`, settings);
+    return true;
   }
 
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+  /**
+   * Get active session by ID
+   */
+  getSession(sessionId: string): VoiceSession | undefined {
+    return this.activeSessions.get(sessionId);
   }
 
-  private getSessionId(): string {
-    // Generate a session ID based on connection time or use existing one
-    return `session-${Date.now()}`;
+  /**
+   * Remove session from active sessions
+   */
+  removeSession(sessionId: string): void {
+    this.activeSessions.delete(sessionId);
+    console.log(`🗑️ [VoiceLiveClient] Removed session: ${sessionId}`);
   }
+
+  /**
+   * Get all active sessions
+   */
+  getActiveSessions(): VoiceSession[] {
+    return Array.from(this.activeSessions.values());
+  }
+
+  /**
+   * Cleanup all sessions
+   */
+  cleanup(): void {
+    console.log('🧹 [VoiceLiveClient] Cleaning up all sessions');
+    this.activeSessions.clear();
+  }
+}
+
+// Singleton instance
+let voiceLiveClientInstance: VoiceLiveClient | null = null;
+
+/**
+ * Get shared VoiceLiveClient instance
+ */
+export function getVoiceLiveClient(): VoiceLiveClient {
+  if (!voiceLiveClientInstance) {
+    voiceLiveClientInstance = new VoiceLiveClient();
+  }
+  return voiceLiveClientInstance;
 }
