@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getVoiceLiveClient } from '@/src/lib/azure-ai-foundry/voice/voice-live-client';
-import { VoiceSession } from '@/src/lib/azure-ai-foundry/voice/voice-session';
+import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
+import { VoiceSession } from '@/lib/azure-ai-foundry/voice/voice-session';
 
 /**
  * Request body schema

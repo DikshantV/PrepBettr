@@ -11,7 +11,7 @@ export const runtime = 'edge';
  */
 
 import type { NextRequest } from 'next/server';
-import { getVoiceLiveClient } from '@/src/lib/azure-ai-foundry/voice/voice-live-client';
+import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const sessionId = params.id;

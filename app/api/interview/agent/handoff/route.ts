@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InterviewWorkflow } from '@/src/lib/azure-ai-foundry/workflows/interview-workflow';
-import type { AgentHandoff } from '@/src/lib/azure-ai-foundry/workflows/workflow-types';
+import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
+import type { AgentHandoff } from '@/lib/azure-ai-foundry/workflows/workflow-types';
 
 const workflow = new InterviewWorkflow();
 
