@@ -149,7 +149,7 @@ class FoundryFeatureFlagManager {
    * Enable Foundry resume processing with gradual rollout
    */
   async enableFoundryProcessing(
-    environment: 'staging' | 'production', 
+    environment: 'development' | 'staging' | 'production', 
     percentage: number = 5
   ): Promise<void> {
     console.log(`🚀 Enabling Foundry resume processing in ${environment} at ${percentage}%`);

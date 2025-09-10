@@ -1,11 +1,4 @@
-// import { FoundryAgent } from '../types/agent-types';
-
-// Temporary interface for testing
-interface FoundryAgent {
-  id: string;
-  name: string;
-  type: string;
-}
+import { FoundryAgent } from '../types/agent-types';
 import { TechnicalInterviewer } from './technical-interviewer';
 import { BehavioralInterviewer } from './behavioral-interviewer';
 import { IndustryExpert } from './industry-expert';

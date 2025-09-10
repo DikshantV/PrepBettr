@@ -5,7 +5,10 @@
  * Integrates with Azure Application Insights for dashboard visualization and alerting.
  */
 
-import { Attributes } from '@/lib/telemetry';
+// Define Attributes interface for telemetry events
+interface Attributes {
+  [key: string]: string | number | boolean | undefined;
+}
 
 export interface ResumeProcessedEvent extends Attributes {
   userId: string;

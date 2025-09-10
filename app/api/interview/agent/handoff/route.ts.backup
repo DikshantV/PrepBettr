@@ -2,15 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
 import type { AgentHandoff } from '@/lib/azure-ai-foundry/workflows/workflow-types';
 
-// Initialize workflow lazily to avoid build-time issues
-let workflow: InterviewWorkflow | null = null;
-
-function getWorkflow(): InterviewWorkflow {
-  if (!workflow) {
-    workflow = new InterviewWorkflow();
-  }
-  return workflow;
-}
+const workflow = new InterviewWorkflow();
 
 /**
  * POST /api/interview/agent/handoff
@@ -49,11 +41,8 @@ export async function POST(request: NextRequest) {
     console.log(`- To: ${body.toAgent || 'auto'}`);
     console.log(`- Force: ${body.force || false}`);
 
-    // Get workflow instance (initialized lazily)
-    const workflowInstance = getWorkflow();
-
     // Get current status to validate handoff
-    const currentStatus = await workflowInstance.getStatus(sessionId);
+    const currentStatus = await workflow.getStatus(sessionId);
     
     // Validate that handoff is possible
     if (!body.force) {
@@ -106,10 +95,10 @@ export async function POST(request: NextRequest) {
     console.log(`[API] Executing handoff: ${fromAgent} → ${toAgent}`);
 
     // Trigger stage advancement (which handles the agent transition)
-    await workflowInstance.advanceStage(sessionId);
+    await workflow.advanceStage(sessionId);
     
     // Get updated status
-    const updatedStatus = await workflowInstance.getStatus(sessionId);
+    const updatedStatus = await workflow.getStatus(sessionId);
 
     return NextResponse.json({
       success: true,

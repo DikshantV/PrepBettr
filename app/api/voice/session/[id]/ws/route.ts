@@ -11,14 +11,15 @@ export const runtime = 'edge';
  */
 
 import type { NextRequest } from 'next/server';
-import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
+import { getVoiceSessionStorage } from '@/lib/azure-ai-foundry/voice/voice-session-storage';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const sessionId = params.id;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const sessionId = resolvedParams.id;
 
   // Validate session
-  const voiceClient = getVoiceLiveClient();
-  const session = voiceClient.getSession(sessionId);
+  const sessionStorage = getVoiceSessionStorage();
+  const session = sessionStorage.getSession(sessionId);
   if (!session || !session.wsUrl) {
     return new Response('Session not found or missing WebSocket URL', { status: 404 });
   }
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // Forward messages from client -> upstream
     (clientSocket as any).addEventListener('message', (event: MessageEvent) => {
       try {
-        if (upstream?.readyState === upstream?.OPEN) {
+        if (upstream && upstream.readyState === upstream.OPEN) {
           if (event.data instanceof ArrayBuffer || event.data instanceof Uint8Array) {
             upstream.send(event.data as any);
           } else {

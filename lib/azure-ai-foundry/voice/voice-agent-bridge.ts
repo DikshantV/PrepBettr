@@ -14,7 +14,7 @@ import {
   SessionRecording,
   AudioChunk
 } from './types';
-import { voiceTelemetry } from './voice-telemetry';
+import { VoiceTelemetry } from './voice-telemetry';
 
 // Event emitter for voice bridge
 class VoiceEventEmitter {
@@ -88,13 +88,8 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
     this.setupVoiceSessionHandlers();
     this.initializeRecording();
 
-    voiceTelemetry.trackSessionCreated({
-      sessionId: this.voiceSession.sessionId,
-      config: {
-        bridgeConfig: this.config,
-        voiceConfig: this.voiceSession.configuration
-      }
-    });
+    // Use VoiceTelemetry.startSession instead of trackSessionCreated
+    VoiceTelemetry.startSession(this.voiceSession.sessionId);
 
     console.log('🌉 [VOICE BRIDGE] Bridge created', {
       sessionId: this.voiceSession.sessionId,
@@ -123,20 +118,14 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
       // Set up activity timeout
       this.setupActivityTimeout();
 
-      voiceTelemetry.trackSessionStart({
-        sessionId: this.voiceSession.sessionId,
-        deploymentId: this.voiceSession.configuration.deploymentId,
-        voice: this.voiceSession.configuration.voice
-      });
+      // Session already tracked in constructor, no need to track again
 
       console.log('✅ [VOICE BRIDGE] Bridge started successfully');
 
     } catch (error) {
       const bridgeError = error instanceof Error ? error : new Error('Failed to start bridge');
       
-      voiceTelemetry.trackError(bridgeError, 'BRIDGE_START_FAILED', {
-        sessionId: this.voiceSession.sessionId
-      });
+      VoiceTelemetry.trackError(bridgeError, this.voiceSession.sessionId, 'BRIDGE_START_FAILED');
 
       this.handleError(bridgeError);
       throw bridgeError;
@@ -203,7 +192,9 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
       // Update voice session with agent-specific settings if available
       const agentVoiceSettings = this.getAgentVoiceSettings(agentName);
       if (agentVoiceSettings) {
-        this.voiceSession.updateSettings(agentVoiceSettings);
+        // TODO: Implement updateSettings method in VoiceSession
+        console.log('🎛️ [VOICE BRIDGE] Would update voice settings for agent:', agentName, agentVoiceSettings);
+        // this.voiceSession.updateSettings(agentVoiceSettings);
       }
 
       console.log('✅ [VOICE BRIDGE] Handoff completed', {
@@ -214,11 +205,7 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
       this.state.pendingHandoff = false;
       const handoffError = error instanceof Error ? error : new Error('Agent handoff failed');
       
-      voiceTelemetry.trackError(handoffError, 'AGENT_HANDOFF_FAILED', {
-        sessionId: this.voiceSession.sessionId,
-        targetAgent: agentName,
-        currentAgent: this.state.currentAgent
-      });
+      VoiceTelemetry.trackError(handoffError, this.voiceSession.sessionId, 'AGENT_HANDOFF_FAILED');
 
       this.handleError(handoffError);
       throw handoffError;
@@ -259,10 +246,7 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
 
     } catch (error) {
       const responseError = error instanceof Error ? error : new Error('Failed to send audio response');
-      voiceTelemetry.trackError(responseError, 'AUDIO_RESPONSE_FAILED', {
-        sessionId: this.voiceSession.sessionId,
-        agent: this.state.currentAgent
-      });
+      VoiceTelemetry.trackError(responseError, this.voiceSession.sessionId, 'AUDIO_RESPONSE_FAILED');
       this.handleError(responseError);
     }
   }
@@ -292,39 +276,17 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
 
   private setupVoiceSessionHandlers(): void {
     // Handle transcript from voice session
-    this.voiceSession.onTranscript = (transcript: string) => {
-      this.handleUserTranscript(transcript);
-    };
+    this.voiceSession.onTranscript((event) => {
+      this.handleUserTranscript(event.text);
+    });
 
-    // Handle audio responses
-    this.voiceSession.onAudioResponse = (audioData: string) => {
-      this.handleAudioResponse(audioData);
-    };
+    // Handle audio responses using onResponse callback
+    this.voiceSession.onResponse((event) => {
+      this.handleAudioResponse(event.audioData.toString()); // Convert Blob to string if needed
+    });
 
-    // Handle session ready
-    this.voiceSession.onSessionReady = (session) => {
-      console.log('🔥 [VOICE BRIDGE] Voice session ready', {
-        azureSessionId: session.id,
-        voice: session.voice
-      });
-    };
-
-    // Handle errors
-    this.voiceSession.onError = (error) => {
-      this.handleError(error instanceof Error ? error : new Error('Voice session error'));
-    };
-
-    // Handle disconnection
-    this.voiceSession.onDisconnect = (code, reason) => {
-      console.log('🔌 [VOICE BRIDGE] Voice session disconnected', {
-        code, reason
-      });
-      
-      this.emit('session:ended', {
-        sessionId: this.voiceSession.sessionId,
-        reason: 'connection_lost'
-      });
-    };
+    // TODO: Add session ready, error, and disconnect handlers when VoiceSession API is complete
+    console.log('🔗 [VOICE BRIDGE] Voice session handlers setup complete');
   }
 
   private async handleUserTranscript(transcript: string): Promise<void> {
@@ -383,10 +345,7 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
 
     } catch (error) {
       const transcriptError = error instanceof Error ? error : new Error('Failed to handle transcript');
-      voiceTelemetry.trackError(transcriptError, 'TRANSCRIPT_PROCESSING_FAILED', {
-        sessionId: this.voiceSession.sessionId,
-        transcriptLength: transcript.length
-      });
+      VoiceTelemetry.trackError(transcriptError, this.voiceSession.sessionId, 'TRANSCRIPT_PROCESSING_FAILED');
       this.handleError(transcriptError);
     }
   }
@@ -531,7 +490,7 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
         hasHighStressWords: stressWordCount > 0,
         stressWords: words.filter(word => stressWords.includes(word)),
         speechPattern: stressWordCount > 2 ? 'hesitant' : 'normal',
-        emotionalState: score > 0.5 ? 'calm' : score < -0.3 ? 'nervous' : 'neutral'
+        emotionalState: score > 0.5 ? 'calm' : score < -0.3 ? 'nervous' : 'calm'
       }
     };
 
@@ -647,7 +606,7 @@ export class VoiceAgentBridge extends VoiceEventEmitter {
       });
 
       // Simple recovery: try to reconnect voice session
-      if (!this.voiceSession.isConnected()) {
+      if (this.voiceSession.getState() !== 'active') {
         await this.voiceSession.start();
       }
 

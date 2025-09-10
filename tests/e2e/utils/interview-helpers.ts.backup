@@ -250,11 +250,6 @@ export const RESPONSE_SETS = {
       "I would use basic algorithms like arrays and loops to solve this step by step.",
       "I need to consider edge cases like empty inputs and invalid data.",
     ],
-    mid: [
-      "I would analyze the problem complexity and choose appropriate data structures for efficiency.",
-      "This looks like it could be solved with a two-pointer technique or hash map for O(n) performance.",
-      "I would implement the solution with proper error handling and consider optimization opportunities.",
-    ],
     senior: [
       "I would analyze the time and space complexity requirements first, then design an optimal solution.",
       "This problem can be solved using dynamic programming with memoization for O(n) time complexity.",
@@ -268,11 +263,6 @@ export const RESPONSE_SETS = {
       "When facing a challenge, I usually ask for help from more experienced team members.",
       "I'm motivated by learning new things and contributing to team goals.",
     ],
-    mid: [
-      "I recently led a small team project where we delivered a feature ahead of schedule.",
-      "When I encounter conflicts, I facilitate discussions to find win-win solutions for all parties.",
-      "I'm motivated by solving complex problems and mentoring newer team members.",
-    ],
     senior: [
       "I led a cross-functional team of 8 people to deliver a critical product feature on time.",
       "I identified a bottleneck in our deployment process and implemented automation that reduced deploy time by 70%.",
@@ -285,11 +275,6 @@ export const RESPONSE_SETS = {
       "I would start with a simple client-server architecture using a web framework.",
       "For the database, I would use something familiar like MySQL or PostgreSQL.",
       "I would focus on getting the basic functionality working first, then optimize later.",
-    ],
-    mid: [
-      "I would design a scalable REST API with proper authentication and data validation.",
-      "For the database, I would consider both relational and NoSQL options based on data patterns.",
-      "I would implement caching and basic monitoring to ensure good performance from the start.",
     ],
     senior: [
       "I would design this as a microservices architecture with proper service boundaries and APIs.",
@@ -307,10 +292,9 @@ export function getResponsesForScenario(
   phase: string
 ): string[] {
   const responseKey = phase.toLowerCase().replace(/\s+/g, '') as keyof typeof RESPONSE_SETS;
-  const responses = RESPONSE_SETS[responseKey];
+  const responses = RESPONSE_SETS[responseKey as keyof typeof RESPONSE_SETS];
   
   if (responses) {
-    // Now TypeScript knows that responses has 'entry', 'mid', and 'senior' properties
     return responses[scenario.experience] || responses.entry;
   }
   

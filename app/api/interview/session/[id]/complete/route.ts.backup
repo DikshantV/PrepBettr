@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
 
-// Lazy initialization to avoid build-time issues
-let workflow: InterviewWorkflow | null = null;
-
-function getWorkflow(): InterviewWorkflow {
-  if (!workflow) {
-    workflow = new InterviewWorkflow();
-  }
-  return workflow;
-}
+const workflow = new InterviewWorkflow();
 
 /**
  * POST /api/interview/session/[id]/complete
@@ -52,14 +44,14 @@ export async function POST(
     console.log(`- Candidate Feedback: ${body.candidateFeedback || false}`);
 
     // Get current status for validation
-    const currentStatus = await getWorkflow().getStatus(sessionId);
+    const currentStatus = await workflow.getStatus(sessionId);
     
     if (!body.force && currentStatus.state === 'completed') {
       return NextResponse.json({
         success: false,
         error: 'Interview is already completed',
         sessionId,
-        existingResult: await getWorkflow().completeInterview(sessionId)
+        existingResult: await workflow.completeInterview(sessionId)
       }, { status: 400 });
     }
 
@@ -73,7 +65,7 @@ export async function POST(
     }
 
     // Complete the interview workflow
-    const result = await getWorkflow().completeInterview(sessionId);
+    const result = await workflow.completeInterview(sessionId);
 
     // Enhance result with requested features
     if (body.includeReport) {
@@ -169,7 +161,7 @@ export async function GET(
   try {
     
     // Get current session status
-    const status = await getWorkflow().getStatus(sessionId);
+    const status = await workflow.getStatus(sessionId);
     
     const canComplete = status.state === 'in-progress' || status.state === 'completed';
     const completionOptions = {

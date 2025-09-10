@@ -120,45 +120,9 @@ Ensure questions are clear, specific, and actionable.`;
     // - Reached max questions for this agent, OR
     // - Spent more than 30 minutes on technical questions
     const minQuestionsAnswered = technicalResponses.length >= 3;
-    const reachedMaxQuestions = technicalQuestions.length >= this.metadata.maxQuestions;
+    const reachedMaxQuestions = technicalQuestions.length >= (this.metadata.maxQuestions || 5);
     
     return minQuestionsAnswered || reachedMaxQuestions;
   }
 
-  // Required BaseAgent abstract methods
-  protected getQuestionCategory(): Question['category'] {
-    return 'technical';
-  }
-
-  protected getDefaultQuestion(context: InterviewContext): string {
-    const { targetRole, experience, skills } = context.candidateProfile;
-    const { difficulty } = context.interviewConfig;
-    
-    // Generate role-specific default questions based on context
-    if (targetRole.toLowerCase().includes('frontend') || skills.includes('React')) {
-      return `Describe how you would implement a reusable component in React that handles user input validation. What patterns would you use and why?`;
-    }
-    
-    if (targetRole.toLowerCase().includes('backend') || skills.includes('Node.js')) {
-      return `Design a RESTful API for a ${context.candidateProfile.industry} application. What endpoints would you create and how would you handle authentication and error cases?`;
-    }
-    
-    if (targetRole.toLowerCase().includes('fullstack')) {
-      return `Walk me through how you would architect a real-time chat application. Consider both frontend and backend components, data flow, and scalability.`;
-    }
-    
-    // General technical question based on experience level
-    switch (difficulty) {
-      case 'entry':
-        return `Explain the difference between let, const, and var in JavaScript. When would you use each one and why?`;
-      case 'mid':
-        return `Describe a challenging technical problem you've solved recently. What was your approach and what trade-offs did you consider?`;
-      case 'senior':
-        return `How would you design a system to handle 1 million concurrent users? Walk me through your architecture decisions and scaling strategies.`;
-      case 'expert':
-        return `Discuss a time when you had to optimize performance in a critical system. What was your methodology for identifying bottlenecks and implementing solutions?`;
-      default:
-        return `Tell me about a technical decision you made recently and explain your reasoning process.`;
-    }
-  }
 }

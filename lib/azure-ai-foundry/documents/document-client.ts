@@ -7,7 +7,7 @@
  */
 
 import { DefaultAzureCredential } from '@azure/identity';
-import { DocumentIntelligenceClient, AzureKeyCredential } from '@azure/ai-document-intelligence';
+import { DocumentAnalysisClient, AzureKeyCredential } from '@azure/ai-form-recognizer';
 import { getFoundryConfig } from '../config/foundry-config';
 import { logServerError } from '@/lib/errors';
 import { retryWithExponentialBackoff } from '@/lib/utils/retry-with-backoff';
@@ -213,7 +213,6 @@ export interface JobMatchAnalysis {
  */
 interface DocumentModelConfig {
   modelId: string;
-  features?: string[];
   locale?: string;
   pages?: string;
 }
@@ -222,22 +221,19 @@ interface DocumentModelConfig {
  * Azure AI Foundry Document Intelligence Service
  */
 class FoundryDocumentIntelligenceService {
-  private client: DocumentIntelligenceClient | null = null;
+  private client: DocumentAnalysisClient | null = null;
   private isInitialized = false;
   
   // Model configurations for different document types
   private readonly modelConfigs: Record<string, DocumentModelConfig> = {
     'resume-analysis': {
-      modelId: 'prebuilt-layout',
-      features: ['barcodes', 'languages', 'ocrHighResolution']
+      modelId: 'prebuilt-layout'
     },
     'resume-structured': {
-      modelId: 'prebuilt-document',
-      features: ['keyValuePairs', 'entities', 'languages']
+      modelId: 'prebuilt-document'
     },
     'general-document': {
-      modelId: 'prebuilt-read',
-      features: ['languages']
+      modelId: 'prebuilt-read'
     }
   };
 
@@ -274,7 +270,7 @@ class FoundryDocumentIntelligenceService {
         ? new DefaultAzureCredential()
         : new AzureKeyCredential(docIntApiKey);
       
-      this.client = new DocumentIntelligenceClient(docIntEndpoint, credential, {
+      this.client = new DocumentAnalysisClient(docIntEndpoint, credential, {
         additionalPolicies: [{
           policy: {
             name: 'PrepBettrDocumentIntelligence',
@@ -342,8 +338,6 @@ class FoundryDocumentIntelligenceService {
             modelConfig.modelId,
             documentBuffer,
             {
-              contentType: mimeType as any,
-              features: modelConfig.features as any,
               locale: modelConfig.locale
             }
           );
@@ -549,7 +543,7 @@ class FoundryDocumentIntelligenceService {
     }
 
     if (!personalInfo.phone) {
-      const phoneMatch = content.match(/(\+?1?[-.\\s]?)?\\(?[0-9]{3}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4}/);
+      const phoneMatch = content.match(/(\+?1?[-. \s]?)?\(?[0-9]{3}\)?[-. \s]?[0-9]{3}[-. \s]?[0-9]{4}/);
       if (phoneMatch) {
         personalInfo.phone = {
           content: phoneMatch[0],

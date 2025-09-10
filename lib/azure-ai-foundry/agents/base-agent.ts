@@ -78,25 +78,20 @@ export abstract class BaseAgent implements FoundryAgent {
   }
 
   /**
-   * Process candidate response and update context
+   * Process candidate response and return follow-up or acknowledgment
    */
-  public async processResponse(questionId: string, response: string, context: InterviewContext): Promise<void> {
+  public async processResponse(response: string, context: InterviewContext): Promise<string> {
     try {
-      // Add response to context
-      if (!context.responses) {
-        context.responses = [];
-      }
+      // For now, just return a simple acknowledgment
+      // In a full implementation, this would analyze the response and provide feedback
+      console.log(`📝 ${this.metadata.name} processed response: ${response.substring(0, 50)}...`);
       
-      context.responses.push({
-        questionId,
-        response,
-        timestamp: new Date()
-      });
-
-      console.log(`📝 ${this.metadata.name} processed response for question ${questionId}`);
+      // Return acknowledgment or follow-up question
+      return "Thank you for your response. That's a good approach to the problem.";
       
     } catch (error) {
       console.error(`❌ Error processing response for ${this.metadata.name}:`, error);
+      return "Thank you for your response. Let's continue with the next question.";
     }
   }
 
@@ -113,7 +108,7 @@ export abstract class BaseAgent implements FoundryAgent {
     ) || [];
 
     // Complete if we have responses to at least 3 questions or reached max questions
-    return responses.length >= Math.min(3, this.metadata.maxQuestions);
+    return responses.length >= Math.min(3, this.metadata.maxQuestions || 5);
   }
 
   // ===== PROTECTED HELPER METHODS =====
@@ -131,7 +126,7 @@ Generate ${this.getQuestionCount(context)} interview questions for:
 **Interview Requirements:**
 - Difficulty: ${context.interviewConfig.difficulty}
 - Focus Areas: ${context.interviewConfig.focusAreas.join(', ')}
-- Duration per question: ~${Math.floor(context.interviewConfig.duration / this.metadata.maxQuestions)} minutes
+|- Duration per question: ~${Math.floor(context.interviewConfig.duration / (this.metadata.maxQuestions || 5))} minutes
 
 **Previously Asked Questions:**
 ${context.previousQuestions.map(q => `- ${q.text}`).join('\n') || 'None'}
@@ -174,7 +169,7 @@ Return questions in JSON format:
           category: this.getQuestionCategory(),
           id: q.id || `${this.metadata.name.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
         }))
-        .slice(0, this.metadata.maxQuestions);
+        .slice(0, this.metadata.maxQuestions || 5);
         
     } catch (error) {
       console.error(`❌ Error parsing questions from ${this.metadata.name}:`, error);
@@ -187,10 +182,11 @@ Return questions in JSON format:
       {
         id: `${this.metadata.name.toLowerCase()}-fallback-${Date.now()}`,
         text: this.getDefaultQuestion(context),
-        category: this.getQuestionCategory(),
+        type: this.getQuestionCategory() || 'general',
+        category: this.getQuestionCategory() || 'general',
         difficulty: 'medium',
         expectedDuration: 180,
-        tags: ['fallback', this.metadata.specialty],
+        tags: ['fallback', this.metadata.specialty || 'general'],
         metadata: {
           topic: 'general'
         }
@@ -200,9 +196,9 @@ Return questions in JSON format:
 
   protected getQuestionCount(context: InterviewContext): number {
     const remainingTime = context.interviewConfig.duration;
-    const avgTimePerQuestion = this.metadata.averageDuration;
+    const avgTimePerQuestion = this.metadata.averageDuration || 5;
     const maxQuestions = Math.min(
-      this.metadata.maxQuestions,
+      this.metadata.maxQuestions || 5,
       Math.floor(remainingTime / avgTimePerQuestion)
     );
     return Math.max(1, maxQuestions);
@@ -274,7 +270,7 @@ export function calculateInterviewProgress(context: InterviewContext): number {
 
 export function getEstimatedRemainingTime(context: InterviewContext, currentAgent: FoundryAgent): number {
   const completedQuestions = context.responses?.length || 0;
-  const avgTimePerQuestion = currentAgent.metadata.averageDuration;
-  const remainingQuestions = Math.max(0, currentAgent.metadata.maxQuestions - completedQuestions);
+  const avgTimePerQuestion = currentAgent.metadata.averageDuration || 5;
+  const remainingQuestions = Math.max(0, (currentAgent.metadata.maxQuestions || 5) - completedQuestions);
   return remainingQuestions * avgTimePerQuestion;
 }

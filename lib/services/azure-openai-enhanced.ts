@@ -99,14 +99,8 @@ export class EnhancedAzureOpenAIService {
 
       for (const { name, deployment } of deployments) {
         if (deployment) {
-          const client = new OpenAI({
-            apiKey: this.secrets.azureOpenAIKey,
-            baseURL: `${this.secrets.azureOpenAIEndpoint}/openai/deployments/${deployment}`,
-            defaultQuery: { 'api-version': '2024-08-01-preview' },
-            defaultHeaders: {
-              'api-key': this.secrets.azureOpenAIKey,
-            },
-          });
+          const client = new OpenAI();
+          await client.init(); // Initialize the migration client
           
           this.clients.set(name, client);
           console.log(`✅ Azure OpenAI client initialized for ${name} (${deployment})`);

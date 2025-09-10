@@ -1,5 +1,20 @@
-import { FoundryAgent, InterviewContext, SessionState, Question } from '../types/agent-types';
+import { FoundryAgent, InterviewContext, Question } from '../types/agent-types';
 import { AgentFactory, AgentType, AgentFactoryConfig } from './agent-factory';
+
+/**
+ * Orchestrator session state (different from global SessionState)
+ */
+interface OrchestratorSessionState {
+  sessionId: string;
+  currentPhase: number;
+  totalPhases: number;
+  completedQuestions: number;
+  allQuestions: Question[];
+  agentResponses: any[];
+  startTime: number;
+  lastUpdateTime: number;
+  metadata: Record<string, any>;
+}
 
 /**
  * Interview phase configuration
@@ -70,7 +85,7 @@ export interface InterviewSessionResult {
     successRate: number;
   };
   /** Final session state */
-  finalState: SessionState;
+  finalState: OrchestratorSessionState;
 }
 
 /**
@@ -81,7 +96,7 @@ export interface InterviewSessionResult {
  */
 export class AgentOrchestrator {
   private agentFactory: AgentFactory;
-  private activeSessions: Map<string, SessionState> = new Map();
+  private activeSessions: Map<string, OrchestratorSessionState> = new Map();
 
   constructor() {
     this.agentFactory = AgentFactory.getInstance();
@@ -98,7 +113,7 @@ export class AgentOrchestrator {
     console.log(`Starting interview session: ${config.sessionId}`);
 
     // Initialize session state
-    const sessionState: SessionState = {
+    const sessionState: OrchestratorSessionState = {
       sessionId: config.sessionId,
       currentPhase: 0,
       totalPhases: config.phases.length,
@@ -140,10 +155,7 @@ export class AgentOrchestrator {
         const phaseContext: InterviewContext = {
           ...config.context,
           sessionHistory: {
-            previousQuestions: sessionState.allQuestions,
-            agentResponses: sessionState.agentResponses,
-            currentPhase: i,
-            totalPhases: config.phases.length
+            previousQuestions: sessionState.allQuestions
           }
         };
 
@@ -299,9 +311,28 @@ export class AgentOrchestrator {
       sessionId: params.sessionId,
       phases,
       context: {
+        sessionId: params.sessionId,
+        candidateName: params.candidateProfile.name || 'Candidate',
+        role: params.jobRole,
+        experienceLevel: params.experienceLevel || 'mid',
+        industry: params.candidateProfile.industry,
+        resumeContent: params.candidateProfile.resumeContent,
         candidateProfile: params.candidateProfile,
         jobRole: params.jobRole,
-        companyInfo: params.companyInfo
+        companyInfo: params.companyInfo,
+        interviewConfig: {
+          duration: 60,
+          focusAreas: ['technical', 'behavioral'],
+          difficulty: params.experienceLevel === 'executive' ? 'expert' : (params.experienceLevel || 'mid'),
+          includeFollowUps: true
+        },
+        previousQuestions: [],
+        previousAnswers: [],
+        currentPhase: 'technical',
+        metadata: {
+          sessionType: 'standard',
+          createdAt: new Date().toISOString()
+        }
       },
       maxDurationMinutes: 60,
       allowSkipOptional: true,
@@ -315,7 +346,7 @@ export class AgentOrchestrator {
   /**
    * Get active session state
    */
-  getSessionState(sessionId: string): SessionState | undefined {
+  getSessionState(sessionId: string): OrchestratorSessionState | undefined {
     return this.activeSessions.get(sessionId);
   }
 

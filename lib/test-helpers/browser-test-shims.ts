@@ -17,7 +17,7 @@ declare global {
     interviewResults?: any;
     
     // Test utilities
-    __TEST_HELPERS__?: {
+    __BROWSER_TEST_HELPERS__?: {
       voiceSession?: any;
       networkStatus?: 'online' | 'offline';
       agentStates?: Record<string, any>;
@@ -35,14 +35,14 @@ export function initializeBrowserTestShims() {
   }
 
   // Initialize test helpers container
-  window.__TEST_HELPERS__ = {
+  window.__BROWSER_TEST_HELPERS__ = {
     networkStatus: 'online',
     agentStates: {},
   };
 
   // Voice transcript simulation
   window.simulateVoiceTranscript = (transcript: string, isFinal = true) => {
-    const voiceSession = window.__TEST_HELPERS__?.voiceSession;
+    const voiceSession = window.__BROWSER_TEST_HELPERS__?.voiceSession;
     if (voiceSession && typeof voiceSession.onTranscriptReceived === 'function') {
       voiceSession.onTranscriptReceived({
         transcript,
@@ -60,8 +60,8 @@ export function initializeBrowserTestShims() {
 
   // Agent failure simulation
   window.simulateAgentFailure = (agentType: string) => {
-    if (window.__TEST_HELPERS__) {
-      window.__TEST_HELPERS__.agentStates[agentType] = 'failed';
+    if (window.__BROWSER_TEST_HELPERS__?.agentStates) {
+      window.__BROWSER_TEST_HELPERS__.agentStates[agentType] = 'failed';
     }
     
     window.dispatchEvent(new CustomEvent('test:agent-failure', {
@@ -71,8 +71,8 @@ export function initializeBrowserTestShims() {
 
   // Network failure simulation
   window.simulateNetworkFailure = () => {
-    if (window.__TEST_HELPERS__) {
-      window.__TEST_HELPERS__.networkStatus = 'offline';
+    if (window.__BROWSER_TEST_HELPERS__) {
+      window.__BROWSER_TEST_HELPERS__.networkStatus = 'offline';
     }
     
     // Mock fetch to return network errors
@@ -89,8 +89,8 @@ export function initializeBrowserTestShims() {
 
   // Network restoration
   window.restoreNetwork = () => {
-    if (window.__TEST_HELPERS__) {
-      window.__TEST_HELPERS__.networkStatus = 'online';
+    if (window.__BROWSER_TEST_HELPERS__) {
+      window.__BROWSER_TEST_HELPERS__.networkStatus = 'online';
     }
     
     // Restore original fetch
@@ -127,8 +127,8 @@ export function exposeInterviewResults(results: any) {
  * Set voice session reference for voice transcript simulation
  */
 export function exposeVoiceSession(voiceSession: any) {
-  if (typeof window !== 'undefined' && isTestEnvironment() && window.__TEST_HELPERS__) {
-    window.__TEST_HELPERS__.voiceSession = voiceSession;
+  if (typeof window !== 'undefined' && isTestEnvironment() && window.__BROWSER_TEST_HELPERS__) {
+    window.__BROWSER_TEST_HELPERS__.voiceSession = voiceSession;
   }
 }
 

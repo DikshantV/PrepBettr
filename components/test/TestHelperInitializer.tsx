@@ -11,13 +11,13 @@
 import { useEffect } from 'react';
 
 interface WindowWithTestHelpers extends Window {
-  simulateVoiceTranscript: (transcript: string) => void;
-  simulateAgentFailure: (agentType: string) => void;
-  simulateNetworkInterruption: (duration?: number) => void;
-  simulateSessionTimeout: () => void;
+  simulateVoiceTranscript?: (transcript: string) => void;
+  simulateAgentFailure?: (agentType: string) => void;
+  simulateNetworkInterruption?: (duration?: number) => void;
+  simulateSessionTimeout?: () => void;
   interviewSession?: any;
   interviewResults?: any;
-  testHelpers: {
+  testHelpers?: {
     setInterviewSession: (session: any) => void;
     setInterviewResults: (results: any) => void;
     triggerError: (errorType: string, details?: any) => void;

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
 import type { VoiceSessionOptions } from '@/lib/azure-ai-foundry/voice/voice-live-client';
+import { getVoiceSessionStorage } from '@/lib/azure-ai-foundry/voice/voice-session-storage';
 
 /**
  * Request body schema
@@ -140,6 +141,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<StartSess
     const session = await voiceClient.createSession(sessionOptions);
 
     console.log(`✅ [API] Voice session created: ${session.sessionId}`);
+
+    // Store session in edge-compatible storage for WebSocket proxy access
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.storeSession({
+      sessionId: session.sessionId,
+      wsUrl: session.wsUrl,
+      createdAt: session.createdAt
+    });
 
     // Return session details with proxy WebSocket URL
     const baseUrl = request.nextUrl.origin;

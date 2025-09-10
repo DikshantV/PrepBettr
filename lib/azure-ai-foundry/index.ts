@@ -37,8 +37,7 @@ export {
   MigrationOpenAIClient,
   migrationOpenAIClient,
   type ChatCompletionMessage,
-  type ChatCompletionCreateParams,
-  type ChatCompletionResponse
+  type ChatCompletionCreateParams
 } from './clients/migration-wrapper';
 
 // Model manager exports
@@ -73,7 +72,6 @@ export type {
   EvaluationMetrics,
   EvaluationRun,
   EvaluationResult,
-  FoundryError,
   RateLimitInfo,
   UsageStatistics,
   HealthStatus,
@@ -82,7 +80,6 @@ export type {
   PaginatedResponse,
   OperationStatus,
   ApiVersionInfo,
-  FoundryClientOptions,
   RequestOptions
 } from './types/foundry-types';
 
@@ -91,13 +88,15 @@ export {
   BaseAgent,
   generateQuestionId,
   calculateInterviewProgress,
-  getEstimatedRemainingTime,
-  type Question,
-  type InterviewContext,
-  type SessionState,
-  type AgentMetadata,
-  type FoundryAgent
+  getEstimatedRemainingTime
 } from './agents/base-agent';
+
+export type {
+  Question,
+  InterviewContext,
+  SessionState,
+  AgentMetadata
+} from './types/agent-types';
 
 export {
   TechnicalInterviewer
@@ -113,10 +112,8 @@ export {
 
 export {
   AgentFactory,
-  createAgent,
-  getAvailableAgentTypes,
   type AgentType,
-  type AgentConfig
+  type AgentFactoryConfig
 } from './agents/agent-factory';
 
 // Voice system exports
@@ -134,9 +131,7 @@ export {
 
 export {
   voiceTelemetry,
-  VoiceTelemetry,
-  type VoiceAudioError,
-  type VoiceSessionError
+  VoiceTelemetry
 } from './voice/voice-telemetry';
 
 export * from './voice/types';
@@ -177,7 +172,8 @@ export {
 /**
  * Convenience function to create a ready-to-use model manager
  */
-export async function createFoundryModelManager(): Promise<FoundryModelManager> {
+export async function createFoundryModelManager() {
+  const { FoundryModelManager } = await import('./managers/model-manager');
   const manager = new FoundryModelManager();
   await manager.init();
   return manager;
@@ -186,7 +182,8 @@ export async function createFoundryModelManager(): Promise<FoundryModelManager> 
 /**
  * Convenience function to create a ready-to-use foundry client
  */
-export async function createFoundryClient(): Promise<FoundryClientBase> {
+export async function createFoundryClient() {
+  const { FoundryClientBase } = await import('./clients/foundry-client');
   const client = new FoundryClientBase();
   await client.init();
   return client;
@@ -203,6 +200,7 @@ export async function checkFoundrySetup(): Promise<{
   errors: string[];
 }> {
   try {
+    const { getFoundryConfig, validateFoundryConfig } = await import('./config/foundry-config');
     const config = await getFoundryConfig();
     const validation = validateFoundryConfig(config);
     

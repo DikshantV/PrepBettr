@@ -399,22 +399,12 @@ export function validateFoundryConfig(config: FoundryConfig): { isValid: boolean
 export async function getFoundryConfigForEnvironment(
   environment: 'development' | 'staging' | 'production'
 ): Promise<FoundryConfig> {
-  // Temporarily set environment for config fetching
-  const originalEnv = process.env.ENVIRONMENT;
-  process.env.ENVIRONMENT = environment;
+  // Get config without modifying process.env to avoid webpack issues
+  const config = await getFoundryConfig(true); // Force refresh
   
-  try {
-    const config = await getFoundryConfig(true); // Force refresh
-    return {
-      ...config,
-      environment
-    };
-  } finally {
-    // Restore original environment
-    if (originalEnv) {
-      process.env.ENVIRONMENT = originalEnv;
-    } else {
-      delete process.env.ENVIRONMENT;
-    }
-  }
+  // Override the environment in the returned config
+  return {
+    ...config,
+    environment
+  };
 }

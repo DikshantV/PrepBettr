@@ -577,8 +577,8 @@ export function formatPrompt(template: string, context: Record<string, any>): st
  * Helper function to format conditional sections in prompts
  */
 export function formatConditionalPrompt(template: string, context: Record<string, any>): string {
-  // Handle {{#if condition}} blocks
-  let formatted = template.replace(/\{\{#if (\w+)\}\}(.*?)\{\{\/if\}\}/gs, (match, condition, content) => {
+  // Handle {{#if condition}} blocks with multiline support
+  let formatted = template.replace(/\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, condition, content) => {
     return context[condition] ? content : '';
   });
   

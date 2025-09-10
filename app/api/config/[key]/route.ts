@@ -128,10 +128,11 @@ async function getConfigValue(key: string): Promise<{
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse<ConfigResponse>> {
+  const resolvedParams = await params;
   try {
-    const key = decodeURIComponent(params.key);
+    const key = decodeURIComponent(resolvedParams.key);
     
     // Validate configuration key
     const keyValidation = validateConfigKey(key);
@@ -159,7 +160,7 @@ export async function GET(
     console.error('Failed to get configuration value:', error);
     
     return NextResponse.json({
-      key: params.key || 'unknown',
+      key: resolvedParams.key || 'unknown',
       value: undefined,
       source: 'default',
       success: false,
@@ -174,8 +175,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse> {
+  const resolvedParams = await params;
+  
   // TODO: Add authentication middleware
   // TODO: Add authorization checks for admin users
   // TODO: Implement configuration updates to Azure App Configuration

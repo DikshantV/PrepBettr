@@ -361,8 +361,11 @@ export class VoiceTelemetryService {
    * Generate session summary for analytics
    */
   private generateSessionSummary(sessionId: string): void {
-    const summary = {
-      sessionId,
+    const properties = {
+      sessionId
+    };
+    
+    const measurements = {
       duration: this.sessionMetrics.sessionDuration || 0,
       messageCount: this.sessionMetrics.messageCount || 0,
       errorCount: this.sessionMetrics.errorCount || 0,
@@ -373,9 +376,9 @@ export class VoiceTelemetryService {
       averageTtsLatency: this.audioMetrics.ttsLatency || 0
     };
 
-    this.logEvent('voice_session_summary', summary, summary);
+    this.logEvent('voice_session_summary', properties, measurements);
 
-    logger.info('Voice session summary', summary);
+    logger.info('Voice session summary', { ...properties, ...measurements });
   }
 
   /**
