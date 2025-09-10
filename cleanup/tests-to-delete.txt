@@ -1,0 +1,79 @@
+# Testing Assets and CI/CD Cleanup Analysis
+
+## Test Files Analysis
+- Total test files found: 36
+- Jest configuration appears functional
+- Test structure seems organized and maintained
+
+## GitHub Workflows Analysis (Keep All)
+The GitHub workflows found are all production-critical:
+
+### Production Deployment & CI/CD (KEEP)
+- ci-comprehensive.yml - Main CI/CD pipeline
+- production-deployment.yml - Production deployment automation  
+- azure-app-service-deploy.yml - Azure App Service deployment
+- azure-optimization-deployment.yml - Azure resource optimization
+- azure-static-web-apps-jolly-cliff-0244e530f.yml - Static web app deployment
+
+### Configuration Management (KEEP)  
+- config-apply-changes.yml - Configuration change automation
+- config-change-proposal.yml - Configuration proposal workflow
+- config-rollback.yml - Configuration rollback procedures
+
+### Testing Workflows (KEEP)
+- hydration-tests.yml - Next.js hydration testing
+
+## Test Fixtures and Mocks (Review Required)
+Located in:
+- tests/mocks/ - Contains MSW handlers and server setup (KEEP - actively used)
+- tests/setup/ - Contains test setup and performance baselines (KEEP - actively used)
+- tests/utils/ - Contains test utilities and fixtures (KEEP - actively used)
+
+## Test Reports and Coverage (Safe to Delete)
+The following directories can be cleaned up:
+- ./test-reports/ - Old test report artifacts
+- ./coverage/ - Coverage reports (regenerated on each run)
+- ./playwright-report/ - Playwright HTML reports (regenerated)
+- ./test-results/ - Playwright test results (regenerated)
+
+## Legacy Test Files (Review Individual Files)
+Files to review for potential removal:
+- test-voice-interview.js (root level) - Legacy test file, check if superseded
+- test_responsive_verification.js (root level) - Legacy responsive test
+- lighthouse-audit.js (root level) - Performance audit script
+- Any unused test configuration files
+
+## Test Dependencies Analysis
+Based on deps analysis:
+- @testing-library/react-hooks - REMOVE (unused)
+- @firebase/rules-unit-testing - REMOVE (unused) 
+- supertest - REMOVE (unused in current test suite)
+- @types/jest - REMOVE (using @jest/globals instead)
+
+Keep:
+- jest-environment-jsdom - Used for client-side component tests
+- jest-environment-node - Used for server-side tests
+- @playwright/test - Used for E2E tests
+- msw - Used for API mocking
+
+## CI/CD Recommendations
+1. Keep ALL GitHub workflows - they are production-critical
+2. Clean up test report directories (regenerated on each run)
+3. Remove legacy test files at root level
+4. Update test dependencies as identified in deps analysis
+
+## Files Safe to Delete
+- ./test-reports/ (entire directory)  
+- ./coverage/ (coverage reports - regenerated)
+- ./playwright-report/ (HTML reports - regenerated)
+- ./test-results/ (test results - regenerated)
+- test-voice-interview.js (root level legacy file)
+- test_responsive_verification.js (root level legacy file)
+- Any .tsbuildinfo files in test directories
+
+## Files to Keep
+- All files in tests/ directory structure
+- All GitHub workflow files (.github/workflows/*)
+- jest.config.ts and related config files
+- playwright.config.ts files
+- All test setup and utility files
