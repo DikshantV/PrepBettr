@@ -79,6 +79,7 @@ export const CONFIG_SCHEMA: Record<string, ConfigValidationRule> = {
   'features.autoApplyAzure': { required: false, type: 'boolean' },
   'features.portalIntegration': { required: false, type: 'boolean' },
   'features.voiceInterview': { required: false, type: 'boolean' },
+  'features.voiceInterviewV2': { required: false, type: 'boolean' },
   'features.premiumFeatures': { required: false, type: 'boolean' },
   'features.newUI': { required: false, type: 'boolean' },
   
@@ -124,6 +125,11 @@ export const CONFIG_DEFAULTS: Record<string, ConfigValue> = {
   },
   'features.voiceInterview': {
     value: true,
+    type: 'boolean',
+    metadata: { source: 'azure', version: '1.0.0', lastModified: new Date(), hash: '', syncToFirebase: true }
+  },
+  'features.voiceInterviewV2': {
+    value: true, // Default to Azure AI Foundry voice system
     type: 'boolean',
     metadata: { source: 'azure', version: '1.0.0', lastModified: new Date(), hash: '', syncToFirebase: true }
   },

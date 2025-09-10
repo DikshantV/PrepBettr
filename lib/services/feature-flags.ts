@@ -6,6 +6,7 @@ export interface FeatureFlags {
   autoApplyAzure: boolean;
   portalIntegration: boolean;
   voiceInterview: boolean;
+  voiceInterviewV2: boolean;
   premiumFeatures: boolean;
   newUI: boolean;
 }
@@ -16,6 +17,7 @@ export interface EnhancedFeatureFlags extends FeatureFlags {
     autoApplyAzure: boolean;
     portalIntegration: boolean;
     voiceInterview: boolean;
+    voiceInterviewV2: boolean;
     premiumFeatures: boolean;
     newUI: boolean;
   };
@@ -72,6 +74,7 @@ class FeatureFlagsService {
         autoApplyAzure: allConfigs['features.autoApplyAzure'] || false,
         portalIntegration: allConfigs['features.portalIntegration'] || false,
         voiceInterview: allConfigs['features.voiceInterview'] || false,
+        voiceInterviewV2: allConfigs['features.voiceInterviewV2'] || false,
         premiumFeatures: allConfigs['features.premiumFeatures'] || false,
         newUI: allConfigs['features.newUI'] || false
       };
@@ -84,12 +87,14 @@ class FeatureFlagsService {
         autoApplyAzure: globalFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
         portalIntegration: globalFlags.portalIntegration && rolloutStatus.portalIntegration,
         voiceInterview: globalFlags.voiceInterview && rolloutStatus.voiceInterview,
+        voiceInterviewV2: globalFlags.voiceInterviewV2 && rolloutStatus.voiceInterviewV2,
         premiumFeatures: globalFlags.premiumFeatures && rolloutStatus.premiumFeatures,
         newUI: globalFlags.newUI && rolloutStatus.newUI,
         rolloutStatus: {
           autoApplyAzure: rolloutStatus.autoApplyAzure || false,
           portalIntegration: rolloutStatus.portalIntegration || false,
           voiceInterview: rolloutStatus.voiceInterview || false,
+          voiceInterviewV2: rolloutStatus.voiceInterviewV2 || false,
           premiumFeatures: rolloutStatus.premiumFeatures || false,
           newUI: rolloutStatus.newUI || false
         },
@@ -102,12 +107,14 @@ class FeatureFlagsService {
         autoApplyAzure: false,
         portalIntegration: false,
         voiceInterview: false,
+        voiceInterviewV2: false,
         premiumFeatures: false,
         newUI: false,
         rolloutStatus: {
           autoApplyAzure: false,
           portalIntegration: false,
           voiceInterview: false,
+          voiceInterviewV2: false,
           premiumFeatures: false,
           newUI: false
         },
@@ -155,6 +162,7 @@ class FeatureFlagsService {
         autoApplyAzure: finalFlags.autoApplyAzure,
         portalIntegration: finalFlags.portalIntegration,
         voiceInterview: finalFlags.voiceInterview,
+        voiceInterviewV2: finalFlags.voiceInterviewV2,
         premiumFeatures: finalFlags.premiumFeatures,
         newUI: finalFlags.newUI
       },
