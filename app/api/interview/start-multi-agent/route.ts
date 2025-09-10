@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InterviewWorkflow } from '@/src/lib/azure-ai-foundry/workflows/interview-workflow';
-import type { InterviewConfig } from '@/src/lib/azure-ai-foundry/workflows/workflow-types';
+import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
+import type { InterviewConfig } from '@/lib/azure-ai-foundry/workflows/workflow-types';
 import { nanoid } from 'nanoid';
 
 const workflow = new InterviewWorkflow();

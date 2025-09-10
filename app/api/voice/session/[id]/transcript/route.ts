@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getVoiceLiveClient } from '@/src/lib/azure-ai-foundry/voice/voice-live-client';
+import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
 
 /**
  * Transcript entry structure

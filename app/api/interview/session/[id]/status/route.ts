@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InterviewWorkflow } from '@/src/lib/azure-ai-foundry/workflows/interview-workflow';
+import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
 
 const workflow = new InterviewWorkflow();
 
