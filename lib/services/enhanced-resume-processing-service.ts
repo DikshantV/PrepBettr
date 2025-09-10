@@ -342,24 +342,24 @@ class EnhancedResumeProcessingService {
     try {
       console.log('🤔 Generating interview questions...');
 
-      // Use the enhanced AI service for question generation
-      const { generateQuestions } = await import('@/lib/ai');
+      // Use the unified Azure AI service for question generation
+      const { azureAI } = await import('@/lib/ai');
       
-      // Convert data to the format expected by generateQuestions
-      const resumeInfo = this.convertToResumeInfo(extractedData);
-      const result = await generateQuestions(resumeInfo);
+      // Convert data to the format expected by azureAI
+      const resumeData = this.convertToResumeInfo(extractedData);
+      const result = await azureAI.generateQuestions(resumeData, {
+        maxQuestions,
+        interviewType: 'mixed'
+      });
       
       if (result.success && result.data) {
-        const questions = Array.isArray(result.data) 
-          ? result.data.slice(0, maxQuestions)
-          : [result.data];
-        
-        console.log(`✅ Generated ${questions.length} interview questions`);
-        return questions;
+        console.log(`✅ Generated ${result.data.length} interview questions via ${result.provider}`);
+        return result.data;
       }
 
       // Return default questions if generation fails
-      return this.getDefaultQuestions();
+      console.warn('⚠️ Question generation failed, using defaults:', result.error);
+      return result.data || this.getDefaultQuestions();
 
     } catch (error) {
       console.warn('⚠️ Question generation failed:', error);
@@ -450,10 +450,13 @@ class EnhancedResumeProcessingService {
       throw new Error(`Unsupported file type for OpenAI extraction: ${mimeType}`);
     }
 
-    // Use AI service for structured extraction
+    // Use unified Azure AI service for structured extraction
     const prompt = this.getExtractionPrompt(text);
-    const { tailorResume } = await import('@/lib/ai');
-    const result = await tailorResume(text, prompt);
+    const { azureAI } = await import('@/lib/ai');
+    const result = await azureAI.generateCompletion(prompt, {
+      temperature: 0.1,
+      maxTokens: 4000
+    });
     
     if (result.success && result.data) {
       try {
