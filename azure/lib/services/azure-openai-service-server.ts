@@ -1,5 +1,7 @@
 import { MigrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { fetchAzureSecrets } from '../azure-config';
+import { templateEngine } from '@/lib/utils/template-engine';
+import path from 'path';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -106,9 +108,88 @@ export class AzureOpenAIServiceServer {
   }
 
   /**
-   * Build system context from candidate profile
+   * Build system context from candidate profile using template engine
    */
   private buildSystemContext(): string {
+    try {
+      // Load the interview prompts template
+      const templatePath = path.resolve(process.cwd(), 'config/templates/interview-prompts.yaml');
+      const template = templateEngine.loadTemplate(templatePath);
+      
+      // Build context for template rendering
+      const context = {
+        candidate: {
+          name: this.candidateProfile.currentRole || 'candidate'
+        },
+        role: this.candidateProfile.currentRole,
+        company: this.interviewContext.company,
+        interview_type: this.interviewContext.type,
+        experience_level: this.candidateProfile.yearsExperience,
+        tech_stack: this.candidateProfile.techStack ? this.candidateProfile.techStack.split(',').map(s => s.trim()) : [],
+        custom_instructions: this.buildCustomInstructions(),
+        sample_questions: this.getSampleQuestions(),
+        duration: '45-60 minutes',
+        tone: 'professional and encouraging'
+      };
+      
+      return templateEngine.renderFromConfig(template, context);
+    } catch (error) {
+      console.warn('⚠️ Template engine failed, falling back to legacy prompt building:', error);
+      return this.buildSystemContextLegacy();
+    }
+  }
+
+  /**
+   * Build custom instructions based on interview context
+   */
+  private buildCustomInstructions(): string {
+    const { currentQuestionCount, maxQuestions } = this.interviewContext;
+    return [
+      'Preliminary questions have already been collected - do NOT ask them again',
+      `You are currently on interview question ${(currentQuestionCount || 0) + 1} of ${maxQuestions}`,
+      'Continue with interview questions based on the candidate\'s profile',
+      `After question ${maxQuestions}, conclude the interview and thank the candidate`,
+      `Do NOT exceed ${maxQuestions} interview questions`,
+      'Keep your responses under 100 words and ask one question at a time'
+    ].join('\n');
+  }
+
+  /**
+   * Get sample questions based on interview type
+   */
+  private getSampleQuestions(): string[] {
+    const { type } = this.interviewContext;
+    const { techStack, yearsExperience, currentRole } = this.candidateProfile;
+    
+    switch (type) {
+      case 'technical':
+        return [
+          `Tell me about a challenging technical problem you've solved using ${techStack}`,
+          'How do you approach debugging complex issues?',
+          'Describe your experience with system design and scalability',
+          'What are your thoughts on code review and best practices?'
+        ];
+      case 'behavioral':
+        return [
+          'Tell me about a time when you had to work with a difficult team member',
+          'Describe a situation where you had to learn a new technology quickly',
+          'How do you handle conflicting priorities and tight deadlines?',
+          'Give me an example of when you mentored or helped a colleague'
+        ];
+      default:
+        return [
+          'What interests you most about this position?',
+          `How has your experience in ${currentRole} prepared you for this role?`,
+          'What are your career goals for the next few years?',
+          'What motivates you in your work?'
+        ];
+    }
+  }
+
+  /**
+   * Legacy system context builder (fallback)
+   */
+  private buildSystemContextLegacy(): string {
     const { currentRole, techStack, yearsExperience, keySkills } = this.candidateProfile;
     const { type, position, company, difficulty, currentQuestionCount, maxQuestions } = this.interviewContext;
     
@@ -377,14 +458,62 @@ export class AzureOpenAIServiceServer {
   }
 
   /**
-   * Generate a domain-specific interview question based on context and conversation history
+   * Generate a domain-specific interview question using template engine
    */
   async generateInterviewQuestion(): Promise<string> {
     if (!this.isInitialized || !this.client) {
       throw new Error('Azure OpenAI Service not initialized');
     }
 
-    // Build the appropriate system prompt based on interview type and profile
+    try {
+      // Load the question generation template
+      const templatePath = path.resolve(process.cwd(), 'config/templates/question-templates.yaml');
+      const template = templateEngine.loadTemplate(templatePath);
+      
+      // Build context for template rendering
+      const context = {
+        role: this.candidateProfile.currentRole || 'Software Developer',
+        category: this.interviewContext.type || 'general',
+        difficulty: this.getDifficultyLevel(),
+        count: 1,
+        tech_stack: this.candidateProfile.techStack ? this.candidateProfile.techStack.split(',').map(s => s.trim()) : [],
+        experience_level: this.candidateProfile.yearsExperience || 'mid-level',
+        custom_requirements: this.interviewContext.position ? `Focus on requirements for ${this.interviewContext.position} position` : undefined
+      };
+      
+      const questionPrompt = templateEngine.renderFromConfig(template, context);
+      
+      const completion = await this.client.chat.completions.create({
+        model: this.modelDeployment,
+        messages: [{ role: 'user', content: questionPrompt }],
+        temperature: 0.8,
+        max_tokens: 100,
+        top_p: 0.9,
+      });
+
+      const question = completion.choices[0]?.message?.content?.trim() || this.getFallbackQuestion();
+      return question;
+    } catch (error) {
+      console.warn('⚠️ Template-based question generation failed, using legacy method:', error);
+      return this.generateInterviewQuestionLegacy();
+    }
+  }
+
+  /**
+   * Get difficulty level mapping
+   */
+  private getDifficultyLevel(): string {
+    const experience = parseInt(this.candidateProfile.yearsExperience || '3');
+    if (experience <= 2) return 'junior';
+    if (experience <= 5) return 'mid';
+    if (experience <= 10) return 'senior';
+    return 'principal';
+  }
+
+  /**
+   * Legacy question generation method (fallback)
+   */
+  private async generateInterviewQuestionLegacy(): Promise<string> {
     const { type, difficulty, position } = this.interviewContext;
     const { currentRole, techStack, yearsExperience, keySkills } = this.candidateProfile;
     

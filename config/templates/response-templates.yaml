@@ -1,0 +1,213 @@
+name: "response-templates"
+description: "Templates for structuring AI responses across different contexts"
+version: "1.0.0"
+metadata:
+  response_types: ["analysis", "feedback", "questions", "summary", "recommendation"]
+  formats: ["structured", "conversational", "bullet_points", "json"]
+
+variables:
+  default_tone: "professional and helpful"
+  max_length: "500 words"
+  include_confidence: true
+
+template: |
+  {{#if response_type === "analysis"}}
+  **{{title | default("Analysis Results")}}**
+
+  {{#if summary}}
+  **Summary:** {{summary}}
+  {{/if}}
+
+  {{#if key_findings}}
+  **Key Findings:**
+  {{#each key_findings}}
+  • {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if detailed_analysis}}
+  **Detailed Analysis:**
+  {{detailed_analysis}}
+  {{/if}}
+
+  {{#if recommendations && recommendations.length > 0}}
+  **Recommendations:**
+  {{#each recommendations}}
+  {{@index | increment}}. {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if confidence_score && include_confidence}}
+  **Confidence Level:** {{confidence_score}}/100
+  {{/if}}
+  {{/if}}
+
+  {{#if response_type === "feedback"}}
+  **{{title | default("Interview Feedback")}}**
+
+  {{#if candidate_name}}
+  **Candidate:** {{candidate_name}}
+  {{/if}}
+  {{#if position}}
+  **Position:** {{position}}
+  {{/if}}
+  {{#if interview_date}}
+  **Date:** {{dateFormat(interview_date)}}
+  {{/if}}
+
+  **Overall Assessment:**
+  {{overall_assessment | default("Comprehensive evaluation completed.")}}
+
+  {{#if strengths && strengths.length > 0}}
+  **Strengths:**
+  {{#each strengths}}
+  ✓ {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if areas_for_improvement && areas_for_improvement.length > 0}}
+  **Areas for Improvement:**
+  {{#each areas_for_improvement}}
+  • {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if technical_assessment}}
+  **Technical Skills Assessment:**
+  {{technical_assessment}}
+  {{/if}}
+
+  {{#if behavioral_assessment}}
+  **Behavioral Assessment:**
+  {{behavioral_assessment}}
+  {{/if}}
+
+  {{#if next_steps}}
+  **Recommended Next Steps:**
+  {{next_steps}}
+  {{/if}}
+
+  {{#if overall_score}}
+  **Overall Score:** {{overall_score}}/10
+  {{/if}}
+  {{/if}}
+
+  {{#if response_type === "questions"}}
+  **{{title | default("Interview Questions")}}**
+
+  {{#if context}}
+  **Context:** {{context}}
+  {{/if}}
+
+  {{#each questions}}
+  **Question {{@index | increment}}:** {{question}}
+
+  {{#if expected_answer}}
+  *Key Points to Look For:* {{expected_answer}}
+  {{/if}}
+
+  {{#if difficulty_level}}
+  *Difficulty:* {{difficulty_level}}/5
+  {{/if}}
+
+  {{#if follow_up_questions && follow_up_questions.length > 0}}
+  *Follow-up Questions:*
+  {{#each follow_up_questions}}
+  - {{@value}}
+  {{/each}}
+  {{/if}}
+
+  ---
+  {{/each}}
+
+  {{#if additional_notes}}
+  **Additional Notes:**
+  {{additional_notes}}
+  {{/if}}
+  {{/if}}
+
+  {{#if response_type === "summary"}}
+  **{{title | default("Summary")}}**
+
+  {{#if executive_summary}}
+  **Executive Summary:**
+  {{executive_summary}}
+  {{/if}}
+
+  {{#if key_metrics && key_metrics.length > 0}}
+  **Key Metrics:**
+  {{#each key_metrics}}
+  - **{{name}}:** {{value}} {{#if unit}}{{unit}}{{/if}}
+  {{/each}}
+  {{/if}}
+
+  {{#if highlights && highlights.length > 0}}
+  **Highlights:**
+  {{#each highlights}}
+  • {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if timeline && timeline.length > 0}}
+  **Timeline:**
+  {{#each timeline}}
+  - **{{date}}:** {{event}}
+  {{/each}}
+  {{/if}}
+
+  {{#if conclusion}}
+  **Conclusion:**
+  {{conclusion}}
+  {{/if}}
+  {{/if}}
+
+  {{#if response_type === "recommendation"}}
+  **{{title | default("Recommendations")}}**
+
+  {{#if context}}
+  **Context:** {{context}}
+  {{/if}}
+
+  {{#if primary_recommendation}}
+  **Primary Recommendation:**
+  {{primary_recommendation}}
+  {{/if}}
+
+  {{#if alternative_options && alternative_options.length > 0}}
+  **Alternative Options:**
+  {{#each alternative_options}}
+  {{@index | increment}}. {{option}}
+     *Pros:* {{pros}}
+     *Cons:* {{cons}}
+     {{#if confidence}}*Confidence:* {{confidence}}/100{{/if}}
+  {{/each}}
+  {{/if}}
+
+  {{#if implementation_steps && implementation_steps.length > 0}}
+  **Implementation Steps:**
+  {{#each implementation_steps}}
+  {{@index | increment}}. {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if risks && risks.length > 0}}
+  **Potential Risks:**
+  {{#each risks}}
+  ⚠️ {{@value}}
+  {{/each}}
+  {{/if}}
+
+  {{#if expected_outcomes}}
+  **Expected Outcomes:**
+  {{expected_outcomes}}
+  {{/if}}
+  {{/if}}
+
+  {{#if custom_format}}
+  {{custom_format}}
+  {{/if}}
+
+  {{#if metadata.timestamp}}
+  ---
+  *Generated on {{dateFormat(metadata.timestamp)}}*
+  {{/if}}
