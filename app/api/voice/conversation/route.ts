@@ -3,6 +3,7 @@ import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-
 import { azureOpenAIServiceServer } from '@/azure/lib/services/azure-openai-service-server';
 import { logger } from '@/lib/utils/logger';
 import { InterviewContext } from '@/lib/voice/azure-adapters';
+import { ErrorCode, createErrorResponse, getHTTPStatusFromErrorCode } from '@/lib/utils/structured-errors';
 
 interface ConversationRequest {
   action: 'start' | 'process' | 'summary';
@@ -29,10 +30,14 @@ export async function POST(request: NextRequest) {
         if (!initialized) {
           console.error('❌ [CONVERSATION API] Failed to initialize Azure OpenAI service');
           logger.error('Failed to initialize Azure OpenAI service');
-          return NextResponse.json(
-            { error: 'AI service unavailable' },
-            { status: 503 }
-          );
+          const err = createErrorResponse(ErrorCode.SERVICE_UNAVAILABLE, { service: 'azure-openai' }, 'AI service unavailable');
+          const status = getHTTPStatusFromErrorCode(err.error.code);
+          const res = NextResponse.json(err, { status });
+          if (err.error.retryable && err.error.retryAfter) {
+            res.headers.set('Retry-After', String(err.error.retryAfter));
+            res.headers.set('X-Retry-After', String(err.error.retryAfter));
+          }
+          return res;
         }
         console.log('✅ [CONVERSATION API] Azure OpenAI service initialized successfully');
       }
@@ -41,10 +46,12 @@ export async function POST(request: NextRequest) {
         case 'start': {
           const { interviewContext } = body;
           if (!interviewContext) {
-            return NextResponse.json(
-              { error: 'Interview context required for start action' },
-              { status: 400 }
+            const err = createErrorResponse(
+              ErrorCode.MISSING_REQUIRED_FIELD,
+              { field: 'interviewContext' },
+              'Interview context required for start action'
             );
+            return NextResponse.json(err, { status: getHTTPStatusFromErrorCode(err.error.code) });
           }
 
           // Set interview context in the service
@@ -80,10 +87,12 @@ export async function POST(request: NextRequest) {
           const { userTranscript } = body;
           if (!userTranscript || !userTranscript.trim()) {
             console.warn('📝 [CONVERSATION API] Empty transcript received');
-            return NextResponse.json(
-              { error: 'User transcript required for process action' },
-              { status: 400 }
+            const err = createErrorResponse(
+              ErrorCode.MISSING_REQUIRED_FIELD,
+              { field: 'userTranscript' },
+              'User transcript required for process action'
             );
+            return NextResponse.json(err, { status: getHTTPStatusFromErrorCode(err.error.code) });
           }
 
           console.log('🧪 [CONVERSATION API] Processing user transcript', {
@@ -145,41 +154,39 @@ export async function POST(request: NextRequest) {
         }
 
         default:
-          return NextResponse.json(
-            { error: `Invalid action: ${action}` },
-            { status: 400 }
+          const err = createErrorResponse(
+            ErrorCode.INVALID_PARAMETER,
+            { action },
+            `Invalid action: ${action}`
           );
+          return NextResponse.json(err, { status: getHTTPStatusFromErrorCode(err.error.code) });
       }
 
     } catch (error) {
       logger.error('Conversation processing failed', error instanceof Error ? error : new Error(String(error)));
 
-      // Provide helpful error responses
-      if (error instanceof Error) {
-        if (error.message.includes('quota') || error.message.includes('rate limit')) {
-          return NextResponse.json(
-            { error: 'AI service quota exceeded. Please try again later.' },
-            { status: 429 }
-          );
-        }
-        if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
-          return NextResponse.json(
-            { error: 'AI service authentication failed' },
-            { status: 401 }
-          );
-        }
-        if (error.message.includes('timeout')) {
-          return NextResponse.json(
-            { error: 'AI service timeout. Please try again.' },
-            { status: 408 }
-          );
-        }
+      // Provide helpful structured error responses
+      let code: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+      const message = error instanceof Error ? error.message.toLowerCase() : '';
+
+      if (message.includes('quota') || message.includes('rate limit')) {
+        code = ErrorCode.RATE_LIMIT_EXCEEDED;
+      } else if (message.includes('authentication') || message.includes('unauthorized')) {
+        code = ErrorCode.AUTH_TOKEN_INVALID;
+      } else if (message.includes('timeout')) {
+        code = ErrorCode.SERVICE_TIMEOUT;
+      } else if (message.includes('azure') || message.includes('openai')) {
+        code = ErrorCode.AZURE_OPENAI_ERROR;
       }
 
-      return NextResponse.json(
-        { error: 'Internal AI processing error' },
-        { status: 500 }
-      );
+      const err = createErrorResponse(code, { context: 'voice.conversation' });
+      const status = getHTTPStatusFromErrorCode(code);
+      const res = NextResponse.json(err, { status });
+      if (err.error.retryable && err.error.retryAfter) {
+        res.headers.set('Retry-After', String(err.error.retryAfter));
+        res.headers.set('X-Retry-After', String(err.error.retryAfter));
+      }
+      return res;
     }
 }
 
