@@ -1,0 +1,209 @@
+{
+  "analysis_metadata": {
+    "generated_at": "2025-09-10T10:25:41Z",
+    "total_prod_dependencies": 70,
+    "total_dev_dependencies": 35,
+    "cleanup_tools_added": 5
+  },
+  "safe_to_remove": {
+    "unused_production_dependencies": [
+      {
+        "name": "@axe-core/playwright",
+        "reason": "Accessibility testing tool - only used in tests but installed as prod dependency",
+        "should_be": "devDependency",
+        "action": "move_to_dev_dependencies"
+      },
+      {
+        "name": "@types/uuid",
+        "reason": "TypeScript types should be dev dependency",
+        "action": "move_to_dev_dependencies"
+      },
+      {
+        "name": "axios",
+        "reason": "HTTP client - marked as unused by depcheck but may have implicit usage",
+        "action": "review_usage_before_removal",
+        "risk": "medium"
+      },
+      {
+        "name": "uuid",
+        "reason": "Used in limited places - could be replaced with nanoid which is already used",
+        "action": "consider_consolidation"
+      }
+    ],
+    "unused_dev_dependencies": [
+      {
+        "name": "@firebase/rules-unit-testing",
+        "reason": "Firebase rules testing - not currently used in test suite",
+        "action": "remove"
+      },
+      {
+        "name": "@tailwindcss/postcss",
+        "reason": "PostCSS plugin for Tailwind - may not be needed with current Tailwind setup",
+        "action": "review_tailwind_config"
+      },
+      {
+        "name": "@testing-library/react-hooks",
+        "reason": "React hooks testing library - appears unused",
+        "action": "remove"
+      },
+      {
+        "name": "@types/jest",
+        "reason": "Jest types - appears unused, using @jest/globals instead",
+        "action": "remove"
+      },
+      {
+        "name": "depcheck",
+        "reason": "Dependency checker tool - added for cleanup, can be removed after",
+        "action": "remove_after_cleanup"
+      },
+      {
+        "name": "eslint",
+        "reason": "ESLint marked as unused but should be kept for linting",
+        "action": "keep",
+        "note": "False positive from depcheck"
+      },
+      {
+        "name": "jest-environment-jsdom",
+        "reason": "JSDOM test environment - used in Jest config",
+        "action": "keep"
+      },
+      {
+        "name": "jest-environment-node", 
+        "reason": "Node test environment - used in Jest config",
+        "action": "keep"
+      },
+      {
+        "name": "knip",
+        "reason": "Dependency analysis tool - added for cleanup, can be removed after",
+        "action": "remove_after_cleanup"
+      },
+      {
+        "name": "npm-check",
+        "reason": "Dependency analysis tool - added for cleanup, can be removed after",
+        "action": "remove_after_cleanup"
+      },
+      {
+        "name": "supertest",
+        "reason": "API testing library - appears unused in current test suite",
+        "action": "remove"
+      },
+      {
+        "name": "tailwindcss",
+        "reason": "Tailwind CSS - actually used, depcheck false positive",
+        "action": "keep"
+      },
+      {
+        "name": "tailwindcss-animate",
+        "reason": "Tailwind animations - used in UI components",
+        "action": "keep"
+      },
+      {
+        "name": "ts-node",
+        "reason": "TypeScript execution - used in scripts and config",
+        "action": "keep"
+      },
+      {
+        "name": "ts-prune",
+        "reason": "TypeScript pruning tool - added for cleanup, can be removed after",
+        "action": "remove_after_cleanup"
+      }
+    ]
+  },
+  "missing_dependencies": {
+    "should_add": [
+      {
+        "name": "@jest/types",
+        "type": "devDependency",
+        "reason": "Used in jest.config.ts but not installed"
+      },
+      {
+        "name": "whatwg-fetch",
+        "type": "devDependency", 
+        "reason": "Used in test setup for fetch polyfill"
+      },
+      {
+        "name": "jsonwebtoken",
+        "type": "devDependency",
+        "reason": "Used in security tests"
+      },
+      {
+        "name": "@faker-js/faker",
+        "type": "devDependency",
+        "reason": "Used in integration and security tests"
+      },
+      {
+        "name": "nanoid",
+        "type": "dependency",
+        "reason": "Used in API routes for ID generation"
+      }
+    ],
+    "optional_additions": [
+      {
+        "name": "k6",
+        "type": "devDependency",
+        "reason": "Load testing tool - only if load testing is desired",
+        "priority": "low"
+      },
+      {
+        "name": "@extractus/article-extractor",
+        "type": "dependency",
+        "reason": "Used in resume URL extraction - only if this feature is needed",
+        "priority": "medium"
+      },
+      {
+        "name": "ioredis",
+        "type": "dependency", 
+        "reason": "Redis client - only if Redis caching is implemented",
+        "priority": "low"
+      },
+      {
+        "name": "@azure/ai-agents",
+        "type": "dependency",
+        "reason": "Azure AI Agents SDK - needed for AI Foundry integration",
+        "priority": "high"
+      },
+      {
+        "name": "@azure/ai-document-intelligence",
+        "type": "dependency",
+        "reason": "Azure Document Intelligence SDK - needed for enhanced resume processing",
+        "priority": "high"
+      },
+      {
+        "name": "@testing-library/react",
+        "type": "devDependency",
+        "reason": "React testing library - used in voice agent tests",
+        "priority": "medium"
+      }
+    ]
+  },
+  "consolidation_opportunities": [
+    {
+      "current": ["uuid", "nanoid"],
+      "recommendation": "Use only nanoid",
+      "reason": "Both serve similar purpose, nanoid is more modern and smaller"
+    },
+    {
+      "current": ["@types/jest", "@jest/globals"],
+      "recommendation": "Use only @jest/globals", 
+      "reason": "@jest/globals provides both runtime and types"
+    }
+  ],
+  "cleanup_recommendations": {
+    "immediate_actions": [
+      "Remove cleanup tools: depcheck, knip, npm-check, ts-prune",
+      "Remove unused test dependencies: @firebase/rules-unit-testing, @testing-library/react-hooks, @types/jest, supertest",
+      "Move @axe-core/playwright and @types/uuid to devDependencies",
+      "Add missing required dependencies: @jest/types, whatwg-fetch, jsonwebtoken, @faker-js/faker, nanoid"
+    ],
+    "review_required": [
+      "axios - verify if still needed or can be removed",
+      "@tailwindcss/postcss - check if required for current Tailwind v4 setup",
+      "Azure AI packages - add only if Azure AI Foundry features are being used"
+    ]
+  },
+  "estimated_size_reduction": {
+    "packages_to_remove": 8,
+    "estimated_node_modules_reduction": "50-100MB",
+    "bundle_size_impact": "minimal - mostly dev dependencies"
+  }
+}
