@@ -70,7 +70,6 @@ npm run test:voice-flow      # Voice interview tests
 ## Documentation
 
 - See `WARP.md` for comprehensive development guidelines
-- Detailed architecture docs in `docs/archive/README-detailed.md`
 - API documentation in individual route files
 
 ## License
