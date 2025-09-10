@@ -7,6 +7,7 @@
  */
 
 import { azureOpenAIService } from '@/lib/services/azure-openai-service';
+import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { enhancedAzureOpenAIService } from '@/lib/services/azure-openai-enhanced';
 import { AIProvider, ResumeInfo } from './index';
 import { retryWithExponentialBackoff, RetryOptions } from '@/lib/utils/retry-with-backoff';

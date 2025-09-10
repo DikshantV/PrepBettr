@@ -345,6 +345,15 @@ export class UnifiedAuth {
           errorCode: AuthErrorCode.SERVICE_UNAVAILABLE
         };
       }
+      
+      // Handle the specific "kid" claim error (expired token)
+      if (error.code === 'auth/argument-error' && error.message.includes('kid')) {
+        return {
+          valid: false,
+          error: 'Token has expired or is invalid. Please refresh your authentication.',
+          errorCode: AuthErrorCode.EXPIRED_TOKEN
+        };
+      }
 
       return {
         valid: false,

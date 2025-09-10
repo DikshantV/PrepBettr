@@ -279,7 +279,7 @@ async function calculateJobRelevancy(jobListing, userProfile) {
         `;
 
         const completion = await client.chat.completions.create({
-            model: 'gpt-35-turbo', // Using gpt-35-turbo for quick relevancy scoring
+            model: 'gpt-4o', // Using gpt-35-turbo for quick relevancy scoring
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.1,
             max_tokens: 50

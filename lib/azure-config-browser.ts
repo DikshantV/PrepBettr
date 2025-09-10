@@ -34,7 +34,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIKey: process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY || '',
       azureOpenAIEndpoint: process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT || '',
       azureOpenAIDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o',
-      azureOpenAIGpt35Deployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      azureOpenAIGpt35Deployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
       azureOpenAIGpt4oDeployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o',
       azureAppConfigConnectionString: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_CONNECTION_STRING,
       azureAppConfigEndpoint: process.env.NEXT_PUBLIC_AZURE_APP_CONFIG_ENDPOINT
@@ -67,7 +67,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureOpenAIKey: '',
       azureOpenAIEndpoint: '',
       azureOpenAIDeployment: 'gpt-4o',
-      azureOpenAIGpt35Deployment: 'gpt-35-turbo',
+      azureOpenAIGpt35Deployment: 'gpt-4o',
       azureOpenAIGpt4oDeployment: 'gpt-4o',
       azureAppConfigConnectionString: undefined,
       azureAppConfigEndpoint: undefined
@@ -98,7 +98,7 @@ export function getAzureConfig() {
     },
     deployments: {
       default: process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT,
-      gpt35Turbo: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',
+      gpt35Turbo: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
       gpt4o: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
     },
     appConfiguration: {

@@ -1,0 +1,1010 @@
+{
+  "timestamp": "2025-09-09T13:15:42.128Z",
+  "totalFiles": 26,
+  "totalMatches": 129,
+  "patterns": [
+    {
+      "pattern": "from ['\"]openai['\"]",
+      "type": "import",
+      "description": "Direct OpenAI SDK import"
+    },
+    {
+      "pattern": "import.*openai",
+      "type": "import",
+      "description": "OpenAI import variations"
+    },
+    {
+      "pattern": "from ['\"]@azure/openai['\"]",
+      "type": "import",
+      "description": "Azure OpenAI SDK import"
+    },
+    {
+      "pattern": "import.*@azure/openai",
+      "type": "import",
+      "description": "Azure OpenAI import variations"
+    },
+    {
+      "pattern": "new OpenAI\\(",
+      "type": "instantiation",
+      "description": "OpenAI client instantiation"
+    },
+    {
+      "pattern": "new OpenAIClient\\(",
+      "type": "instantiation",
+      "description": "Azure OpenAI client instantiation"
+    },
+    {
+      "pattern": "gpt-3\\.5",
+      "type": "model-string",
+      "description": "GPT-3.5 model references"
+    },
+    {
+      "pattern": "gpt-35-turbo",
+      "type": "model-string",
+      "description": "GPT-3.5 turbo model references"
+    },
+    {
+      "pattern": "gpt-4(?!o)",
+      "type": "model-string",
+      "description": "GPT-4 model references (not 4o)"
+    },
+    {
+      "pattern": "\\.chat\\.completions\\.create",
+      "type": "method-call",
+      "description": "Chat completion API calls"
+    },
+    {
+      "pattern": "\\.completions\\.create",
+      "type": "method-call",
+      "description": "Text completion API calls"
+    },
+    {
+      "pattern": "createChatCompletion",
+      "type": "method-call",
+      "description": "Legacy chat completion method"
+    },
+    {
+      "pattern": "createCompletion",
+      "type": "method-call",
+      "description": "Legacy completion method"
+    }
+  ],
+  "matches": [
+    {
+      "file": "app/api/voice/conversation/route.ts",
+      "line": 2,
+      "content": "import { azureOpenAIServiceServer } from '@/azure/lib/services/azure-openai-service-server';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 210,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 210,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 211,
+      "content": "model: 'gpt-35-turbo', // Using the deployment name",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 274,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 274,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 338,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/applicationWorker/index.js",
+      "line": 338,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/followUpWorker/index.js",
+      "line": 301,
+      "content": "const result = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/followUpWorker/index.js",
+      "line": 301,
+      "content": "const result = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/jobSearchWorker/index.js",
+      "line": 281,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/jobSearchWorker/index.js",
+      "line": 281,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/jobSearchWorker/index.js",
+      "line": 282,
+      "content": "model: 'gpt-35-turbo', // Using gpt-35-turbo for quick relevancy scoring",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/azure-config.ts",
+      "line": 13,
+      "content": "azureOpenAIGpt35Deployment?: string; // gpt-35-turbo deployment",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "azure/lib/azure-config.ts",
+      "line": 79,
+      "content": "azureOpenAIGpt35Deployment: azureOpenAIGpt35?.value || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/azure-config.ts",
+      "line": 101,
+      "content": "azureOpenAIGpt35Deployment: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/azure-config.ts",
+      "line": 167,
+      "content": "gpt35Turbo: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/compiled/azure-config.js",
+      "line": 55,
+      "content": "azureOpenAIGpt35Deployment: azureOpenAIGpt35?.value || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/compiled/azure-config.js",
+      "line": 75,
+      "content": "azureOpenAIGpt35Deployment: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/compiled/azure-config.js",
+      "line": 135,
+      "content": "gpt35Turbo: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 1,
+      "content": "import { AzureOpenAI } from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 297,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 297,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 438,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 438,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 481,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service-server.ts",
+      "line": 481,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.test.ts",
+      "line": 1,
+      "content": "import { AzureOpenAIService } from './azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 10,
+      "content": "import { AzureOpenAI } from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 318,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 318,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 467,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 467,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 514,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 514,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 547,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/lib/services/azure-openai-service.ts",
+      "line": 547,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "azure/test-voice-function.js",
+      "line": 20,
+      "content": "const testCompletion = await openaiClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "low"
+    },
+    {
+      "file": "azure/test-voice-function.js",
+      "line": 20,
+      "content": "const testCompletion = await openaiClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 6,
+      "content": "import { azureOpenAIService } from '@/lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 98,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 102,
+      "content": "expect(mockService.createCompletion).toHaveBeenCalledWith(",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 124,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 134,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 142,
+      "content": "mockService.createCompletion.mockRejectedValue(apiError);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 164,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 168,
+      "content": "expect(mockService.createCompletion).toHaveBeenCalledWith(",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 183,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 198,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 213,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 326,
+      "content": "it('should handle network errors in createCompletion', async () => {",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 328,
+      "content": "mockService.createCompletion.mockRejectedValue(networkError);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 340,
+      "content": "mockService.createCompletion.mockResolvedValue(malformedCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 369,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 373,
+      "content": "expect(mockService.createCompletion).toHaveBeenCalledWith(",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 387,
+      "content": "mockService.createCompletion.mockResolvedValue(mockCompletion as any);",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 391,
+      "content": "expect(mockService.createCompletion).toHaveBeenCalledWith(",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 403,
+      "content": "expect(mockService.createCompletion).not.toHaveBeenCalled();",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/__tests__/azureOpenAI.test.ts",
+      "line": 420,
+      "content": "expect(mockService.createCompletion).not.toHaveBeenCalled();",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/ai/azureOpenAI.ts",
+      "line": 9,
+      "content": "import { azureOpenAIService } from '@/lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/ai/azureOpenAI.ts",
+      "line": 10,
+      "content": "import { enhancedAzureOpenAIService } from '@/lib/services/azure-openai-enhanced';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/ai/azureOpenAI.ts",
+      "line": 105,
+      "content": "// Use enhanced service for efficient gpt-35-turbo scoring",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/ai/azureOpenAI.ts",
+      "line": 171,
+      "content": "// Use enhanced service for efficient gpt-35-turbo question generation",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/ai/azureOpenAI.ts",
+      "line": 201,
+      "content": "const completion = await azureOpenAIService.createCompletion(messages, {",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/azure-config-browser.ts",
+      "line": 10,
+      "content": "azureOpenAIGpt35Deployment?: string; // gpt-35-turbo deployment",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/azure-config-browser.ts",
+      "line": 37,
+      "content": "azureOpenAIGpt35Deployment: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/azure-config-browser.ts",
+      "line": 70,
+      "content": "azureOpenAIGpt35Deployment: 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/azure-config-browser.ts",
+      "line": 101,
+      "content": "gpt35Turbo: process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 4,
+      "content": "import { OpenAI, AzureOpenAI } from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 288,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 288,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 362,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 362,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 451,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 451,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 524,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 524,
+      "content": "const result = await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 619,
+      "content": "await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-ai-service.ts",
+      "line": 619,
+      "content": "await this.openAIClient.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 5,
+      "content": "* - gpt-35-turbo: Fast, cost-effective for simple tasks (relevancy scoring, basic Q&A)",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 9,
+      "content": "import OpenAI from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 32,
+      "content": "// Fast tasks - use gpt-35-turbo for efficiency",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 34,
+      "content": "deployment: 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 43,
+      "content": "deployment: 'gpt-35-turbo',",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 95,
+      "content": "{ name: 'gpt-35-turbo', deployment: this.secrets.azureOpenAIGpt35Deployment || 'gpt-35-turbo' },",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 154,
+      "content": "return await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 154,
+      "content": "return await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 202,
+      "content": "* Calculate relevancy score using gpt-35-turbo for efficiency",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/services/azure-openai-enhanced.ts",
+      "line": 262,
+      "content": "* Generate interview questions using gpt-35-turbo for efficiency",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "lib/services/azure-openai-service.test.ts",
+      "line": 1,
+      "content": "import { AzureOpenAIService } from './azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-service.test.ts",
+      "line": 2,
+      "content": "import OpenAI from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 1,
+      "content": "import OpenAI from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 69,
+      "content": "await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 69,
+      "content": "await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 99,
+      "content": "console.error('   4. Create a deployment (e.g., gpt-35-turbo, gpt-4)');",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 386,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 386,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 571,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 571,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 634,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 634,
+      "content": "const completion = await this.client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 682,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 682,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 721,
+      "content": "const completion = await this.createCompletion([",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 742,
+      "content": "async createCompletion(",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 765,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai-service.ts",
+      "line": 765,
+      "content": "return await this.client!.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai.ts",
+      "line": 1,
+      "content": "import OpenAI from 'openai';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/services/azure-openai.ts",
+      "line": 60,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/azure-openai.ts",
+      "line": 60,
+      "content": "const completion = await client.chat.completions.create({",
+      "type": "method-call",
+      "confidence": "medium"
+    },
+    {
+      "file": "lib/services/keyword-optimizer-service.ts",
+      "line": 2,
+      "content": "import { azureOpenAIService } from './azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "lib/utils/resume-parser.ts",
+      "line": 2,
+      "content": "import { azureOpenAIService } from '../services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "pages/api/upload-pdf.ts",
+      "line": 5,
+      "content": "import { azureOpenAIService } from '@/lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/check-azure-health.ts",
+      "line": 13,
+      "content": "import { azureOpenAIService } from '../lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/check-azure-health.ts",
+      "line": 94,
+      "content": "/^gpt-35-turbo[a-z0-9-]*$/i,",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 8,
+      "content": "* - Multi-deployment model access (gpt-35-turbo, gpt-4o)",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 14,
+      "content": "import { azureOpenAIService } from '../lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 15,
+      "content": "import { enhancedAzureOpenAIService } from '../lib/services/azure-openai-enhanced';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 162,
+      "content": "// Test relevancy calculation (should use gpt-35-turbo for efficiency)",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 175,
+      "content": "model: 'gpt-35-turbo (expected)'",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 228,
+      "content": "// Test question generation (should use gpt-35-turbo for efficiency)",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 245,
+      "content": "model: 'gpt-35-turbo (expected)'",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 279,
+      "content": "await this.runTest('Relevancy Calculation (gpt-35-turbo)', () => this.testRelevancyCalculation());",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/test-azure-openai-integration.ts",
+      "line": 282,
+      "content": "await this.runTest('Question Generation (gpt-35-turbo)', () => this.testQuestionGeneration());",
+      "type": "model-string",
+      "confidence": "high"
+    },
+    {
+      "file": "scripts/voice-system-test.ts",
+      "line": 9,
+      "content": "import { azureOpenAIService } from '../lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "tests/api/resume/tailor/api.test.ts",
+      "line": 4,
+      "content": "import { azureOpenAIService } from '@/lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "tests/azure-services-health.test.ts",
+      "line": 2,
+      "content": "import { azureOpenAIService } from '../lib/services/azure-openai-service';",
+      "type": "import",
+      "confidence": "high"
+    },
+    {
+      "file": "tests/azure-services-health.test.ts",
+      "line": 49,
+      "content": "/^gpt-35-turbo[a-z0-9-]*$/i, // GPT-3.5 Turbo variants",
+      "type": "model-string",
+      "confidence": "low"
+    },
+    {
+      "file": "tests/azure-services-health.test.ts",
+      "line": 212,
+      "content": "const azureOpenAI = await import('../lib/services/azure-openai-service');",
+      "type": "import",
+      "confidence": "medium"
+    }
+  ],
+  "filesSummary": {
+    "app/api/voice/conversation/route.ts": 1,
+    "azure/lib/services/azure-openai-service-server.ts": 7,
+    "azure/lib/services/azure-openai-service.test.ts": 1,
+    "azure/lib/services/azure-openai-service.ts": 9,
+    "tests/azure-services-health.test.ts": 3,
+    "tests/api/resume/tailor/api.test.ts": 1,
+    "scripts/voice-system-test.ts": 1,
+    "scripts/check-azure-health.ts": 2,
+    "scripts/test-azure-openai-integration.ts": 9,
+    "lib/utils/resume-parser.ts": 1,
+    "lib/ai/__tests__/azureOpenAI.test.ts": 20,
+    "lib/ai/azureOpenAI.ts": 5,
+    "lib/services/azure-openai-enhanced.ts": 10,
+    "lib/services/azure-ai-service.ts": 11,
+    "lib/services/azure-openai.ts": 3,
+    "lib/services/azure-openai-service.test.ts": 2,
+    "lib/services/azure-openai-service.ts": 16,
+    "lib/services/keyword-optimizer-service.ts": 1,
+    "pages/api/upload-pdf.ts": 1,
+    "azure/applicationWorker/index.js": 7,
+    "azure/lib/compiled/azure-config.js": 3,
+    "azure/lib/azure-config.ts": 4,
+    "azure/jobSearchWorker/index.js": 3,
+    "lib/azure-config-browser.ts": 4,
+    "azure/followUpWorker/index.js": 2,
+    "azure/test-voice-function.js": 2
+  },
+  "typesSummary": {
+    "import": 23,
+    "model-string": 32,
+    "method-call": 74
+  }
+}

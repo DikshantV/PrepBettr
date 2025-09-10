@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { MigrationOpenAIClient as OpenAI } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 
 // Environment variables for Azure OpenAI configuration
 const AZURE_OPENAI_KEY = process.env.AZURE_OPENAI_KEY;
@@ -11,7 +11,7 @@ let openAIClient: OpenAI | null = null;
 /**
  * Initialize and cache the Azure OpenAI client
  */
-function getOpenAIClient(): OpenAI {
+async function getOpenAIClient(): Promise<OpenAI> {
   if (openAIClient) {
     return openAIClient;
   }
@@ -28,14 +28,8 @@ function getOpenAIClient(): OpenAI {
   }
 
   // Create and cache the OpenAI client configured for Azure
-  openAIClient = new OpenAI({
-    apiKey: AZURE_OPENAI_KEY,
-    baseURL: `${AZURE_OPENAI_ENDPOINT}/openai/deployments/${AZURE_OPENAI_DEPLOYMENT}`,
-    defaultQuery: { 'api-version': '2024-02-15-preview' }, // Using stable API version
-    defaultHeaders: {
-      'api-key': AZURE_OPENAI_KEY,
-    },
-  });
+  openAIClient = new OpenAI();
+  await openAIClient.init(); // Initialize the migration client
 
   return openAIClient;
 }
@@ -55,7 +49,7 @@ function getOpenAIClient(): OpenAI {
  */
 export async function generateContent(prompt: string, temperature: number = 0.7): Promise<string> {
   try {
-    const client = getOpenAIClient();
+    const client = await getOpenAIClient();
     
     const completion = await client.chat.completions.create({
       model: AZURE_OPENAI_DEPLOYMENT!,

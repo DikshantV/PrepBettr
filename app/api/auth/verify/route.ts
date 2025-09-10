@@ -47,9 +47,24 @@ export async function GET(request: NextRequest) {
         hasUser: !!authResult.user,
         error: authResult.error
       });
+      
+      // Provide specific error responses for different failure types
+      const errorMessage = authResult.error || 'Invalid or expired token';
+      let statusCode = 401;
+      let shouldRefresh = false;
+      
+      // Check if this is a token expiration issue
+      if (errorMessage.includes('expired') || errorMessage.includes('kid')) {
+        shouldRefresh = true;
+      }
+      
       return NextResponse.json(
-        { error: `Invalid or expired token: ${authResult.error}` },
-        { status: 401 }
+        { 
+          error: errorMessage,
+          shouldRefresh,
+          code: 'TOKEN_VERIFICATION_FAILED'
+        },
+        { status: statusCode }
       );
     }
 

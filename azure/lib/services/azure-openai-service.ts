@@ -198,6 +198,20 @@ export class AzureOpenAIService {
   }
 
   /**
+   * Get the OpenAI client instance
+   * @returns The AzureOpenAI client instance or null if not initialized
+   */
+  async getClient(): Promise<AzureOpenAI | null> {
+    if (!this.isInitialized) {
+      const initialized = await this.initialize();
+      if (!initialized) {
+        return null;
+      }
+    }
+    return this.client;
+  }
+
+  /**
    * Start a new interview conversation
    */
   async startInterviewConversation(): Promise<GenerationResponse> {
