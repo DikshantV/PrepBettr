@@ -81,7 +81,6 @@ az functionapp config appsettings set \
     --resource-group $RESOURCE_GROUP \
     --settings \
     "APPINSIGHTS_INSTRUMENTATIONKEY=$APPINSIGHTS_KEY" \
-    "GOOGLE_AI_API_KEY=your-google-ai-api-key-here" \
     "AZURE_OPENAI_KEY=your-azure-openai-key-here" \
     "AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint-here"
 
@@ -96,8 +95,8 @@ func azure functionapp publish "$FUNCTION_APP_PREFIX-app"
 echo "✅ Deployment completed successfully!"
 echo ""
 echo "📝 Next steps:"
-echo "1. Update the Google AI API key in Azure Portal"
-echo "2. Configure Azure OpenAI credentials if using"
+echo "1. Update the Azure OpenAI API key in Azure Portal"
+echo "2. Configure Azure OpenAI credentials for AI processing"
 echo "3. Test the functions using the Azure Portal or HTTP requests"
 echo "4. Monitor function execution in Application Insights"
 echo ""
