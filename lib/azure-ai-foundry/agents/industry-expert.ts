@@ -1,20 +1,21 @@
 import { BaseAgent } from './base-agent';
-import { InterviewContext, Question } from '../types/agent-types';
+import { FoundryClientBase } from '../clients/foundry-client';
+import { FoundryConfig } from '../config/foundry-config';
+import { InterviewContext, Question, AgentMetadata } from '../types/agent-types';
 
 /**
  * IndustryExpert agent specializing in industry-specific knowledge and trends
- * Uses Llama-4 model for domain expertise and industry insights
+ * Uses specialized models for domain expertise and industry insights
  */
 export class IndustryExpert extends BaseAgent {
-  constructor() {
-    super({
-      agentId: 'industry-expert',
-      name: 'Industry Expert',
-      version: '1.0.0',
-      model: 'llama-4', // Specialized model for domain expertise
-      temperature: 0.6,
-      maxTokens: 2500,
-      systemInstructions: `You are an industry expert with deep knowledge across various sectors and business domains.
+  // Required BaseAgent interface properties
+  readonly id = 'industry-expert';
+  readonly name = 'Industry Expert';
+  readonly type = 'industry' as const;
+  
+  protected readonly modelName = 'llama-4';
+  
+  public readonly instructions = `You are an industry expert with deep knowledge across various sectors and business domains.
 
 EXPERTISE AREAS:
 - Technology trends and emerging technologies
@@ -46,8 +47,27 @@ INTERVIEW STYLE:
 - Focus on practical application of industry knowledge
 - Assess both current knowledge and learning agility
 
-Tailor questions to the specific industry and role level of the candidate.`
-    });
+Tailor questions to the specific industry and role level of the candidate.`;
+  
+  public readonly metadata: AgentMetadata = {
+    id: 'industry-expert',
+    name: 'Industry Expert',
+    description: 'Specializes in industry-specific knowledge and market insights',
+    version: '1.0.0',
+    supportedPhases: ['industry', 'market-analysis'],
+    capabilities: ['industry-analysis', 'market-knowledge', 'trend-assessment'],
+    modelRequirements: {
+      minimumTokens: 2500,
+      preferredModels: ['llama-4', 'gpt-4']
+    },
+    tags: ['industry', 'market', 'trends', 'business'],
+    // Legacy compatibility
+    maxQuestions: 4,
+    averageDuration: 7
+  };
+
+  constructor(foundryClient: FoundryClientBase, config: FoundryConfig) {
+    super(foundryClient, config);
   }
 
   /**
@@ -57,26 +77,63 @@ Tailor questions to the specific industry and role level of the candidate.`
     try {
       const prompt = this.buildPrompt(context);
       
-      const response = await this.client.request('/chat/completions', 'POST', {
-        model: this.config.model,
-        messages: [
-          { role: 'system', content: this.config.systemInstructions },
-          { role: 'user', content: prompt }
-        ],
-        temperature: this.config.temperature,
-        max_tokens: this.config.maxTokens
+      const response = await this.foundryClient.request('/chat/completions', {
+        method: 'POST',
+        body: {
+          model: 'llama-4',
+          messages: [
+            { role: 'system', content: this.getSystemInstructions() },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.6,
+          max_tokens: 2500
+        }
       });
 
-      const questions = this.parseQuestionsFromResponse(response.data);
-      
-      // Log usage and cost
-      this.logUsage(context, response.data);
+      const questionsText = response.data?.choices?.[0]?.message?.content || response.raw || '';
+      const questions = this.parseQuestionsFromResponse(questionsText, context);
       
       return questions.length > 0 ? questions : this.getFallbackQuestions(context);
     } catch (error) {
       console.error('Error generating industry questions:', error);
       return this.getFallbackQuestions(context);
     }
+  }
+
+  private getSystemInstructions(): string {
+    return `You are an industry expert with deep knowledge across various sectors and business domains.
+
+EXPERTISE AREAS:
+- Technology trends and emerging technologies
+- Business strategy and market dynamics
+- Industry-specific regulations and compliance
+- Competitive landscape analysis
+- Best practices and industry standards
+- Innovation and future outlook
+
+ROLE GUIDELINES:
+- Ask questions that assess industry knowledge and awareness
+- Focus on current trends, challenges, and opportunities in the candidate's field
+- Evaluate strategic thinking and business acumen
+- Assess understanding of industry regulations and standards
+- Test knowledge of competitive landscape and market positioning
+
+QUESTION TYPES TO FOCUS ON:
+- Industry trends and future predictions
+- Regulatory changes and compliance requirements
+- Competitive analysis and market positioning
+- Technology adoption and innovation
+- Business model evolution and disruption
+- Ethical considerations and sustainability
+
+INTERVIEW STYLE:
+- Be knowledgeable and analytical
+- Ask thought-provoking questions about industry direction
+- Encourage strategic thinking and business reasoning
+- Focus on practical application of industry knowledge
+- Assess both current knowledge and learning agility
+
+Tailor questions to the specific industry and role level of the candidate.`;
   }
 
   /**
@@ -108,8 +165,8 @@ Tailor questions to the specific industry and role level of the candidate.`
       prompt += `- Technical Skills: ${candidateProfile.skills.join(', ')}\n`;
     }
     
-    if (candidateProfile?.industries?.length) {
-      prompt += `- Previous Industries: ${candidateProfile.industries.join(', ')}\n`;
+    if (candidateProfile?.industry) {
+      prompt += `- Industry Background: ${candidateProfile.industry}\n`;
     }
     
     if (companyInfo?.industry) {
@@ -186,46 +243,50 @@ Ensure questions test both current industry knowledge and strategic thinking abi
       {
         id: 'industry-1',
         text: `What do you see as the biggest trend currently shaping the ${industry} industry?`,
-        category: 'trends',
-        difficulty: 'intermediate',
-        followUps: [
-          'How do you think this trend will evolve over the next 2-3 years?',
-          'What opportunities or challenges does this create for companies in this space?'
-        ],
-        industryContext: 'Understanding current market dynamics and trend awareness'
+        type: 'industry',
+        category: 'industry',
+        difficulty: 'medium',
+        expectedDuration: 360,
+        tags: ['trends', 'market-analysis'],
+        metadata: {
+          topic: 'trends'
+        }
       },
       {
         id: 'industry-2',
         text: 'How do you stay updated with industry developments and emerging technologies?',
-        category: 'learning',
-        difficulty: 'beginner',
-        followUps: [
-          'Which industry publications or resources do you find most valuable?',
-          'Can you share a recent industry insight that changed your perspective?'
-        ],
-        industryContext: 'Assessing continuous learning and industry engagement'
+        type: 'industry',
+        category: 'industry',
+        difficulty: 'easy',
+        expectedDuration: 240,
+        tags: ['learning', 'industry-knowledge'],
+        metadata: {
+          topic: 'learning'
+        }
       },
       {
         id: 'industry-3',
         text: `What regulatory or compliance challenges do you think companies in ${industry} face today?`,
-        category: 'regulation',
-        difficulty: 'intermediate',
-        followUps: [
-          'How do you think these regulations impact business strategy?',
-          'What approaches have you seen companies take to manage compliance?'
-        ],
-        industryContext: 'Understanding regulatory landscape and business impact'
+        type: 'industry',
+        category: 'industry',
+        difficulty: 'medium',
+        expectedDuration: 420,
+        tags: ['regulation', 'compliance'],
+        metadata: {
+          topic: 'regulation'
+        }
       },
       {
         id: 'industry-4',
         text: 'How do you think artificial intelligence and automation will impact this industry?',
-        category: 'technology',
-        difficulty: 'intermediate',
-        followUps: [
-          'What specific use cases do you think will emerge first?',
-          'How should professionals prepare for these changes?'
-        ],
-        industryContext: 'Evaluating technology adoption and future workforce considerations'
+        type: 'industry',
+        category: 'industry',
+        difficulty: 'medium',
+        expectedDuration: 480,
+        tags: ['technology', 'future-trends'],
+        metadata: {
+          topic: 'technology'
+        }
       }
     ];
 
@@ -245,43 +306,56 @@ Ensure questions test both current industry knowledge and strategic thinking abi
         {
           id: 'tech-specific-1',
           text: 'How do you approach evaluating new technologies for adoption in a business context?',
-          category: 'technology-evaluation',
-          difficulty: 'advanced',
-          followUps: [
-            'What criteria do you use to assess technical feasibility vs business value?',
-            'How do you handle technical debt when introducing new solutions?'
-          ],
-          industryContext: 'Technology evaluation and strategic decision-making'
+          type: 'industry',
+          category: 'industry',
+          difficulty: 'hard',
+          expectedDuration: 540,
+          tags: ['technology-evaluation', 'strategic-thinking'],
+          metadata: {
+            topic: 'technology-evaluation'
+          }
         }
       ],
       'finance': [
         {
           id: 'finance-specific-1',
           text: 'How do you see fintech disrupting traditional financial services?',
-          category: 'disruption',
-          difficulty: 'advanced',
-          followUps: [
-            'Which areas of traditional banking are most vulnerable?',
-            'How should established financial institutions respond?'
-          ],
-          industryContext: 'Understanding fintech disruption and market dynamics'
+          type: 'industry',
+          category: 'industry',
+          difficulty: 'hard',
+          expectedDuration: 480,
+          tags: ['fintech', 'disruption'],
+          metadata: {
+            topic: 'disruption'
+          }
         }
       ],
       'healthcare': [
         {
           id: 'health-specific-1',
           text: 'What role do you think digital health technologies play in improving patient outcomes?',
-          category: 'digital-health',
-          difficulty: 'intermediate',
-          followUps: [
-            'What barriers exist to widespread adoption of digital health tools?',
-            'How do you balance innovation with patient privacy and safety?'
-          ],
-          industryContext: 'Digital transformation in healthcare delivery'
+          type: 'industry',
+          category: 'industry',
+          difficulty: 'medium',
+          expectedDuration: 420,
+          tags: ['digital-health', 'patient-outcomes'],
+          metadata: {
+            topic: 'digital-health'
+          }
         }
       ]
     };
 
     return specificQuestions[industry] || [];
+  }
+
+  // Required BaseAgent abstract methods
+  protected getQuestionCategory(): Question['category'] {
+    return 'industry';
+  }
+
+  protected getDefaultQuestion(context: InterviewContext): string {
+    const industry = this.extractIndustry(context.companyInfo, context.jobRole) || context.candidateProfile?.industry || 'technology';
+    return `What do you see as the biggest trend currently shaping the ${industry} industry?`;
   }
 }

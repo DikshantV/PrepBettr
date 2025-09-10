@@ -57,7 +57,7 @@ export class FoundryClientBase {
   /**
    * Core request helper with retry logic based on connection settings
    */
-  protected async request<T = any>(
+  public async request<T = any>(
     path: string,
     options: { method?: string; body?: any; headers?: Record<string, string> } = {}
   ): Promise<{ status: number; data: T | null; raw: string }> {
