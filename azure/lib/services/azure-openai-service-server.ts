@@ -2,6 +2,13 @@ import { MigrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-
 import { fetchAzureSecrets } from '../azure-config';
 import { templateEngine } from '@/lib/utils/template-engine';
 import path from 'path';
+import { 
+  ErrorCode, 
+  createStructuredError, 
+  toStructuredError,
+  StructuredError 
+} from '@/lib/utils/structured-errors';
+import { logServerError } from '@/lib/errors';
 
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
@@ -66,6 +73,16 @@ export class AzureOpenAIServiceServer {
       
       if (!secrets.azureOpenAIKey || !secrets.azureOpenAIEndpoint || !secrets.azureOpenAIDeployment) {
         console.warn('⚠️ Azure OpenAI credentials not available');
+        const error = createStructuredError(
+          ErrorCode.SERVICE_NOT_CONFIGURED,
+          { service: 'azure-openai', missingCredentials: ['key', 'endpoint', 'deployment'] },
+          'Azure OpenAI credentials not available'
+        );
+        logServerError(new Error(error.message), {
+          errorCode: error.code,
+          category: error.category,
+          details: error.details
+        });
         return false;
       }
 
@@ -80,6 +97,12 @@ export class AzureOpenAIServiceServer {
       return true;
     } catch (error) {
       console.error('❌ Failed to initialize Azure OpenAI Service (server-side):', error);
+      const structuredError = toStructuredError(error, ErrorCode.CONFIGURATION_ERROR);
+      logServerError(error instanceof Error ? error : new Error(String(error)), {
+        errorCode: structuredError.code,
+        category: structuredError.category,
+        details: structuredError.details
+      });
       return false;
     }
   }
@@ -244,7 +267,12 @@ export class AzureOpenAIServiceServer {
    */
   async startInterviewConversation(): Promise<GenerationResponse> {
     if (!this.isInitialized || !this.client) {
-      throw new Error('Azure OpenAI Service not initialized');
+      const error = createStructuredError(
+        ErrorCode.SERVICE_UNAVAILABLE,
+        { service: 'azure-openai' },
+        'Azure OpenAI Service not initialized'
+      );
+      throw error;
     }
 
     // Reset conversation history and preliminary questions state
@@ -303,7 +331,12 @@ export class AzureOpenAIServiceServer {
     
     if (!this.isInitialized || !this.client) {
       console.error('❌ [AZURE OPENAI] Service not initialized');
-      throw new Error('Azure OpenAI Service not initialized');
+      const error = createStructuredError(
+        ErrorCode.SERVICE_UNAVAILABLE,
+        { service: 'azure-openai', context: 'process-user-response' },
+        'Azure OpenAI Service not initialized'
+      );
+      throw error;
     }
 
     // Check if we're still collecting preliminary information
@@ -406,7 +439,9 @@ export class AzureOpenAIServiceServer {
     } catch (error) {
       console.error('❌ [AZURE OPENAI] Error generating OpenAI response:', error);
       
-      // Provide more detailed error information
+      // Map to structured error codes
+      let structuredError: StructuredError;
+      
       if (error && typeof error === 'object' && 'status' in error) {
         const apiError = error as any;
         console.error('❌ [AZURE OPENAI] API Error Details:', {
@@ -417,15 +452,45 @@ export class AzureOpenAIServiceServer {
         });
         
         if (apiError.status === 429) {
-          throw new Error('Rate limit exceeded - please try again in a moment');
-        } else if (apiError.status === 401) {
-          throw new Error('Authentication failed - please check Azure OpenAI credentials');
+          structuredError = createStructuredError(
+            ErrorCode.RATE_LIMIT_EXCEEDED,
+            { service: 'azure-openai', apiStatus: apiError.status, apiCode: apiError.code },
+            'Rate limit exceeded - please try again in a moment'
+          );
+        } else if (apiError.status === 401 || apiError.status === 403) {
+          structuredError = createStructuredError(
+            ErrorCode.AUTH_TOKEN_INVALID,
+            { service: 'azure-openai', apiStatus: apiError.status },
+            'Authentication failed - please check Azure OpenAI credentials'
+          );
         } else if (apiError.status === 404) {
-          throw new Error(`Model deployment '${this.modelDeployment}' not found`);
+          structuredError = createStructuredError(
+            ErrorCode.CONFIGURATION_ERROR,
+            { service: 'azure-openai', deployment: this.modelDeployment, apiStatus: apiError.status },
+            `Model deployment '${this.modelDeployment}' not found`
+          );
+        } else if (apiError.status >= 500) {
+          structuredError = createStructuredError(
+            ErrorCode.AZURE_OPENAI_ERROR,
+            { service: 'azure-openai', apiStatus: apiError.status, apiType: apiError.type },
+            'Azure OpenAI service error'
+          );
+        } else {
+          structuredError = toStructuredError(error, ErrorCode.AZURE_OPENAI_ERROR);
         }
+      } else {
+        structuredError = toStructuredError(error, ErrorCode.AZURE_OPENAI_ERROR);
       }
       
-      throw new Error(`Failed to generate response: ${error instanceof Error ? error.message : String(error)}`);
+      // Log the error for monitoring
+      logServerError(error instanceof Error ? error : new Error(String(error)), {
+        errorCode: structuredError.code,
+        category: structuredError.category,
+        details: structuredError.details,
+        context: 'azure-openai-process-response'
+      });
+      
+      throw structuredError;
     }
   }
 
@@ -462,7 +527,12 @@ export class AzureOpenAIServiceServer {
    */
   async generateInterviewQuestion(): Promise<string> {
     if (!this.isInitialized || !this.client) {
-      throw new Error('Azure OpenAI Service not initialized');
+      const error = createStructuredError(
+        ErrorCode.SERVICE_UNAVAILABLE,
+        { service: 'azure-openai', context: 'generate-interview-question' },
+        'Azure OpenAI Service not initialized'
+      );
+      throw error;
     }
 
     try {
@@ -495,6 +565,14 @@ export class AzureOpenAIServiceServer {
       return question;
     } catch (error) {
       console.warn('⚠️ Template-based question generation failed, using legacy method:', error);
+      // Log but don't throw - fallback to legacy method
+      const structuredError = toStructuredError(error, ErrorCode.AZURE_OPENAI_ERROR);
+      logServerError(error instanceof Error ? error : new Error(String(error)), {
+        errorCode: structuredError.code,
+        category: structuredError.category,
+        details: { ...structuredError.details, context: 'template-question-generation' },
+        context: 'azure-openai-question-template-fallback'
+      });
       return this.generateInterviewQuestionLegacy();
     }
   }
@@ -571,6 +649,14 @@ export class AzureOpenAIServiceServer {
       return question;
     } catch (error) {
       console.warn('⚠️ Failed to generate interview question, using fallback');
+      // Log the error for monitoring but return fallback instead of throwing
+      const structuredError = toStructuredError(error, ErrorCode.AZURE_OPENAI_ERROR);
+      logServerError(error instanceof Error ? error : new Error(String(error)), {
+        errorCode: structuredError.code,
+        category: structuredError.category,
+        details: { ...structuredError.details, context: 'legacy-question-generation' },
+        context: 'azure-openai-question-legacy-fallback'
+      });
       return this.getFallbackQuestion();
     }
   }
@@ -612,6 +698,14 @@ export class AzureOpenAIServiceServer {
       return completion.choices[0]?.message?.content?.trim() || null;
     } catch (error) {
       console.error('❌ Error generating interview summary:', error);
+      // Log the error for monitoring but return null instead of throwing
+      const structuredError = toStructuredError(error, ErrorCode.AZURE_OPENAI_ERROR);
+      logServerError(error instanceof Error ? error : new Error(String(error)), {
+        errorCode: structuredError.code,
+        category: structuredError.category,
+        details: { ...structuredError.details, context: 'interview-summary-generation' },
+        context: 'azure-openai-summary-generation'
+      });
       return null;
     }
   }

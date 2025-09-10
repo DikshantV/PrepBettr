@@ -1,0 +1,50 @@
+./middleware.ts:// Note: Only checks session cookies as localStorage is not available in edge runtime
+./middleware.ts:    // Check for session cookie (localStorage tokens not available in edge runtime)
+./types/resume-tailoring.ts:// Azure OpenAI API interfaces
+./types/resume-tailoring.ts:export interface AzureOpenAIAnalysisPrompt {
+./types/resume-tailoring.ts:export interface AzureOpenAIResponse {
+./app/api/config/firebase/route.ts:      authDomain: `${secrets.firebaseProjectId || 'prepbettr'}.firebaseapp.com`,
+./app/api/config/firebase/route.ts:      projectId: secrets.firebaseProjectId || process.env.FIREBASE_PROJECT_ID || 'prepbettr',
+./app/api/config/firebase/route.ts:      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${secrets.firebaseProjectId || 'prepbettr'}.appspot.com`,
+./app/api/config/firebase/route.ts:      storageBucket: firebaseConfig.storageBucket
+./app/api/config/firebase/route.ts:      authDomain: `${process.env.FIREBASE_PROJECT_ID || 'prepbettr'}.firebaseapp.com`,
+./app/api/config/firebase/route.ts:      projectId: process.env.FIREBASE_PROJECT_ID || 'prepbettr',
+./app/api/config/firebase/route.ts:      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID || 'prepbettr'}.appspot.com`,
+./app/api/auth/signup/route.ts:      // Return success with user data and token for localStorage
+./app/api/auth/signin/route.ts:      // Return user data with auth token for localStorage
+./app/api/auth/signin/route.ts:        token: sessionToken, // Include token for frontend storage
+./app/api/voice/conversation/route.ts:import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
+./app/api/voice/conversation/route.ts:import { azureOpenAIServiceServer } from '@/azure/lib/services/azure-openai-service-server';
+./app/api/voice/conversation/route.ts: * Azure OpenAI Conversation API Endpoint
+./app/api/voice/conversation/route.ts: * Handles interview conversation flow using Azure OpenAI
+./app/api/voice/conversation/route.ts:      // Initialize Azure OpenAI service if needed
+./app/api/voice/conversation/route.ts:      if (!azureOpenAIServiceServer.isReady()) {
+./app/api/voice/conversation/route.ts:        console.log('🔧 [CONVERSATION API] Initializing Azure OpenAI service...');
+./app/api/voice/conversation/route.ts:        const initialized = await azureOpenAIServiceServer.initialize();
+./app/api/voice/conversation/route.ts:          console.error('❌ [CONVERSATION API] Failed to initialize Azure OpenAI service');
+./app/api/voice/conversation/route.ts:          logger.error('Failed to initialize Azure OpenAI service');
+./app/api/voice/conversation/route.ts:        console.log('✅ [CONVERSATION API] Azure OpenAI service initialized successfully');
+./app/api/voice/conversation/route.ts:          azureOpenAIServiceServer.setInterviewContext({
+./app/api/voice/conversation/route.ts:          const response = await azureOpenAIServiceServer.startInterviewConversation();
+./app/api/voice/conversation/route.ts:            const response = await azureOpenAIServiceServer.processUserResponse(userTranscript.trim());
+./app/api/voice/conversation/route.ts:            const summary = await azureOpenAIServiceServer.generateInterviewSummary();
+./app/api/voice/conversation/route.ts:              conversationHistory: azureOpenAIServiceServer.getConversationHistory()
+./app/api/voice/conversation/route.ts:  const isReady = azureOpenAIServiceServer.isReady();
+./app/api/voice/conversation/route.ts:    service: 'Azure OpenAI Conversation',
+./app/api/voice/conversation/route.ts:// Helper functions
+./app/api/voice/session/start/route.ts:import { getVoiceSessionStorage } from '@/lib/azure-ai-foundry/voice/voice-session-storage';
+./app/api/voice/session/start/route.ts:    // Store session in edge-compatible storage for WebSocket proxy access
+./app/api/voice/session/start/route.ts:    const sessionStorage = getVoiceSessionStorage();
+./app/api/voice/session/start/route.ts:    sessionStorage.storeSession({
+./app/api/voice/session/[id]/transcript/route.ts: * In-memory storage for transcripts (replace with Redis/database in production)
+./app/api/voice/session/[id]/transcript/route.ts:const transcriptStorage = new Map<string, TranscriptEntry[]>();
+./app/api/voice/session/[id]/transcript/route.ts: * Add transcript entry to storage
+./app/api/voice/session/[id]/transcript/route.ts:  if (!transcriptStorage.has(sessionId)) {
+./app/api/voice/session/[id]/transcript/route.ts:    transcriptStorage.set(sessionId, []);
+./app/api/voice/session/[id]/transcript/route.ts:  const transcripts = transcriptStorage.get(sessionId)!;
+./app/api/voice/session/[id]/transcript/route.ts:  // Limit storage to last 1000 entries per session to prevent memory issues
+./app/api/voice/session/[id]/transcript/route.ts:  console.log(`📝 [TranscriptStorage] Added entry for session ${sessionId}: "${entry.text.substring(0, 50)}..."`);
+./app/api/voice/session/[id]/transcript/route.ts: * Clear transcript storage for a session
+./app/api/voice/session/[id]/transcript/route.ts:function clearTranscriptStorage(sessionId: string): void {
+./app/api/voice/session/[id]/transcript/route.ts:  transcriptStorage.delete(sessionId);
+./app/api/voice/session/[id]/transcript/route.ts:  console.log(`🗑️ [TranscriptStorage] Cleared storage for session ${sessionId}`);
