@@ -209,6 +209,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
                             label="Email"
                             placeholder="Your email address"
                             type="email"
+                            data-testid="email-input"
                         />
 
                         <FormField
@@ -217,9 +218,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
                             label="Password"
                             placeholder="Enter your password"
                             type="password"
+                            data-testid="password-input"
                         />
 
-                        <Button className="btn w-full" type="submit">
+                        <Button className="btn w-full" type="submit" data-testid={isSignIn ? "submit-login" : "submit-signup"}>
                             {isSignIn ? "Sign In" : "Create an Account"}
                         </Button>
                     </form>

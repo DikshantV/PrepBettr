@@ -1,6 +1,10 @@
-import { redirect } from 'next/navigation';
+import MarketingPage from './marketing/page';
+import MarketingLayout from './marketing/layout';
 
 export default function Home() {
-  // Always redirect to the marketing page
-  redirect('/marketing');
+  return (
+    <MarketingLayout>
+      <MarketingPage />
+    </MarketingLayout>
+  );
 }

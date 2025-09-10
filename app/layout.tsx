@@ -13,6 +13,7 @@ import { ErrorHandler } from '@/lib/middleware/error-handler';
 import NetworkLoggerInit from '@/components/NetworkLoggerInit';
 
 import "./globals.css";
+import TestHelperInitializer from "@/components/test/TestHelperInitializer";
 
 // Initialize Azure services on server-side
 // initializeAzureServices(); // Temporarily disabled for testing
@@ -74,6 +75,8 @@ export default function RootLayout({
                 <RouterLoadingHandler />
                 <AuthProvider>
                     <TelemetryProvider>
+                        {/* TestHelperInitializer for E2E tests */}
+                        {(process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TESTING === 'true') && <TestHelperInitializer />}
                         {children}
                     </TelemetryProvider>
                 </AuthProvider>

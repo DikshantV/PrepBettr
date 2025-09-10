@@ -1,20 +1,21 @@
 import { BaseAgent } from './base-agent';
-import { InterviewContext, Question } from '../types/agent-types';
+import { FoundryClientBase } from '../clients/foundry-client';
+import { FoundryConfig } from '../config/foundry-config';
+import { InterviewContext, Question, AgentMetadata } from '../types/agent-types';
 
 /**
  * BehavioralInterviewer agent specializing in behavioral and situational questions
  * Uses GPT-4o model for human-focused behavioral assessment
  */
 export class BehavioralInterviewer extends BaseAgent {
-  constructor() {
-    super({
-      agentId: 'behavioral-interviewer',
-      name: 'Behavioral Interviewer',
-      version: '1.0.0',
-      model: 'gpt-4o',
-      temperature: 0.7,
-      maxTokens: 2000,
-      systemInstructions: `You are a behavioral interview specialist focused on assessing soft skills, leadership potential, and cultural fit.
+  // Required BaseAgent interface properties
+  readonly id = 'behavioral-interviewer';
+  readonly name = 'Behavioral Interviewer';
+  readonly type = 'behavioral' as const;
+  
+  protected readonly modelName = 'gpt-4o';
+  
+  public readonly instructions = `You are a behavioral interview specialist focused on assessing soft skills, leadership potential, and cultural fit.
 
 ROLE GUIDELINES:
 - Ask questions about past experiences, challenging situations, and interpersonal skills
@@ -35,38 +36,29 @@ INTERVIEW STYLE:
 - Help candidates structure their responses using the STAR method
 - Focus on specific examples rather than hypothetical scenarios
 
-Always tailor questions to the candidate's background and the specific role requirements.`
-    });
+Always tailor questions to the candidate's background and the specific role requirements.`;
+  
+  public readonly metadata: AgentMetadata = {
+    id: 'behavioral-interviewer',
+    name: 'Behavioral Interviewer',
+    description: 'Specializes in behavioral and soft skills assessment',
+    version: '1.0.0',
+    supportedPhases: ['behavioral', 'cultural-fit'],
+    capabilities: ['behavioral-assessment', 'soft-skills-evaluation', 'cultural-fit-analysis'],
+    modelRequirements: {
+      minimumTokens: 2000,
+      preferredModels: ['gpt-4o', 'gpt-4']
+    },
+    tags: ['behavioral', 'soft-skills', 'teamwork', 'leadership'],
+    // Legacy compatibility
+    maxQuestions: 5,
+    averageDuration: 6
+  };
+
+  constructor(foundryClient: FoundryClientBase, config: FoundryConfig) {
+    super(foundryClient, config);
   }
 
-  /**
-   * Generate behavioral interview questions based on context
-   */
-  async generateQuestions(context: InterviewContext): Promise<Question[]> {
-    try {
-      const prompt = this.buildPrompt(context);
-      
-      const response = await this.client.request('/chat/completions', 'POST', {
-        model: this.config.model,
-        messages: [
-          { role: 'system', content: this.config.systemInstructions },
-          { role: 'user', content: prompt }
-        ],
-        temperature: this.config.temperature,
-        max_tokens: this.config.maxTokens
-      });
-
-      const questions = this.parseQuestionsFromResponse(response.data);
-      
-      // Log usage and cost
-      this.logUsage(context, response.data);
-      
-      return questions.length > 0 ? questions : this.getFallbackQuestions(context);
-    } catch (error) {
-      console.error('Error generating behavioral questions:', error);
-      return this.getFallbackQuestions(context);
-    }
-  }
 
   /**
    * Build behavioral-specific prompt based on context
@@ -90,12 +82,9 @@ Always tailor questions to the candidate's background and the specific role requ
       prompt += `- Key Skills: ${candidateProfile.skills.join(', ')}\n`;
     }
     
-    if (candidateProfile?.previousRoles?.length) {
-      prompt += `- Previous Roles: ${candidateProfile.previousRoles.join(', ')}\n`;
-    }
-    
-    if (companyInfo?.culture) {
-      prompt += `\nCompany Culture: ${companyInfo.culture}\n`;
+    // Remove references to undefined properties
+    if (candidateProfile?.industry) {
+      prompt += `- Industry: ${candidateProfile.industry}\n`;
     }
     
     if (sessionHistory?.previousQuestions?.length) {
@@ -124,49 +113,57 @@ Ensure questions encourage STAR method responses and are appropriate for the can
   /**
    * Get fallback behavioral questions when AI generation fails
    */
-  private getFallbackQuestions(context: InterviewContext): Question[] {
+  private getFallbackBehavioralQuestions(context: InterviewContext): Question[] {
     const experienceLevel = context.candidateProfile?.experience?.toLowerCase() || 'intermediate';
     
     const fallbackQuestions: Question[] = [
       {
         id: 'behavioral-1',
         text: 'Tell me about a time when you had to work with a difficult team member. How did you handle the situation?',
-        category: 'teamwork',
-        difficulty: 'intermediate',
-        followUps: [
-          'What would you do differently if you faced a similar situation again?',
-          'How did this experience change your approach to team collaboration?'
-        ]
+        type: 'behavioral',
+        category: 'behavioral',
+        difficulty: 'medium',
+        expectedDuration: 300,
+        tags: ['teamwork', 'conflict-resolution'],
+        metadata: {
+          topic: 'teamwork'
+        }
       },
       {
         id: 'behavioral-2',
         text: 'Describe a situation where you had to learn something new quickly to complete a project.',
-        category: 'adaptability',
-        difficulty: 'beginner',
-        followUps: [
-          'What resources did you use to learn quickly?',
-          'How do you typically approach learning new skills?'
-        ]
+        type: 'behavioral',
+        category: 'behavioral',
+        difficulty: 'easy',
+        expectedDuration: 240,
+        tags: ['adaptability', 'learning'],
+        metadata: {
+          topic: 'adaptability'
+        }
       },
       {
         id: 'behavioral-3',
         text: 'Give me an example of a time when you had to make a decision without having all the information you needed.',
-        category: 'decision-making',
-        difficulty: 'intermediate',
-        followUps: [
-          'How did you gather the information you could?',
-          'What was the outcome of your decision?'
-        ]
+        type: 'behavioral',
+        category: 'behavioral',
+        difficulty: 'medium',
+        expectedDuration: 360,
+        tags: ['decision-making', 'problem-solving'],
+        metadata: {
+          topic: 'decision-making'
+        }
       },
       {
         id: 'behavioral-4',
         text: 'Tell me about a time when you received constructive criticism. How did you respond?',
-        category: 'growth-mindset',
-        difficulty: 'beginner',
-        followUps: [
-          'How did you implement the feedback?',
-          'What did you learn from this experience?'
-        ]
+        type: 'behavioral',
+        category: 'behavioral',
+        difficulty: 'easy',
+        expectedDuration: 240,
+        tags: ['growth-mindset', 'feedback'],
+        metadata: {
+          topic: 'growth-mindset'
+        }
       }
     ];
 
@@ -175,15 +172,26 @@ Ensure questions encourage STAR method responses and are appropriate for the can
       fallbackQuestions.push({
         id: 'behavioral-5',
         text: 'Describe a time when you had to influence others without having direct authority over them.',
-        category: 'leadership',
-        difficulty: 'advanced',
-        followUps: [
-          'What strategies did you use to gain buy-in?',
-          'How do you build influence in an organization?'
-        ]
+        type: 'behavioral',
+        category: 'behavioral',
+        difficulty: 'hard',
+        expectedDuration: 420,
+        tags: ['leadership', 'influence'],
+        metadata: {
+          topic: 'leadership'
+        }
       });
     }
 
     return fallbackQuestions;
+  }
+
+  // Required BaseAgent abstract methods
+  protected getQuestionCategory(): Question['category'] {
+    return 'behavioral';
+  }
+
+  protected getDefaultQuestion(context: InterviewContext): string {
+    return 'Tell me about a time when you had to work with a difficult team member. How did you handle the situation?';
   }
 }

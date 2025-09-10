@@ -1,7 +1,16 @@
-import { FoundryAgent } from '../types/agent-types';
+// import { FoundryAgent } from '../types/agent-types';
+
+// Temporary interface for testing
+interface FoundryAgent {
+  id: string;
+  name: string;
+  type: string;
+}
 import { TechnicalInterviewer } from './technical-interviewer';
 import { BehavioralInterviewer } from './behavioral-interviewer';
 import { IndustryExpert } from './industry-expert';
+import type { FoundryClientBase } from '../clients/foundry-client';
+import type { FoundryConfig } from '../config/foundry-config';
 
 /**
  * Available agent types in the system
@@ -33,13 +42,23 @@ export interface AgentFactoryConfig {
 export class AgentFactory {
   private static instance: AgentFactory;
   private agentInstances: Map<string, FoundryAgent> = new Map();
+  private foundryClient: FoundryClientBase;
+  private config: FoundryConfig;
+
+  private constructor(foundryClient: FoundryClientBase, config: FoundryConfig) {
+    this.foundryClient = foundryClient;
+    this.config = config;
+  }
 
   /**
    * Get singleton instance of AgentFactory
    */
-  public static getInstance(): AgentFactory {
+  public static getInstance(foundryClient?: FoundryClientBase, config?: FoundryConfig): AgentFactory {
     if (!AgentFactory.instance) {
-      AgentFactory.instance = new AgentFactory();
+      if (!foundryClient || !config) {
+        throw new Error('AgentFactory must be initialized with foundryClient and config on first call');
+      }
+      AgentFactory.instance = new AgentFactory(foundryClient, config);
     }
     return AgentFactory.instance;
   }
@@ -64,13 +83,13 @@ export class AgentFactory {
     // Create agent based on type
     switch (type) {
       case 'technical':
-        agent = new TechnicalInterviewer();
+        agent = new TechnicalInterviewer(this.foundryClient, this.config);
         break;
       case 'behavioral':
-        agent = new BehavioralInterviewer();
+        agent = new BehavioralInterviewer(this.foundryClient, this.config);
         break;
       case 'industry':
-        agent = new IndustryExpert();
+        agent = new IndustryExpert(this.foundryClient, this.config);
         break;
       default:
         throw new Error(`Unknown agent type: ${type}`);

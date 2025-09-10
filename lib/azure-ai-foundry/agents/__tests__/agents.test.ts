@@ -7,7 +7,7 @@ import { AgentOrchestrator } from '../agent-orchestrator';
 import { InterviewContext } from '../../types/agent-types';
 
 // Mock the FoundryClientBase to avoid actual API calls
-jest.mock('../../clients/foundry-client-base', () => ({
+jest.mock('../../clients/foundry-client', () => ({
   FoundryClientBase: jest.fn().mockImplementation(() => ({
     request: jest.fn().mockResolvedValue({
       data: {
@@ -42,11 +42,46 @@ jest.mock('../../clients/foundry-client-base', () => ({
 }));
 
 describe('Agent System Tests', () => {
+  // Mock foundry client and config for constructor calls
+  const mockFoundryClient = {
+    request: jest.fn().mockResolvedValue({
+      data: {
+        choices: [{
+          message: {
+            content: JSON.stringify([{
+              id: 'mock-q-1',
+              text: 'Mock question',
+              type: 'technical',
+              category: 'technical',
+              difficulty: 'medium',
+              expectedDuration: 300,
+              tags: ['mock'],
+              metadata: { topic: 'test' }
+            }])
+          }
+        }]
+      }
+    })
+  } as any;
+  
+  const mockConfig = {
+    apiKey: 'test-api-key',
+    endpoint: 'https://test.openai.azure.com',
+    models: { 'gpt-4': { name: 'gpt-4', maxTokens: 4096 } }
+  } as any;
+
   const mockContext: InterviewContext = {
+    sessionId: 'test-session-123',
+    candidateName: 'John Doe',
+    role: 'Senior Frontend Developer',
+    experienceLevel: 'mid',
+    industry: 'technology',
     candidateProfile: {
       name: 'John Doe',
       experience: 'mid-level',
       skills: ['JavaScript', 'React', 'Node.js'],
+      targetRole: 'Senior Frontend Developer',
+      industry: 'technology',
       previousRoles: ['Software Developer', 'Frontend Developer']
     },
     jobRole: 'Senior Frontend Developer',
@@ -54,20 +89,31 @@ describe('Agent System Tests', () => {
       name: 'Tech Corp',
       industry: 'technology',
       size: 'medium'
-    }
+    },
+    interviewConfig: {
+      duration: 60,
+      focusAreas: ['frontend', 'javascript', 'react'],
+      difficulty: 'mid',
+      includeFollowUps: true
+    },
+    previousQuestions: [],
+    previousAnswers: [],
+    currentPhase: 'technical',
+    metadata: {}
   };
 
   describe('TechnicalInterviewer', () => {
     let technicalAgent: TechnicalInterviewer;
 
     beforeEach(() => {
-      technicalAgent = new TechnicalInterviewer();
+      technicalAgent = new TechnicalInterviewer(mockFoundryClient, mockConfig);
     });
 
     test('should create technical interviewer with correct configuration', () => {
       expect(technicalAgent).toBeInstanceOf(TechnicalInterviewer);
-      expect(technicalAgent.getConfig().agentId).toBe('technical-interviewer');
-      expect(technicalAgent.getConfig().model).toBe('gpt-4.5');
+      expect(technicalAgent.id).toBe('technical-interviewer');
+      expect(technicalAgent.name).toBe('Technical Interviewer');
+      expect(technicalAgent.type).toBe('technical');
     });
 
     test('should generate technical questions', async () => {
@@ -87,15 +133,17 @@ describe('Agent System Tests', () => {
 
     test('should return fallback questions when API fails', async () => {
       // Mock API failure
-      const failingAgent = new TechnicalInterviewer();
-      (failingAgent as any).client.request = jest.fn().mockRejectedValue(new Error('API Error'));
+      const mockFailingClient = {
+        request: jest.fn().mockRejectedValue(new Error('API Error'))
+      } as any;
+      const failingAgent = new TechnicalInterviewer(mockFailingClient, mockConfig);
 
       const questions = await failingAgent.generateQuestions(mockContext);
       
       expect(questions).toBeDefined();
       expect(questions.length).toBeGreaterThan(0);
       // Should return fallback questions
-      expect(questions[0].id).toContain('technical-');
+      expect(questions[0].id).toContain('tech-fallback');
     });
   });
 
@@ -103,13 +151,14 @@ describe('Agent System Tests', () => {
     let behavioralAgent: BehavioralInterviewer;
 
     beforeEach(() => {
-      behavioralAgent = new BehavioralInterviewer();
+      behavioralAgent = new BehavioralInterviewer(mockFoundryClient, mockConfig);
     });
 
     test('should create behavioral interviewer with correct configuration', () => {
       expect(behavioralAgent).toBeInstanceOf(BehavioralInterviewer);
-      expect(behavioralAgent.getConfig().agentId).toBe('behavioral-interviewer');
-      expect(behavioralAgent.getConfig().model).toBe('gpt-4o');
+      expect(behavioralAgent.id).toBe('behavioral-interviewer');
+      expect(behavioralAgent.name).toBe('Behavioral Interviewer');
+      expect(behavioralAgent.type).toBe('behavioral');
     });
 
     test('should generate behavioral questions', async () => {
@@ -138,13 +187,14 @@ describe('Agent System Tests', () => {
     let industryAgent: IndustryExpert;
 
     beforeEach(() => {
-      industryAgent = new IndustryExpert();
+      industryAgent = new IndustryExpert(mockFoundryClient, mockConfig);
     });
 
     test('should create industry expert with correct configuration', () => {
       expect(industryAgent).toBeInstanceOf(IndustryExpert);
-      expect(industryAgent.getConfig().agentId).toBe('industry-expert');
-      expect(industryAgent.getConfig().model).toBe('llama-4');
+      expect(industryAgent.id).toBe('industry-expert');
+      expect(industryAgent.name).toBe('Industry Expert');
+      expect(industryAgent.type).toBe('industry');
     });
 
     test('should generate industry-specific questions', async () => {
@@ -160,7 +210,7 @@ describe('Agent System Tests', () => {
     let factory: AgentFactory;
 
     beforeEach(() => {
-      factory = AgentFactory.getInstance();
+      factory = AgentFactory.getInstance(mockFoundryClient, mockConfig);
       factory.clearCache(); // Clear cache between tests
     });
 
@@ -284,6 +334,8 @@ describe('Agent System Tests', () => {
           name: 'Jane Smith',
           experience: 'senior',
           skills: ['Python', 'Machine Learning', 'AWS'],
+          targetRole: 'Senior Data Scientist',
+          industry: 'technology',
           previousRoles: ['Data Scientist', 'ML Engineer']
         },
         jobRole: 'Senior Data Scientist',

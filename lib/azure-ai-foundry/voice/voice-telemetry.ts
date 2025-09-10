@@ -497,5 +497,13 @@ export const VoiceTelemetry = {
 
   endSession: (sessionId: string) => {
     getVoiceTelemetry().logSessionEvent('session_stopped', sessionId);
-  }
+  },
+
+  // Singleton access methods
+  getInstance: () => getVoiceTelemetry()
 };
+
+/**
+ * Export singleton instance for convenience
+ */
+export const voiceTelemetry = getVoiceTelemetry();

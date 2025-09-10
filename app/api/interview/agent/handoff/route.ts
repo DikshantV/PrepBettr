@@ -24,8 +24,9 @@ const workflow = new InterviewWorkflow();
  * - status: updated WorkflowStatus
  */
 export async function POST(request: NextRequest) {
+  let body: any = {};
   try {
-    const body = await request.json();
+    body = await request.json();
     
     if (!body.sessionId) {
       return NextResponse.json({

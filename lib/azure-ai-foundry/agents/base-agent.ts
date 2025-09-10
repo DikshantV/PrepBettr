@@ -7,86 +7,24 @@
 
 import { FoundryClientBase } from '../clients/foundry-client';
 import { FoundryConfig } from '../config/foundry-config';
-
-// ===== CORE INTERFACES =====
-
-export interface Question {
-  id: string;
-  text: string;
-  category: 'technical' | 'behavioral' | 'industry' | 'general';
-  difficulty: 'easy' | 'medium' | 'hard';
-  expectedDuration: number; // in seconds
-  followUpQuestions?: string[];
-  tags: string[];
-  metadata?: {
-    skill?: string;
-    topic?: string;
-    scenario?: string;
-  };
-}
-
-export interface InterviewContext {
-  sessionId: string;
-  candidateProfile: {
-    name?: string;
-    experience: string;
-    skills: string[];
-    targetRole: string;
-    industry: string;
-    resumeContent?: string;
-  };
-  interviewConfig: {
-    duration: number; // total interview duration in minutes
-    focusAreas: string[];
-    difficulty: 'entry' | 'mid' | 'senior' | 'expert';
-    includeFollowUps: boolean;
-  };
-  previousQuestions: Question[];
-  currentPhase: 'technical' | 'behavioral' | 'industry';
-  responses?: {
-    questionId: string;
-    response: string;
-    timestamp: Date;
-  }[];
-}
-
-export interface SessionState {
-  sessionId: string;
-  currentAgent: string;
-  phase: 'technical' | 'behavioral' | 'industry' | 'completed';
-  startTime: Date;
-  lastActivity: Date;
-  context: InterviewContext;
-  agentQueue: string[];
-  completedAgents: string[];
-  metadata: {
-    totalQuestions: number;
-    averageResponseTime: number;
-    completionPercentage: number;
-  };
-}
-
-export interface AgentMetadata {
-  name: string;
-  specialty: string;
-  capabilities: string[];
-  modelPreference: string;
-  maxQuestions: number;
-  averageDuration: number; // in minutes
-}
-
-export interface FoundryAgent {
-  metadata: AgentMetadata;
-  generateQuestions(context: InterviewContext): Promise<Question[]>;
-  processResponse(questionId: string, response: string, context: InterviewContext): Promise<void>;
-  isComplete(context: InterviewContext): boolean;
-}
+import { 
+  Question, 
+  InterviewContext, 
+  SessionState, 
+  AgentMetadata, 
+  FoundryAgent 
+} from '../types/agent-types';
 
 // ===== BASE AGENT CLASS =====
 
 export abstract class BaseAgent implements FoundryAgent {
   protected foundryClient: FoundryClientBase;
   protected config: FoundryConfig;
+  
+  // Required by FoundryAgent interface
+  public abstract readonly id: string;
+  public abstract readonly name: string;
+  public abstract readonly type: 'technical' | 'behavioral' | 'industry';
   
   public abstract readonly metadata: AgentMetadata;
   public abstract readonly instructions: string;
