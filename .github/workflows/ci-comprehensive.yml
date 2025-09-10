@@ -160,6 +160,22 @@ jobs:
     - name: Run unit tests for voice state machine
       run: npm test -- lib/voice-state-machine.test.ts --coverage
     
+    - name: Run resume processing tests
+      run: npm run test:resume-processing
+      env:
+        NODE_ENV: test
+        CI: true
+        AZURE_FORM_RECOGNIZER_KEY: ${{ secrets.AZURE_FORM_RECOGNIZER_KEY || 'mock-key' }}
+        AZURE_FORM_RECOGNIZER_ENDPOINT: ${{ secrets.AZURE_FORM_RECOGNIZER_ENDPOINT || 'https://test.cognitiveservices.azure.com' }}
+        AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY || 'mock-key' }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT || 'https://test.openai.azure.com' }}
+    
+    - name: Run ATS optimization tests
+      run: npm test -- tests/unit/services/ats-optimization-service.test.ts --coverage
+      env:
+        NODE_ENV: test
+        CI: true
+    
     - name: Run all unit tests with coverage threshold enforcement
       run: npm run test:coverage
       env:

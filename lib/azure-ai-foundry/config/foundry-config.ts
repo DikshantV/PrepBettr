@@ -58,6 +58,16 @@ export interface ConnectionSettings {
 }
 
 /**
+ * Document Intelligence configuration
+ */
+export interface DocumentIntelligenceConfig {
+  endpoint: string;
+  apiKey: string;
+  projectId?: string;
+  region?: string;
+}
+
+/**
  * Main foundry configuration interface
  */
 export interface FoundryConfig {
@@ -70,6 +80,7 @@ export interface FoundryConfig {
   models: Record<string, ModelConfig>;
   connection: ConnectionSettings;
   environment: 'development' | 'staging' | 'production';
+  docIntelligence?: DocumentIntelligenceConfig;
 }
 
 let cachedFoundryConfig: FoundryConfig | null = null;
@@ -147,14 +158,20 @@ export async function getFoundryConfig(forceRefresh: boolean = false): Promise<F
       foundryProjectId,
       foundryResourceGroup,
       foundryRegion,
-      foundryDeploymentName
+      foundryDeploymentName,
+      docIntEndpoint,
+      docIntApiKey,
+      docIntProjectId
     ] = await Promise.all([
       getOptionalSecret('azure-foundry-endpoint'),
       getOptionalSecret('azure-foundry-api-key'), 
       getOptionalSecret('azure-foundry-project-id'),
       getOptionalSecret('azure-foundry-resource-group'),
       getOptionalSecret('azure-foundry-region'),
-      getOptionalSecret('azure-foundry-deployment-name')
+      getOptionalSecret('azure-foundry-deployment-name'),
+      getOptionalSecret('azure-foundry-docint-endpoint'),
+      getOptionalSecret('azure-foundry-docint-api-key'),
+      getOptionalSecret('azure-foundry-docint-project-id')
     ]);
 
     cachedFoundryConfig = {
@@ -166,7 +183,13 @@ export async function getFoundryConfig(forceRefresh: boolean = false): Promise<F
       region: foundryRegion?.value || process.env.AZURE_FOUNDRY_REGION || 'eastus',
       environment: (process.env.ENVIRONMENT || process.env.NODE_ENV || 'development') as 'development' | 'staging' | 'production',
       models: getDefaultModelConfigurations(),
-      connection: getDefaultConnectionSettings()
+      connection: getDefaultConnectionSettings(),
+      docIntelligence: (docIntEndpoint?.value || docIntApiKey?.value || process.env.AZURE_FOUNDRY_DOCINT_ENDPOINT || process.env.AZURE_FOUNDRY_DOCINT_API_KEY) ? {
+        endpoint: docIntEndpoint?.value || process.env.AZURE_FOUNDRY_DOCINT_ENDPOINT || '',
+        apiKey: docIntApiKey?.value || process.env.AZURE_FOUNDRY_DOCINT_API_KEY || '',
+        projectId: docIntProjectId?.value || process.env.AZURE_FOUNDRY_DOCINT_PROJECT_ID,
+        region: foundryRegion?.value || process.env.AZURE_FOUNDRY_REGION || 'eastus'
+      } : undefined
     };
 
     // Validate required configuration
@@ -200,7 +223,13 @@ export async function getFoundryConfig(forceRefresh: boolean = false): Promise<F
       region: process.env.AZURE_FOUNDRY_REGION || 'eastus',
       environment: (process.env.ENVIRONMENT || process.env.NODE_ENV || 'development') as 'development' | 'staging' | 'production',
       models: getDefaultModelConfigurations(),
-      connection: getDefaultConnectionSettings()
+      connection: getDefaultConnectionSettings(),
+      docIntelligence: (process.env.AZURE_FOUNDRY_DOCINT_ENDPOINT || process.env.AZURE_FOUNDRY_DOCINT_API_KEY) ? {
+        endpoint: process.env.AZURE_FOUNDRY_DOCINT_ENDPOINT || '',
+        apiKey: process.env.AZURE_FOUNDRY_DOCINT_API_KEY || '',
+        projectId: process.env.AZURE_FOUNDRY_DOCINT_PROJECT_ID,
+        region: process.env.AZURE_FOUNDRY_REGION || 'eastus'
+      } : undefined
     };
 
     // Log missing critical configuration

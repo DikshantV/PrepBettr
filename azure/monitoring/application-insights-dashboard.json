@@ -1,0 +1,424 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workbookDisplayName": {
+      "type": "string",
+      "defaultValue": "PrepBettr Resume Processing Analytics",
+      "metadata": {
+        "description": "The friendly name for the workbook that is used in the Gallery or Saved List."
+      }
+    },
+    "workbookType": {
+      "type": "string",
+      "defaultValue": "workbook",
+      "metadata": {
+        "description": "The gallery that the workbook will been shown under."
+      }
+    },
+    "workbookSourceId": {
+      "type": "string",
+      "defaultValue": "azure monitor",
+      "metadata": {
+        "description": "The id of resource instance to which the workbook will be associated"
+      }
+    },
+    "applicationInsightsResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Application Insights instance"
+      }
+    }
+  },
+  "variables": {
+    "workbookContent": {
+      "version": "Notebook/1.0",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "# PrepBettr Resume Processing Analytics Dashboard\n\nThis dashboard provides comprehensive monitoring of the resume processing pipeline, including ATS optimization metrics, job matching performance, and system health indicators.\n\n---"
+          },
+          "name": "Header"
+        },
+        {
+          "type": 9,
+          "content": {
+            "version": "KqlParameterItem/1.0",
+            "parameters": [
+              {
+                "id": "timeRange",
+                "version": "KqlParameterItem/1.0",
+                "name": "TimeRange",
+                "type": 4,
+                "description": "Select time range for analysis",
+                "value": {
+                  "durationMs": 3600000
+                },
+                "typeSettings": {
+                  "selectableValues": [
+                    {
+                      "durationMs": 300000
+                    },
+                    {
+                      "durationMs": 900000
+                    },
+                    {
+                      "durationMs": 1800000
+                    },
+                    {
+                      "durationMs": 3600000
+                    },
+                    {
+                      "durationMs": 14400000
+                    },
+                    {
+                      "durationMs": 43200000
+                    },
+                    {
+                      "durationMs": 86400000
+                    },
+                    {
+                      "durationMs": 172800000
+                    },
+                    {
+                      "durationMs": 259200000
+                    },
+                    {
+                      "durationMs": 604800000
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "name": "Time Range Selector"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 📊 Resume Processing Overview"
+          },
+          "name": "Section Header - Overview"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customEvents\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ResumeProcessed\"\n| summarize \n    TotalResumes = count(),\n    SuccessfulProcessing = countif(customDimensions.success == \"true\"),\n    FailedProcessing = countif(customDimensions.success == \"false\"),\n    FoundryProcessing = countif(customDimensions.processingMethod == \"foundry-document-intelligence\"),\n    LegacyProcessing = countif(customDimensions.processingMethod != \"foundry-document-intelligence\")\n| extend \n    SuccessRate = round(100.0 * SuccessfulProcessing / TotalResumes, 1),\n    FoundryAdoptionRate = round(100.0 * FoundryProcessing / TotalResumes, 1)\n| project \n    TotalResumes, \n    SuccessfulProcessing, \n    FailedProcessing, \n    SuccessRate, \n    FoundryProcessing, \n    LegacyProcessing, \n    FoundryAdoptionRate",
+            "size": 3,
+            "title": "Resume Processing Summary",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table",
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "SuccessRate",
+                  "formatter": 4,
+                  "formatOptions": {
+                    "palette": "greenRed",
+                    "min": 0,
+                    "max": 100
+                  }
+                },
+                {
+                  "columnMatch": "FoundryAdoptionRate",
+                  "formatter": 4,
+                  "formatOptions": {
+                    "palette": "blue",
+                    "min": 0,
+                    "max": 100
+                  }
+                }
+              ]
+            }
+          },
+          "name": "Resume Processing Summary"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ResumeProcessingTime\"\n| summarize \n    AvgProcessingTime = avg(value),\n    P50ProcessingTime = percentile(value, 50),\n    P95ProcessingTime = percentile(value, 95),\n    P99ProcessingTime = percentile(value, 99)\n| extend \n    AvgProcessingTime = round(AvgProcessingTime, 0),\n    P50ProcessingTime = round(P50ProcessingTime, 0),\n    P95ProcessingTime = round(P95ProcessingTime, 0),\n    P99ProcessingTime = round(P99ProcessingTime, 0)",
+            "size": 3,
+            "title": "Processing Performance (milliseconds)",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Processing Performance"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 🎯 ATS Optimization Metrics"
+          },
+          "name": "Section Header - ATS"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ATSScore\"\n| summarize \n    TotalAnalyses = count(),\n    AvgATSScore = avg(value),\n    MinATSScore = min(value),\n    MaxATSScore = max(value),\n    P25ATSScore = percentile(value, 25),\n    P50ATSScore = percentile(value, 50),\n    P75ATSScore = percentile(value, 75),\n    P95ATSScore = percentile(value, 95)\n| extend \n    AvgATSScore = round(AvgATSScore, 1),\n    P25ATSScore = round(P25ATSScore, 1),\n    P50ATSScore = round(P50ATSScore, 1),\n    P75ATSScore = round(P75ATSScore, 1),\n    P95ATSScore = round(P95ATSScore, 1)",
+            "size": 3,
+            "title": "ATS Score Distribution",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "ATS Score Distribution"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name in (\"ATSKeywordScore\", \"ATSFormatScore\", \"ATSStructureScore\", \"ATSContentScore\")\n| summarize AvgScore = avg(value) by name\n| extend ComponentName = case(\n    name == \"ATSKeywordScore\", \"Keyword Analysis\",\n    name == \"ATSFormatScore\", \"Format Analysis\", \n    name == \"ATSStructureScore\", \"Structure Analysis\",\n    name == \"ATSContentScore\", \"Content Analysis\",\n    name\n)\n| project ComponentName, AvgScore = round(AvgScore, 1)\n| order by AvgScore desc",
+            "size": 0,
+            "title": "ATS Component Scores",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "barchart"
+          },
+          "name": "ATS Component Scores"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ATSScore\"\n| extend ScoreRange = case(\n    value >= 90, \"90-100 (Excellent)\",\n    value >= 80, \"80-89 (Good)\", \n    value >= 70, \"70-79 (Average)\",\n    value >= 60, \"60-69 (Below Average)\",\n    \"0-59 (Poor)\"\n)\n| summarize Count = count() by ScoreRange\n| extend Percentage = round(100.0 * Count / toscalar(customMetrics | where timestamp >= ago({TimeRange:duration}) | where name == \"ATSScore\" | count()), 1)\n| order by Count desc",
+            "size": 0,
+            "title": "ATS Score Distribution by Range",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "piechart"
+          },
+          "name": "ATS Score Ranges"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 🤝 Job Matching Performance"
+          },
+          "name": "Section Header - Job Matching"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"JobMatchScore\"\n| summarize \n    TotalJobMatches = count(),\n    AvgJobMatchScore = avg(value),\n    P50JobMatchScore = percentile(value, 50),\n    P95JobMatchScore = percentile(value, 95)\n| extend \n    AvgJobMatchScore = round(AvgJobMatchScore, 1),\n    P50JobMatchScore = round(P50JobMatchScore, 1),\n    P95JobMatchScore = round(P95JobMatchScore, 1)",
+            "size": 3,
+            "title": "Job Matching Summary",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Job Matching Summary"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name in (\"CriticalSkillGaps\", \"MissingKeywords\")\n| summarize AvgCount = avg(value), TotalCount = sum(value) by name\n| extend MetricName = case(\n    name == \"CriticalSkillGaps\", \"Critical Skill Gaps\",\n    name == \"MissingKeywords\", \"Missing Keywords\",\n    name\n)\n| project MetricName, AvgPerResume = round(AvgCount, 1), TotalAcrossPeriod = round(TotalCount, 0)\n| order by AvgPerResume desc",
+            "size": 0,
+            "title": "Skill Gap Analysis",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Skill Gap Analysis"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"SemanticSimilarity\"\n| summarize \n    AvgSimilarity = avg(value),\n    MinSimilarity = min(value),\n    MaxSimilarity = max(value),\n    P50Similarity = percentile(value, 50),\n    P95Similarity = percentile(value, 95)\n| extend \n    AvgSimilarity = round(AvgSimilarity, 3),\n    MinSimilarity = round(MinSimilarity, 3),\n    MaxSimilarity = round(MaxSimilarity, 3),\n    P50Similarity = round(P50Similarity, 3),\n    P95Similarity = round(P95Similarity, 3)",
+            "size": 3,
+            "title": "Semantic Similarity Effectiveness",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Semantic Similarity"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 💰 Cost & Usage Monitoring"
+          },
+          "name": "Section Header - Cost"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"FoundryTokensUsed\"\n| summarize \n    TotalTokensUsed = sum(value),\n    AvgTokensPerOperation = avg(value),\n    TokenUsageOperations = count()\n| extend \n    TotalTokensUsed = round(TotalTokensUsed, 0),\n    AvgTokensPerOperation = round(AvgTokensPerOperation, 0)",
+            "size": 3,
+            "title": "Token Usage Summary",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Token Usage"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customEvents\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"FoundryModelUsage\"\n| summarize \n    Operations = count(),\n    DistinctUsers = dcount(tostring(customDimensions.userId))\nby \n    ModelType = tostring(customDimensions.modelType),\n    Operation = tostring(customDimensions.operation)\n| order by Operations desc",
+            "size": 0,
+            "title": "Model Usage by Type and Operation",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Model Usage Breakdown"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"FoundryCostEstimate\"\n| summarize \n    TotalEstimatedCost = sum(value),\n    AvgCostPerOperation = avg(value),\n    CostOperations = count()\n| extend \n    TotalEstimatedCost = round(TotalEstimatedCost, 2),\n    AvgCostPerOperation = round(AvgCostPerOperation, 4)",
+            "size": 3,
+            "title": "Cost Estimation (USD)",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Cost Estimation"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 🚨 Error Analysis & System Health"
+          },
+          "name": "Section Header - Errors"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customEvents\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ResumeProcessingError\"\n| summarize \n    TotalErrors = count(),\n    DistinctUsers = dcount(tostring(customDimensions.userId))\nby \n    ErrorType = tostring(customDimensions.errorType),\n    ProcessingMethod = tostring(customDimensions.processingMethod),\n    Recovery = tostring(customDimensions.recovery)\n| order by TotalErrors desc",
+            "size": 0,
+            "title": "Error Analysis by Type and Recovery",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table"
+          },
+          "name": "Error Analysis"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ResumeProcessingErrors\"\n| make-series ErrorCount = sum(value) on timestamp step 5m\n| render timechart",
+            "size": 0,
+            "title": "Error Rate Trend",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "timechart"
+          },
+          "name": "Error Rate Trend"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "customMetrics\n| where timestamp >= ago({TimeRange:duration})\n| where name == \"ResumeProcessingTime\"\n| make-series AvgProcessingTime = avg(value) on timestamp step 5m by tostring(customDimensions.processingMethod)\n| render timechart",
+            "size": 0,
+            "title": "Processing Time Trend by Method",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "timechart"
+          },
+          "name": "Processing Time Trend"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "## 📈 Real-time Performance Indicators\n\n### Key Performance Indicators (KPIs)\n- **Success Rate Target**: ≥ 95%\n- **Average ATS Score Target**: ≥ 75\n- **P95 Processing Time Target**: ≤ 30 seconds\n- **Error Rate Target**: ≤ 2%"
+          },
+          "name": "KPI Section"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "let successRate = toscalar(\n    customEvents\n    | where timestamp >= ago({TimeRange:duration})\n    | where name == \"ResumeProcessed\"\n    | summarize SuccessRate = 100.0 * countif(customDimensions.success == \"true\") / count()\n);\nlet avgATSScore = toscalar(\n    customMetrics\n    | where timestamp >= ago({TimeRange:duration})\n    | where name == \"ATSScore\"\n    | summarize AvgScore = avg(value)\n);\nlet p95ProcessingTime = toscalar(\n    customMetrics\n    | where timestamp >= ago({TimeRange:duration})\n    | where name == \"ResumeProcessingTime\"\n    | summarize P95Time = percentile(value, 95)\n);\nlet errorRate = toscalar(\n    customMetrics\n    | where timestamp >= ago({TimeRange:duration})\n    | where name == \"ResumeProcessingErrors\"\n    | summarize ErrorRate = sum(value) * 100.0 / \n        toscalar(\n            customEvents\n            | where timestamp >= ago({TimeRange:duration})\n            | where name == \"ResumeProcessed\"\n            | count()\n        )\n);\nprint \n    KPI = \"Success Rate\", Value = round(successRate, 1), Target = 95.0, Unit = \"%\", Status = iff(successRate >= 95, \"✅ Good\", iff(successRate >= 90, \"⚠️ Warning\", \"❌ Critical\"))\nunion (\n    print \n        KPI = \"Avg ATS Score\", Value = round(avgATSScore, 1), Target = 75.0, Unit = \"/100\", Status = iff(avgATSScore >= 75, \"✅ Good\", iff(avgATSScore >= 65, \"⚠️ Warning\", \"❌ Critical\"))\n)\nunion (\n    print \n        KPI = \"P95 Processing Time\", Value = round(p95ProcessingTime/1000, 1), Target = 30.0, Unit = \"sec\", Status = iff(p95ProcessingTime <= 30000, \"✅ Good\", iff(p95ProcessingTime <= 45000, \"⚠️ Warning\", \"❌ Critical\"))\n)\nunion (\n    print \n        KPI = \"Error Rate\", Value = round(errorRate, 2), Target = 2.0, Unit = \"%\", Status = iff(errorRate <= 2, \"✅ Good\", iff(errorRate <= 5, \"⚠️ Warning\", \"❌ Critical\"))\n)",
+            "size": 0,
+            "title": "KPI Health Dashboard",
+            "timeContextFromParameter": "TimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.insights/components",
+            "visualization": "table",
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "Status",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "colors",
+                    "thresholdsGrid": [
+                      {
+                        "operator": "contains",
+                        "thresholdValue": "✅",
+                        "representation": "green"
+                      },
+                      {
+                        "operator": "contains", 
+                        "thresholdValue": "⚠️",
+                        "representation": "yellow"
+                      },
+                      {
+                        "operator": "contains",
+                        "thresholdValue": "❌", 
+                        "representation": "red"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "name": "KPI Dashboard"
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "type": "microsoft.insights/workbooks",
+      "name": "[parameters('workbookDisplayName')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2021-03-08",
+      "kind": "shared",
+      "properties": {
+        "displayName": "[parameters('workbookDisplayName')]",
+        "serializedData": "[string(variables('workbookContent'))]",
+        "version": "1.0",
+        "sourceId": "[parameters('applicationInsightsResourceId')]",
+        "category": "[parameters('workbookType')]"
+      }
+    }
+  ],
+  "outputs": {
+    "workbookId": {
+      "type": "string",
+      "value": "[resourceId('microsoft.insights/workbooks', parameters('workbookDisplayName'))]"
+    }
+  }
+}

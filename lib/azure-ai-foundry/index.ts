@@ -136,6 +136,17 @@ export function getRequiredEnvironmentVariables(): string[] {
 }
 
 /**
+ * Get optional Azure AI Foundry Document Intelligence environment variables
+ */
+export function getDocumentIntelligenceEnvironmentVariables(): string[] {
+  return [
+    'AZURE_FOUNDRY_DOCINT_ENDPOINT',
+    'AZURE_FOUNDRY_DOCINT_API_KEY',
+    'AZURE_FOUNDRY_DOCINT_PROJECT_ID'
+  ];
+}
+
+/**
  * Check if Azure AI Foundry is properly configured
  */
 export function isFoundryConfigured(): boolean {

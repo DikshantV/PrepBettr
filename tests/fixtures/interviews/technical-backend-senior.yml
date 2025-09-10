@@ -1,0 +1,305 @@
+# Azure AI Foundry Interview Scenario: Senior Backend Engineer
+# 
+# Comprehensive test scenario for evaluating technical backend engineering candidates
+# with Azure AI Foundry agent coordination and voice processing validation.
+
+metadata:
+  id: tech-backend-senior-001
+  version: "2.0.0"
+  created: "2024-01-15"
+  last_updated: "2024-01-15"
+  author: "PrepBettr Test Team"
+  tags: ["backend", "senior", "technical", "microservices", "system-design"]
+
+# Candidate profile for testing
+candidate:
+  name: "John Smith"
+  experience_years: 8
+  current_role: "Senior Software Engineer"
+  current_company: "TechCorp Inc."
+  target_role: "Principal Backend Engineer"
+  target_company: "Azure Innovations"
+  
+# Interview configuration
+interview_config:
+  duration_minutes: 45
+  difficulty: "senior"
+  focus_areas:
+    - system_design
+    - microservices
+    - scalability
+    - leadership
+    - architecture_patterns
+  
+  voice_settings:
+    voice: "en-US-AvaMultilingualNeural"
+    speaking_rate: 1.0
+    emotional_tone: "professional"
+    interruption_detection: true
+    noise_suppression: true
+
+# Agent configuration for multi-agent handoff testing
+agents:
+  technical_interviewer:
+    name: "Technical Interviewer"
+    personality: "analytical, thorough, technical"
+    expertise: ["system architecture", "scalability", "performance", "backend technologies"]
+    question_style: "deep technical, scenario-based"
+    duration_minutes: 30
+    
+  behavioral_interviewer:
+    name: "Behavioral Interviewer"
+    personality: "empathetic, insightful, leadership-focused"
+    expertise: ["team dynamics", "leadership", "communication", "problem solving"]
+    question_style: "situational, STAR method"
+    duration_minutes: 15
+    
+  handoff_trigger:
+    condition: "after_question_count"
+    threshold: 5
+    transition_phrase: "Now let's shift focus to discuss your leadership experience and team collaboration."
+
+# Expected interview flow and questions
+interview_flow:
+  opening:
+    agent: "technical_interviewer"
+    duration_seconds: 60
+    expected_content:
+      - greeting
+      - role_confirmation  
+      - interview_structure_explanation
+    
+  technical_deep_dive:
+    agent: "technical_interviewer"
+    duration_minutes: 25
+    questions:
+      - id: "q001"
+        category: "system_design"
+        difficulty: "senior"
+        text: "Design a distributed system that can handle 1 million concurrent users for a real-time chat application. Walk me through your architecture decisions."
+        expected_topics:
+          - load_balancing
+          - database_sharding
+          - caching_strategies
+          - message_queuing
+          - microservices_architecture
+        follow_up_probability: 0.8
+        
+      - id: "q002"
+        category: "scalability"
+        difficulty: "senior"
+        text: "You're dealing with a service that's experiencing 10x traffic growth. The response time has increased from 100ms to 2 seconds. How would you investigate and resolve this?"
+        expected_topics:
+          - performance_monitoring
+          - bottleneck_identification
+          - horizontal_scaling
+          - database_optimization
+          - caching_implementation
+        follow_up_probability: 0.9
+        
+      - id: "q003"
+        category: "architecture"
+        difficulty: "senior"
+        text: "Explain the trade-offs between monolithic and microservices architectures. When would you choose one over the other?"
+        expected_topics:
+          - complexity_management
+          - deployment_strategies
+          - data_consistency
+          - service_boundaries
+          - team_organization
+        follow_up_probability: 0.7
+        
+      - id: "q004"
+        category: "technical_leadership"
+        difficulty: "senior"
+        text: "Describe a time when you had to make a critical architectural decision that affected multiple teams. How did you approach the decision-making process?"
+        expected_topics:
+          - stakeholder_communication
+          - technical_analysis
+          - risk_assessment
+          - implementation_planning
+          - change_management
+        follow_up_probability: 0.6
+
+  agent_handoff:
+    duration_seconds: 30
+    transition_agent: "technical_interviewer"
+    receiving_agent: "behavioral_interviewer"
+    context_transfer:
+      - technical_competency_assessment
+      - communication_style_notes
+      - areas_for_behavioral_exploration
+    
+  behavioral_assessment:
+    agent: "behavioral_interviewer"
+    duration_minutes: 12
+    questions:
+      - id: "q005"
+        category: "leadership"
+        difficulty: "senior"
+        text: "Tell me about a time when you had to lead a technically challenging project with a tight deadline. How did you manage the team and ensure delivery?"
+        expected_framework: "STAR"
+        expected_topics:
+          - team_coordination
+          - priority_management
+          - risk_mitigation
+          - communication_strategies
+        
+      - id: "q006"
+        category: "conflict_resolution"
+        difficulty: "senior"
+        text: "Describe a situation where you disagreed with a technical decision made by another senior engineer. How did you handle it?"
+        expected_framework: "STAR"
+        expected_topics:
+          - professional_disagreement
+          - data_driven_arguments
+          - collaboration
+          - compromise_solutions
+  
+  closing:
+    agent: "behavioral_interviewer"
+    duration_minutes: 3
+    expected_content:
+      - candidate_questions
+      - next_steps_explanation
+      - thank_you_closing
+
+# Test validation criteria
+validation_criteria:
+  transcript_analysis:
+    minimum_words: 2000
+    technical_term_density: 0.15  # 15% of words should be technical terms
+    required_topics:
+      - "microservices"
+      - "scalability"
+      - "architecture"
+      - "leadership"
+    question_response_completeness: 0.8  # 80% of questions should get substantive responses
+    
+  voice_quality:
+    minimum_audio_quality_score: 0.85
+    maximum_silence_gaps_seconds: 5
+    speech_clarity_threshold: 0.9
+    background_noise_threshold: -40  # dB
+    
+  agent_performance:
+    handoff_success_rate: 1.0  # Must be seamless
+    context_continuity_score: 0.9
+    question_relevance_score: 0.85
+    response_latency_p95_ms: 2000
+    
+  interview_metrics:
+    completion_rate: 1.0  # Must complete fully
+    candidate_engagement_score: 0.8
+    interviewer_satisfaction_score: 0.85
+    technical_depth_score: 0.8
+
+# Cost expectations and monitoring
+cost_analysis:
+  estimated_cost_usd: 0.35
+  cost_breakdown:
+    speech_to_text: 0.08      # ~30 minutes of audio
+    text_to_speech: 0.12      # AI responses
+    gpt_tokens: 0.10          # Conversation processing
+    foundry_agent_tokens: 0.05 # Agent coordination
+  
+  cost_thresholds:
+    warning_threshold_usd: 0.40
+    error_threshold_usd: 0.50
+
+# Performance benchmarks
+performance_benchmarks:
+  voice_connection_time_ms: 3000
+  first_question_latency_ms: 5000
+  average_response_time_ms: 1500
+  agent_handoff_time_ms: 2000
+  session_cleanup_time_ms: 1000
+  
+  memory_usage_mb: 150
+  cpu_usage_percent: 25
+  network_bandwidth_kbps: 64
+
+# Edge cases and error scenarios to test
+edge_cases:
+  network_interruptions:
+    - type: "brief_disconnection"
+      duration_seconds: 3
+      expected_behavior: "auto_reconnect"
+    - type: "extended_outage"
+      duration_seconds: 30
+      expected_behavior: "graceful_degradation"
+      
+  audio_quality_issues:
+    - type: "background_noise"
+      noise_level_db: -20
+      expected_behavior: "noise_suppression_active"
+    - type: "low_volume"
+      volume_level: 0.3
+      expected_behavior: "volume_normalization"
+    - type: "echo_feedback"
+      echo_intensity: 0.4
+      expected_behavior: "echo_cancellation"
+      
+  agent_failures:
+    - type: "technical_agent_timeout"
+      timeout_duration_seconds: 10
+      expected_behavior: "fallback_to_backup_agent"
+    - type: "handoff_failure"
+      error_type: "context_transfer_failed"
+      expected_behavior: "retry_with_minimal_context"
+      
+  candidate_behaviors:
+    - type: "long_silence"
+      duration_seconds: 15
+      expected_behavior: "gentle_prompt"
+    - type: "off_topic_response"
+      deviation_level: "high"
+      expected_behavior: "redirect_tactfully"
+    - type: "incomplete_answers"
+      completeness_score: 0.3
+      expected_behavior: "follow_up_questions"
+
+# Success metrics for automated testing
+success_metrics:
+  functional_requirements:
+    - voice_session_established: true
+    - all_questions_asked: true
+    - agent_handoff_completed: true
+    - interview_properly_closed: true
+    - transcript_generated: true
+    - summary_created: true
+    
+  performance_requirements:
+    - p95_response_time_under_2s: true
+    - audio_quality_above_85pct: true
+    - zero_critical_errors: true
+    - cost_under_50_cents: true
+    - completion_time_under_50min: true
+    
+  quality_requirements:
+    - technical_depth_achieved: true
+    - behavioral_assessment_completed: true
+    - candidate_engagement_maintained: true
+    - natural_conversation_flow: true
+    - actionable_feedback_generated: true
+
+# Test environment requirements
+test_environment:
+  azure_services:
+    - speech_services
+    - openai_gpt4
+    - foundry_agents
+    - application_insights
+    
+  required_features:
+    - voice_streaming
+    - agent_coordination
+    - real_time_transcription
+    - cost_monitoring
+    - performance_telemetry
+    
+  test_data_requirements:
+    - authenticated_test_user
+    - sample_resume_uploaded
+    - microphone_permissions_granted
+    - stable_network_connection
