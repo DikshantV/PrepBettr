@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVoiceLiveClient } from '@/lib/azure-ai-foundry/voice/voice-live-client';
 import { VoiceSession } from '@/lib/azure-ai-foundry/voice/voice-session';
+import { getVoiceSessionStorage } from '@/lib/azure-ai-foundry/voice/voice-session-storage';
 
 /**
  * Request body schema
@@ -58,10 +59,11 @@ function validateSessionId(sessionId: string): { isValid: boolean; error?: strin
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse<StopSessionResponse>> {
   try {
-    const sessionId = params.id;
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.id;
     console.log(`🛑 [API] Stopping voice session: ${sessionId}`);
 
     // Validate session ID
@@ -112,6 +114,10 @@ export async function POST(
     try {
       await voiceSession.stop(graceful);
       
+      // Clean up edge-compatible storage as well
+      const sessionStorage = getVoiceSessionStorage();
+      sessionStorage.removeSession(sessionId);
+      
       console.log(`✅ [API] Voice session stopped: ${sessionId}`);
       
       return NextResponse.json({
@@ -124,8 +130,10 @@ export async function POST(
     } catch (stopError) {
       console.error(`❌ [API] Error stopping session ${sessionId}:`, stopError);
       
-      // Even if stopping failed, remove from client's active sessions
+      // Even if stopping failed, remove from both client's active sessions and edge storage
       voiceClient.removeSession(sessionId);
+      const sessionStorage = getVoiceSessionStorage();
+      sessionStorage.removeSession(sessionId);
       
       return NextResponse.json({
         success: false,
@@ -139,7 +147,8 @@ export async function POST(
   } catch (error) {
     console.error('❌ [API] Failed to stop voice session:', error);
     
-    const sessionId = params.id || 'unknown';
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.id || 'unknown';
     
     return NextResponse.json({
       success: false,
@@ -156,9 +165,10 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse> {
-  const sessionId = params.id;
+  const resolvedParams = await params;
+  const sessionId = resolvedParams.id;
   
   // Validate session ID
   const sessionValidation = validateSessionId(sessionId);

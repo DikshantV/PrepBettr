@@ -8,7 +8,6 @@
 import { useReducer, useEffect, useCallback, useRef, useState } from 'react';
 import { VoiceAgentBridge } from './voice-agent-bridge';
 import { VoiceSession } from './voice-session';
-import { voiceTelemetry } from './voice-telemetry';
 import { voiceInsights } from './voice-insights';
 import type {
   VoiceSessionTelemetry,
@@ -272,21 +271,32 @@ export function useVoiceAgentBridge(config: UseVoiceAgentBridgeConfig): VoiceAge
       const sessionData = await response.json();
       const sessionId = sessionData.sessionId;
 
-      // Create voice session instance with proper configuration
-      const voiceSessionConfig = {
-        endpoint: sessionData.wsUrl || sessionData.endpoint,
-        apiKey: sessionData.token || sessionData.apiKey,
-        deploymentId: sessionData.deploymentId || 'gpt-4o-realtime-preview',
-        voice: currentConfig.voiceSettings?.voice || 'alloy',
-        inputFormat: 'pcm16',
-        outputFormat: 'pcm16',
-        temperature: currentConfig.voiceSettings?.temperature || 0.7,
-        maxTokens: currentConfig.voiceSettings?.maxTokens || 4096,
-        instructionMessage: `You are conducting an interview for a ${currentConfig.type} position. Be professional, ask follow-up questions, and provide constructive feedback.`,
-        ...currentConfig.voiceSettings
+      // Create VoiceLiveClient instance
+      const { VoiceLiveClient } = await import('./voice-live-client');
+      const voiceClient = new VoiceLiveClient();
+      await voiceClient.init();
+      
+      // Create session metadata from API response
+      const sessionMetadata = {
+        sessionId,
+        wsUrl: sessionData.wsUrl || sessionData.endpoint,
+        options: {
+          voiceName: currentConfig.voiceSettings?.voice || 'neural-hd-professional',
+          locale: currentConfig.voiceSettings?.language || 'en-US',
+          speakingPace: currentConfig.voiceSettings?.speakingPace || 'normal',
+          emotionalTone: currentConfig.voiceSettings?.personality || 'professional',
+          audioSettings: {
+            noiseSuppression: true,
+            echoCancellation: true,
+            interruptionDetection: true,
+            sampleRate: currentConfig.voiceSettings?.inputSampleRate || 16000
+          }
+        },
+        createdAt: new Date()
       };
 
-      const voiceSession = new VoiceSession(voiceSessionConfig);
+      // Create VoiceSession wrapper with client and metadata
+      const voiceSession = new VoiceSession(voiceClient, sessionMetadata);
 
       // Create mock agent orchestrator for now
       const mockAgentOrchestrator = {
@@ -348,13 +358,15 @@ export function useVoiceAgentBridge(config: UseVoiceAgentBridgeConfig): VoiceAge
       const errorMessage = error instanceof Error ? error.message : 'Failed to create voice session';
       logger.error('❌ [Voice Bridge Hook] Failed to create voice session', error);
       
-      voiceTelemetry.trackError(
+      // Note: VoiceTelemetry.trackError expects sessionId as second param
+      const sessionId = 'creation_failed_' + Date.now();
+      // Import VoiceTelemetry directly from voice-telemetry
+      const { VoiceTelemetry } = await import('./voice-telemetry');
+      VoiceTelemetry.trackError(
         error instanceof Error ? error : new Error(errorMessage),
+        sessionId,
         'SESSION_CREATION_FAILED',
-        {
-          userId: currentConfig.userId,
-          type: currentConfig.type
-        }
+        false // don't notify user - this will be handled by the caller
       );
 
       throw new Error(errorMessage);

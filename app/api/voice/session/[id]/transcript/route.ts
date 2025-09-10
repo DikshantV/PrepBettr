@@ -58,7 +58,7 @@ const transcriptStorage = new Map<string, TranscriptEntry[]>();
 /**
  * Add transcript entry to storage
  */
-export function addTranscriptEntry(sessionId: string, entry: TranscriptEntry): void {
+function addTranscriptEntry(sessionId: string, entry: TranscriptEntry): void {
   if (!transcriptStorage.has(sessionId)) {
     transcriptStorage.set(sessionId, []);
   }
@@ -77,7 +77,7 @@ export function addTranscriptEntry(sessionId: string, entry: TranscriptEntry): v
 /**
  * Clear transcript storage for a session
  */
-export function clearTranscriptStorage(sessionId: string): void {
+function clearTranscriptStorage(sessionId: string): void {
   transcriptStorage.delete(sessionId);
   console.log(`🗑️ [TranscriptStorage] Cleared storage for session ${sessionId}`);
 }
@@ -161,10 +161,11 @@ function parseQueryParams(searchParams: URLSearchParams): {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse<TranscriptResponse>> {
   try {
-    const sessionId = params.id;
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.id;
     console.log(`📖 [API] Retrieving transcripts for session: ${sessionId}`);
 
     // Validate session ID
@@ -237,7 +238,8 @@ export async function GET(
   } catch (error) {
     console.error('❌ [API] Failed to retrieve transcripts:', error);
     
-    const sessionId = params.id || 'unknown';
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.id || 'unknown';
     
     return NextResponse.json({
       success: false,
@@ -255,10 +257,11 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  { params }: { params: Promise<RouteParams> }
 ): Promise<NextResponse> {
   try {
-    const sessionId = params.id;
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.id;
     console.log(`🗑️ [API] Clearing transcripts for session: ${sessionId}`);
 
     // Validate session ID

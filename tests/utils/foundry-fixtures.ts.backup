@@ -229,7 +229,7 @@ export const MOCK_VOICE_RESPONSES = {
       code: 'invalid_audio_format',
       message: 'The provided audio format is not supported. Please use PCM16 format.',
       param: 'audio',
-      eventId: 'event_error_001'
+      event_id: 'event_error_001'
     }
   },
 
@@ -239,7 +239,7 @@ export const MOCK_VOICE_RESPONSES = {
       type: 'rate_limit_error',
       code: 'rate_limit_exceeded',
       message: 'Rate limit exceeded. Please retry after 60 seconds.',
-      eventId: 'event_error_002'
+      event_id: 'event_error_002'
     }
   }
 };
@@ -309,23 +309,12 @@ export function createMockVoiceConfig(overrides: Partial<ConfigOptions> = {}): C
     endpoint: 'wss://test-region.api.cognitive.microsoft.com/cognitiveservices/websocket/v1',
     apiKey: 'test-voice-api-key',
     deploymentId: 'test-deployment',
-    
-    // Required VoiceSettings fields
-    inputAudioFormat: 'pcm16',
-    inputSampleRate: 16000,
-    language: 'en-US',
-    outputAudioFormat: 'pcm16',
-    outputSampleRate: 16000,
-    voice: 'en-US-AvaMultilingualNeural',
     temperature: 0.7,
     maxTokens: 150,
-    systemMessage: 'You are conducting a professional technical interview.',
-    
-    // Legacy compatibility fields
+    voice: 'en-US-AvaMultilingualNeural',
     inputFormat: 'simple',
     outputFormat: 'simple',
     instructionMessage: 'You are conducting a professional technical interview.',
-    
     turnDetection: {
       type: 'server_vad',
       threshold: 0.5,
@@ -378,7 +367,7 @@ export function createMockCompletionResponse(overrides: Partial<CompletionRespon
       {
         text: 'This is a test completion response.',
         index: 0,
-        logprobs: undefined,
+        logprobs: null,
         finish_reason: 'stop'
       }
     ],
@@ -417,21 +406,24 @@ export function createMockChatCompletionResponse(overrides: Partial<ChatCompleti
 export function createMockVoiceSession(overrides: Partial<FoundryVoiceSession> = {}): FoundryVoiceSession {
   return {
     id: `sess_mock_${Date.now()}`,
-    status: 'active',
+    object: 'realtime.session',
     model: 'gpt-4o-realtime-preview-2024-10-01',
     modalities: ['text', 'audio'],
     instructions: 'You are conducting a professional interview.',
     voice: 'en-US-AvaMultilingualNeural',
-    inputAudioFormat: 'pcm16',
-    outputAudioFormat: 'pcm16',
-    turnDetection: {
+    input_audio_format: 'pcm16',
+    output_audio_format: 'pcm16',
+    input_audio_transcription: { model: 'whisper-1' },
+    turn_detection: {
       type: 'server_vad',
       threshold: 0.5,
       prefix_padding_ms: 300,
       silence_duration_ms: 500
     },
+    tools: [],
+    tool_choice: 'auto',
     temperature: 0.8,
-    maxResponseOutputTokens: 4096,
+    max_response_output_tokens: 4096,
     ...overrides
   };
 }
@@ -445,7 +437,7 @@ export function createMockVoiceError(overrides: Partial<FoundryVoiceError> = {})
     code: 'invalid_audio_format',
     message: 'Test error message',
     param: 'audio',
-    eventId: `error_${Date.now()}`,
+    event_id: `error_${Date.now()}`,
     ...overrides
   };
 }
@@ -571,7 +563,7 @@ export const VALIDATORS = {
 export const TEST_ENV_SETUP = {
   setupMockEnvironment(): void {
     // Set test environment variables
-    (process.env as any).NODE_ENV = 'test';
+    process.env.NODE_ENV = 'test';
     process.env.AZURE_FOUNDRY_ENDPOINT = MOCK_FOUNDRY_CONFIG.endpoint;
     process.env.AZURE_FOUNDRY_API_KEY = MOCK_FOUNDRY_CONFIG.apiKey;
     process.env.AZURE_FOUNDRY_PROJECT_ID = MOCK_FOUNDRY_CONFIG.projectId;

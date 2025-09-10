@@ -224,7 +224,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
     
     logServerError(error as Error, {
       service: 'enhanced-resume-analysis-api',
-      action: 'analyze',
+      action: 'analyze'
+    }, {
       processingTime: totalTime
     });
 

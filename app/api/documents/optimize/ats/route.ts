@@ -277,7 +277,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ATSOptimi
     
     logServerError(error as Error, {
       service: 'ats-optimization-api',
-      action: 'analyze',
+      action: 'analyze'
+    }, {
       processingTime: totalTime
     });
 

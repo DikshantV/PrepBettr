@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-workflow';
 
-const workflow = new InterviewWorkflow();
+// Lazy initialization to avoid build-time issues
+let workflow: InterviewWorkflow | null = null;
+
+function getWorkflow(): InterviewWorkflow {
+  if (!workflow) {
+    workflow = new InterviewWorkflow();
+  }
+  return workflow;
+}
 
 /**
  * GET /api/interview/session/[id]/status
@@ -21,10 +29,12 @@ const workflow = new InterviewWorkflow();
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
+  const sessionId = resolvedParams.id;
+  
   try {
-    const sessionId = params.id;
     const { searchParams } = new URL(request.url);
     const refresh = searchParams.get('refresh') === 'true';
 
@@ -37,7 +47,7 @@ export async function GET(
     console.log(`[API] Getting status for session: ${sessionId}${refresh ? ' (refresh)' : ''}`);
 
     // Get current workflow status
-    const status = await workflow.getStatus(sessionId);
+    const status = await getWorkflow().getStatus(sessionId);
 
     return NextResponse.json({
       success: true,
@@ -67,7 +77,7 @@ export async function GET(
       return NextResponse.json({
         success: false,
         error: 'Session not found',
-        sessionId: params.id
+        sessionId: resolvedParams.id
       }, { status: 404 });
     }
 
@@ -75,7 +85,7 @@ export async function GET(
       success: false,
       error: error.message || 'Failed to get session status',
       code: error.code || 'UNKNOWN_ERROR',
-      sessionId: params.id
+      sessionId: resolvedParams.id
     }, { status: 500 });
   }
 }

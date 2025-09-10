@@ -376,4 +376,3 @@ function validateEnhancedResumeFields(data) {
 }
 `;
 
-export type { BaseResumeData, EnhancedResumeDocument, MigrationRecord };

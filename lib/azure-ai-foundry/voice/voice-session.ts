@@ -199,6 +199,13 @@ export class VoiceSession {
   }
 
   /**
+   * Get session ID
+   */
+  get sessionId(): string {
+    return this.sessionMeta.sessionId;
+  }
+
+  /**
    * Get session metadata
    */
   getMetadata(): VoiceSessionMetadata {
@@ -267,7 +274,7 @@ export class VoiceSession {
       console.log(`📝 [VoiceSession] Transcript: "${transcriptEvent.text}" (confidence: ${transcriptEvent.confidence})`);
       
       // Track transcript event with telemetry
-      VoiceTelemetry.getVoiceTelemetry().logTranscriptEvent(
+      VoiceTelemetry.getInstance().logTranscriptEvent(
         transcriptEvent.isFinal ? 'transcript_final' : 'transcript_partial',
         this.sessionMeta.sessionId,
         transcriptEvent.text,

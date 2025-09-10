@@ -3,7 +3,15 @@ import { InterviewWorkflow } from '@/lib/azure-ai-foundry/workflows/interview-wo
 import type { InterviewConfig } from '@/lib/azure-ai-foundry/workflows/workflow-types';
 import { nanoid } from 'nanoid';
 
-const workflow = new InterviewWorkflow();
+// Lazy initialization to avoid build-time issues
+let workflow: InterviewWorkflow | null = null;
+
+function getWorkflow(): InterviewWorkflow {
+  if (!workflow) {
+    workflow = new InterviewWorkflow();
+  }
+  return workflow;
+}
 
 /**
  * POST /api/interview/start-multi-agent
@@ -77,10 +85,10 @@ export async function POST(request: NextRequest) {
     console.log(`[API] Starting multi-agent interview for ${config.candidateProfile.name} - Role: ${config.role}`);
 
     // Start the interview workflow
-    const startedSessionId = await workflow.startMultiAgentInterview(config);
+    const startedSessionId = await getWorkflow().startMultiAgentInterview(config);
     
     // Get initial status
-    const status = await workflow.getStatus(startedSessionId);
+    const status = await getWorkflow().getStatus(startedSessionId);
 
     return NextResponse.json({
       success: true,

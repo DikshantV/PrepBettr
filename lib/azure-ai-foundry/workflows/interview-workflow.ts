@@ -123,10 +123,23 @@ export class InterviewWorkflow {
     // Adjust agent configs by experience level and apply any overrides
     const adjustments = getExperienceAdjustments(config.experienceLevel);
 
+    // Transform candidateProfile to match CandidateProfile interface
+    const transformedCandidateProfile = {
+      name: config.candidateProfile.name,
+      experience: `${config.experienceLevel} level`, // Map experienceLevel to experience string
+      skills: config.candidateProfile.skills,
+      targetRole: config.role, // Map role to targetRole
+      industry: config.industry || config.companyInfo?.industry || 'Technology', // Default to Technology if not specified
+      previousRoles: config.candidateProfile.previousRoles,
+      yearsExperience: config.candidateProfile.yearsExperience,
+      education: config.candidateProfile.education,
+      certifications: config.candidateProfile.certifications
+    };
+
     // Build orchestrator session config
     const orchestratorConfig = this.orchestrator.createStandardSession({
       sessionId: config.sessionId,
-      candidateProfile: config.candidateProfile,
+      candidateProfile: transformedCandidateProfile,
       jobRole: config.role,
       companyInfo: config.companyInfo,
       experienceLevel: config.experienceLevel,
@@ -154,7 +167,7 @@ export class InterviewWorkflow {
 
     // Compose InterviewContext with focus areas and metadata
     const interviewContext: InterviewContext = {
-      candidateProfile: config.candidateProfile,
+      candidateProfile: transformedCandidateProfile,
       jobRole: config.role,
       companyInfo: config.companyInfo,
       sessionHistory: undefined,

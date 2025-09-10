@@ -9,7 +9,8 @@
  */
 
 import { OpenAI } from 'openai';
-import { azureOpenAIService } from '@/azure/lib/services/azure-openai-service';
+import { MigrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
+import { fetchAzureSecrets } from '@/azure/lib/azure-config';
 import { 
   ATS_OPTIMIZATION_PROMPT,
   SKILLS_NORMALIZATION_PROMPT,
@@ -232,7 +233,7 @@ const INDUSTRY_TAXONOMIES = {
 };
 
 class ATSOptimizationService {
-  private openai: OpenAI | null = null;
+  private openai: OpenAI | MigrationOpenAIClient | null = null;
 
   constructor() {
     this.initializeOpenAI();
@@ -240,15 +241,19 @@ class ATSOptimizationService {
 
   private async initializeOpenAI() {
     try {
-      // Try Azure OpenAI first
-      this.openai = await azureOpenAIService.getClient();
+      // Try Azure AI Foundry (Migration Client) first
+      const migrationClient = new MigrationOpenAIClient();
+      await migrationClient.init();
+      this.openai = migrationClient;
+      console.log('✅ ATS Service using Azure AI Foundry client');
     } catch (error) {
-      console.warn('Azure OpenAI not available, falling back to OpenAI:', error);
+      console.warn('Azure AI Foundry not available, falling back to OpenAI:', error);
       // Fallback to standard OpenAI
       if (process.env.OPENAI_API_KEY) {
         this.openai = new OpenAI({
           apiKey: process.env.OPENAI_API_KEY,
         });
+        console.log('✅ ATS Service using standard OpenAI client');
       } else {
         throw new Error('No AI service available for ATS optimization');
       }
@@ -506,17 +511,62 @@ class ATSOptimizationService {
    */
   private async getTextEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await this.openai!.embeddings.create({
-        model: 'text-embedding-ada-002',
-        input: text.slice(0, 8192), // Limit to avoid token limits
-      });
-
-      return response.data[0].embedding;
+      // Check if embeddings API is available
+      if (this.openai && 'embeddings' in this.openai) {
+        const response = await (this.openai as any).embeddings.create({
+          model: 'text-embedding-ada-002',
+          input: text.slice(0, 8192), // Limit to avoid token limits
+        });
+        return response.data[0].embedding;
+      } else {
+        // Fallback: Use text-based similarity analysis
+        console.warn('Embeddings API not available, using text-based fallback');
+        return this.getTextBasedVector(text);
+      }
     } catch (error) {
       console.error('Failed to get embedding:', error);
-      // Return zero vector as fallback
-      return new Array(1536).fill(0);
+      // Return text-based vector as fallback
+      return this.getTextBasedVector(text);
     }
+  }
+
+  /**
+   * Create a simple text-based vector representation
+   */
+  private getTextBasedVector(text: string): number[] {
+    // Simple text-based feature extraction
+    const words = text.toLowerCase().split(/\s+/);
+    const vector = new Array(1536).fill(0);
+    
+    // Use word frequency and character patterns to create a pseudo-vector
+    words.forEach((word, index) => {
+      const hash = this.simpleHash(word);
+      const vectorIndex = Math.abs(hash) % 1536;
+      vector[vectorIndex] += 1;
+    });
+    
+    // Normalize the vector
+    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+    if (magnitude > 0) {
+      for (let i = 0; i < vector.length; i++) {
+        vector[i] = vector[i] / magnitude;
+      }
+    }
+    
+    return vector;
+  }
+
+  /**
+   * Simple hash function for text
+   */
+  private simpleHash(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash;
   }
 
   /**
@@ -751,13 +801,3 @@ class ATSOptimizationService {
 
 // Export singleton instance
 export const atsOptimizationService = new ATSOptimizationService();
-
-// Export types for use in other modules
-export type {
-  ATSAnalysisResult,
-  SkillsNormalizationResult,
-  JobMatchResult,
-  KeywordAnalysis,
-  NormalizedSkill,
-  JobMatchRecommendation
-};

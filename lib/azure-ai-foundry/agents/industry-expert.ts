@@ -236,7 +236,7 @@ Ensure questions test both current industry knowledge and strategic thinking abi
   /**
    * Get fallback industry questions when AI generation fails
    */
-  private getFallbackQuestions(context: InterviewContext): Question[] {
+  protected getFallbackQuestions(context: InterviewContext): Question[] {
     const industry = this.extractIndustry(context.companyInfo, context.jobRole) || 'technology';
     
     const fallbackQuestions: Question[] = [
