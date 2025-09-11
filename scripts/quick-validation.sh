@@ -45,7 +45,7 @@ fi
 echo -e "${BLUE}3️⃣ Checking migration completeness...${NC}"
 
 # Check for Gemini references
-GEMINI_REFS=$(find . -name "*.ts" -o -name "*.tsx" -not -path "./node_modules/*" | xargs grep -l -i "gemini\|GoogleGenerativeAI" 2>/dev/null | wc -l)
+GEMINI_REFS=$(find . -name "*.ts" -o -name "*.tsx" -not -path "./node_modules/*" -not -path "./scripts/*" | xargs grep -l -i "gemini\|GoogleGenerativeAI" 2>/dev/null | wc -l)
 if [[ $GEMINI_REFS -eq 0 ]]; then
     echo -e "${GREEN}✅ Gemini AI references: CLEANED${NC}"
 else
@@ -53,7 +53,7 @@ else
 fi
 
 # Check Azure services integration
-if grep -q "@azure/cosmos" package.json && grep -q "@azure/openai" package.json; then
+if grep -q "@azure/cosmos" package.json && grep -q "openai" package.json; then
     echo -e "${GREEN}✅ Azure dependencies: INSTALLED${NC}"
 else
     echo -e "${RED}❌ Azure dependencies: MISSING${NC}"

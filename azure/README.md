@@ -27,7 +27,7 @@ The system uses Azure Queue Storage to decouple heavy processing tasks and consi
 
 **Functionality**:
 - Searches job portals (LinkedIn, Indeed, etc.) based on user filters
-- Calculates job relevancy scores using AI (Google Gemini)
+- Calculates job relevancy scores using AI (Azure OpenAI)
 - Filters jobs based on relevancy thresholds
 - Queues qualifying jobs for auto-apply processing
 - Stores discovered jobs for user review
@@ -40,7 +40,7 @@ The system uses Azure Queue Storage to decouple heavy processing tasks and consi
 
 **Functionality**:
 - Validates application eligibility (no duplicates, meets thresholds)
-- Generates AI-powered cover letters using Google Gemini
+- Generates AI-powered cover letters using Azure OpenAI
 - Tailors resumes for specific job requirements
 - Submits applications to job portals
 - Schedules follow-up reminders
@@ -98,7 +98,7 @@ Required environment variables in `local.settings.json`:
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "[Storage Account Connection String]",
-    "GOOGLE_AI_API_KEY": "[Google Gemini API Key]",
+    "AZURE_OPENAI_KEY": "[Azure OpenAI API Key]",
     "APPINSIGHTS_INSTRUMENTATIONKEY": "[Application Insights Key]",
     "AZURE_OPENAI_KEY": "[Optional: Azure OpenAI Key]",
     "AZURE_OPENAI_ENDPOINT": "[Optional: Azure OpenAI Endpoint]"
