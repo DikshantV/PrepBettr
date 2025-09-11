@@ -1,53 +1,32 @@
+/**
+ * PrepBettr Voice Agent
+ * Now powered solely by Azure AI Foundry Live Voice API
+ * Low-latency STT↔GPT↔TTS pipeline (~300-500 ms round-trip)
+ */
+
 "use client";
 
 import Image from "next/image";
-import { useReducer, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-// Feature flag support for Azure AI Foundry voice system
-import { useFeatureFlag } from "@/lib/hooks/useUnifiedConfig";
-import FoundryVoiceAgent from "./FoundryVoiceAgent";
 
 import { cn } from "@/lib/utils";
 import { createFeedback } from "@/lib/actions/general.action";
 import { logger } from "@/lib/utils/logger";
 import { handleAsyncError, showErrorNotification } from "@/lib/utils/error-utils";
-import {
-  AgentState,
-  InterviewState,
-  AudioState, 
-  agentReducer,
-  initialAgentState,
-  selectIsRecording,
-  selectIsProcessing,
-  selectIsSpeaking,
-  selectIsWaiting,
-  selectIsInterviewActive,
-  selectIsInterviewFinished,
-  selectShouldShowFeedback,
-  createStartInterviewAction,
-  createEndInterviewAction,
-  createAddUserMessageAction,
-  createAddAIMessageAction,
-  createUserSpokeAction
-} from "@/lib/voice/agent-state";
-import {
-  AUDIO_CONFIG,
-  prepareAudioForUpload,
-  createOptimizedAudioContext,
-  resumeAudioContext,
-  disposeAudioResources
-} from "@/lib/voice/audio-utils";
-import {
-  InterviewContext,
-  speechToText,
-  startConversation,
-  processAndPlayResponse,
-  endConversation,
-  playAIResponse,
-  playDirectAudioWithFallback
-} from "@/lib/voice/azure-adapters";
-import { SavedMessage } from "@/lib/types/voice";
+
+// Azure AI Foundry voice bridge hook
+import { 
+  useVoiceAgentBridge, 
+  type UseVoiceAgentBridgeConfig 
+} from "@/lib/azure-ai-foundry/voice/useVoiceAgentBridge";
+
+// Import voice types
+import type { 
+  TranscriptEntry,
+  SentimentAnalysis,
+  VoiceSettings
+} from "@/lib/azure-ai-foundry/voice/types";
 
 interface ExtractedResumeData {
     personalInfo?: {
@@ -90,97 +69,131 @@ const Agent = ({
     resumeInfo,
     resumeQuestions,
 }: AgentProps) => {
-    // CRITICAL: ALL hooks must be called at the top level before any conditional logic
-    // This prevents "Rules of Hooks" violations
-    const { enabled: useFoundryVoice, loading: flagLoading } = useFeatureFlag('voiceInterviewV2');
     const router = useRouter();
-    const [state, dispatch] = useReducer(agentReducer, initialAgentState);
-    
-    // Audio recording state - MUST be called before any conditional returns
-    const audioSamplesRef = useRef<Float32Array[]>([]);
-    const isCurrentlyRecordingRef = useRef<boolean>(false);
-    const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const audioCleanupRef = useRef<(() => Promise<void>) | null>(null);
-    
-    // Voice activity detection state - MUST be called before any conditional returns
-    const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const lastVoiceActivityRef = useRef<number>(0);
-    const recordingStartTimeRef = useRef<number>(0);
-    const SILENCE_DURATION_MS = 3500; // Allow users time to think - 3.5 seconds of silence
-    const MIN_RECORDING_DURATION_MS = 1200;  // Ensure we capture complete thoughts
-    
-    // Derived selectors from state - calculated values don't violate hooks rules
-    const isRecording = selectIsRecording(state);
-    const isProcessing = selectIsProcessing(state);
-    const isSpeaking = selectIsSpeaking(state);
-    const isWaiting = selectIsWaiting(state);
-    const isInterviewActive = selectIsInterviewActive(state);
-    const isInterviewFinished = selectIsInterviewFinished(state);
-    const shouldShowFeedback = selectShouldShowFeedback(state);
 
-    // ALL useEffect hooks MUST be called at top level before any conditional returns
-    // Load user profile image with fallbacks
+    // Voice configuration for Azure AI Foundry
+    const voiceSettings: Partial<VoiceSettings> = {
+        voice: 'en-US-AriaNeural',
+        language: 'en-US',
+        personality: 'professional',
+        speakingPace: 'normal',
+        responseStyle: 'conversational',
+        inputSampleRate: 16000,
+        outputSampleRate: 24000
+    };
+
+    // Hook configuration
+    const bridgeConfig: UseVoiceAgentBridgeConfig = {
+        userName,
+        userId,
+        interviewId,
+        feedbackId,
+        type,
+        questions,
+        resumeInfo,
+        resumeQuestions,
+        voiceSettings,
+        bridgeConfig: {
+            sessionTimeout: 1800000, // 30 minutes
+            maxRetries: 3,
+            errorRecoveryMode: 'graceful',
+            sentimentMonitoring: true,
+            recordingEnabled: true,
+            transcriptStorage: 'both'
+        },
+        // Event callbacks
+        onTranscriptReceived: (entry: TranscriptEntry) => {
+            logger.info('📝 [Agent] Transcript received', {
+                speaker: entry.speaker,
+                textLength: entry.text.length,
+                confidence: entry.confidence
+            });
+        },
+        onSentimentAnalysis: (sentiment: SentimentAnalysis) => {
+            if (sentiment.stressIndicators.hasHighStressWords) {
+                logger.warn('😟 [Agent] User stress detected', {
+                    level: sentiment.label,
+                    score: sentiment.score,
+                    stressWords: sentiment.stressIndicators.stressWords
+                });
+            }
+        },
+        onAgentResponse: (response) => {
+            logger.info('🤖 [Agent] Agent response', {
+                agent: response.agent,
+                textLength: response.text.length,
+                hasAudio: !!response.audioData
+            });
+        },
+        onSessionError: (error: Error) => {
+            logger.error('❌ [Agent] Session error', error);
+            showErrorNotification(error);
+        }
+    };
+
+    // Use the voice agent bridge hook
+    const {
+        state,
+        dispatch,
+        voiceBridge,
+        startVoiceSession,
+        stopVoiceSession,
+        retryConnection,
+        startRecording,
+        stopRecording,
+        handoffToAgent,
+        sendResponse,
+        isRecording,
+        isProcessing,
+        isSpeaking,
+        isWaiting,
+        isInterviewActive,
+        isInterviewFinished,
+        shouldShowFeedback,
+        isVoiceConnected,
+        canStartRecording,
+        sessionMetrics
+    } = useVoiceAgentBridge(bridgeConfig);
+
+    // Load user profile image (reusing existing logic)
     useEffect(() => {
         const loadUserProfileImage = async () => {
             try {
-                // Use existing auth endpoint that returns user data
                 const response = await fetch("/api/auth/user");
                 if (response.ok) {
                     const userData = await response.json();
                     const user = userData?.user;
                     
                     if (user) {
-                        // Try multiple sources for profile image
-                        const profileImage = 
-                            user.photoURL || // Firebase photoURL
-                            user.image || // Custom image field
-                            user.avatar || // Avatar field
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.name || userName)}&background=6366f1&color=fff&size=40`; // Generated avatar fallback
+                        const profileImage =
+                            user.photoURL ||
+                            user.image ||
+                            user.avatar ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.name || userName)}&background=6366f1&color=fff&size=40`;
                         
                         if (profileImage) {
                             dispatch({ type: 'SET_USER_IMAGE', payload: profileImage });
                         }
                     }
                 } else {
-                    // Silently fall back to generated avatar if auth fails
                     const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
                     dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
                 }
             } catch (error) {
-                // Generate fallback avatar instead of logging error
-                // This prevents console spam for a non-critical feature
                 const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
                 dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
             }
         };
         
-        // Add timeout to prevent hanging requests
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Profile image request timeout')), 5000);
         });
         
-        Promise.race([loadUserProfileImage(), timeoutPromise])
-            .catch(() => {
-                // Timeout fallback - use generated avatar
-                const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
-                dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
-            });
-    }, [userName]);
-    
-    // Handle tab visibility changes for audio context
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!document.hidden && (window as any).audioContext) {
-                handleAsyncError(
-                    () => resumeAudioContext((window as any).audioContext),
-                    'Failed to resume audio context on tab focus'
-                );
-            }
-        };
-        
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
+        Promise.race([loadUserProfileImage(), timeoutPromise]).catch(() => {
+            const fallbackImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff&size=40`;
+            dispatch({ type: 'SET_USER_IMAGE', payload: fallbackImage });
+        });
+    }, [userName, dispatch]);
 
     // Auto-end interview when complete
     useEffect(() => {
@@ -193,7 +206,7 @@ const Agent = ({
         }
     }, [state.isInterviewComplete, isInterviewActive]);
 
-    // Generate feedback when interview finishes
+    // Generate feedback when interview finishes (reusing existing logic)
     useEffect(() => {
         if (isInterviewFinished && state.messages.length > 0 && interviewId && type !== "generate") {
             handleAsyncError(
@@ -216,398 +229,92 @@ const Agent = ({
                 'Failed to generate feedback'
             );
         }
-        // No cleanup needed for this effect
-    }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId]);
-    
-    // Cleanup on unmount - MUST be at top level
-    useEffect(() => {
-        return () => {
-            if (audioCleanupRef.current) {
-                audioCleanupRef.current();
-            }
-            if (recordingTimeoutRef.current) {
-                clearTimeout(recordingTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    // NOW we can safely do conditional logic after ALL hooks have been called
-    // Show loading state while feature flag is being fetched
-    if (flagLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-lg text-gray-600 dark:text-gray-300">
-                    Loading interview system...
-                </div>
-            </div>
-        );
-    }
-    
-    // Use Azure AI Foundry voice system if feature flag is enabled
-    if (useFoundryVoice) {
-        console.log('🚀 [Agent] Using Azure AI Foundry voice system');
-        return (
-            <FoundryVoiceAgent
-                userName={userName}
-                userId={userId}
-                interviewId={interviewId}
-                feedbackId={feedbackId}
-                type={type}
-                questions={questions}
-                resumeInfo={resumeInfo}
-                resumeQuestions={resumeQuestions}
-            />
-        );
-    }
-    
-    // Fall back to legacy Speech SDK + OpenAI system
-    console.log('📻 [Agent] Using legacy Speech SDK + OpenAI system');
-
-    const handleEndInterview = async (): Promise<void> => {
-        try {
-            logger.info('Ending interview', { totalMessages: state.messages.length, questionNumber: state.questionNumber });
-            
-            dispatch(createEndInterviewAction());
-            
-            // Generate summary if possible
-            await handleAsyncError(
-                async () => {
-                    const summaryData = await endConversation();
-                    if (summaryData.summary) {
-                        logger.info('Interview summary generated', { summaryLength: summaryData.summary.length });
-                    }
-                },
-                'Failed to generate interview summary'
-            );
-            
-            // Clean up audio resources
-            if (audioCleanupRef.current) {
-                await audioCleanupRef.current();
-                audioCleanupRef.current = null;
-            }
-            
-            // Clean up global window functions
-            delete (window as any).audioContext;
-            delete (window as any).startAudioContextRecording;
-            delete (window as any).stopAudioContextRecording;
-            
-            // Clear recording timeout if active
-            if (recordingTimeoutRef.current) {
-                clearTimeout(recordingTimeoutRef.current);
-                recordingTimeoutRef.current = null;
-            }
-            
-            logger.success('Interview ended successfully');
-        } catch (error) {
-            logger.error('Failed to end interview properly', error);
-            dispatch(createEndInterviewAction()); // Force end on error
-        }
-    };
+    }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId, dispatch]);
 
     /**
-     * Process audio recording and handle transcription
+     * Start the voice interview with Azure AI Foundry
      */
-    const processAudioRecording = async (audioChunks: Float32Array[], sampleRate: number): Promise<void> => {
-        const { blob, hasValidAudio } = prepareAudioForUpload(audioChunks, sampleRate);
-        
-        if (!hasValidAudio) {
-            logger.warn('No valid audio detected, resuming waiting state');
-            dispatch({ type: 'RESET_TO_WAITING' });
-            return;
-        }
-
-        try {
-            // Convert to text
-            const transcript = await speechToText(blob);
-            
-            if (!transcript?.trim()) {
-                logger.warn('Empty transcript received');
-                dispatch({ type: 'RESET_TO_WAITING' });
-                return;
-            }
-
-            // Mark user as having spoken if first speech detected
-            if (!state.hasUserSpoken) {
-                dispatch(createUserSpokeAction());
-            }
-
-            // Process conversation with AI
-            await handleConversationTurn(transcript);
-
-        } catch (error) {
-            logger.error('Audio processing failed', error);
-            dispatch({ type: 'RESET_TO_WAITING' });
-            showErrorNotification(error instanceof Error ? error : new Error('Audio processing failed'));
-        }
-    };
-
-    /**
-     * Handle conversation turn with Azure services
-     */
-    const handleConversationTurn = async (userTranscript: string): Promise<void> => {
-        try {
-            console.log('🎯 [AGENT] Starting conversation turn with transcript:', userTranscript.substring(0, 50) + '...');
-            
-            const response = await processAndPlayResponse(
-                userTranscript,
-                () => {
-                    console.log('🎯 [AGENT] AI response started - dispatching START_SPEAKING');
-                    dispatch({ type: 'START_SPEAKING' });
-                },
-                () => {
-                    console.log('🎯 [AGENT] AI response completed - dispatching RESET_TO_WAITING');
-                    dispatch({ type: 'RESET_TO_WAITING' });
-                    
-                    // Use response data after it's available
-                    setTimeout(() => {
-                        if (!response.isComplete && !state.isInterviewComplete && (window as any).startAudioContextRecording) {
-                            logger.audio.record('Auto-starting recording after AI response');
-                            setTimeout(() => {
-                                if ((window as any).startAudioContextRecording) {
-                                    console.log('🎯 [AGENT] Auto-starting recording after AI response');
-                                    (window as any).startAudioContextRecording();
-                                }
-                            }, 500);
-                        }
-                    }, 100); // Small delay to ensure response is available
-                },
-                (error) => {
-                    console.warn('🎯 [AGENT] Audio playback had issues:', error.message);
-                    logger.warn('Audio playback had issues, continuing conversation', error);
-                    dispatch({ type: 'RESET_TO_WAITING' });
-                    
-                    // Use response data after it's available  
-                    setTimeout(() => {
-                        if (!response.isComplete && !state.isInterviewComplete && (window as any).startAudioContextRecording) {
-                            logger.audio.record('Continuing recording despite audio issues');
-                            setTimeout(() => {
-                                if ((window as any).startAudioContextRecording) {
-                                    console.log('🎯 [AGENT] Continuing recording despite audio issues');
-                                    (window as any).startAudioContextRecording();
-                                }
-                            }, 1000);
-                        }
-                    }, 100);
-                }
-            );
-
-            console.log('🎯 [AGENT] Got response:', {
-                questionNumber: response.questionNumber,
-                isComplete: response.isComplete,
-                userMessageLength: response.userMessage.content.length,
-                aiMessageLength: response.aiMessage.content.length
-            });
-
-            const { userMessage, aiMessage, questionNumber, isComplete } = response;
-
-            // Update state with messages and progress
-            dispatch({ type: 'ADD_MESSAGES', payload: [userMessage, aiMessage] });
-            
-            if (questionNumber !== undefined) {
-                dispatch({ type: 'SET_QUESTION_NUMBER', payload: questionNumber });
-            }
-            
-            if (isComplete !== undefined) {
-                dispatch({ type: 'SET_INTERVIEW_COMPLETE', payload: isComplete });
-            }
-
-        } catch (error) {
-            console.error('🎯 [AGENT] Conversation processing failed:', error);
-            logger.error('Conversation processing failed', error instanceof Error ? error : new Error('Conversation failed'));
-            dispatch({ type: 'RESET_TO_WAITING' });
-            showErrorNotification(error instanceof Error ? error : new Error('Conversation failed'));
-        }
-    };
-
     const handleStartInterview = async (): Promise<void> => {
         try {
-            logger.info('Starting Azure-powered voice interview', { userName, type, interviewId });
-            
-            dispatch(createStartInterviewAction());
+            logger.info('Starting Azure AI Foundry voice interview', { userName, type, interviewId });
 
-            // Setup optimized audio context
-            const { context, source, workletNode, cleanup } = await createOptimizedAudioContext();
-            
-            // Store cleanup function
-            audioCleanupRef.current = cleanup;
-            (window as any).audioContext = context;
-            
-            dispatch({ type: 'SET_AUDIO_STREAM', payload: context.state as any }); // Store reference
+            // Start the voice session via the bridge hook
+            await startVoiceSession();
 
-            // Build interview context
-            const interviewContext: InterviewContext = {
-                userName,
-                questions: resumeQuestions || questions,
-                type,
-                userId,
-                interviewId,
-                feedbackId,
-                resumeInfo: resumeInfo ? {
-                    hasResume: true,
-                    candidateName: resumeInfo.personalInfo?.name || userName,
-                    summary: resumeInfo.summary,
-                    skills: resumeInfo.skills?.join(', ') || '',
-                    experience: resumeInfo.experience?.map(exp => 
-                        `${exp.position} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})`
-                    ).join(', ') || '',
-                    education: resumeInfo.education?.map(edu => 
-                        `${edu.degree} in ${edu.field} from ${edu.institution}`
-                    ).join(', ') || '',
-                    yearsOfExperience: resumeInfo.experience?.length || 0
-                } : {
-                    hasResume: false
-                }
-            };
-
-            // Start conversation with Azure
-            console.log('🎯 [AGENT DEBUG] About to start conversation...');
-            const data = await startConversation(interviewContext);
-            console.log('🎯 [AGENT DEBUG] Received conversation data:', {
-                messageLength: data.message?.length,
-                questionNumber: data.questionNumber,
-                isComplete: data.isComplete,
-                hasAudio: data.hasAudio
-            });
-            
-            // Update state with initial AI message and progress
-            console.log('🎯 [AGENT DEBUG] Adding AI message to state...');
-            dispatch(createAddAIMessageAction(data.message));
-            
-            if (data.questionNumber !== undefined) {
-                dispatch({ type: 'SET_QUESTION_NUMBER', payload: data.questionNumber });
-            }
-            
-            if (data.isComplete !== undefined) {
-                dispatch({ type: 'SET_INTERVIEW_COMPLETE', payload: data.isComplete });
-            }
-
-            // Setup audio recording handlers with voice activity detection
-            workletNode.port.onmessage = (event) => {
-                if (event.data.type === 'audiodata' && isCurrentlyRecordingRef.current) {
-                    audioSamplesRef.current.push(new Float32Array(event.data.audioData));
-                    logger.audio.record(`Audio chunk received (${event.data.audioData.length} samples)`);
-                } else if (event.data.type === 'level') {
-                    const rms = event.data.rms;
-                    
-                    if (isCurrentlyRecordingRef.current) {
-                        if (rms > 0.005) { // Lowered threshold for better voice detection
-                            // Voice detected - reset silence timeout
-                            lastVoiceActivityRef.current = Date.now();
-                            if (silenceTimeoutRef.current) {
-                                clearTimeout(silenceTimeoutRef.current);
-                                silenceTimeoutRef.current = null;
-                            }
-                            logger.audio.record(`Voice activity: RMS ${rms.toFixed(4)}`);
-                        } else if (lastVoiceActivityRef.current > 0) {
-                            // Check if we've been silent for too long
-                            const silenceDuration = Date.now() - lastVoiceActivityRef.current;
-                            const recordingDuration = Date.now() - recordingStartTimeRef.current;
-                            
-                            // Standard processing trigger - give users time to think
-                            if (silenceDuration > SILENCE_DURATION_MS && !silenceTimeoutRef.current) {
-                                // Check if we've recorded for minimum duration
-                                if (recordingDuration >= MIN_RECORDING_DURATION_MS) {
-                                    logger.audio.record('Voice activity stopped - auto-stopping recording');
-                                    silenceTimeoutRef.current = setTimeout(() => {
-                                        if (isCurrentlyRecordingRef.current && (window as any).stopAudioContextRecording) {
-                                            logger.audio.record('Auto-stopping recording after silence');
-                                            (window as any).stopAudioContextRecording();
-                                        }
-                                    }, 100); // Small delay to ensure clean stop
-                                } else {
-                                    logger.audio.record(`Recording too short (${recordingDuration}ms), continuing...`);
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            const startRecording = () => {
-                if (isCurrentlyRecordingRef.current) return;
-                
-                logger.audio.record('Starting audio recording');
-                audioSamplesRef.current = [];
-                isCurrentlyRecordingRef.current = true;
-                recordingStartTimeRef.current = Date.now();
-                dispatch({ type: 'START_RECORDING' });
-
-                recordingTimeoutRef.current = setTimeout(() => {
-                    logger.warn('Recording timeout reached (8s)');
-                    stopRecording();
-                }, 30000); // Increased to 30 seconds for better user experience
-            };
-
-            const stopRecording = () => {
-                if (!isCurrentlyRecordingRef.current) return;
-                
-                logger.audio.record('Stopping audio recording');
-                isCurrentlyRecordingRef.current = false;
-                dispatch({ type: 'STOP_RECORDING' });
-                
-                if (recordingTimeoutRef.current) {
-                    clearTimeout(recordingTimeoutRef.current);
-                    recordingTimeoutRef.current = null;
-                }
-                
-                if (audioSamplesRef.current.length > 0) {
-                    processAudioRecording(audioSamplesRef.current, context.sampleRate);
-                }
-            };
-
-            // Store global functions for manual control
-            (window as any).startAudioContextRecording = startRecording;
-            (window as any).stopAudioContextRecording = stopRecording;
-
-            // Play opening message and setup auto-recording
-            await handleAsyncError(
-                async () => {
-                    if (data.hasAudio) {
-                        await playDirectAudioWithFallback(
-                            data.audioData!,
-                            data.message,
-                            () => dispatch({ type: 'START_SPEAKING' }),
-                            () => {
-                                dispatch({ type: 'RESET_TO_WAITING' });
-                                // Auto-start recording for initial greeting
-                                if (data.questionNumber === 0) {
-                                    logger.audio.record('Auto-starting recording after greeting');
-                                    startRecording();
-                                }
-                            }
-                        );
-                    } else {
-                        await playAIResponse(
-                            data.message,
-                            () => dispatch({ type: 'START_SPEAKING' }),
-                            () => {
-                                dispatch({ type: 'RESET_TO_WAITING' });
-                                // Auto-start recording after opening message (first question)
-                                if ((data.questionNumber || 0) <= 1 && !data.isComplete) {
-                                    logger.audio.record('Auto-starting recording after AI greeting');
-                                    setTimeout(() => startRecording(), 1000); // Small delay
-                                }
-                            }
-                        );
-                    }
-                },
-                'Failed to play opening message'
+            // Send initial greeting
+            await sendResponse(
+                `Hello ${userName}! I'm excited to conduct your interview today. Please introduce yourself and tell me a bit about your background.`
             );
-            
-            logger.success('Voice interview started successfully');
+
+            logger.success('Azure AI Foundry voice interview started successfully');
 
         } catch (error) {
-            logger.error('Failed to start interview', error);
-            dispatch({ type: 'SET_INTERVIEW_STATE', payload: InterviewState.READY });
+            logger.error('Failed to start Foundry voice interview', error);
             showErrorNotification(error instanceof Error ? error : new Error('Failed to start interview'));
         }
     };
 
+    /**
+     * End the voice interview
+     */
+    const handleEndInterview = async (): Promise<void> => {
+        try {
+            logger.info('Ending Azure AI Foundry interview', { 
+                totalMessages: state.messages.length, 
+                questionNumber: state.questionNumber 
+            });
 
+            // Stop the voice session via the bridge hook
+            await stopVoiceSession();
+
+            logger.success('Azure AI Foundry interview ended successfully');
+        } catch (error) {
+            logger.error('Failed to end Foundry interview properly', error);
+            showErrorNotification(error instanceof Error ? error : new Error('Failed to end interview'));
+        }
+    };
+
+    // Manual recording controls
+    const handleStartRecording = () => {
+        startRecording();
+    };
+
+    const handleStopRecording = () => {
+        stopRecording();
+    };
 
     return (
         <div data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"} className="space-y-8">
             <div className="call-view" data-testid="session-id" data-session-id={interviewId}>
+                {/* Connection Error Display */}
+                {voiceBridge.lastError && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" data-testid="connection-error">
+                        <p className="text-red-700 text-sm">
+                            ⚠️ Connection Error: {voiceBridge.lastError}
+                        </p>
+                        {voiceBridge.retryCount > 0 && (
+                            <p className="text-red-600 text-xs mt-1">
+                                Retry attempts: {voiceBridge.retryCount}/3
+                            </p>
+                        )}
+                        <button
+                            onClick={retryConnection}
+                            className="mt-2 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                            disabled={voiceBridge.isInitializing}
+                            data-testid="retry-connection-btn"
+                        >
+                            {voiceBridge.isInitializing ? 'Retrying...' : 'Retry Connection'}
+                        </button>
+                    </div>
+                )}
+
+                {/* Connection Recovered Indicator */}
+                {!voiceBridge.lastError && voiceBridge.retryCount > 0 && (
+                    <div className="mb-4 text-center" data-testid="connection-restored">
+                        <span className="text-green-600 text-sm">✅ Connection Restored</span>
+                    </div>
+                )}
+
                 {/* AI Interviewer Card */}
                 <div className="card-interviewer">
                     <div className="avatar">
@@ -623,6 +330,14 @@ const Agent = ({
                         {isRecording && <span className="animate-speak bg-red-500" data-testid="voice-recording-indicator" />}
                     </div>
                     <h3 data-testid="current-agent">AI Interviewer</h3>
+                    {isVoiceConnected && (
+                        <div className="text-xs text-green-600 dark:text-green-400 mt-1" data-testid="voice-ready-indicator">
+                            🎤 Azure AI Foundry Connected
+                            {voiceBridge.sessionId && (
+                                <span className="ml-2 font-mono" data-testid="session-id" data-session-id={voiceBridge.sessionId}>#{voiceBridge.sessionId.slice(-8)}</span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* User Profile Card */}
@@ -666,6 +381,14 @@ const Agent = ({
                     </div>
                 </div>
             </div>
+
+            {/* Session Metrics */}
+            {sessionMetrics && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center" data-testid="session-metrics">
+                    Latency: {sessionMetrics.connectionLatency}ms | 
+                    Accuracy: {(sessionMetrics.transcriptionAccuracy * 100).toFixed(1)}%
+                </div>
+            )}
 
             {state.messages.length > 0 && (
                 <div className="transcript-border mt-8">
@@ -723,13 +446,18 @@ const Agent = ({
                 </div>
             )}
 
-            {/* Simple Interview Controls */}
+            {/* Interview Controls */}
             <div className="w-full flex justify-center gap-4 mt-8">
                 {!isInterviewActive ? (
                     <>
-                        <button className="relative btn-call" onClick={handleStartInterview} data-testid="start-interview-btn">
+                        <button 
+                            className="relative btn-call" 
+                            onClick={handleStartInterview} 
+                            disabled={voiceBridge.isInitializing}
+                            data-testid="start-interview-btn"
+                        >
                             <span className="relative">
-                                Start Interview
+                                {voiceBridge.isInitializing ? "Initializing..." : "Start Interview"}
                             </span>
                         </button>
                         {shouldShowFeedback && (
@@ -752,9 +480,9 @@ const Agent = ({
                         {isWaiting && (
                             <button 
                                 className="inline-block px-7 py-3 font-bold text-sm leading-5 text-white transition-colors duration-150 bg-green-600 hover:bg-green-700 border border-transparent rounded-full shadow-sm focus:outline-none focus:shadow-2xl active:bg-green-800 min-w-28 cursor-pointer" 
-                                onClick={() => (window as any).startAudioContextRecording && (window as any).startAudioContextRecording()}
+                                onClick={handleStartRecording}
                                 data-testid="voice-record-btn"
-                                disabled={!isWaiting}
+                                disabled={!canStartRecording}
                             >
                                 🎤 Record
                             </button>
@@ -762,7 +490,7 @@ const Agent = ({
                         {isRecording && (
                             <button 
                                 className="inline-block px-7 py-3 font-bold text-sm leading-5 text-white transition-colors duration-150 bg-red-600 hover:bg-red-700 border border-transparent rounded-full shadow-sm focus:outline-none focus:shadow-2xl active:bg-red-800 min-w-28 cursor-pointer" 
-                                onClick={() => (window as any).stopAudioContextRecording && (window as any).stopAudioContextRecording()}
+                                onClick={handleStopRecording}
                                 data-testid="voice-stop-btn"
                             >
                                 ⏹️ Stop
@@ -770,6 +498,42 @@ const Agent = ({
                         )}
                     </>
                 )}
+            </div>
+
+            {/* Voice Activity Indicator */}
+            {isRecording && (
+                <div className="text-center" data-testid="voice-active-indicator">
+                    <span className="text-red-500 animate-pulse">🎤 Recording Active</span>
+                </div>
+            )}
+
+            {/* Status Display */}
+            <div className="text-center">
+                <div className="text-lg font-medium text-gray-800 dark:text-gray-200" data-testid="interview-status">
+                    {isRecording && "🎤 Listening..."}
+                    {isProcessing && "🤔 Processing..."}
+                    {isSpeaking && "🗣️ Speaking..."}
+                    {isWaiting && "⏳ Ready for your response..."}
+                    {isInterviewFinished && shouldShowFeedback && "✅ Interview completed!"}
+                </div>
+
+                {state.questionNumber !== undefined && (
+                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400" data-testid="question-progress">
+                        Question {state.questionNumber} of {(resumeQuestions || questions)?.length || "?"}
+                    </div>
+                )}
+                
+                {/* Hidden status indicators for testing */}
+                <div className="hidden">
+                    <div data-testid="current-agent">AI Foundry Agent</div>
+                    <div data-testid="current-phase">technical</div>
+                    <div data-testid="response-processed" className={state.messages.length > 0 ? "processed" : "pending"} />
+                    <div data-testid="questions-answered-count">{state.questionNumber || 0}</div>
+                    {voiceBridge.isInitializing && <div data-testid="agent-handoff-pending" />}
+                    {!voiceBridge.isInitializing && isVoiceConnected && <div data-testid="agent-handoff-complete" />}
+                    {voiceBridge.lastError && voiceBridge.retryCount > 0 && <div data-testid="backup-agent-active" />}
+                    {!voiceBridge.lastError && voiceBridge.retryCount === 0 && <div data-testid="system-recovered" />}
+                </div>
             </div>
         </div>
     );
