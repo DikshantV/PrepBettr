@@ -69,19 +69,19 @@ class PrepBettrTemplateEngine implements TemplateEngine {
     this.registerHelper('trim', (value: string) => String(value).trim());
     
     // Array helpers
-    this.registerHelper('length', (value: any[]) => Array.isArray(value) ? value.length : 0);
+    this.registerHelper('length', (value: any[]) => String(Array.isArray(value) ? value.length : 0));
     this.registerHelper('join', (value: any[], separator = ', ') => 
       Array.isArray(value) ? value.join(separator) : String(value)
     );
-    this.registerHelper('first', (value: any[]) => Array.isArray(value) ? value[0] : value);
-    this.registerHelper('last', (value: any[]) => Array.isArray(value) ? value[value.length - 1] : value);
+    this.registerHelper('first', (value: any[]) => String(Array.isArray(value) ? value[0] : value));
+    this.registerHelper('last', (value: any[]) => String(Array.isArray(value) ? value[value.length - 1] : value));
     
     // Logic helpers
-    this.registerHelper('default', (value: any, defaultValue: any) => value || defaultValue);
-    this.registerHelper('eq', (a: any, b: any) => a === b);
-    this.registerHelper('neq', (a: any, b: any) => a !== b);
-    this.registerHelper('gt', (a: number, b: number) => a > b);
-    this.registerHelper('lt', (a: number, b: number) => a < b);
+    this.registerHelper('default', (value: any, defaultValue: any) => String(value || defaultValue));
+    this.registerHelper('eq', (a: any, b: any) => String(a === b));
+    this.registerHelper('neq', (a: any, b: any) => String(a !== b));
+    this.registerHelper('gt', (a: number, b: number) => String(a > b));
+    this.registerHelper('lt', (a: number, b: number) => String(a < b));
     
     // Formatting helpers
     this.registerHelper('dateFormat', (value: string | Date, format = 'YYYY-MM-DD') => {
@@ -315,7 +315,9 @@ class PrepBettrTemplateEngine implements TemplateEngine {
         try {
           const helper = this.helpers.get(helperName)!;
           const args = this.parseArguments(argsString, context);
-          return String(helper(...args));
+          const firstArg = args.length > 0 ? args[0] : undefined;
+          const restArgs = args.slice(1);
+          return String(helper(firstArg, ...restArgs));
         } catch (error) {
           console.warn(`Helper function '${helperName}' error:`, error);
           return `{{${expression}}}`; // Return original expression on helper error
@@ -415,8 +417,6 @@ export const createTemplateEngine = (): PrepBettrTemplateEngine => {
   return new PrepBettrTemplateEngine();
 };
 
-// Type exports
-export type { TemplateConfig, TemplateContext, TemplateEngine, HelperFunction };
 
 // Utility functions
 export const renderTemplate = (template: string, context: TemplateContext = {}): string => {

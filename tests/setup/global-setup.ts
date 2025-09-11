@@ -8,7 +8,12 @@
 // import 'jest-extended';
 
 // Mock Next.js environment variables
-process.env.NODE_ENV = 'test';
+Object.defineProperty(process.env, 'NODE_ENV', {
+  value: 'test',
+  writable: true,
+  enumerable: true,
+  configurable: true
+});
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 process.env.NEXT_PUBLIC_ENVIRONMENT = 'test';
 
@@ -71,13 +76,21 @@ afterAll(() => {
 });
 
 // Mock WebSocket for voice tests
-global.WebSocket = jest.fn().mockImplementation(() => ({
+const MockWebSocket = jest.fn().mockImplementation(() => ({
   readyState: 1,
   send: jest.fn(),
   close: jest.fn(),
   addEventListener: jest.fn(),
   removeEventListener: jest.fn(),
 }));
+
+// Add static constants
+(MockWebSocket as any).CONNECTING = 0;
+(MockWebSocket as any).OPEN = 1;
+(MockWebSocket as any).CLOSING = 2;
+(MockWebSocket as any).CLOSED = 3;
+
+global.WebSocket = MockWebSocket as any;
 
 // Mock MediaDevices API for audio tests
 global.navigator = global.navigator || {};

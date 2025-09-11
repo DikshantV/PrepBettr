@@ -76,12 +76,13 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     let mounted = true;
     
     const checkAuthState = async () => {
-      // Skip auth checks on authentication pages to prevent API loops
-      const isAuthPage = typeof window !== 'undefined' && 
-        ['/sign-in', '/sign-up'].includes(window.location.pathname);
+      // Skip auth checks on authentication and marketing pages to prevent API loops and hydration issues
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isAuthPage = ['/sign-in', '/sign-up'].includes(currentPath);
+      const isMarketingPage = currentPath === '/' || currentPath.startsWith('/marketing');
       
-      if (isAuthPage) {
-        console.log('🚫 Auth check skipped: on authentication page');
+      if (isAuthPage || isMarketingPage) {
+        console.log(`🚫 Auth check skipped: on ${isAuthPage ? 'authentication' : 'marketing'} page (${currentPath})`);
         if (mounted) {
           setUser(null);
           setLoading(false);

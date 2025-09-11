@@ -1,6 +1,7 @@
 import { MigrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { fetchAzureSecrets } from '../azure-config';
 import { templateEngine } from '@/lib/utils/template-engine';
+import { prepareConversationForTTS, extractQuestionForTTS } from '@/lib/utils/text-preprocessing';
 import path from 'path';
 import { 
   ErrorCode, 
@@ -288,8 +289,11 @@ export class AzureOpenAIServiceServer {
     const firstQuestion = this.prelimQuestions[0];
     const openingMessage = `${greeting}\n\n${firstQuestion}`;
 
+    // Clean the opening message for TTS
+    const cleanedOpeningMessage = prepareConversationForTTS(openingMessage);
+    
     return {
-      content: openingMessage,
+      content: cleanedOpeningMessage,
       questionNumber: 0, // 0 indicates preliminary questions
       isComplete: false
     };
@@ -353,8 +357,9 @@ export class AzureOpenAIServiceServer {
         // If there are more preliminary questions, return the next one
         if (this.prelimIndex < this.prelimQuestions.length) {
           const nextQuestion = this.prelimQuestions[this.prelimIndex];
+          const cleanedResponse = prepareConversationForTTS(`Thank you! ${nextQuestion}`);
           return {
-            content: `Thank you! ${nextQuestion}`,
+            content: cleanedResponse,
             questionNumber: 0, // Still in preliminary phase - keep at 0
             isComplete: false
           };
@@ -383,8 +388,13 @@ export class AzureOpenAIServiceServer {
           // Increment question count for the first real question
           this.interviewContext.currentQuestionCount = 1;
           
+          // Clean the content for TTS - extract just the question part and remove formatting
+          const cleanedQuestion = extractQuestionForTTS(openingMessage);
+          const cleanedIntro = prepareConversationForTTS("Great! I now have a better understanding of your background. Let's begin the interview.");
+          const cleanedContent = `${cleanedIntro} ${cleanedQuestion}`;
+          
           return {
-            content: `Great! I now have a better understanding of your background. Let's begin the interview.\n\n${openingMessage}`,
+            content: cleanedContent,
             questionNumber: 1, // First real question
             isComplete: false
           };
@@ -403,14 +413,17 @@ export class AzureOpenAIServiceServer {
         currentQuestionCount: this.interviewContext.currentQuestionCount
       });
       
+      if (!this.client) {
+        throw new Error('OpenAI client not initialized');
+      }
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
         messages: this.conversationHistory,
-        temperature: 0.7,
-        max_tokens: 200,
-        top_p: 0.9,
-        frequency_penalty: 0.1,
-        presence_penalty: 0.1,
+        temperature: 0.5, // Reduced from 0.7 for faster, more focused responses
+        max_tokens: 80,    // Reduced from 200 for shorter, quicker responses
+        top_p: 0.8,       // Slightly reduced for more deterministic responses
+        frequency_penalty: 0.0, // Removed penalties for faster processing
+        presence_penalty: 0.0,
       });
 
       const assistantResponse = completion.choices[0]?.message?.content || 'I\'m sorry, I didn\'t catch that. Could you repeat your answer?';
@@ -429,9 +442,18 @@ export class AzureOpenAIServiceServer {
       
       // Update question count in context
       this.interviewContext.currentQuestionCount = currentQuestionCount;
+      
+      // Clean the content for TTS - remove markdown formatting and extract meaningful text
+      const cleanedContent = prepareConversationForTTS(assistantResponse);
+      
+      console.log('🧹 [TTS PREPROCESSING] Cleaned response for speech', {
+        originalLength: assistantResponse.length,
+        cleanedLength: cleanedContent.length,
+        removedFormatting: assistantResponse !== cleanedContent
+      });
 
       return {
-        content: assistantResponse,
+        content: cleanedContent,
         questionNumber: currentQuestionCount,
         isComplete: currentQuestionCount >= maxQuestions,
         followUpSuggestions: this.generateFollowUpSuggestions()
@@ -553,6 +575,9 @@ export class AzureOpenAIServiceServer {
       
       const questionPrompt = templateEngine.renderFromConfig(template, context);
       
+      if (!this.client) {
+        throw new Error('OpenAI client not initialized');
+      }
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
         messages: [{ role: 'user', content: questionPrompt }],
@@ -637,6 +662,9 @@ export class AzureOpenAIServiceServer {
     questionPrompt += `\nReturn only the question text, no additional formatting or explanations.`;
 
     try {
+      if (!this.client) {
+        throw new Error('OpenAI client not initialized');
+      }
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
         messages: [{ role: 'user', content: questionPrompt }],
@@ -688,6 +716,9 @@ export class AzureOpenAIServiceServer {
     const summaryPrompt = `Based on the following interview conversation, provide a brief summary of the candidate's performance, strengths, and areas for improvement. Keep it concise and professional.\n\nConversation:\n${this.conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}`;
 
     try {
+      if (!this.client) {
+        throw new Error('OpenAI client not initialized');
+      }
       const completion = await this.client.chat.completions.create({
         model: this.modelDeployment,
         messages: [{ role: 'user', content: summaryPrompt }],

@@ -21,7 +21,7 @@ fi
 
 # Configuration
 RESOURCE_GROUP="prepbettr-functions-rg"
-LOCATION="East US"
+LOCATION="eastus"
 STORAGE_ACCOUNT="prepbettrfuncstorage"
 FUNCTION_APP_PREFIX="prepbettr-functions"
 APP_INSIGHTS_NAME="prepbettr-functions-insights"
@@ -70,7 +70,7 @@ az functionapp create \
     --storage-account $STORAGE_ACCOUNT \
     --consumption-plan-location "$LOCATION" \
     --runtime node \
-    --runtime-version 18 \
+    --runtime-version 22 \
     --functions-version 4 \
     --app-insights $APP_INSIGHTS_NAME
 
@@ -90,7 +90,7 @@ npm install
 
 # Deploy functions
 echo "🔧 Deploying functions..."
-func azure functionapp publish "$FUNCTION_APP_PREFIX-app"
+func azure functionapp publish "$FUNCTION_APP_PREFIX-app" --javascript
 
 echo "✅ Deployment completed successfully!"
 echo ""
