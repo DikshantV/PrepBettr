@@ -103,6 +103,11 @@ export class UserTargetingService {
       featureName: 'voiceInterview'
     } as RolloutConfig,
     
+    voiceInterviewV2: {
+      percentage: 100, // Full rollout for Azure AI Foundry voice system
+      featureName: 'voiceInterviewV2'
+    } as RolloutConfig,
+    
     premiumFeatures: {
       percentage: 15, // Start with 15% rollout
       featureName: 'premiumFeatures'
@@ -122,6 +127,7 @@ export class UserTargetingService {
       autoApplyAzure: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.autoApplyAzure),
       portalIntegration: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.portalIntegration),
       voiceInterview: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.voiceInterview),
+      voiceInterviewV2: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.voiceInterviewV2),
       premiumFeatures: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.premiumFeatures),
       newUI: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.newUI),
     };

@@ -19,6 +19,8 @@ import { azureFormRecognizer, ExtractedResumeData } from './azure-form-recognize
 import { logServerError } from '@/lib/errors';
 import { retryWithExponentialBackoff } from '@/lib/utils/retry-with-backoff';
 import { unifiedConfigService } from './unified-config-service';
+import { templateEngine } from '@/lib/utils/template-engine';
+import path from 'path';
 
 export interface EnhancedProcessedResumeResult {
   success: boolean;
@@ -342,24 +344,24 @@ class EnhancedResumeProcessingService {
     try {
       console.log('🤔 Generating interview questions...');
 
-      // Use the enhanced AI service for question generation
-      const { generateQuestions } = await import('@/lib/ai');
+      // Use the unified Azure AI service for question generation
+      const { azureAI } = await import('@/lib/ai');
       
-      // Convert data to the format expected by generateQuestions
-      const resumeInfo = this.convertToResumeInfo(extractedData);
-      const result = await generateQuestions(resumeInfo);
+      // Convert data to the format expected by azureAI
+      const resumeData = this.convertToResumeInfo(extractedData);
+      const result = await azureAI.generateQuestions(resumeData, {
+        maxQuestions,
+        interviewType: 'mixed'
+      });
       
       if (result.success && result.data) {
-        const questions = Array.isArray(result.data) 
-          ? result.data.slice(0, maxQuestions)
-          : [result.data];
-        
-        console.log(`✅ Generated ${questions.length} interview questions`);
-        return questions;
+        console.log(`✅ Generated ${result.data.length} interview questions via ${result.provider}`);
+        return result.data;
       }
 
       // Return default questions if generation fails
-      return this.getDefaultQuestions();
+      console.warn('⚠️ Question generation failed, using defaults:', result.error);
+      return result.data || this.getDefaultQuestions();
 
     } catch (error) {
       console.warn('⚠️ Question generation failed:', error);
@@ -450,10 +452,13 @@ class EnhancedResumeProcessingService {
       throw new Error(`Unsupported file type for OpenAI extraction: ${mimeType}`);
     }
 
-    // Use AI service for structured extraction
+    // Use unified Azure AI service for structured extraction
     const prompt = this.getExtractionPrompt(text);
-    const { tailorResume } = await import('@/lib/ai');
-    const result = await tailorResume(text, prompt);
+    const { azureAI } = await import('@/lib/ai');
+    const result = await azureAI.generateCompletion(prompt, {
+      temperature: 0.1,
+      maxTokens: 4000
+    });
     
     if (result.success && result.data) {
       try {
@@ -520,9 +525,69 @@ class EnhancedResumeProcessingService {
   }
 
   /**
-   * Get extraction prompt for OpenAI fallback
+   * Get extraction prompt using template engine
    */
   private getExtractionPrompt(text: string): string {
+    try {
+      // Use inline template for enhanced resume extraction
+      const template = `Extract comprehensive information from this resume text and return as structured JSON.
+
+**Output Format:**
+{{format_specification}}
+
+{{#if extraction_guidelines}}
+**Extraction Guidelines:**
+{{#each extraction_guidelines}}
+- {{@value}}
+{{/each}}
+{{/if}}
+
+**Resume Text:**
+{{resume_text}}`;
+
+      const context = {
+        format_specification: `{
+  "personalInfo": {
+    "name": "Full name",
+    "email": "Email address", 
+    "phone": "Phone number",
+    "address": "Address",
+    "linkedin": "LinkedIn URL",
+    "github": "GitHub URL",
+    "website": "Personal website URL"
+  },
+  "summary": "Professional summary",
+  "skills": ["skill1", "skill2", ...],
+  "experience": [...],
+  "education": [...],
+  "projects": [...],
+  "certifications": [...],
+  "languages": [...]
+}`,
+        extraction_guidelines: [
+          'Return ONLY valid JSON, no additional text',
+          'Extract all personal information accurately', 
+          'Include quantifiable achievements in experience',
+          'Capture all technical skills, tools, and technologies',
+          'Extract project details with technologies used',
+          'Include education details with dates and achievements',
+          'List certifications with issuing organizations',
+          'Identify language proficiency levels if mentioned'
+        ],
+        resume_text: text
+      };
+
+      return templateEngine.render(template, context);
+    } catch (error) {
+      console.warn('⚠️ Template engine failed for extraction prompt, using legacy method:', error);
+      return this.getExtractionPromptLegacy(text);
+    }
+  }
+
+  /**
+   * Legacy extraction prompt (fallback)
+   */
+  private getExtractionPromptLegacy(text: string): string {
     return `Extract the following information from this resume text and return as JSON:
 
     {

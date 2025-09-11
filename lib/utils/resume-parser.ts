@@ -1,6 +1,8 @@
 import { WorkExperience, Education, Project } from '../services/azure-ai-service';
 import { migrationOpenAIClient } from '@/lib/azure-ai-foundry/clients/migration-wrapper';
 import { azureOpenAIService } from '../services/azure-openai-service';
+import { templateEngine } from '@/lib/utils/template-engine';
+import path from 'path';
 
 export interface ParsedResumeData {
   name?: string;
@@ -142,60 +144,8 @@ async function extractWithAI(text: string): Promise<ParsedResumeData> {
     // Ensure Azure OpenAI service is initialized
     await azureOpenAIService.initialize();
     
-    const prompt = `
-Extract structured information from this resume text and return it in valid JSON format. Follow this exact structure:
-
-{
-  "name": "Full Name",
-  "email": "email@example.com",
-  "phone": "phone number",
-  "summary": "Professional summary or objective",
-  "skills": ["skill1", "skill2", "skill3"],
-  "experience": [
-    {
-      "company": "Company Name",
-      "position": "Job Title",
-      "startDate": "MM/YYYY or YYYY",
-      "endDate": "MM/YYYY or YYYY or Present",
-      "isCurrent": false,
-      "description": "Job description",
-      "achievements": ["achievement1", "achievement2"],
-      "technologies": ["tech1", "tech2"]
-    }
-  ],
-  "education": [
-    {
-      "institution": "School Name",
-      "degree": "Degree Type",
-      "field": "Field of Study",
-      "startDate": "YYYY",
-      "endDate": "YYYY",
-      "gpa": 3.5
-    }
-  ],
-  "projects": [
-    {
-      "name": "Project Name",
-      "description": "Project description",
-      "technologies": ["tech1", "tech2"],
-      "url": "project-url",
-      "github": "github-url"
-    }
-  ]
-}
-
-Rules:
-- Return ONLY valid JSON, no other text
-- If information is not available, use null or empty array
-- Extract actual data, don't make up information
-- For dates, use the format found in resume or standardize to MM/YYYY
-- For current positions, set isCurrent to true and endDate to null
-- Extract all skills mentioned (technical, soft skills, tools, technologies)
-- Include quantifiable achievements where mentioned
-
-Resume text:
-${text}
-`;
+    // Try to use template engine for resume extraction prompt
+    const prompt = buildExtractionPromptWithTemplate(text);
 
     const response = await azureOpenAIService.generateCompletion(prompt);
     const jsonText = response.trim();
@@ -263,33 +213,127 @@ function mergeResumeData(basicData: ParsedResumeData, aiData: ParsedResumeData):
 }
 
 /**
- * Generate interview questions based on parsed resume data
+ * Build extraction prompt using template engine
+ */
+function buildExtractionPromptWithTemplate(text: string): string {
+  try {
+    // Use simple inline template for resume extraction
+    const template = `Extract structured information from this resume text and return it in valid JSON format.
+
+{{#if format_instructions}}
+**Format Instructions:**
+{{format_instructions}}
+{{/if}}
+
+{{#if extraction_rules}}
+**Rules:**
+{{#each extraction_rules}}
+- {{@value}}
+{{/each}}
+{{/if}}
+
+**Resume Text:**
+{{resume_text}}`;
+
+    const context = {
+      format_instructions: `Follow this exact JSON structure:\n{
+  "name": "Full Name",
+  "email": "email@example.com",
+  "phone": "phone number",
+  "summary": "Professional summary or objective",
+  "skills": ["skill1", "skill2", "skill3"],
+  "experience": [...],
+  "education": [...],
+  "projects": [...]
+}`,
+      extraction_rules: [
+        'Return ONLY valid JSON, no other text',
+        'If information is not available, use null or empty array',
+        'Extract actual data, don\'t make up information',
+        'For dates, use the format found in resume or standardize to MM/YYYY',
+        'For current positions, set isCurrent to true and endDate to null',
+        'Extract all skills mentioned (technical, soft skills, tools, technologies)',
+        'Include quantifiable achievements where mentioned'
+      ],
+      resume_text: text
+    };
+
+    return templateEngine.render(template, context);
+  } catch (error) {
+    console.warn('⚠️ Template engine failed for resume extraction, using legacy prompt:', error);
+    return buildExtractionPromptLegacy(text);
+  }
+}
+
+/**
+ * Legacy extraction prompt (fallback)
+ */
+function buildExtractionPromptLegacy(text: string): string {
+  return `
+Extract structured information from this resume text and return it in valid JSON format. Follow this exact structure:
+
+{
+  "name": "Full Name",
+  "email": "email@example.com",
+  "phone": "phone number",
+  "summary": "Professional summary or objective",
+  "skills": ["skill1", "skill2", "skill3"],
+  "experience": [
+    {
+      "company": "Company Name",
+      "position": "Job Title",
+      "startDate": "MM/YYYY or YYYY",
+      "endDate": "MM/YYYY or YYYY or Present",
+      "isCurrent": false,
+      "description": "Job description",
+      "achievements": ["achievement1", "achievement2"],
+      "technologies": ["tech1", "tech2"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "School Name",
+      "degree": "Degree Type",
+      "field": "Field of Study",
+      "startDate": "YYYY",
+      "endDate": "YYYY",
+      "gpa": 3.5
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Project description",
+      "technologies": ["tech1", "tech2"],
+      "url": "project-url",
+      "github": "github-url"
+    }
+  ]
+}
+
+Rules:
+- Return ONLY valid JSON, no other text
+- If information is not available, use null or empty array
+- Extract actual data, don't make up information
+- For dates, use the format found in resume or standardize to MM/YYYY
+- For current positions, set isCurrent to true and endDate to null
+- Extract all skills mentioned (technical, soft skills, tools, technologies)
+- Include quantifiable achievements where mentioned
+
+Resume text:
+${text}
+`;
+}
+
+/**
+ * Generate interview questions using template engine
  */
 export async function generateInterviewQuestions(resumeData: ParsedResumeData): Promise<string[]> {
   try {
     // Ensure Azure OpenAI service is initialized
     await azureOpenAIService.initialize();
     
-    const prompt = `
-Based on the following resume information, generate 8-10 relevant interview questions that would be appropriate for this candidate. 
-
-Focus on:
-- Technical skills mentioned
-- Work experience and achievements
-- Projects and technologies used
-- Career progression and goals
-- Behavioral questions based on their background
-
-Resume Information:
-Name: ${resumeData.name}
-Skills: ${resumeData.skills.join(', ')}
-Experience: ${resumeData.experience.map(exp => `${exp.position} at ${exp.company}`).join('; ')}
-Education: ${resumeData.education.map(edu => `${edu.degree} in ${edu.field} from ${edu.institution}`).join('; ')}
-Projects: ${resumeData.projects?.map(proj => proj.name).join(', ') || 'None mentioned'}
-
-Return only the questions, one per line, numbered 1-10. No additional text or explanations.
-`;
-
+    const prompt = buildQuestionGenerationPrompt(resumeData);
     const questionsText = await azureOpenAIService.generateCompletion(prompt);
     
     const questions = questionsText
@@ -315,4 +359,77 @@ Return only the questions, one per line, numbered 1-10. No additional text or ex
       'How do you approach problem-solving in your work?'
     ];
   }
+}
+
+/**
+ * Build question generation prompt using template engine
+ */
+function buildQuestionGenerationPrompt(resumeData: ParsedResumeData): string {
+  try {
+    const template = `Based on the resume information below, generate 8-10 relevant interview questions.
+
+**Focus Areas:**
+{{#each focus_areas}}
+- {{@value}}
+{{/each}}
+
+**Candidate Information:**
+- Name: {{candidate.name}}
+- Skills: {{candidate.skills}}
+- Experience: {{candidate.experience}}
+- Education: {{candidate.education}}
+{{#if candidate.projects}}
+- Projects: {{candidate.projects}}
+{{/if}}
+
+**Instructions:**
+Return only the questions, one per line, numbered 1-10. No additional text or explanations.`;
+
+    const context = {
+      focus_areas: [
+        'Technical skills mentioned',
+        'Work experience and achievements',
+        'Projects and technologies used',
+        'Career progression and goals',
+        'Behavioral questions based on their background'
+      ],
+      candidate: {
+        name: resumeData.name,
+        skills: resumeData.skills.join(', '),
+        experience: resumeData.experience.map(exp => `${exp.position} at ${exp.company}`).join('; '),
+        education: resumeData.education.map(edu => `${edu.degree} in ${edu.field} from ${edu.institution}`).join('; '),
+        projects: resumeData.projects?.map(proj => proj.name).join(', ') || null
+      }
+    };
+
+    return templateEngine.render(template, context);
+  } catch (error) {
+    console.warn('⚠️ Template engine failed for question generation, using legacy prompt:', error);
+    return buildQuestionGenerationPromptLegacy(resumeData);
+  }
+}
+
+/**
+ * Legacy question generation prompt (fallback)
+ */
+function buildQuestionGenerationPromptLegacy(resumeData: ParsedResumeData): string {
+  return `
+Based on the following resume information, generate 8-10 relevant interview questions that would be appropriate for this candidate. 
+
+Focus on:
+- Technical skills mentioned
+- Work experience and achievements
+- Projects and technologies used
+- Career progression and goals
+- Behavioral questions based on their background
+
+Resume Information:
+Name: ${resumeData.name}
+Skills: ${resumeData.skills.join(', ')}
+Experience: ${resumeData.experience.map(exp => `${exp.position} at ${exp.company}`).join('; ')}
+Education: ${resumeData.education.map(edu => `${edu.degree} in ${edu.field} from ${edu.institution}`).join('; ')}
+Projects: ${resumeData.projects?.map(proj => proj.name).join(', ') || 'None mentioned'}
+
+Return only the questions, one per line, numbered 1-10. No additional text or explanations.
+`;
 }

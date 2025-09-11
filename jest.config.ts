@@ -21,8 +21,8 @@ const config: Config.InitialOptions = {
 
   // File patterns
   testMatch: [
-    '<rootDir>/tests/unit/**/*.test.ts',
-    '<rootDir>/tests/unit/**/*.test.js',
+    '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/tests/**/*.test.js',
     '<rootDir>/azure/**/__tests__/**/*.test.ts',
     '<rootDir>/lib/**/__tests__/**/*.test.ts'
   ],
@@ -85,7 +85,6 @@ const config: Config.InitialOptions = {
   // Module name mapping for path aliases
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@azure/(.*)$': '<rootDir>/azure/$1',
     '^@lib/(.*)$': '<rootDir>/lib/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1'
   },
@@ -93,15 +92,7 @@ const config: Config.InitialOptions = {
   // Transform configuration
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        compilerOptions: {
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true,
-          experimentalDecorators: true,
-          emitDecoratorMetadata: true,
-          resolveJsonModule: true
-        }
-      }
+      tsconfig: '<rootDir>/tsconfig.json'
     }]
   },
 
@@ -110,9 +101,6 @@ const config: Config.InitialOptions = {
 
   // Globals for Azure service testing
   globals: {
-    'ts-jest': {
-      isolatedModules: true
-    },
     // Azure service endpoints for testing
     AZURE_TEST_CONFIG: {
       cosmosEndpoint: 'https://test-cosmos.documents.azure.com:443/',
@@ -125,21 +113,7 @@ const config: Config.InitialOptions = {
 
   // Performance monitoring
   reporters: [
-    'default',
-    ['jest-html-reporters', {
-      publicPath: '<rootDir>/coverage/html-report',
-      filename: 'test-report.html',
-      expand: true
-    }],
-    ['jest-junit', {
-      outputDirectory: '<rootDir>/coverage',
-      outputName: 'junit.xml',
-      classNameTemplate: '{classname}',
-      titleTemplate: '{title}',
-      ancestorSeparator: ' › '
-    }],
-    // Custom performance reporter
-    '<rootDir>/tests/reporters/performance-reporter.ts'
+    'default'
   ],
 
   // Clear mocks between tests
@@ -160,8 +134,8 @@ const config: Config.InitialOptions = {
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
 
-  // Test result processor for custom metrics
-  testResultsProcessor: '<rootDir>/tests/processors/results-processor.ts'
+  // Test result processor disabled for now
+  // testResultsProcessor: '<rootDir>/tests/processors/results-processor.ts'
 };
 
 export default config;

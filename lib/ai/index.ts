@@ -3,9 +3,13 @@
  * 
  * This module provides a unified interface for AI operations backed
  * by Azure OpenAI services. Optimized for enterprise-grade AI functionality.
+ * 
+ * Updated to use the new unified Azure AI facade for improved service
+ * management and intelligent routing between Azure services.
  */
 
 import { AzureOpenAIAdapter } from './azureOpenAI';
+import { azureAI, AzureAIResponse } from './azure-ai';
 
 export interface AIProvider {
   name: string;
@@ -310,3 +314,22 @@ export async function switchProvider(providerName: string): Promise<AIResponse<b
 export function dispose(): void {
   aiServiceManager.dispose();
 }
+
+// Export the unified Azure AI service for modern usage
+export { azureAI };
+export { azureAI as unifiedAI }; // Alias for clarity
+
+// Export types from the unified service
+export type {
+  AzureAIResponse,
+  ResumeExtractionOptions,
+  QuestionGenerationOptions
+} from './azure-ai';
+
+// Re-export individual services for direct access if needed
+export {
+  azureOpenAIService,
+  enhancedAzureOpenAIService,
+  azureFormRecognizer,
+  foundryDocumentIntelligenceService
+} from './azure-ai';
