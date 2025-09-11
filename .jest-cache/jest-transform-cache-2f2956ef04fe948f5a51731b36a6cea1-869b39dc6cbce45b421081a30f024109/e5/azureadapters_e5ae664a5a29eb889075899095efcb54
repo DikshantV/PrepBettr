@@ -1,0 +1,637 @@
+5755b25712a17a9dae688b45687f8081
+"use strict";
+
+/**
+ * Legacy voice types for API compatibility
+ *
+ * NOTE: This file only provides types for backward compatibility with existing API routes.
+ * The actual voice processing is now handled by Azure AI Foundry Live Voice API.
+ * Client-side audio functions have been removed and consolidated into the new Agent component.
+ */
+/* istanbul ignore next */
+function cov_7hrnpdyri() {
+  var path = "/Users/dikshantvashistha/PrepBettr/lib/voice/azure-adapters.ts";
+  var hash = "80ee057233c69e9127709b1c4c568efca75027c3";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/lib/voice/azure-adapters.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 9,
+          column: 0
+        },
+        end: {
+          line: 9,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 10,
+          column: 0
+        },
+        end: {
+          line: 10,
+          column: 233
+        }
+      },
+      "2": {
+        start: {
+          line: 13,
+          column: 21
+        },
+        end: {
+          line: 15,
+          column: 1
+        }
+      },
+      "3": {
+        start: {
+          line: 14,
+          column: 4
+        },
+        end: {
+          line: 14,
+          column: 102
+        }
+      },
+      "4": {
+        start: {
+          line: 16,
+          column: 0
+        },
+        end: {
+          line: 16,
+          column: 36
+        }
+      },
+      "5": {
+        start: {
+          line: 17,
+          column: 26
+        },
+        end: {
+          line: 19,
+          column: 1
+        }
+      },
+      "6": {
+        start: {
+          line: 18,
+          column: 4
+        },
+        end: {
+          line: 18,
+          column: 107
+        }
+      },
+      "7": {
+        start: {
+          line: 20,
+          column: 0
+        },
+        end: {
+          line: 20,
+          column: 46
+        }
+      },
+      "8": {
+        start: {
+          line: 21,
+          column: 28
+        },
+        end: {
+          line: 23,
+          column: 1
+        }
+      },
+      "9": {
+        start: {
+          line: 22,
+          column: 4
+        },
+        end: {
+          line: 22,
+          column: 109
+        }
+      },
+      "10": {
+        start: {
+          line: 24,
+          column: 0
+        },
+        end: {
+          line: 24,
+          column: 50
+        }
+      },
+      "11": {
+        start: {
+          line: 25,
+          column: 24
+        },
+        end: {
+          line: 27,
+          column: 1
+        }
+      },
+      "12": {
+        start: {
+          line: 26,
+          column: 4
+        },
+        end: {
+          line: 26,
+          column: 105
+        }
+      },
+      "13": {
+        start: {
+          line: 28,
+          column: 0
+        },
+        end: {
+          line: 28,
+          column: 42
+        }
+      },
+      "14": {
+        start: {
+          line: 29,
+          column: 21
+        },
+        end: {
+          line: 31,
+          column: 1
+        }
+      },
+      "15": {
+        start: {
+          line: 30,
+          column: 4
+        },
+        end: {
+          line: 30,
+          column: 102
+        }
+      },
+      "16": {
+        start: {
+          line: 32,
+          column: 0
+        },
+        end: {
+          line: 32,
+          column: 36
+        }
+      },
+      "17": {
+        start: {
+          line: 33,
+          column: 23
+        },
+        end: {
+          line: 35,
+          column: 1
+        }
+      },
+      "18": {
+        start: {
+          line: 34,
+          column: 4
+        },
+        end: {
+          line: 34,
+          column: 104
+        }
+      },
+      "19": {
+        start: {
+          line: 36,
+          column: 0
+        },
+        end: {
+          line: 36,
+          column: 40
+        }
+      },
+      "20": {
+        start: {
+          line: 37,
+          column: 31
+        },
+        end: {
+          line: 39,
+          column: 1
+        }
+      },
+      "21": {
+        start: {
+          line: 38,
+          column: 4
+        },
+        end: {
+          line: 38,
+          column: 112
+        }
+      },
+      "22": {
+        start: {
+          line: 40,
+          column: 0
+        },
+        end: {
+          line: 40,
+          column: 56
+        }
+      },
+      "23": {
+        start: {
+          line: 41,
+          column: 36
+        },
+        end: {
+          line: 43,
+          column: 1
+        }
+      },
+      "24": {
+        start: {
+          line: 42,
+          column: 4
+        },
+        end: {
+          line: 42,
+          column: 117
+        }
+      },
+      "25": {
+        start: {
+          line: 44,
+          column: 0
+        },
+        end: {
+          line: 44,
+          column: 66
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "(anonymous_0)",
+        decl: {
+          start: {
+            line: 13,
+            column: 21
+          },
+          end: {
+            line: 13,
+            column: 22
+          }
+        },
+        loc: {
+          start: {
+            line: 13,
+            column: 27
+          },
+          end: {
+            line: 15,
+            column: 1
+          }
+        },
+        line: 13
+      },
+      "1": {
+        name: "(anonymous_1)",
+        decl: {
+          start: {
+            line: 17,
+            column: 26
+          },
+          end: {
+            line: 17,
+            column: 27
+          }
+        },
+        loc: {
+          start: {
+            line: 17,
+            column: 32
+          },
+          end: {
+            line: 19,
+            column: 1
+          }
+        },
+        line: 17
+      },
+      "2": {
+        name: "(anonymous_2)",
+        decl: {
+          start: {
+            line: 21,
+            column: 28
+          },
+          end: {
+            line: 21,
+            column: 29
+          }
+        },
+        loc: {
+          start: {
+            line: 21,
+            column: 34
+          },
+          end: {
+            line: 23,
+            column: 1
+          }
+        },
+        line: 21
+      },
+      "3": {
+        name: "(anonymous_3)",
+        decl: {
+          start: {
+            line: 25,
+            column: 24
+          },
+          end: {
+            line: 25,
+            column: 25
+          }
+        },
+        loc: {
+          start: {
+            line: 25,
+            column: 30
+          },
+          end: {
+            line: 27,
+            column: 1
+          }
+        },
+        line: 25
+      },
+      "4": {
+        name: "(anonymous_4)",
+        decl: {
+          start: {
+            line: 29,
+            column: 21
+          },
+          end: {
+            line: 29,
+            column: 22
+          }
+        },
+        loc: {
+          start: {
+            line: 29,
+            column: 27
+          },
+          end: {
+            line: 31,
+            column: 1
+          }
+        },
+        line: 29
+      },
+      "5": {
+        name: "(anonymous_5)",
+        decl: {
+          start: {
+            line: 33,
+            column: 23
+          },
+          end: {
+            line: 33,
+            column: 24
+          }
+        },
+        loc: {
+          start: {
+            line: 33,
+            column: 29
+          },
+          end: {
+            line: 35,
+            column: 1
+          }
+        },
+        line: 33
+      },
+      "6": {
+        name: "(anonymous_6)",
+        decl: {
+          start: {
+            line: 37,
+            column: 31
+          },
+          end: {
+            line: 37,
+            column: 32
+          }
+        },
+        loc: {
+          start: {
+            line: 37,
+            column: 37
+          },
+          end: {
+            line: 39,
+            column: 1
+          }
+        },
+        line: 37
+      },
+      "7": {
+        name: "(anonymous_7)",
+        decl: {
+          start: {
+            line: 41,
+            column: 36
+          },
+          end: {
+            line: 41,
+            column: 37
+          }
+        },
+        loc: {
+          start: {
+            line: 41,
+            column: 42
+          },
+          end: {
+            line: 43,
+            column: 1
+          }
+        },
+        line: 41
+      }
+    },
+    branchMap: {},
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0,
+      "15": 0,
+      "16": 0,
+      "17": 0,
+      "18": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "22": 0,
+      "23": 0,
+      "24": 0,
+      "25": 0
+    },
+    f: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0
+    },
+    b: {},
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/lib/voice/azure-adapters.ts",
+      mappings: ";AAAA;;;;;;GAMG;;;AAkCH,yDAAyD;AACzD,8CAA8C;AACvC,MAAM,YAAY,GAAG,GAAG,EAAE;IAC/B,MAAM,IAAI,KAAK,CAAC,gFAAgF,CAAC,CAAC;AACpG,CAAC,CAAC;AAFW,QAAA,YAAY,gBAEvB;AAEK,MAAM,iBAAiB,GAAG,GAAG,EAAE;IACpC,MAAM,IAAI,KAAK,CAAC,qFAAqF,CAAC,CAAC;AACzG,CAAC,CAAC;AAFW,QAAA,iBAAiB,qBAE5B;AAEK,MAAM,mBAAmB,GAAG,GAAG,EAAE;IACtC,MAAM,IAAI,KAAK,CAAC,uFAAuF,CAAC,CAAC;AAC3G,CAAC,CAAC;AAFW,QAAA,mBAAmB,uBAE9B;AAEK,MAAM,eAAe,GAAG,GAAG,EAAE;IAClC,MAAM,IAAI,KAAK,CAAC,mFAAmF,CAAC,CAAC;AACvG,CAAC,CAAC;AAFW,QAAA,eAAe,mBAE1B;AAEK,MAAM,YAAY,GAAG,GAAG,EAAE;IAC/B,MAAM,IAAI,KAAK,CAAC,gFAAgF,CAAC,CAAC;AACpG,CAAC,CAAC;AAFW,QAAA,YAAY,gBAEvB;AAEK,MAAM,cAAc,GAAG,GAAG,EAAE;IACjC,MAAM,IAAI,KAAK,CAAC,kFAAkF,CAAC,CAAC;AACtG,CAAC,CAAC;AAFW,QAAA,cAAc,kBAEzB;AAEK,MAAM,sBAAsB,GAAG,GAAG,EAAE;IACzC,MAAM,IAAI,KAAK,CAAC,0FAA0F,CAAC,CAAC;AAC9G,CAAC,CAAC;AAFW,QAAA,sBAAsB,0BAEjC;AAEK,MAAM,2BAA2B,GAAG,GAAG,EAAE;IAC9C,MAAM,IAAI,KAAK,CAAC,+FAA+F,CAAC,CAAC;AACnH,CAAC,CAAC;AAFW,QAAA,2BAA2B,+BAEtC",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/lib/voice/azure-adapters.ts"],
+      sourcesContent: ["/**\n * Legacy voice types for API compatibility\n * \n * NOTE: This file only provides types for backward compatibility with existing API routes.\n * The actual voice processing is now handled by Azure AI Foundry Live Voice API.\n * Client-side audio functions have been removed and consolidated into the new Agent component.\n */\n\nexport interface InterviewContext {\n  userName: string;\n  questions?: string[];\n  type: string;\n  userId: string;\n  interviewId?: string;\n  feedbackId?: string;\n  resumeInfo?: {\n    hasResume: boolean;\n    candidateName?: string;\n    summary?: string;\n    skills?: string;\n    experience?: string;\n    education?: string;\n    yearsOfExperience?: number;\n  };\n}\n\nexport interface ConversationResponse {\n  message: string;\n  questionNumber?: number;\n  isComplete?: boolean;\n  hasAudio?: boolean;\n  audioData?: number[] | Uint8Array;\n}\n\n// Legacy types for backwards compatibility\nexport interface LegacyAudioContext {\n  sampleRate: number;\n  state: string;\n}\n\n// Deprecated - these functions are no longer implemented\n// Use Azure AI Foundry Live Voice API instead\nexport const speechToText = () => {\n  throw new Error('speechToText has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const startConversation = () => {\n  throw new Error('startConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const processConversation = () => {\n  throw new Error('processConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const endConversation = () => {\n  throw new Error('endConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const textToSpeech = () => {\n  throw new Error('textToSpeech has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const playAIResponse = () => {\n  throw new Error('playAIResponse has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const processAndPlayResponse = () => {\n  throw new Error('processAndPlayResponse has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n\nexport const playDirectAudioWithFallback = () => {\n  throw new Error('playDirectAudioWithFallback has been deprecated. Use Azure AI Foundry Live Voice API instead.');\n};\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "80ee057233c69e9127709b1c4c568efca75027c3"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_7hrnpdyri = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_7hrnpdyri();
+cov_7hrnpdyri().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_7hrnpdyri().s[1]++;
+exports.playDirectAudioWithFallback = exports.processAndPlayResponse = exports.playAIResponse = exports.textToSpeech = exports.endConversation = exports.processConversation = exports.startConversation = exports.speechToText = void 0;
+// Deprecated - these functions are no longer implemented
+// Use Azure AI Foundry Live Voice API instead
+/* istanbul ignore next */
+cov_7hrnpdyri().s[2]++;
+const speechToText = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[0]++;
+  cov_7hrnpdyri().s[3]++;
+  throw new Error('speechToText has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[4]++;
+exports.speechToText = speechToText;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[5]++;
+const startConversation = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[1]++;
+  cov_7hrnpdyri().s[6]++;
+  throw new Error('startConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[7]++;
+exports.startConversation = startConversation;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[8]++;
+const processConversation = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[2]++;
+  cov_7hrnpdyri().s[9]++;
+  throw new Error('processConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[10]++;
+exports.processConversation = processConversation;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[11]++;
+const endConversation = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[3]++;
+  cov_7hrnpdyri().s[12]++;
+  throw new Error('endConversation has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[13]++;
+exports.endConversation = endConversation;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[14]++;
+const textToSpeech = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[4]++;
+  cov_7hrnpdyri().s[15]++;
+  throw new Error('textToSpeech has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[16]++;
+exports.textToSpeech = textToSpeech;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[17]++;
+const playAIResponse = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[5]++;
+  cov_7hrnpdyri().s[18]++;
+  throw new Error('playAIResponse has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[19]++;
+exports.playAIResponse = playAIResponse;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[20]++;
+const processAndPlayResponse = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[6]++;
+  cov_7hrnpdyri().s[21]++;
+  throw new Error('processAndPlayResponse has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[22]++;
+exports.processAndPlayResponse = processAndPlayResponse;
+/* istanbul ignore next */
+cov_7hrnpdyri().s[23]++;
+const playDirectAudioWithFallback = () => {
+  /* istanbul ignore next */
+  cov_7hrnpdyri().f[7]++;
+  cov_7hrnpdyri().s[24]++;
+  throw new Error('playDirectAudioWithFallback has been deprecated. Use Azure AI Foundry Live Voice API instead.');
+};
+/* istanbul ignore next */
+cov_7hrnpdyri().s[25]++;
+exports.playDirectAudioWithFallback = playDirectAudioWithFallback;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfN2hybnBkeXJpIiwicGF0aCIsImhhc2giLCJnbG9iYWwiLCJGdW5jdGlvbiIsImdjdiIsImNvdmVyYWdlRGF0YSIsInN0YXRlbWVudE1hcCIsInN0YXJ0IiwibGluZSIsImNvbHVtbiIsImVuZCIsImZuTWFwIiwibmFtZSIsImRlY2wiLCJsb2MiLCJicmFuY2hNYXAiLCJzIiwiZiIsImIiLCJpbnB1dFNvdXJjZU1hcCIsImZpbGUiLCJtYXBwaW5ncyIsIm5hbWVzIiwic291cmNlcyIsInNvdXJjZXNDb250ZW50IiwidmVyc2lvbiIsIl9jb3ZlcmFnZVNjaGVtYSIsImNvdmVyYWdlIiwiYWN0dWFsQ292ZXJhZ2UiLCJzcGVlY2hUb1RleHQiLCJFcnJvciIsImV4cG9ydHMiLCJzdGFydENvbnZlcnNhdGlvbiIsInByb2Nlc3NDb252ZXJzYXRpb24iLCJlbmRDb252ZXJzYXRpb24iLCJ0ZXh0VG9TcGVlY2giLCJwbGF5QUlSZXNwb25zZSIsInByb2Nlc3NBbmRQbGF5UmVzcG9uc2UiLCJwbGF5RGlyZWN0QXVkaW9XaXRoRmFsbGJhY2siXSwic291cmNlcyI6WyIvVXNlcnMvZGlrc2hhbnR2YXNoaXN0aGEvUHJlcEJldHRyL2xpYi92b2ljZS9henVyZS1hZGFwdGVycy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIExlZ2FjeSB2b2ljZSB0eXBlcyBmb3IgQVBJIGNvbXBhdGliaWxpdHlcbiAqIFxuICogTk9URTogVGhpcyBmaWxlIG9ubHkgcHJvdmlkZXMgdHlwZXMgZm9yIGJhY2t3YXJkIGNvbXBhdGliaWxpdHkgd2l0aCBleGlzdGluZyBBUEkgcm91dGVzLlxuICogVGhlIGFjdHVhbCB2b2ljZSBwcm9jZXNzaW5nIGlzIG5vdyBoYW5kbGVkIGJ5IEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkuXG4gKiBDbGllbnQtc2lkZSBhdWRpbyBmdW5jdGlvbnMgaGF2ZSBiZWVuIHJlbW92ZWQgYW5kIGNvbnNvbGlkYXRlZCBpbnRvIHRoZSBuZXcgQWdlbnQgY29tcG9uZW50LlxuICovXG5cbmV4cG9ydCBpbnRlcmZhY2UgSW50ZXJ2aWV3Q29udGV4dCB7XG4gIHVzZXJOYW1lOiBzdHJpbmc7XG4gIHF1ZXN0aW9ucz86IHN0cmluZ1tdO1xuICB0eXBlOiBzdHJpbmc7XG4gIHVzZXJJZDogc3RyaW5nO1xuICBpbnRlcnZpZXdJZD86IHN0cmluZztcbiAgZmVlZGJhY2tJZD86IHN0cmluZztcbiAgcmVzdW1lSW5mbz86IHtcbiAgICBoYXNSZXN1bWU6IGJvb2xlYW47XG4gICAgY2FuZGlkYXRlTmFtZT86IHN0cmluZztcbiAgICBzdW1tYXJ5Pzogc3RyaW5nO1xuICAgIHNraWxscz86IHN0cmluZztcbiAgICBleHBlcmllbmNlPzogc3RyaW5nO1xuICAgIGVkdWNhdGlvbj86IHN0cmluZztcbiAgICB5ZWFyc09mRXhwZXJpZW5jZT86IG51bWJlcjtcbiAgfTtcbn1cblxuZXhwb3J0IGludGVyZmFjZSBDb252ZXJzYXRpb25SZXNwb25zZSB7XG4gIG1lc3NhZ2U6IHN0cmluZztcbiAgcXVlc3Rpb25OdW1iZXI/OiBudW1iZXI7XG4gIGlzQ29tcGxldGU/OiBib29sZWFuO1xuICBoYXNBdWRpbz86IGJvb2xlYW47XG4gIGF1ZGlvRGF0YT86IG51bWJlcltdIHwgVWludDhBcnJheTtcbn1cblxuLy8gTGVnYWN5IHR5cGVzIGZvciBiYWNrd2FyZHMgY29tcGF0aWJpbGl0eVxuZXhwb3J0IGludGVyZmFjZSBMZWdhY3lBdWRpb0NvbnRleHQge1xuICBzYW1wbGVSYXRlOiBudW1iZXI7XG4gIHN0YXRlOiBzdHJpbmc7XG59XG5cbi8vIERlcHJlY2F0ZWQgLSB0aGVzZSBmdW5jdGlvbnMgYXJlIG5vIGxvbmdlciBpbXBsZW1lbnRlZFxuLy8gVXNlIEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkgaW5zdGVhZFxuZXhwb3J0IGNvbnN0IHNwZWVjaFRvVGV4dCA9ICgpID0+IHtcbiAgdGhyb3cgbmV3IEVycm9yKCdzcGVlY2hUb1RleHQgaGFzIGJlZW4gZGVwcmVjYXRlZC4gVXNlIEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkgaW5zdGVhZC4nKTtcbn07XG5cbmV4cG9ydCBjb25zdCBzdGFydENvbnZlcnNhdGlvbiA9ICgpID0+IHtcbiAgdGhyb3cgbmV3IEVycm9yKCdzdGFydENvbnZlcnNhdGlvbiBoYXMgYmVlbiBkZXByZWNhdGVkLiBVc2UgQXp1cmUgQUkgRm91bmRyeSBMaXZlIFZvaWNlIEFQSSBpbnN0ZWFkLicpO1xufTtcblxuZXhwb3J0IGNvbnN0IHByb2Nlc3NDb252ZXJzYXRpb24gPSAoKSA9PiB7XG4gIHRocm93IG5ldyBFcnJvcigncHJvY2Vzc0NvbnZlcnNhdGlvbiBoYXMgYmVlbiBkZXByZWNhdGVkLiBVc2UgQXp1cmUgQUkgRm91bmRyeSBMaXZlIFZvaWNlIEFQSSBpbnN0ZWFkLicpO1xufTtcblxuZXhwb3J0IGNvbnN0IGVuZENvbnZlcnNhdGlvbiA9ICgpID0+IHtcbiAgdGhyb3cgbmV3IEVycm9yKCdlbmRDb252ZXJzYXRpb24gaGFzIGJlZW4gZGVwcmVjYXRlZC4gVXNlIEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkgaW5zdGVhZC4nKTtcbn07XG5cbmV4cG9ydCBjb25zdCB0ZXh0VG9TcGVlY2ggPSAoKSA9PiB7XG4gIHRocm93IG5ldyBFcnJvcigndGV4dFRvU3BlZWNoIGhhcyBiZWVuIGRlcHJlY2F0ZWQuIFVzZSBBenVyZSBBSSBGb3VuZHJ5IExpdmUgVm9pY2UgQVBJIGluc3RlYWQuJyk7XG59O1xuXG5leHBvcnQgY29uc3QgcGxheUFJUmVzcG9uc2UgPSAoKSA9PiB7XG4gIHRocm93IG5ldyBFcnJvcigncGxheUFJUmVzcG9uc2UgaGFzIGJlZW4gZGVwcmVjYXRlZC4gVXNlIEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkgaW5zdGVhZC4nKTtcbn07XG5cbmV4cG9ydCBjb25zdCBwcm9jZXNzQW5kUGxheVJlc3BvbnNlID0gKCkgPT4ge1xuICB0aHJvdyBuZXcgRXJyb3IoJ3Byb2Nlc3NBbmRQbGF5UmVzcG9uc2UgaGFzIGJlZW4gZGVwcmVjYXRlZC4gVXNlIEF6dXJlIEFJIEZvdW5kcnkgTGl2ZSBWb2ljZSBBUEkgaW5zdGVhZC4nKTtcbn07XG5cbmV4cG9ydCBjb25zdCBwbGF5RGlyZWN0QXVkaW9XaXRoRmFsbGJhY2sgPSAoKSA9PiB7XG4gIHRocm93IG5ldyBFcnJvcigncGxheURpcmVjdEF1ZGlvV2l0aEZhbGxiYWNrIGhhcyBiZWVuIGRlcHJlY2F0ZWQuIFVzZSBBenVyZSBBSSBGb3VuZHJ5IExpdmUgVm9pY2UgQVBJIGluc3RlYWQuJyk7XG59O1xuIl0sIm1hcHBpbmdzIjoiOztBQUFBOzs7Ozs7O0FBQUE7QUFBQSxTQUFBQSxjQUFBO0VBQUEsSUFBQUMsSUFBQTtFQUFBLElBQUFDLElBQUE7RUFBQSxJQUFBQyxNQUFBLE9BQUFDLFFBQUE7RUFBQSxJQUFBQyxHQUFBO0VBQUEsSUFBQUMsWUFBQTtJQUFBTCxJQUFBO0lBQUFNLFlBQUE7TUFBQTtRQUFBQyxLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO0lBQUE7SUFBQUUsS0FBQTtNQUFBO1FBQUFDLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtNQUFBO1FBQUFJLElBQUE7UUFBQUMsSUFBQTtVQUFBTixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBSyxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFELElBQUE7TUFBQTtJQUFBO0lBQUFPLFNBQUE7SUFBQUMsQ0FBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFB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

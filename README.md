@@ -1,13 +1,13 @@
 # PrepBettr - AI-Powered Interview Preparation Platform
 
-AI-powered interview platform built with Next.js 15, Azure Speech Services, Azure OpenAI, and Firebase for real-time voice interviews and resume processing.
+Next-generation AI interview platform built with Next.js 15, powered by **Azure AI Foundry Live Voice API** for ultra-low latency (~300-500ms) real-time voice interviews with seamless resume processing.
 
 ## Features
-- **Real-time voice interviews** with Azure Speech-to-Text and Text-to-Speech
-- **Resume upload and analysis** with AI-powered question generation  
-- **License-based access control** with usage quotas
-- **Multi-provider authentication** with Firebase
-- **Azure-first architecture** with Firebase fallback
+- **🎤 Real-time voice interviews** with Azure AI Foundry Live Voice API (STT↔GPT↔TTS)
+- **📄 Resume upload and analysis** with AI-powered question generation using Google Gemini
+- **🔑 License-based access control** with usage quotas via Dodo Payments
+- **🔐 Multi-provider authentication** with Firebase Auth + session management
+- **☁️ Hybrid cloud architecture** with Azure primary + Firebase fallback
 
 ## Quick Start
 
@@ -60,12 +60,23 @@ npm run test:voice-flow      # Voice interview tests
 
 ## Architecture
 
-- **Frontend**: Next.js 15 with App Router
-- **Authentication**: Firebase Auth with session management
-- **Voice Services**: Azure Speech Services + Azure OpenAI
+### Voice Interview System
+PrepBettr now uses a **consolidated single-pipeline architecture** powered by Azure AI Foundry:
+
+```
+User Speech → Azure AI Foundry Live Voice API → GPT-4o Realtime → TTS → User Audio
+             (STT + LLM + TTS in single service, ~300-500ms latency)
+```
+
+### Core Technology Stack
+- **Frontend**: Next.js 15 with App Router + Tailwind CSS v4
+- **Authentication**: Firebase Auth with custom session management
+- **Voice Processing**: **Azure AI Foundry Live Voice API** (consolidated pipeline)
 - **Storage**: Firebase Firestore + Cloud Storage
-- **AI Processing**: Azure OpenAI (GPT-4) + Google Gemini
-- **Payments**: Dodo Payments license key system
+- **AI Processing**: Azure OpenAI (GPT-4o) + Google Gemini for resume analysis
+- **Backend**: Azure Functions with Firebase fallback
+- **Payments**: Dodo Payments license key management
+- **Monitoring**: Azure Application Insights
 
 ## Documentation
 

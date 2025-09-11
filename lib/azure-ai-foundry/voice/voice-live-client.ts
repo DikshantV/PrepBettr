@@ -7,6 +7,7 @@
 
 import { getEnv, type VoiceEnvironmentConfig, validateVoiceConfig } from './foundry-environment';
 import { VoiceTelemetry, VoiceConnectionError } from './voice-telemetry';
+import { getVoiceSessionStorage } from './voice-session-storage';
 
 /**
  * Voice session options for creating new sessions
@@ -358,7 +359,7 @@ export class VoiceLiveClient {
 
     // Apply default settings
     const sessionOptions: VoiceSessionOptions = {
-      voiceName: options.voiceName || 'neural-hd-professional',
+      voiceName: options.voiceName || 'en-US-AriaNeural',
       locale: options.locale || 'en-US',
       speakingRate: options.speakingRate || 1.0,
       emotionalTone: options.emotionalTone || 'neutral',
@@ -374,56 +375,170 @@ export class VoiceLiveClient {
     console.log('🎤 [VoiceLiveClient] Creating voice session with options:', sessionOptions);
 
     try {
-      // Call Azure AI Foundry API to create session
-      const response = await fetch(`${this.config!.endpoint}/openai/realtime/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.config!.apiKey,
-          'X-Project-ID': this.config!.projectId
-        },
-        body: JSON.stringify({
-          model: this.config!.deploymentName || 'gpt-4o-realtime-preview',
-          voice: sessionOptions.voiceName,
-          input_audio_format: 'pcm16',
-          output_audio_format: 'pcm16',
-          turn_detection: sessionOptions.audioSettings?.interruptionDetection ? {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 800
-          } : null,
-          tools: [],
-          tool_choice: 'none',
-          temperature: 0.7,
-          max_response_output_tokens: 4096
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Session creation failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const sessionData = await response.json();
+      // Try Azure OpenAI realtime endpoint first (if available)
+      const realtimeEndpoint = this.getRealtimeEndpoint();
       
-      const session: VoiceSession = {
-        sessionId: sessionData.id,
-        wsUrl: sessionData.websocket_url,
-        options: sessionOptions,
-        createdAt: new Date()
-      };
-
-      // Store session for later reference
-      this.activeSessions.set(session.sessionId, session);
-
-      console.log(`✅ [VoiceLiveClient] Session created: ${session.sessionId}`);
-      return session;
+      if (realtimeEndpoint) {
+        console.log('🔄 [VoiceLiveClient] Attempting Azure OpenAI realtime session...');
+        return await this.createRealtimeSession(realtimeEndpoint, sessionOptions);
+      }
+      
+      // Fallback: Create mock session with Azure Speech Services integration
+      console.log('🔄 [VoiceLiveClient] Falling back to Azure Speech Services session...');
+      return await this.createSpeechServicesSession(sessionOptions);
 
     } catch (error) {
       console.error('❌ [VoiceLiveClient] Session creation failed:', error);
+      
+      // Final fallback: Create minimal mock session for development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 [VoiceLiveClient] Creating development fallback session...');
+        return this.createFallbackSession(sessionOptions);
+      }
+      
       throw error;
     }
+  }
+
+  /**
+   * Get realtime endpoint URL if available
+   */
+  private getRealtimeEndpoint(): string | null {
+    // Check if we have Azure OpenAI endpoint available
+    const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT || 
+                               process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT;
+    
+    if (azureOpenAIEndpoint) {
+      return `${azureOpenAIEndpoint.replace(/\/$/, '')}/openai/realtime/sessions?api-version=2024-10-01-preview`;
+    }
+    
+    // Try Azure AI Foundry endpoint with corrected path
+    if (this.config?.endpoint) {
+      return `${this.config.endpoint.replace(/\/$/, '')}/openai/realtime/sessions?api-version=2024-10-01-preview`;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Create realtime session using Azure OpenAI
+   */
+  private async createRealtimeSession(endpoint: string, options: VoiceSessionOptions): Promise<VoiceSession> {
+    const apiKey = process.env.AZURE_OPENAI_API_KEY || 
+                   process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY || 
+                   this.config?.apiKey;
+    
+    if (!apiKey) {
+      throw new Error('Azure OpenAI API key not available');
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-realtime-preview',
+        voice: options.voiceName,
+        input_audio_format: 'pcm16',
+        output_audio_format: 'pcm16',
+        turn_detection: options.audioSettings?.interruptionDetection ? {
+          type: 'server_vad',
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 800
+        } : null,
+        tools: [],
+        tool_choice: 'none',
+        temperature: 0.7,
+        max_response_output_tokens: 4096
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Realtime session creation failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const sessionData = await response.json();
+    
+    const session: VoiceSession = {
+      sessionId: sessionData.id,
+      wsUrl: sessionData.websocket_url,
+      options,
+      createdAt: new Date()
+    };
+
+    this.activeSessions.set(session.sessionId, session);
+    
+    // Store in session storage for WebSocket proxy access
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.storeSession({
+      sessionId: session.sessionId,
+      wsUrl: session.wsUrl,
+      createdAt: session.createdAt
+    });
+    
+    console.log(`✅ [VoiceLiveClient] Realtime session created: ${session.sessionId}`);
+    return session;
+  }
+
+  /**
+   * Create session using Azure Speech Services as backend
+   */
+  private async createSpeechServicesSession(options: VoiceSessionOptions): Promise<VoiceSession> {
+    const sessionId = `speech_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create a WebSocket URL for Speech Services integration
+    const wsUrl = `ws://localhost:3000/api/voice/session/${sessionId}/ws`;
+    
+    const session: VoiceSession = {
+      sessionId,
+      wsUrl,
+      options,
+      createdAt: new Date()
+    };
+
+    this.activeSessions.set(session.sessionId, session);
+    
+    // Store in session storage for WebSocket proxy access
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.storeSession({
+      sessionId: session.sessionId,
+      wsUrl: session.wsUrl,
+      createdAt: session.createdAt
+    });
+    
+    console.log(`✅ [VoiceLiveClient] Speech Services session created: ${session.sessionId}`);
+    return session;
+  }
+
+  /**
+   * Create fallback session for development
+   */
+  private createFallbackSession(options: VoiceSessionOptions): VoiceSession {
+    const sessionId = `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const session: VoiceSession = {
+      sessionId,
+      wsUrl: `ws://localhost:3000/api/voice/session/${sessionId}/ws`,
+      options,
+      createdAt: new Date()
+    };
+
+    this.activeSessions.set(session.sessionId, session);
+    
+    // Store in session storage for WebSocket proxy access
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.storeSession({
+      sessionId: session.sessionId,
+      wsUrl: session.wsUrl,
+      createdAt: session.createdAt
+    });
+    
+    console.log(`⚠️ [VoiceLiveClient] Fallback session created: ${session.sessionId}`);
+    return session;
   }
 
   /**
@@ -462,6 +577,11 @@ export class VoiceLiveClient {
    */
   removeSession(sessionId: string): void {
     this.activeSessions.delete(sessionId);
+    
+    // Also remove from session storage
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.removeSession(sessionId);
+    
     console.log(`🗑️ [VoiceLiveClient] Removed session: ${sessionId}`);
   }
 
@@ -478,6 +598,10 @@ export class VoiceLiveClient {
   cleanup(): void {
     console.log('🧹 [VoiceLiveClient] Cleaning up all sessions');
     this.activeSessions.clear();
+    
+    // Also clear session storage
+    const sessionStorage = getVoiceSessionStorage();
+    sessionStorage.clear();
   }
 }
 

@@ -1,0 +1,961 @@
+9cf65e27abd886f5dfc633cea8189dbc
+"use strict";
+
+/**
+ * Markdown Sanitizer for Text-to-Speech
+ *
+ * Removes Markdown formatting symbols that should not be spoken aloud
+ * while preserving the actual content and natural speech flow.
+ */
+/* istanbul ignore next */
+function cov_1yjb4ezo79() {
+  var path = "/Users/dikshantvashistha/PrepBettr/lib/utils/markdown-sanitizer.ts";
+  var hash = "72db623bc8b075cb311d46f8bf3444de600fe727";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/lib/utils/markdown-sanitizer.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 8,
+          column: 0
+        },
+        end: {
+          line: 8,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 9,
+          column: 0
+        },
+        end: {
+          line: 9,
+          column: 48
+        }
+      },
+      "2": {
+        start: {
+          line: 10,
+          column: 0
+        },
+        end: {
+          line: 10,
+          column: 54
+        }
+      },
+      "3": {
+        start: {
+          line: 11,
+          column: 0
+        },
+        end: {
+          line: 11,
+          column: 60
+        }
+      },
+      "4": {
+        start: {
+          line: 18,
+          column: 4
+        },
+        end: {
+          line: 20,
+          column: 5
+        }
+      },
+      "5": {
+        start: {
+          line: 19,
+          column: 8
+        },
+        end: {
+          line: 19,
+          column: 18
+        }
+      },
+      "6": {
+        start: {
+          line: 21,
+          column: 20
+        },
+        end: {
+          line: 21,
+          column: 24
+        }
+      },
+      "7": {
+        start: {
+          line: 23,
+          column: 4
+        },
+        end: {
+          line: 23,
+          column: 54
+        }
+      },
+      "8": {
+        start: {
+          line: 25,
+          column: 4
+        },
+        end: {
+          line: 25,
+          column: 62
+        }
+      },
+      "9": {
+        start: {
+          line: 26,
+          column: 4
+        },
+        end: {
+          line: 26,
+          column: 58
+        }
+      },
+      "10": {
+        start: {
+          line: 27,
+          column: 4
+        },
+        end: {
+          line: 27,
+          column: 54
+        }
+      },
+      "11": {
+        start: {
+          line: 28,
+          column: 4
+        },
+        end: {
+          line: 28,
+          column: 54
+        }
+      },
+      "12": {
+        start: {
+          line: 29,
+          column: 4
+        },
+        end: {
+          line: 29,
+          column: 52
+        }
+      },
+      "13": {
+        start: {
+          line: 31,
+          column: 4
+        },
+        end: {
+          line: 31,
+          column: 54
+        }
+      },
+      "14": {
+        start: {
+          line: 33,
+          column: 4
+        },
+        end: {
+          line: 33,
+          column: 54
+        }
+      },
+      "15": {
+        start: {
+          line: 35,
+          column: 4
+        },
+        end: {
+          line: 35,
+          column: 71
+        }
+      },
+      "16": {
+        start: {
+          line: 37,
+          column: 4
+        },
+        end: {
+          line: 37,
+          column: 49
+        }
+      },
+      "17": {
+        start: {
+          line: 39,
+          column: 4
+        },
+        end: {
+          line: 39,
+          column: 56
+        }
+      },
+      "18": {
+        start: {
+          line: 40,
+          column: 4
+        },
+        end: {
+          line: 40,
+          column: 56
+        }
+      },
+      "19": {
+        start: {
+          line: 42,
+          column: 4
+        },
+        end: {
+          line: 42,
+          column: 55
+        }
+      },
+      "20": {
+        start: {
+          line: 44,
+          column: 4
+        },
+        end: {
+          line: 44,
+          column: 46
+        }
+      },
+      "21": {
+        start: {
+          line: 45,
+          column: 4
+        },
+        end: {
+          line: 45,
+          column: 55
+        }
+      },
+      "22": {
+        start: {
+          line: 47,
+          column: 4
+        },
+        end: {
+          line: 47,
+          column: 66
+        }
+      },
+      "23": {
+        start: {
+          line: 49,
+          column: 4
+        },
+        end: {
+          line: 49,
+          column: 67
+        }
+      },
+      "24": {
+        start: {
+          line: 51,
+          column: 4
+        },
+        end: {
+          line: 51,
+          column: 70
+        }
+      },
+      "25": {
+        start: {
+          line: 53,
+          column: 4
+        },
+        end: {
+          line: 53,
+          column: 53
+        }
+      },
+      "26": {
+        start: {
+          line: 54,
+          column: 4
+        },
+        end: {
+          line: 54,
+          column: 53
+        }
+      },
+      "27": {
+        start: {
+          line: 55,
+          column: 4
+        },
+        end: {
+          line: 55,
+          column: 33
+        }
+      },
+      "28": {
+        start: {
+          line: 57,
+          column: 4
+        },
+        end: {
+          line: 57,
+          column: 50
+        }
+      },
+      "29": {
+        start: {
+          line: 58,
+          column: 4
+        },
+        end: {
+          line: 58,
+          column: 46
+        }
+      },
+      "30": {
+        start: {
+          line: 60,
+          column: 4
+        },
+        end: {
+          line: 60,
+          column: 50
+        }
+      },
+      "31": {
+        start: {
+          line: 61,
+          column: 4
+        },
+        end: {
+          line: 61,
+          column: 50
+        }
+      },
+      "32": {
+        start: {
+          line: 62,
+          column: 4
+        },
+        end: {
+          line: 62,
+          column: 28
+        }
+      },
+      "33": {
+        start: {
+          line: 70,
+          column: 20
+        },
+        end: {
+          line: 70,
+          column: 44
+        }
+      },
+      "34": {
+        start: {
+          line: 72,
+          column: 34
+        },
+        end: {
+          line: 86,
+          column: 5
+        }
+      },
+      "35": {
+        start: {
+          line: 87,
+          column: 4
+        },
+        end: {
+          line: 90,
+          column: 5
+        }
+      },
+      "36": {
+        start: {
+          line: 88,
+          column: 22
+        },
+        end: {
+          line: 88,
+          column: 54
+        }
+      },
+      "37": {
+        start: {
+          line: 89,
+          column: 8
+        },
+        end: {
+          line: 89,
+          column: 58
+        }
+      },
+      "38": {
+        start: {
+          line: 92,
+          column: 4
+        },
+        end: {
+          line: 95,
+          column: 5
+        }
+      },
+      "39": {
+        start: {
+          line: 94,
+          column: 8
+        },
+        end: {
+          line: 94,
+          column: 60
+        }
+      },
+      "40": {
+        start: {
+          line: 96,
+          column: 4
+        },
+        end: {
+          line: 96,
+          column: 21
+        }
+      },
+      "41": {
+        start: {
+          line: 103,
+          column: 4
+        },
+        end: {
+          line: 103,
+          column: 43
+        }
+      },
+      "42": {
+        start: {
+          line: 104,
+          column: 4
+        },
+        end: {
+          line: 104,
+          column: 64
+        }
+      },
+      "43": {
+        start: {
+          line: 105,
+          column: 4
+        },
+        end: {
+          line: 105,
+          column: 77
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "sanitizeTextForTTS",
+        decl: {
+          start: {
+            line: 17,
+            column: 9
+          },
+          end: {
+            line: 17,
+            column: 27
+          }
+        },
+        loc: {
+          start: {
+            line: 17,
+            column: 34
+          },
+          end: {
+            line: 63,
+            column: 1
+          }
+        },
+        line: 17
+      },
+      "1": {
+        name: "sanitizeInterviewText",
+        decl: {
+          start: {
+            line: 69,
+            column: 9
+          },
+          end: {
+            line: 69,
+            column: 30
+          }
+        },
+        loc: {
+          start: {
+            line: 69,
+            column: 37
+          },
+          end: {
+            line: 97,
+            column: 1
+          }
+        },
+        line: 69
+      },
+      "2": {
+        name: "testMarkdownSanitization",
+        decl: {
+          start: {
+            line: 102,
+            column: 9
+          },
+          end: {
+            line: 102,
+            column: 33
+          }
+        },
+        loc: {
+          start: {
+            line: 102,
+            column: 48
+          },
+          end: {
+            line: 106,
+            column: 1
+          }
+        },
+        line: 102
+      }
+    },
+    branchMap: {
+      "0": {
+        loc: {
+          start: {
+            line: 18,
+            column: 4
+          },
+          end: {
+            line: 20,
+            column: 5
+          }
+        },
+        type: "if",
+        locations: [{
+          start: {
+            line: 18,
+            column: 4
+          },
+          end: {
+            line: 20,
+            column: 5
+          }
+        }, {
+          start: {
+            line: undefined,
+            column: undefined
+          },
+          end: {
+            line: undefined,
+            column: undefined
+          }
+        }],
+        line: 18
+      },
+      "1": {
+        loc: {
+          start: {
+            line: 18,
+            column: 8
+          },
+          end: {
+            line: 18,
+            column: 41
+          }
+        },
+        type: "binary-expr",
+        locations: [{
+          start: {
+            line: 18,
+            column: 8
+          },
+          end: {
+            line: 18,
+            column: 13
+          }
+        }, {
+          start: {
+            line: 18,
+            column: 17
+          },
+          end: {
+            line: 18,
+            column: 41
+          }
+        }],
+        line: 18
+      },
+      "2": {
+        loc: {
+          start: {
+            line: 92,
+            column: 4
+          },
+          end: {
+            line: 95,
+            column: 5
+          }
+        },
+        type: "if",
+        locations: [{
+          start: {
+            line: 92,
+            column: 4
+          },
+          end: {
+            line: 95,
+            column: 5
+          }
+        }, {
+          start: {
+            line: undefined,
+            column: undefined
+          },
+          end: {
+            line: undefined,
+            column: undefined
+          }
+        }],
+        line: 92
+      },
+      "3": {
+        loc: {
+          start: {
+            line: 92,
+            column: 8
+          },
+          end: {
+            line: 92,
+            column: 66
+          }
+        },
+        type: "binary-expr",
+        locations: [{
+          start: {
+            line: 92,
+            column: 8
+          },
+          end: {
+            line: 92,
+            column: 31
+          }
+        }, {
+          start: {
+            line: 92,
+            column: 35
+          },
+          end: {
+            line: 92,
+            column: 66
+          }
+        }],
+        line: 92
+      }
+    },
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0,
+      "15": 0,
+      "16": 0,
+      "17": 0,
+      "18": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "22": 0,
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0,
+      "38": 0,
+      "39": 0,
+      "40": 0,
+      "41": 0,
+      "42": 0,
+      "43": 0
+    },
+    f: {
+      "0": 0,
+      "1": 0,
+      "2": 0
+    },
+    b: {
+      "0": [0, 0],
+      "1": [0, 0],
+      "2": [0, 0],
+      "3": [0, 0]
+    },
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/lib/utils/markdown-sanitizer.ts",
+      mappings: "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",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/lib/utils/markdown-sanitizer.ts"],
+      sourcesContent: ["/**\n * Markdown Sanitizer for Text-to-Speech\n * \n * Removes Markdown formatting symbols that should not be spoken aloud\n * while preserving the actual content and natural speech flow.\n */\n\n/**\n * Strip Markdown formatting from text for TTS processing\n * @param text - Raw text that may contain Markdown formatting\n * @returns Clean text suitable for speech synthesis\n */\nexport function sanitizeTextForTTS(text: string): string {\n  if (!text || typeof text !== 'string') {\n    return '';\n  }\n\n  let cleanText = text;\n\n  // Remove headers (# ## ### etc.) but keep the text\n  cleanText = cleanText.replace(/^#{1,6}\\s+/gm, '');\n\n  // Remove bold/italic formatting but keep the text\n  cleanText = cleanText.replace(/\\*\\*\\*(.*?)\\*\\*\\*/g, '$1'); // Bold italic\n  cleanText = cleanText.replace(/\\*\\*(.*?)\\*\\*/g, '$1'); // Bold\n  cleanText = cleanText.replace(/\\*(.*?)\\*/g, '$1'); // Italic\n  cleanText = cleanText.replace(/__(.*?)__/g, '$1'); // Bold alt\n  cleanText = cleanText.replace(/_(.*?)_/g, '$1'); // Italic alt\n\n  // Remove strikethrough but keep the text\n  cleanText = cleanText.replace(/~~(.*?)~~/g, '$1');\n\n  // Remove inline code formatting but keep the text\n  cleanText = cleanText.replace(/`([^`]+)`/g, '$1');\n\n  // Remove code blocks but keep the content with proper spacing\n  cleanText = cleanText.replace(/```[\\s\\S]*?\\n([\\s\\S]*?)```/g, '$1');\n\n  // Remove blockquotes but keep the text\n  cleanText = cleanText.replace(/^>\\s+/gm, '');\n\n  // Convert lists to natural speech format\n  cleanText = cleanText.replace(/^\\s*[-*+]\\s+/gm, ''); // Remove bullet points\n  cleanText = cleanText.replace(/^\\s*\\d+\\.\\s+/gm, ''); // Remove numbered list markers\n\n  // Remove horizontal rules\n  cleanText = cleanText.replace(/^[-*_]{3,}$/gm, '');\n\n  // Remove table formatting - convert to sentences\n  cleanText = cleanText.replace(/\\|/g, ' '); // Remove table pipes\n  cleanText = cleanText.replace(/^:?-+:?\\s*$/gm, ''); // Remove table separators\n\n  // Remove link formatting but keep the link text\n  cleanText = cleanText.replace(/\\[([^\\]]*)\\]\\([^)]*\\)/g, '$1');\n\n  // Remove image alt text formatting\n  cleanText = cleanText.replace(/!\\[([^\\]]*)\\]\\([^)]*\\)/g, '$1');\n\n  // Remove reference-style links\n  cleanText = cleanText.replace(/\\[([^\\]]*)\\]\\s*\\[[^\\]]*\\]/g, '$1');\n\n  // Clean up excessive whitespace and normalize\n  cleanText = cleanText.replace(/\\n{3,}/g, '\\n\\n'); // Max 2 line breaks\n  cleanText = cleanText.replace(/[ \\t]{2,}/g, ' '); // Multiple spaces to single\n  cleanText = cleanText.trim();\n\n  // Convert remaining line breaks to natural speech pauses\n  cleanText = cleanText.replace(/\\n\\n+/g, '. '); // Double line breaks become sentence breaks\n  cleanText = cleanText.replace(/\\n/g, ' '); // Single line breaks become spaces\n\n  // Clean up any double periods or spaces\n  cleanText = cleanText.replace(/\\.{2,}/g, '.'); \n  cleanText = cleanText.replace(/\\s{2,}/g, ' ');\n\n  return cleanText.trim();\n}\n\n/**\n * Additional sanitization for interview-specific content\n * @param text - Text from AI interviewer responses\n * @returns Text optimized for natural speech in interview context\n */\nexport function sanitizeInterviewText(text: string): string {\n  let cleanText = sanitizeTextForTTS(text);\n\n  // Replace technical abbreviations with full words for better pronunciation\n  const technicalReplacements: Record<string, string> = {\n    'API': 'A-P-I',\n    'REST': 'REST',\n    'HTTP': 'H-T-T-P',\n    'HTTPS': 'H-T-T-P-S',\n    'JSON': 'J-S-O-N',\n    'XML': 'X-M-L',\n    'SQL': 'S-Q-L',\n    'HTML': 'H-T-M-L',\n    'CSS': 'C-S-S',\n    'URL': 'U-R-L',\n    'UI/UX': 'User Interface and User Experience',\n    'CRUD': 'Create, Read, Update, Delete',\n    'MVC': 'Model View Controller'\n  };\n\n  for (const [abbr, replacement] of Object.entries(technicalReplacements)) {\n    const regex = new RegExp(`\\\\b${abbr}\\\\b`, 'g');\n    cleanText = cleanText.replace(regex, replacement);\n  }\n\n  // Ensure questions end with proper intonation\n  if (cleanText.includes('?') && !cleanText.trim().endsWith('?')) {\n    // Move question marks to end if they're in the middle\n    cleanText = cleanText.replace(/\\?([^?]*?)$/, '$1?');\n  }\n\n  return cleanText;\n}\n\n/**\n * Quick test function to verify sanitization\n * @param markdownText - Text to test\n */\nexport function testMarkdownSanitization(markdownText: string): void {\n  console.log('Original:', markdownText);\n  console.log('Sanitized:', sanitizeTextForTTS(markdownText));\n  console.log('Interview-optimized:', sanitizeInterviewText(markdownText));\n}\n\n// Example usage:\n// testMarkdownSanitization(\"Great! Let's **discuss** your experience with `React` and *Next.js*. ## Technical Questions\\n\\n- What is your favorite **API** design pattern?\\n- How do you handle **error** handling in *production*?\");\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "72db623bc8b075cb311d46f8bf3444de600fe727"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1yjb4ezo79 = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1yjb4ezo79();
+cov_1yjb4ezo79().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_1yjb4ezo79().s[1]++;
+exports.sanitizeTextForTTS = sanitizeTextForTTS;
+/* istanbul ignore next */
+cov_1yjb4ezo79().s[2]++;
+exports.sanitizeInterviewText = sanitizeInterviewText;
+/* istanbul ignore next */
+cov_1yjb4ezo79().s[3]++;
+exports.testMarkdownSanitization = testMarkdownSanitization;
+/**
+ * Strip Markdown formatting from text for TTS processing
+ * @param text - Raw text that may contain Markdown formatting
+ * @returns Clean text suitable for speech synthesis
+ */
+function sanitizeTextForTTS(text) {
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().f[0]++;
+  cov_1yjb4ezo79().s[4]++;
+  if (
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().b[1][0]++, !text) ||
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().b[1][1]++, typeof text !== 'string')) {
+    /* istanbul ignore next */
+    cov_1yjb4ezo79().b[0][0]++;
+    cov_1yjb4ezo79().s[5]++;
+    return '';
+  } else
+  /* istanbul ignore next */
+  {
+    cov_1yjb4ezo79().b[0][1]++;
+  }
+  let cleanText =
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().s[6]++, text);
+  // Remove headers (# ## ### etc.) but keep the text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[7]++;
+  cleanText = cleanText.replace(/^#{1,6}\s+/gm, '');
+  // Remove bold/italic formatting but keep the text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[8]++;
+  cleanText = cleanText.replace(/\*\*\*(.*?)\*\*\*/g, '$1'); // Bold italic
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[9]++;
+  cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '$1'); // Bold
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[10]++;
+  cleanText = cleanText.replace(/\*(.*?)\*/g, '$1'); // Italic
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[11]++;
+  cleanText = cleanText.replace(/__(.*?)__/g, '$1'); // Bold alt
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[12]++;
+  cleanText = cleanText.replace(/_(.*?)_/g, '$1'); // Italic alt
+  // Remove strikethrough but keep the text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[13]++;
+  cleanText = cleanText.replace(/~~(.*?)~~/g, '$1');
+  // Remove inline code formatting but keep the text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[14]++;
+  cleanText = cleanText.replace(/`([^`]+)`/g, '$1');
+  // Remove code blocks but keep the content with proper spacing
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[15]++;
+  cleanText = cleanText.replace(/```[\s\S]*?\n([\s\S]*?)```/g, '$1');
+  // Remove blockquotes but keep the text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[16]++;
+  cleanText = cleanText.replace(/^>\s+/gm, '');
+  // Convert lists to natural speech format
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[17]++;
+  cleanText = cleanText.replace(/^\s*[-*+]\s+/gm, ''); // Remove bullet points
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[18]++;
+  cleanText = cleanText.replace(/^\s*\d+\.\s+/gm, ''); // Remove numbered list markers
+  // Remove horizontal rules
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[19]++;
+  cleanText = cleanText.replace(/^[-*_]{3,}$/gm, '');
+  // Remove table formatting - convert to sentences
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[20]++;
+  cleanText = cleanText.replace(/\|/g, ' '); // Remove table pipes
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[21]++;
+  cleanText = cleanText.replace(/^:?-+:?\s*$/gm, ''); // Remove table separators
+  // Remove link formatting but keep the link text
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[22]++;
+  cleanText = cleanText.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+  // Remove image alt text formatting
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[23]++;
+  cleanText = cleanText.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  // Remove reference-style links
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[24]++;
+  cleanText = cleanText.replace(/\[([^\]]*)\]\s*\[[^\]]*\]/g, '$1');
+  // Clean up excessive whitespace and normalize
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[25]++;
+  cleanText = cleanText.replace(/\n{3,}/g, '\n\n'); // Max 2 line breaks
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[26]++;
+  cleanText = cleanText.replace(/[ \t]{2,}/g, ' '); // Multiple spaces to single
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[27]++;
+  cleanText = cleanText.trim();
+  // Convert remaining line breaks to natural speech pauses
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[28]++;
+  cleanText = cleanText.replace(/\n\n+/g, '. '); // Double line breaks become sentence breaks
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[29]++;
+  cleanText = cleanText.replace(/\n/g, ' '); // Single line breaks become spaces
+  // Clean up any double periods or spaces
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[30]++;
+  cleanText = cleanText.replace(/\.{2,}/g, '.');
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[31]++;
+  cleanText = cleanText.replace(/\s{2,}/g, ' ');
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[32]++;
+  return cleanText.trim();
+}
+/**
+ * Additional sanitization for interview-specific content
+ * @param text - Text from AI interviewer responses
+ * @returns Text optimized for natural speech in interview context
+ */
+function sanitizeInterviewText(text) {
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().f[1]++;
+  let cleanText =
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().s[33]++, sanitizeTextForTTS(text));
+  // Replace technical abbreviations with full words for better pronunciation
+  const technicalReplacements =
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().s[34]++, {
+    'API': 'A-P-I',
+    'REST': 'REST',
+    'HTTP': 'H-T-T-P',
+    'HTTPS': 'H-T-T-P-S',
+    'JSON': 'J-S-O-N',
+    'XML': 'X-M-L',
+    'SQL': 'S-Q-L',
+    'HTML': 'H-T-M-L',
+    'CSS': 'C-S-S',
+    'URL': 'U-R-L',
+    'UI/UX': 'User Interface and User Experience',
+    'CRUD': 'Create, Read, Update, Delete',
+    'MVC': 'Model View Controller'
+  });
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[35]++;
+  for (const [abbr, replacement] of Object.entries(technicalReplacements)) {
+    const regex =
+    /* istanbul ignore next */
+    (cov_1yjb4ezo79().s[36]++, new RegExp(`\\b${abbr}\\b`, 'g'));
+    /* istanbul ignore next */
+    cov_1yjb4ezo79().s[37]++;
+    cleanText = cleanText.replace(regex, replacement);
+  }
+  // Ensure questions end with proper intonation
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[38]++;
+  if (
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().b[3][0]++, cleanText.includes('?')) &&
+  /* istanbul ignore next */
+  (cov_1yjb4ezo79().b[3][1]++, !cleanText.trim().endsWith('?'))) {
+    /* istanbul ignore next */
+    cov_1yjb4ezo79().b[2][0]++;
+    cov_1yjb4ezo79().s[39]++;
+    // Move question marks to end if they're in the middle
+    cleanText = cleanText.replace(/\?([^?]*?)$/, '$1?');
+  } else
+  /* istanbul ignore next */
+  {
+    cov_1yjb4ezo79().b[2][1]++;
+  }
+  cov_1yjb4ezo79().s[40]++;
+  return cleanText;
+}
+/**
+ * Quick test function to verify sanitization
+ * @param markdownText - Text to test
+ */
+function testMarkdownSanitization(markdownText) {
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().f[2]++;
+  cov_1yjb4ezo79().s[41]++;
+  console.log('Original:', markdownText);
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[42]++;
+  console.log('Sanitized:', sanitizeTextForTTS(markdownText));
+  /* istanbul ignore next */
+  cov_1yjb4ezo79().s[43]++;
+  console.log('Interview-optimized:', sanitizeInterviewText(markdownText));
+}
+// Example usage:
+// testMarkdownSanitization("Great! Let's **discuss** your experience with `React` and *Next.js*. ## Technical Questions\n\n- What is your favorite **API** design pattern?\n- How do you handle **error** handling in *production*?");
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMXlqYjRlem83OSIsInBhdGgiLCJoYXNoIiwiZ2xvYmFsIiwiRnVuY3Rpb24iLCJnY3YiLCJjb3ZlcmFnZURhdGEiLCJzdGF0ZW1lbnRNYXAiLCJzdGFydCIsImxpbmUiLCJjb2x1bW4iLCJlbmQiLCJmbk1hcCIsIm5hbWUiLCJkZWNsIiwibG9jIiwiYnJhbmNoTWFwIiwidHlwZSIsImxvY2F0aW9ucyIsInVuZGVmaW5lZCIsInMiLCJmIiwiYiIsImlucHV0U291cmNlTWFwIiwiZmlsZSIsIm1hcHBpbmdzIiwibmFtZXMiLCJzb3VyY2VzIiwic291cmNlc0NvbnRlbnQiLCJ2ZXJzaW9uIiwiX2NvdmVyYWdlU2NoZW1hIiwiY292ZXJhZ2UiLCJhY3R1YWxDb3ZlcmFnZSIsImV4cG9ydHMiLCJzYW5pdGl6ZVRleHRGb3JUVFMiLCJzYW5pdGl6ZUludGVydmlld1RleHQiLCJ0ZXN0TWFya2Rvd25TYW5pdGl6YXRpb24iLCJ0ZXh0IiwiY2xlYW5UZXh0IiwicmVwbGFjZSIsInRyaW0iLCJ0ZWNobmljYWxSZXBsYWNlbWVudHMiLCJhYmJyIiwicmVwbGFjZW1lbnQiLCJPYmplY3QiLCJlbnRyaWVzIiwicmVnZXgiLCJSZWdFeHAiLCJpbmNsdWRlcyIsImVuZHNXaXRoIiwibWFya2Rvd25UZXh0IiwiY29uc29sZSIsImxvZyJdLCJzb3VyY2VzIjpbIi9Vc2Vycy9kaWtzaGFudHZhc2hpc3RoYS9QcmVwQmV0dHIvbGliL3V0aWxzL21hcmtkb3duLXNhbml0aXplci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIE1hcmtkb3duIFNhbml0aXplciBmb3IgVGV4dC10by1TcGVlY2hcbiAqIFxuICogUmVtb3ZlcyBNYXJrZG93biBmb3JtYXR0aW5nIHN5bWJvbHMgdGhhdCBzaG91bGQgbm90IGJlIHNwb2tlbiBhbG91ZFxuICogd2hpbGUgcHJlc2VydmluZyB0aGUgYWN0dWFsIGNvbnRlbnQgYW5kIG5hdHVyYWwgc3BlZWNoIGZsb3cuXG4gKi9cblxuLyoqXG4gKiBTdHJpcCBNYXJrZG93biBmb3JtYXR0aW5nIGZyb20gdGV4dCBmb3IgVFRTIHByb2Nlc3NpbmdcbiAqIEBwYXJhbSB0ZXh0IC0gUmF3IHRleHQgdGhhdCBtYXkgY29udGFpbiBNYXJrZG93biBmb3JtYXR0aW5nXG4gKiBAcmV0dXJucyBDbGVhbiB0ZXh0IHN1aXRhYmxlIGZvciBzcGVlY2ggc3ludGhlc2lzXG4gKi9cbmV4cG9ydCBmdW5jdGlvbiBzYW5pdGl6ZVRleHRGb3JUVFModGV4dDogc3RyaW5nKTogc3RyaW5nIHtcbiAgaWYgKCF0ZXh0IHx8IHR5cGVvZiB0ZXh0ICE9PSAnc3RyaW5nJykge1xuICAgIHJldHVybiAnJztcbiAgfVxuXG4gIGxldCBjbGVhblRleHQgPSB0ZXh0O1xuXG4gIC8vIFJlbW92ZSBoZWFkZXJzICgjICMjICMjIyBldGMuKSBidXQga2VlcCB0aGUgdGV4dFxuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXiN7MSw2fVxccysvZ20sICcnKTtcblxuICAvLyBSZW1vdmUgYm9sZC9pdGFsaWMgZm9ybWF0dGluZyBidXQga2VlcCB0aGUgdGV4dFxuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXFwqXFwqXFwqKC4qPylcXCpcXCpcXCovZywgJyQxJyk7IC8vIEJvbGQgaXRhbGljXG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKC9cXCpcXCooLio/KVxcKlxcKi9nLCAnJDEnKTsgLy8gQm9sZFxuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXFwqKC4qPylcXCovZywgJyQxJyk7IC8vIEl0YWxpY1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvX18oLio/KV9fL2csICckMScpOyAvLyBCb2xkIGFsdFxuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXyguKj8pXy9nLCAnJDEnKTsgLy8gSXRhbGljIGFsdFxuXG4gIC8vIFJlbW92ZSBzdHJpa2V0aHJvdWdoIGJ1dCBrZWVwIHRoZSB0ZXh0XG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKC9+figuKj8pfn4vZywgJyQxJyk7XG5cbiAgLy8gUmVtb3ZlIGlubGluZSBjb2RlIGZvcm1hdHRpbmcgYnV0IGtlZXAgdGhlIHRleHRcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL2AoW15gXSspYC9nLCAnJDEnKTtcblxuICAvLyBSZW1vdmUgY29kZSBibG9ja3MgYnV0IGtlZXAgdGhlIGNvbnRlbnQgd2l0aCBwcm9wZXIgc3BhY2luZ1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvYGBgW1xcc1xcU10qP1xcbihbXFxzXFxTXSo/KWBgYC9nLCAnJDEnKTtcblxuICAvLyBSZW1vdmUgYmxvY2txdW90ZXMgYnV0IGtlZXAgdGhlIHRleHRcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL14+XFxzKy9nbSwgJycpO1xuXG4gIC8vIENvbnZlcnQgbGlzdHMgdG8gbmF0dXJhbCBzcGVlY2ggZm9ybWF0XG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKC9eXFxzKlstKitdXFxzKy9nbSwgJycpOyAvLyBSZW1vdmUgYnVsbGV0IHBvaW50c1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXlxccypcXGQrXFwuXFxzKy9nbSwgJycpOyAvLyBSZW1vdmUgbnVtYmVyZWQgbGlzdCBtYXJrZXJzXG5cbiAgLy8gUmVtb3ZlIGhvcml6b250YWwgcnVsZXNcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL15bLSpfXXszLH0kL2dtLCAnJyk7XG5cbiAgLy8gUmVtb3ZlIHRhYmxlIGZvcm1hdHRpbmcgLSBjb252ZXJ0IHRvIHNlbnRlbmNlc1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXFx8L2csICcgJyk7IC8vIFJlbW92ZSB0YWJsZSBwaXBlc1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXjo/LSs6P1xccyokL2dtLCAnJyk7IC8vIFJlbW92ZSB0YWJsZSBzZXBhcmF0b3JzXG5cbiAgLy8gUmVtb3ZlIGxpbmsgZm9ybWF0dGluZyBidXQga2VlcCB0aGUgbGluayB0ZXh0XG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKC9cXFsoW15cXF1dKilcXF1cXChbXildKlxcKS9nLCAnJDEnKTtcblxuICAvLyBSZW1vdmUgaW1hZ2UgYWx0IHRleHQgZm9ybWF0dGluZ1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvIVxcWyhbXlxcXV0qKVxcXVxcKFteKV0qXFwpL2csICckMScpO1xuXG4gIC8vIFJlbW92ZSByZWZlcmVuY2Utc3R5bGUgbGlua3NcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL1xcWyhbXlxcXV0qKVxcXVxccypcXFtbXlxcXV0qXFxdL2csICckMScpO1xuXG4gIC8vIENsZWFuIHVwIGV4Y2Vzc2l2ZSB3aGl0ZXNwYWNlIGFuZCBub3JtYWxpemVcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL1xcbnszLH0vZywgJ1xcblxcbicpOyAvLyBNYXggMiBsaW5lIGJyZWFrc1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvWyBcXHRdezIsfS9nLCAnICcpOyAvLyBNdWx0aXBsZSBzcGFjZXMgdG8gc2luZ2xlXG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC50cmltKCk7XG5cbiAgLy8gQ29udmVydCByZW1haW5pbmcgbGluZSBicmVha3MgdG8gbmF0dXJhbCBzcGVlY2ggcGF1c2VzXG4gIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKC9cXG5cXG4rL2csICcuICcpOyAvLyBEb3VibGUgbGluZSBicmVha3MgYmVjb21lIHNlbnRlbmNlIGJyZWFrc1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXFxuL2csICcgJyk7IC8vIFNpbmdsZSBsaW5lIGJyZWFrcyBiZWNvbWUgc3BhY2VzXG5cbiAgLy8gQ2xlYW4gdXAgYW55IGRvdWJsZSBwZXJpb2RzIG9yIHNwYWNlc1xuICBjbGVhblRleHQgPSBjbGVhblRleHQucmVwbGFjZSgvXFwuezIsfS9nLCAnLicpOyBcbiAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL1xcc3syLH0vZywgJyAnKTtcblxuICByZXR1cm4gY2xlYW5UZXh0LnRyaW0oKTtcbn1cblxuLyoqXG4gKiBBZGRpdGlvbmFsIHNhbml0aXphdGlvbiBmb3IgaW50ZXJ2aWV3LXNwZWNpZmljIGNvbnRlbnRcbiAqIEBwYXJhbSB0ZXh0IC0gVGV4dCBmcm9tIEFJIGludGVydmlld2VyIHJlc3BvbnNlc1xuICogQHJldHVybnMgVGV4dCBvcHRpbWl6ZWQgZm9yIG5hdHVyYWwgc3BlZWNoIGluIGludGVydmlldyBjb250ZXh0XG4gKi9cbmV4cG9ydCBmdW5jdGlvbiBzYW5pdGl6ZUludGVydmlld1RleHQodGV4dDogc3RyaW5nKTogc3RyaW5nIHtcbiAgbGV0IGNsZWFuVGV4dCA9IHNhbml0aXplVGV4dEZvclRUUyh0ZXh0KTtcblxuICAvLyBSZXBsYWNlIHRlY2huaWNhbCBhYmJyZXZpYXRpb25zIHdpdGggZnVsbCB3b3JkcyBmb3IgYmV0dGVyIHByb251bmNpYXRpb25cbiAgY29uc3QgdGVjaG5pY2FsUmVwbGFjZW1lbnRzOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0ge1xuICAgICdBUEknOiAnQS1QLUknLFxuICAgICdSRVNUJzogJ1JFU1QnLFxuICAgICdIVFRQJzogJ0gtVC1ULVAnLFxuICAgICdIVFRQUyc6ICdILVQtVC1QLVMnLFxuICAgICdKU09OJzogJ0otUy1PLU4nLFxuICAgICdYTUwnOiAnWC1NLUwnLFxuICAgICdTUUwnOiAnUy1RLUwnLFxuICAgICdIVE1MJzogJ0gtVC1NLUwnLFxuICAgICdDU1MnOiAnQy1TLVMnLFxuICAgICdVUkwnOiAnVS1SLUwnLFxuICAgICdVSS9VWCc6ICdVc2VyIEludGVyZmFjZSBhbmQgVXNlciBFeHBlcmllbmNlJyxcbiAgICAnQ1JVRCc6ICdDcmVhdGUsIFJlYWQsIFVwZGF0ZSwgRGVsZXRlJyxcbiAgICAnTVZDJzogJ01vZGVsIFZpZXcgQ29udHJvbGxlcidcbiAgfTtcblxuICBmb3IgKGNvbnN0IFthYmJyLCByZXBsYWNlbWVudF0gb2YgT2JqZWN0LmVudHJpZXModGVjaG5pY2FsUmVwbGFjZW1lbnRzKSkge1xuICAgIGNvbnN0IHJlZ2V4ID0gbmV3IFJlZ0V4cChgXFxcXGIke2FiYnJ9XFxcXGJgLCAnZycpO1xuICAgIGNsZWFuVGV4dCA9IGNsZWFuVGV4dC5yZXBsYWNlKHJlZ2V4LCByZXBsYWNlbWVudCk7XG4gIH1cblxuICAvLyBFbnN1cmUgcXVlc3Rpb25zIGVuZCB3aXRoIHByb3BlciBpbnRvbmF0aW9uXG4gIGlmIChjbGVhblRleHQuaW5jbHVkZXMoJz8nKSAmJiAhY2xlYW5UZXh0LnRyaW0oKS5lbmRzV2l0aCgnPycpKSB7XG4gICAgLy8gTW92ZSBxdWVzdGlvbiBtYXJrcyB0byBlbmQgaWYgdGhleSdyZSBpbiB0aGUgbWlkZGxlXG4gICAgY2xlYW5UZXh0ID0gY2xlYW5UZXh0LnJlcGxhY2UoL1xcPyhbXj9dKj8pJC8sICckMT8nKTtcbiAgfVxuXG4gIHJldHVybiBjbGVhblRleHQ7XG59XG5cbi8qKlxuICogUXVpY2sgdGVzdCBmdW5jdGlvbiB0byB2ZXJpZnkgc2FuaXRpemF0aW9uXG4gKiBAcGFyYW0gbWFya2Rvd25UZXh0IC0gVGV4dCB0byB0ZXN0XG4gKi9cbmV4cG9ydCBmdW5jdGlvbiB0ZXN0TWFya2Rvd25TYW5pdGl6YXRpb24obWFya2Rvd25UZXh0OiBzdHJpbmcpOiB2b2lkIHtcbiAgY29uc29sZS5sb2coJ09yaWdpbmFsOicsIG1hcmtkb3duVGV4dCk7XG4gIGNvbnNvbGUubG9nKCdTYW5pdGl6ZWQ6Jywgc2FuaXRpemVUZXh0Rm9yVFRTKG1hcmtkb3duVGV4dCkpO1xuICBjb25zb2xlLmxvZygnSW50ZXJ2aWV3LW9wdGltaXplZDonLCBzYW5pdGl6ZUludGVydmlld1RleHQobWFya2Rvd25UZXh0KSk7XG59XG5cbi8vIEV4YW1wbGUgdXNhZ2U6XG4vLyB0ZXN0TWFya2Rvd25TYW5pdGl6YXRpb24oXCJHcmVhdCEgTGV0J3MgKipkaXNjdXNzKiogeW91ciBleHBlcmllbmNlIHdpdGggYFJlYWN0YCBhbmQgKk5leHQuanMqLiAjIyBUZWNobmljYWwgUXVlc3Rpb25zXFxuXFxuLSBXaGF0IGlzIHlvdXIgZmF2b3JpdGUgKipBUEkqKiBkZXNpZ24gcGF0dGVybj9cXG4tIEhvdyBkbyB5b3UgaGFuZGxlICoqZXJyb3IqKiBoYW5kbGluZyBpbiAqcHJvZHVjdGlvbio/XCIpO1xuIl0sIm1hcHBpbmdzIjoiOztBQUFBOzs7Ozs7QUFBQTtBQUFBLFNBQUFBLGVBQUE7RUFBQSxJQUFBQyxJQUFBO0VBQUEsSUFBQUMsSUFBQTtFQUFBLElBQUFDLE1BQUEsT0FBQUMsUUFBQTtFQUFBLElBQUFDLEdBQUE7RUFBQSxJQUFBQyxZQUFBO0lBQUFMLElBQUE7SUFBQU0sWUFBQTtNQUFBO1FBQUFDLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7TUFBQTtRQUFBRixLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtNQUFBO1FBQUFGLEtBQUE7VUFBQUMsSUFBQTtVQUFBQyxNQUFBO1FBQUE7UUFBQUMsR0FBQTtVQUFBRixJQUFBO1VBQUFDLE1BQUE7UUFBQTtNQUFBO01BQUE7UUFBQUYsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7SUFBQTtJQUFBRSxLQUFBO01BQUE7UUFBQUMsSUFBQTtRQUFBQyxJQUFBO1VBQUFOLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFLLEdBQUE7VUFBQVAsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7UUFBQUQsSUFBQTtNQUFBO01BQUE7UUFBQUksSUFBQTtRQUFBQyxJQUFBO1VBQUFOLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFLLEdBQUE7VUFBQVAsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7UUFBQUQsSUFBQTtNQUFBO01BQUE7UUFBQUksSUFBQTtRQUFBQyxJQUFBO1VBQUFOLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFLLEdBQUE7VUFBQVAsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7UUFBQUQsSUFBQTtNQUFBO0lBQUE7SUFBQU8sU0FBQTtNQUFBO1FBQUFELEdBQUE7VUFBQVAsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7UUFBQU8sSUFBQTtRQUFBQyxTQUFBO1VBQUFWLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1VBQUFGLEtBQUE7WUFBQUMsSUFBQSxFQUFBVSxTQUFBO1lBQUFULE1BQUEsRUFBQVM7VUFBQTtVQUFBUixHQUFBO1lBQUFGLElBQUEsRUFBQVUsU0FBQTtZQUFBVCxNQUFBLEVBQUFTO1VBQUE7UUFBQTtRQUFBVixJQUFBO01BQUE7TUFBQTtRQUFBTSxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFPLElBQUE7UUFBQUMsU0FBQTtVQUFBVixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtVQUFBRixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBRCxJQUFBO01BQUE7TUFBQTtRQUFBTSxHQUFBO1VBQUFQLEtBQUE7WUFBQUMsSUFBQTtZQUFBQyxNQUFBO1VBQUE7VUFBQUMsR0FBQTtZQUFBRixJQUFBO1lBQUFDLE1BQUE7VUFBQTtRQUFBO1FBQUFPLElBQUE7UUFBQUMsU0FBQTtVQUFBVixLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtVQUFBRixLQUFBO1lBQUFDLElBQUEsRUFBQVUsU0FBQTtZQUFBVCxNQUFBLEVBQUFTO1VBQUE7VUFBQVIsR0FBQTtZQUFBRixJQUFBLEVBQUFVLFNBQUE7WUFBQVQsTUFBQSxFQUFBUztVQUFBO1FBQUE7UUFBQVYsSUFBQTtNQUFBO01BQUE7UUFBQU0sR0FBQTtVQUFBUCxLQUFBO1lBQUFDLElBQUE7WUFBQUMsTUFBQTtVQUFBO1VBQUFDLEdBQUE7WUFBQUYsSUFBQTtZQUFBQyxNQUFBO1VBQUE7UUFBQTtRQUFBTyxJQUFBO1FBQUFDLFNBQUE7VUFBQVYsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7VUFBQUYsS0FBQTtZQUFBQyxJQUFBO1lBQUFDLE1BQUE7VUFBQTtVQUFBQyxHQUFBO1lBQUFGLElBQUE7WUFBQUMsTUFBQTtVQUFBO1FBQUE7UUFBQUQsSUFBQTtNQUFBO0lBQUE7SUFBQVcsQ0FBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01BQUE7TUFBQTtNQUFBO01B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

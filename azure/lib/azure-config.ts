@@ -132,12 +132,11 @@ export async function initializeAzureEnvironment(): Promise<void> {
     process.env.AZURE_OPENAI_GPT35_DEPLOYMENT = secrets.azureOpenAIGpt35Deployment;
     process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT = secrets.azureOpenAIGpt4oDeployment;
 
-    // Set Azure OpenAI keys for public environment
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY = secrets.azureOpenAIKey;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT = secrets.azureOpenAIGpt35Deployment;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT = secrets.azureOpenAIGpt4oDeployment;
+    // Note: NEXT_PUBLIC_ variables should NOT be set dynamically at runtime
+    // as they are replaced at build time by webpack. These are for server-side use only:
+    // - AZURE_OPENAI_KEY (server-side)
+    // - AZURE_OPENAI_ENDPOINT (server-side)
+    // Client-side access to these secrets should go through secure API endpoints only.
 
     console.log('🌟 Azure environment initialized successfully');
   } catch (error) {

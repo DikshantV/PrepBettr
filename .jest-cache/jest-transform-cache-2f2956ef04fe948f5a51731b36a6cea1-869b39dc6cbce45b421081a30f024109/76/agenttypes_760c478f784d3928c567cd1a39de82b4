@@ -1,0 +1,65 @@
+832b571694326d34e441d0ad51733c5b
+"use strict";
+
+/**
+ * Agent Types for Azure AI Foundry
+ *
+ * Unified type definitions for interview agents and questions
+ */
+/* istanbul ignore next */
+function cov_1x26zyqn7v() {
+  var path = "/Users/dikshantvashistha/PrepBettr/lib/azure-ai-foundry/types/agent-types.ts";
+  var hash = "4e418faacb804d3d7b555fafa187d9bc9f70594d";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/lib/azure-ai-foundry/types/agent-types.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 7,
+          column: 0
+        },
+        end: {
+          line: 7,
+          column: 62
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/lib/azure-ai-foundry/types/agent-types.ts",
+      mappings: ";AAAA;;;;GAIG",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/lib/azure-ai-foundry/types/agent-types.ts"],
+      sourcesContent: ["/**\n * Agent Types for Azure AI Foundry\n * \n * Unified type definitions for interview agents and questions\n */\n\n// ===== CORE INTERFACES =====\n\nexport interface Question {\n  id: string;\n  text: string;\n  type: 'technical' | 'behavioral' | 'industry' | 'general';\n  category?: 'technical' | 'behavioral' | 'industry' | 'general'; // alias for compatibility\n  difficulty: 'easy' | 'medium' | 'hard';\n  expectedDuration?: number; // in seconds\n  expectedAnswer?: string;\n  followUpQuestions?: string[];\n  tags?: string[];\n  metadata?: {\n    skill?: string;\n    topic?: string;\n    scenario?: string;\n    category?: string;\n    keywords?: string[];\n    estimatedTime?: number;\n  };\n}\n\nexport interface CandidateProfile {\n  name?: string;\n  experience: string;\n  skills: string[];\n  targetRole: string;\n  industry: string;\n  resumeContent?: string;\n  previousRoles?: string[];\n  yearsExperience?: number;\n  education?: string;\n  certifications?: string[];\n}\n\nexport interface CompanyInfo {\n  name?: string;\n  industry?: string;\n  size?: string;\n  description?: string;\n}\n\nexport interface SessionHistory {\n  previousQuestions: Question[];\n  previousAnswers?: Array<{\n    questionId: string;\n    answer: string;\n    timestamp: number;\n  }>;\n}\n\nexport interface InterviewContext {\n  sessionId: string;\n  candidateName: string;\n  role: string;\n  experienceLevel: 'entry' | 'mid' | 'senior' | 'executive';\n  industry?: string;\n  resumeContent?: string;\n  candidateProfile: CandidateProfile;\n  jobRole?: string;\n  companyInfo?: CompanyInfo;\n  sessionHistory?: SessionHistory;\n  interviewConfig: {\n    duration: number; // total interview duration in minutes\n    focusAreas: string[];\n    difficulty: 'entry' | 'mid' | 'senior' | 'expert';\n    includeFollowUps: boolean;\n  };\n  previousQuestions: Question[];\n  previousAnswers: Array<{\n    questionId: string;\n    answer: string;\n    timestamp: number;\n  }>;\n  currentPhase: 'technical' | 'behavioral' | 'industry' | 'wrap-up';\n  responses?: {\n    questionId: string;\n    response: string;\n    timestamp: Date;\n  }[];\n  metadata: Record<string, any>;\n}\n\nexport interface SessionState {\n  sessionId: string;\n  currentAgent: string;\n  phase: 'technical' | 'behavioral' | 'industry' | 'completed';\n  startTime: Date;\n  lastActivity: Date;\n  context: InterviewContext;\n  agentQueue: string[];\n  completedAgents: string[];\n  metadata: {\n    totalQuestions: number;\n    averageResponseTime: number;\n    completionPercentage: number;\n  };\n}\n\nexport interface AgentMetadata {\n  id: string;\n  name: string;\n  description: string;\n  version: string;\n  supportedPhases: string[];\n  capabilities: string[];\n  modelRequirements: {\n    minimumTokens: number;\n    preferredModels: string[];\n  };\n  tags: string[];\n  // Legacy compatibility fields\n  specialty?: string;\n  modelPreference?: string;\n  maxQuestions?: number;\n  averageDuration?: number; // in minutes\n}\n\nexport interface AgentConfig {\n  agentId: string;\n  model: string;\n  systemInstructions: string;\n  temperature: number;\n  maxTokens: number;\n}\n\nexport interface FoundryAgent {\n  id: string;\n  name: string;\n  type: 'technical' | 'behavioral' | 'industry' | 'general';\n  metadata: AgentMetadata;\n  generateQuestions(context: InterviewContext): Promise<Question[]>;\n  processResponse(response: string, context: InterviewContext): Promise<string>;\n  isComplete(context: InterviewContext): boolean;\n}\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "4e418faacb804d3d7b555fafa187d9bc9f70594d"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1x26zyqn7v = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1x26zyqn7v();
+cov_1x26zyqn7v().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMXgyNnp5cW43diIsInBhdGgiLCJoYXNoIiwiZ2xvYmFsIiwiRnVuY3Rpb24iLCJnY3YiLCJjb3ZlcmFnZURhdGEiLCJzdGF0ZW1lbnRNYXAiLCJzdGFydCIsImxpbmUiLCJjb2x1bW4iLCJlbmQiLCJmbk1hcCIsImJyYW5jaE1hcCIsInMiLCJmIiwiYiIsImlucHV0U291cmNlTWFwIiwiZmlsZSIsIm1hcHBpbmdzIiwibmFtZXMiLCJzb3VyY2VzIiwic291cmNlc0NvbnRlbnQiLCJ2ZXJzaW9uIiwiX2NvdmVyYWdlU2NoZW1hIiwiY292ZXJhZ2UiLCJhY3R1YWxDb3ZlcmFnZSJdLCJzb3VyY2VzIjpbIi9Vc2Vycy9kaWtzaGFudHZhc2hpc3RoYS9QcmVwQmV0dHIvbGliL2F6dXJlLWFpLWZvdW5kcnkvdHlwZXMvYWdlbnQtdHlwZXMudHMiXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBBZ2VudCBUeXBlcyBmb3IgQXp1cmUgQUkgRm91bmRyeVxuICogXG4gKiBVbmlmaWVkIHR5cGUgZGVmaW5pdGlvbnMgZm9yIGludGVydmlldyBhZ2VudHMgYW5kIHF1ZXN0aW9uc1xuICovXG5cbi8vID09PT09IENPUkUgSU5URVJGQUNFUyA9PT09PVxuXG5leHBvcnQgaW50ZXJmYWNlIFF1ZXN0aW9uIHtcbiAgaWQ6IHN0cmluZztcbiAgdGV4dDogc3RyaW5nO1xuICB0eXBlOiAndGVjaG5pY2FsJyB8ICdiZWhhdmlvcmFsJyB8ICdpbmR1c3RyeScgfCAnZ2VuZXJhbCc7XG4gIGNhdGVnb3J5PzogJ3RlY2huaWNhbCcgfCAnYmVoYXZpb3JhbCcgfCAnaW5kdXN0cnknIHwgJ2dlbmVyYWwnOyAvLyBhbGlhcyBmb3IgY29tcGF0aWJpbGl0eVxuICBkaWZmaWN1bHR5OiAnZWFzeScgfCAnbWVkaXVtJyB8ICdoYXJkJztcbiAgZXhwZWN0ZWREdXJhdGlvbj86IG51bWJlcjsgLy8gaW4gc2Vjb25kc1xuICBleHBlY3RlZEFuc3dlcj86IHN0cmluZztcbiAgZm9sbG93VXBRdWVzdGlvbnM/OiBzdHJpbmdbXTtcbiAgdGFncz86IHN0cmluZ1tdO1xuICBtZXRhZGF0YT86IHtcbiAgICBza2lsbD86IHN0cmluZztcbiAgICB0b3BpYz86IHN0cmluZztcbiAgICBzY2VuYXJpbz86IHN0cmluZztcbiAgICBjYXRlZ29yeT86IHN0cmluZztcbiAgICBrZXl3b3Jkcz86IHN0cmluZ1tdO1xuICAgIGVzdGltYXRlZFRpbWU/OiBudW1iZXI7XG4gIH07XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgQ2FuZGlkYXRlUHJvZmlsZSB7XG4gIG5hbWU/OiBzdHJpbmc7XG4gIGV4cGVyaWVuY2U6IHN0cmluZztcbiAgc2tpbGxzOiBzdHJpbmdbXTtcbiAgdGFyZ2V0Um9sZTogc3RyaW5nO1xuICBpbmR1c3RyeTogc3RyaW5nO1xuICByZXN1bWVDb250ZW50Pzogc3RyaW5nO1xuICBwcmV2aW91c1JvbGVzPzogc3RyaW5nW107XG4gIHllYXJzRXhwZXJpZW5jZT86IG51bWJlcjtcbiAgZWR1Y2F0aW9uPzogc3RyaW5nO1xuICBjZXJ0aWZpY2F0aW9ucz86IHN0cmluZ1tdO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIENvbXBhbnlJbmZvIHtcbiAgbmFtZT86IHN0cmluZztcbiAgaW5kdXN0cnk/OiBzdHJpbmc7XG4gIHNpemU/OiBzdHJpbmc7XG4gIGRlc2NyaXB0aW9uPzogc3RyaW5nO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIFNlc3Npb25IaXN0b3J5IHtcbiAgcHJldmlvdXNRdWVzdGlvbnM6IFF1ZXN0aW9uW107XG4gIHByZXZpb3VzQW5zd2Vycz86IEFycmF5PHtcbiAgICBxdWVzdGlvbklkOiBzdHJpbmc7XG4gICAgYW5zd2VyOiBzdHJpbmc7XG4gICAgdGltZXN0YW1wOiBudW1iZXI7XG4gIH0+O1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEludGVydmlld0NvbnRleHQge1xuICBzZXNzaW9uSWQ6IHN0cmluZztcbiAgY2FuZGlkYXRlTmFtZTogc3RyaW5nO1xuICByb2xlOiBzdHJpbmc7XG4gIGV4cGVyaWVuY2VMZXZlbDogJ2VudHJ5JyB8ICdtaWQnIHwgJ3NlbmlvcicgfCAnZXhlY3V0aXZlJztcbiAgaW5kdXN0cnk/OiBzdHJpbmc7XG4gIHJlc3VtZUNvbnRlbnQ/OiBzdHJpbmc7XG4gIGNhbmRpZGF0ZVByb2ZpbGU6IENhbmRpZGF0ZVByb2ZpbGU7XG4gIGpvYlJvbGU/OiBzdHJpbmc7XG4gIGNvbXBhbnlJbmZvPzogQ29tcGFueUluZm87XG4gIHNlc3Npb25IaXN0b3J5PzogU2Vzc2lvbkhpc3Rvcnk7XG4gIGludGVydmlld0NvbmZpZzoge1xuICAgIGR1cmF0aW9uOiBudW1iZXI7IC8vIHRvdGFsIGludGVydmlldyBkdXJhdGlvbiBpbiBtaW51dGVzXG4gICAgZm9jdXNBcmVhczogc3RyaW5nW107XG4gICAgZGlmZmljdWx0eTogJ2VudHJ5JyB8ICdtaWQnIHwgJ3NlbmlvcicgfCAnZXhwZXJ0JztcbiAgICBpbmNsdWRlRm9sbG93VXBzOiBib29sZWFuO1xuICB9O1xuICBwcmV2aW91c1F1ZXN0aW9uczogUXVlc3Rpb25bXTtcbiAgcHJldmlvdXNBbnN3ZXJzOiBBcnJheTx7XG4gICAgcXVlc3Rpb25JZDogc3RyaW5nO1xuICAgIGFuc3dlcjogc3RyaW5nO1xuICAgIHRpbWVzdGFtcDogbnVtYmVyO1xuICB9PjtcbiAgY3VycmVudFBoYXNlOiAndGVjaG5pY2FsJyB8ICdiZWhhdmlvcmFsJyB8ICdpbmR1c3RyeScgfCAnd3JhcC11cCc7XG4gIHJlc3BvbnNlcz86IHtcbiAgICBxdWVzdGlvbklkOiBzdHJpbmc7XG4gICAgcmVzcG9uc2U6IHN0cmluZztcbiAgICB0aW1lc3RhbXA6IERhdGU7XG4gIH1bXTtcbiAgbWV0YWRhdGE6IFJlY29yZDxzdHJpbmcsIGFueT47XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgU2Vzc2lvblN0YXRlIHtcbiAgc2Vzc2lvbklkOiBzdHJpbmc7XG4gIGN1cnJlbnRBZ2VudDogc3RyaW5nO1xuICBwaGFzZTogJ3RlY2huaWNhbCcgfCAnYmVoYXZpb3JhbCcgfCAnaW5kdXN0cnknIHwgJ2NvbXBsZXRlZCc7XG4gIHN0YXJ0VGltZTogRGF0ZTtcbiAgbGFzdEFjdGl2aXR5OiBEYXRlO1xuICBjb250ZXh0OiBJbnRlcnZpZXdDb250ZXh0O1xuICBhZ2VudFF1ZXVlOiBzdHJpbmdbXTtcbiAgY29tcGxldGVkQWdlbnRzOiBzdHJpbmdbXTtcbiAgbWV0YWRhdGE6IHtcbiAgICB0b3RhbFF1ZXN0aW9uczogbnVtYmVyO1xuICAgIGF2ZXJhZ2VSZXNwb25zZVRpbWU6IG51bWJlcjtcbiAgICBjb21wbGV0aW9uUGVyY2VudGFnZTogbnVtYmVyO1xuICB9O1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEFnZW50TWV0YWRhdGEge1xuICBpZDogc3RyaW5nO1xuICBuYW1lOiBzdHJpbmc7XG4gIGRlc2NyaXB0aW9uOiBzdHJpbmc7XG4gIHZlcnNpb246IHN0cmluZztcbiAgc3VwcG9ydGVkUGhhc2VzOiBzdHJpbmdbXTtcbiAgY2FwYWJpbGl0aWVzOiBzdHJpbmdbXTtcbiAgbW9kZWxSZXF1aXJlbWVudHM6IHtcbiAgICBtaW5pbXVtVG9rZW5zOiBudW1iZXI7XG4gICAgcHJlZmVycmVkTW9kZWxzOiBzdHJpbmdbXTtcbiAgfTtcbiAgdGFnczogc3RyaW5nW107XG4gIC8vIExlZ2FjeSBjb21wYXRpYmlsaXR5IGZpZWxkc1xuICBzcGVjaWFsdHk/OiBzdHJpbmc7XG4gIG1vZGVsUHJlZmVyZW5jZT86IHN0cmluZztcbiAgbWF4UXVlc3Rpb25zPzogbnVtYmVyO1xuICBhdmVyYWdlRHVyYXRpb24/OiBudW1iZXI7IC8vIGluIG1pbnV0ZXNcbn1cblxuZXhwb3J0IGludGVyZmFjZSBBZ2VudENvbmZpZyB7XG4gIGFnZW50SWQ6IHN0cmluZztcbiAgbW9kZWw6IHN0cmluZztcbiAgc3lzdGVtSW5zdHJ1Y3Rpb25zOiBzdHJpbmc7XG4gIHRlbXBlcmF0dXJlOiBudW1iZXI7XG4gIG1heFRva2VuczogbnVtYmVyO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEZvdW5kcnlBZ2VudCB7XG4gIGlkOiBzdHJpbmc7XG4gIG5hbWU6IHN0cmluZztcbiAgdHlwZTogJ3RlY2huaWNhbCcgfCAnYmVoYXZpb3JhbCcgfCAnaW5kdXN0cnknIHwgJ2dlbmVyYWwnO1xuICBtZXRhZGF0YTogQWdlbnRNZXRhZGF0YTtcbiAgZ2VuZXJhdGVRdWVzdGlvbnMoY29udGV4dDogSW50ZXJ2aWV3Q29udGV4dCk6IFByb21pc2U8UXVlc3Rpb25bXT47XG4gIHByb2Nlc3NSZXNwb25zZShyZXNwb25zZTogc3RyaW5nLCBjb250ZXh0OiBJbnRlcnZpZXdDb250ZXh0KTogUHJvbWlzZTxzdHJpbmc+O1xuICBpc0NvbXBsZXRlKGNvbnRleHQ6IEludGVydmlld0NvbnRleHQpOiBib29sZWFuO1xufVxuIl0sIm1hcHBpbmdzIjoiOztBQUFBOzs7OztBQUFBO0FBQUEsU0FBQUEsZUFBQTtFQUFBLElBQUFDLElBQUE7RUFBQSxJQUFBQyxJQUFBO0VBQUEsSUFBQUMsTUFBQSxPQUFBQyxRQUFBO0VBQUEsSUFBQUMsR0FBQTtFQUFBLElBQUFDLFlBQUE7SUFBQUwsSUFBQTtJQUFBTSxZQUFBO01BQUE7UUFBQUMsS0FBQTtVQUFBQyxJQUFBO1VBQUFDLE1BQUE7UUFBQTtRQUFBQyxHQUFBO1VBQUFGLElBQUE7VUFBQUMsTUFBQTtRQUFBO01BQUE7SUFBQTtJQUFBRSxLQUFBO0lBQUFDLFNBQUE7SUFBQUMsQ0FBQTtNQUFBO0lBQUE7SUFBQUMsQ0FBQTtJQUFBQyxDQUFBO0lBQUFDLGNBQUE7TUFBQUMsSUFBQTtNQUFBQyxRQUFBO01BQUFDLEtBQUE7TUFBQUMsT0FBQTtNQUFBQyxjQUFBO01BQUFDLE9BQUE7SUFBQTtJQUFBQyxlQUFBO0lBQUF0QixJQUFBO0VBQUE7RUFBQSxJQUFBdUIsUUFBQSxHQUFBdEIsTUFBQSxDQUFBRSxHQUFBLE1BQUFGLE1BQUEsQ0FBQUUsR0FBQTtFQUFBLEtBQUFvQixRQUFBLENBQUF4QixJQUFBLEtBQUF3QixRQUFBLENBQUF4QixJQUFBLEVBQUFDLElBQUEsS0FBQUEsSUFBQTtJQUFBdUIsUUFBQSxDQUFBeEIsSUFBQSxJQUFBSyxZQUFBO0VBQUE7RUFBQSxJQUFBb0IsY0FBQSxHQUFBRCxRQUFBLENBQUF4QixJQUFBO0VBQUEiLCJpZ25vcmVMaXN0IjpbXX0=

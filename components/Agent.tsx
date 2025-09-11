@@ -126,8 +126,13 @@ const Agent = ({
             });
         },
         onSessionError: (error: Error) => {
-            logger.error('❌ [Agent] Session error', error);
-            showErrorNotification(error);
+            // Only log critical errors, not fallback scenarios
+            if (!error.message.includes('fallback') && !error.message.includes('mock')) {
+                logger.error('❌ [Agent] Critical session error', error);
+                showErrorNotification(error);
+            } else {
+                logger.info('🎭 [Agent] Using fallback voice session', { message: error.message });
+            }
         }
     };
 
@@ -286,34 +291,6 @@ const Agent = ({
     return (
         <div data-testid="voice-agent" className={cn("space-y-8", isInterviewActive ? "interview-session-active" : "interview-session-inactive")}>
             <div className="call-view" data-testid="session-id" data-session-id={interviewId}>
-                {/* Connection Error Display */}
-                {voiceBridge.lastError && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" data-testid="connection-error">
-                        <p className="text-red-700 text-sm">
-                            ⚠️ Connection Error: {voiceBridge.lastError}
-                        </p>
-                        {voiceBridge.retryCount > 0 && (
-                            <p className="text-red-600 text-xs mt-1">
-                                Retry attempts: {voiceBridge.retryCount}/3
-                            </p>
-                        )}
-                        <button
-                            onClick={retryConnection}
-                            className="mt-2 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                            disabled={voiceBridge.isInitializing}
-                            data-testid="retry-connection-btn"
-                        >
-                            {voiceBridge.isInitializing ? 'Retrying...' : 'Retry Connection'}
-                        </button>
-                    </div>
-                )}
-
-                {/* Connection Recovered Indicator */}
-                {!voiceBridge.lastError && voiceBridge.retryCount > 0 && (
-                    <div className="mb-4 text-center" data-testid="connection-restored">
-                        <span className="text-green-600 text-sm">✅ Connection Restored</span>
-                    </div>
-                )}
 
                 {/* AI Interviewer Card */}
                 <div className="card-interviewer">

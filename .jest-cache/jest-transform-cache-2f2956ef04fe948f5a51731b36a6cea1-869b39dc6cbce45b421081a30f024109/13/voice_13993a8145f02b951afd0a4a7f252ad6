@@ -1,0 +1,63 @@
+ac7cd6ab46d52bc2784307d9a455c19d
+"use strict";
+
+/**
+ * TypeScript interfaces for voice conversation system
+ */
+/* istanbul ignore next */
+function cov_1bwjpqxo28() {
+  var path = "/Users/dikshantvashistha/PrepBettr/lib/types/voice.ts";
+  var hash = "d6b2f9c4c6bfc8b91f25c7a1e432dab3503ea469";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/lib/types/voice.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 5,
+          column: 0
+        },
+        end: {
+          line: 5,
+          column: 62
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/lib/types/voice.ts",
+      mappings: ";AAAA;;GAEG",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/lib/types/voice.ts"],
+      sourcesContent: ["/**\n * TypeScript interfaces for voice conversation system\n */\n\n/**\n * Response interface for conversation start action\n */\nexport interface ConversationStartResponse {\n  success: boolean;\n  message: string;\n  questionNumber: number;\n  isComplete: boolean;\n  hasAudio: boolean;\n  audioData: number[] | null;\n}\n\n/**\n * Response interface for conversation process action\n */\nexport interface ConversationProcessResponse {\n  success: boolean;\n  message: string;\n  questionNumber: number;\n  isComplete: boolean;\n  followUpSuggestions?: string[];\n  hasAudio: boolean;\n  audioData: number[] | null;\n}\n\n/**\n * Enhanced SavedMessage interface for conversation messages\n * Includes optional metadata for better message tracking\n */\nexport interface SavedMessage {\n  role: \"user\" | \"system\" | \"assistant\";\n  content: string;\n  timestamp?: string;\n  questionNumber?: number;\n  audioData?: number[] | null;\n  hasAudio?: boolean;\n}\n\n/**\n * Interview context interface for conversation initialization\n */\nexport interface InterviewContext {\n  type: 'technical' | 'behavioral' | 'general';\n  position?: string;\n  company?: string;\n  difficulty?: 'easy' | 'medium' | 'hard';\n  preliminaryCollected?: boolean; // Default: false - Indicates if preliminary info has been collected\n  currentQuestionCount?: number; // Current number of questions asked in the interview\n  maxQuestions?: number; // Default: 10 - Maximum number of questions for the interview\n  userName?: string;\n  userId?: string;\n  interviewId?: string;\n  feedbackId?: string;\n  questions?: string[];\n}\n\n/**\n * Voice conversation API request body\n */\nexport interface VoiceConversationRequest {\n  action: 'start' | 'process' | 'summary' | 'clear';\n  userTranscript?: string;\n  interviewContext?: Partial<InterviewContext>;\n}\n\n/**\n * Audio processing result interface\n */\nexport interface AudioProcessingResult {\n  success: boolean;\n  audioBlob?: Blob;\n  duration?: number;\n  sampleRate?: number;\n  channels?: number;\n  error?: string;\n}\n\n/**\n * Speech-to-text response interface\n */\nexport interface SpeechToTextResponse {\n  success: boolean;\n  text: string;\n  confidence?: number;\n  language?: string;\n  duration?: number;\n  error?: string;\n}\n\n/**\n * Text-to-speech request interface\n */\nexport interface TextToSpeechRequest {\n  text: string;\n  voice?: string;\n  speed?: number;\n  pitch?: number;\n  outputFormat?: 'audio/wav' | 'audio/mp3' | 'audio/ogg';\n}\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "d6b2f9c4c6bfc8b91f25c7a1e432dab3503ea469"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1bwjpqxo28 = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1bwjpqxo28();
+cov_1bwjpqxo28().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMWJ3anBxeG8yOCIsInBhdGgiLCJoYXNoIiwiZ2xvYmFsIiwiRnVuY3Rpb24iLCJnY3YiLCJjb3ZlcmFnZURhdGEiLCJzdGF0ZW1lbnRNYXAiLCJzdGFydCIsImxpbmUiLCJjb2x1bW4iLCJlbmQiLCJmbk1hcCIsImJyYW5jaE1hcCIsInMiLCJmIiwiYiIsImlucHV0U291cmNlTWFwIiwiZmlsZSIsIm1hcHBpbmdzIiwibmFtZXMiLCJzb3VyY2VzIiwic291cmNlc0NvbnRlbnQiLCJ2ZXJzaW9uIiwiX2NvdmVyYWdlU2NoZW1hIiwiY292ZXJhZ2UiLCJhY3R1YWxDb3ZlcmFnZSJdLCJzb3VyY2VzIjpbIi9Vc2Vycy9kaWtzaGFudHZhc2hpc3RoYS9QcmVwQmV0dHIvbGliL3R5cGVzL3ZvaWNlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbIi8qKlxuICogVHlwZVNjcmlwdCBpbnRlcmZhY2VzIGZvciB2b2ljZSBjb252ZXJzYXRpb24gc3lzdGVtXG4gKi9cblxuLyoqXG4gKiBSZXNwb25zZSBpbnRlcmZhY2UgZm9yIGNvbnZlcnNhdGlvbiBzdGFydCBhY3Rpb25cbiAqL1xuZXhwb3J0IGludGVyZmFjZSBDb252ZXJzYXRpb25TdGFydFJlc3BvbnNlIHtcbiAgc3VjY2VzczogYm9vbGVhbjtcbiAgbWVzc2FnZTogc3RyaW5nO1xuICBxdWVzdGlvbk51bWJlcjogbnVtYmVyO1xuICBpc0NvbXBsZXRlOiBib29sZWFuO1xuICBoYXNBdWRpbzogYm9vbGVhbjtcbiAgYXVkaW9EYXRhOiBudW1iZXJbXSB8IG51bGw7XG59XG5cbi8qKlxuICogUmVzcG9uc2UgaW50ZXJmYWNlIGZvciBjb252ZXJzYXRpb24gcHJvY2VzcyBhY3Rpb25cbiAqL1xuZXhwb3J0IGludGVyZmFjZSBDb252ZXJzYXRpb25Qcm9jZXNzUmVzcG9uc2Uge1xuICBzdWNjZXNzOiBib29sZWFuO1xuICBtZXNzYWdlOiBzdHJpbmc7XG4gIHF1ZXN0aW9uTnVtYmVyOiBudW1iZXI7XG4gIGlzQ29tcGxldGU6IGJvb2xlYW47XG4gIGZvbGxvd1VwU3VnZ2VzdGlvbnM/OiBzdHJpbmdbXTtcbiAgaGFzQXVkaW86IGJvb2xlYW47XG4gIGF1ZGlvRGF0YTogbnVtYmVyW10gfCBudWxsO1xufVxuXG4vKipcbiAqIEVuaGFuY2VkIFNhdmVkTWVzc2FnZSBpbnRlcmZhY2UgZm9yIGNvbnZlcnNhdGlvbiBtZXNzYWdlc1xuICogSW5jbHVkZXMgb3B0aW9uYWwgbWV0YWRhdGEgZm9yIGJldHRlciBtZXNzYWdlIHRyYWNraW5nXG4gKi9cbmV4cG9ydCBpbnRlcmZhY2UgU2F2ZWRNZXNzYWdlIHtcbiAgcm9sZTogXCJ1c2VyXCIgfCBcInN5c3RlbVwiIHwgXCJhc3Npc3RhbnRcIjtcbiAgY29udGVudDogc3RyaW5nO1xuICB0aW1lc3RhbXA/OiBzdHJpbmc7XG4gIHF1ZXN0aW9uTnVtYmVyPzogbnVtYmVyO1xuICBhdWRpb0RhdGE/OiBudW1iZXJbXSB8IG51bGw7XG4gIGhhc0F1ZGlvPzogYm9vbGVhbjtcbn1cblxuLyoqXG4gKiBJbnRlcnZpZXcgY29udGV4dCBpbnRlcmZhY2UgZm9yIGNvbnZlcnNhdGlvbiBpbml0aWFsaXphdGlvblxuICovXG5leHBvcnQgaW50ZXJmYWNlIEludGVydmlld0NvbnRleHQge1xuICB0eXBlOiAndGVjaG5pY2FsJyB8ICdiZWhhdmlvcmFsJyB8ICdnZW5lcmFsJztcbiAgcG9zaXRpb24/OiBzdHJpbmc7XG4gIGNvbXBhbnk/OiBzdHJpbmc7XG4gIGRpZmZpY3VsdHk/OiAnZWFzeScgfCAnbWVkaXVtJyB8ICdoYXJkJztcbiAgcHJlbGltaW5hcnlDb2xsZWN0ZWQ/OiBib29sZWFuOyAvLyBEZWZhdWx0OiBmYWxzZSAtIEluZGljYXRlcyBpZiBwcmVsaW1pbmFyeSBpbmZvIGhhcyBiZWVuIGNvbGxlY3RlZFxuICBjdXJyZW50UXVlc3Rpb25Db3VudD86IG51bWJlcjsgLy8gQ3VycmVudCBudW1iZXIgb2YgcXVlc3Rpb25zIGFza2VkIGluIHRoZSBpbnRlcnZpZXdcbiAgbWF4UXVlc3Rpb25zPzogbnVtYmVyOyAvLyBEZWZhdWx0OiAxMCAtIE1heGltdW0gbnVtYmVyIG9mIHF1ZXN0aW9ucyBmb3IgdGhlIGludGVydmlld1xuICB1c2VyTmFtZT86IHN0cmluZztcbiAgdXNlcklkPzogc3RyaW5nO1xuICBpbnRlcnZpZXdJZD86IHN0cmluZztcbiAgZmVlZGJhY2tJZD86IHN0cmluZztcbiAgcXVlc3Rpb25zPzogc3RyaW5nW107XG59XG5cbi8qKlxuICogVm9pY2UgY29udmVyc2F0aW9uIEFQSSByZXF1ZXN0IGJvZHlcbiAqL1xuZXhwb3J0IGludGVyZmFjZSBWb2ljZUNvbnZlcnNhdGlvblJlcXVlc3Qge1xuICBhY3Rpb246ICdzdGFydCcgfCAncHJvY2VzcycgfCAnc3VtbWFyeScgfCAnY2xlYXInO1xuICB1c2VyVHJhbnNjcmlwdD86IHN0cmluZztcbiAgaW50ZXJ2aWV3Q29udGV4dD86IFBhcnRpYWw8SW50ZXJ2aWV3Q29udGV4dD47XG59XG5cbi8qKlxuICogQXVkaW8gcHJvY2Vzc2luZyByZXN1bHQgaW50ZXJmYWNlXG4gKi9cbmV4cG9ydCBpbnRlcmZhY2UgQXVkaW9Qcm9jZXNzaW5nUmVzdWx0IHtcbiAgc3VjY2VzczogYm9vbGVhbjtcbiAgYXVkaW9CbG9iPzogQmxvYjtcbiAgZHVyYXRpb24/OiBudW1iZXI7XG4gIHNhbXBsZVJhdGU/OiBudW1iZXI7XG4gIGNoYW5uZWxzPzogbnVtYmVyO1xuICBlcnJvcj86IHN0cmluZztcbn1cblxuLyoqXG4gKiBTcGVlY2gtdG8tdGV4dCByZXNwb25zZSBpbnRlcmZhY2VcbiAqL1xuZXhwb3J0IGludGVyZmFjZSBTcGVlY2hUb1RleHRSZXNwb25zZSB7XG4gIHN1Y2Nlc3M6IGJvb2xlYW47XG4gIHRleHQ6IHN0cmluZztcbiAgY29uZmlkZW5jZT86IG51bWJlcjtcbiAgbGFuZ3VhZ2U/OiBzdHJpbmc7XG4gIGR1cmF0aW9uPzogbnVtYmVyO1xuICBlcnJvcj86IHN0cmluZztcbn1cblxuLyoqXG4gKiBUZXh0LXRvLXNwZWVjaCByZXF1ZXN0IGludGVyZmFjZVxuICovXG5leHBvcnQgaW50ZXJmYWNlIFRleHRUb1NwZWVjaFJlcXVlc3Qge1xuICB0ZXh0OiBzdHJpbmc7XG4gIHZvaWNlPzogc3RyaW5nO1xuICBzcGVlZD86IG51bWJlcjtcbiAgcGl0Y2g/OiBudW1iZXI7XG4gIG91dHB1dEZvcm1hdD86ICdhdWRpby93YXYnIHwgJ2F1ZGlvL21wMycgfCAnYXVkaW8vb2dnJztcbn1cbiJdLCJtYXBwaW5ncyI6Ijs7QUFBQTs7O0FBQUE7QUFBQSxTQUFBQSxlQUFBO0VBQUEsSUFBQUMsSUFBQTtFQUFBLElBQUFDLElBQUE7RUFBQSxJQUFBQyxNQUFBLE9BQUFDLFFBQUE7RUFBQSxJQUFBQyxHQUFBO0VBQUEsSUFBQUMsWUFBQTtJQUFBTCxJQUFBO0lBQUFNLFlBQUE7TUFBQTtRQUFBQyxLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtJQUFBO0lBQUFFLEtBQUE7SUFBQUMsU0FBQTtJQUFBQyxDQUFBO01BQUE7SUFBQTtJQUFBQyxDQUFBO0lBQUFDLENBQUE7SUFBQUMsY0FBQTtNQUFBQyxJQUFBO01BQUFDLFFBQUE7TUFBQUMsS0FBQTtNQUFBQyxPQUFBO01BQUFDLGNBQUE7TUFBQUMsT0FBQTtJQUFBO0lBQUFDLGVBQUE7SUFBQXRCLElBQUE7RUFBQTtFQUFBLElBQUF1QixRQUFBLEdBQUF0QixNQUFBLENBQUFFLEdBQUEsTUFBQUYsTUFBQSxDQUFBRSxHQUFBO0VBQUEsS0FBQW9CLFFBQUEsQ0FBQXhCLElBQUEsS0FBQXdCLFFBQUEsQ0FBQXhCLElBQUEsRUFBQUMsSUFBQSxLQUFBQSxJQUFBO0lBQUF1QixRQUFBLENBQUF4QixJQUFBLElBQUFLLFlBQUE7RUFBQTtFQUFBLElBQUFvQixjQUFBLEdBQUFELFFBQUEsQ0FBQXhCLElBQUE7RUFBQSIsImlnbm9yZUxpc3QiOltdfQ==
