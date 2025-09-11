@@ -36,13 +36,12 @@ test.describe('Azure AI Foundry Voice Interview', () => {
       });
     });
 
-    // Mock feature flag API to enable voice interview v2
+    // Mock feature flag API
     await page.route('**/api/feature-flags', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          'features.voiceInterviewV2': true,
           'features.voiceInterview': true
         })
       });
@@ -57,9 +56,9 @@ test.describe('Azure AI Foundry Voice Interview', () => {
   });
 
   test('should load voice interview UI with Azure AI Foundry client', async () => {
-    // Check if feature flag is enabled and Foundry component loads
-    const foundryAgent = page.locator('[data-testid="foundry-voice-agent"]');
-    await expect(foundryAgent).toBeVisible();
+    // Check that voice agent component loads
+    const voiceAgent = page.locator('[data-testid="voice-agent"]');
+    await expect(voiceAgent).toBeVisible();
 
     // Verify UI elements are present
     await expect(page.locator('[data-testid="voice-start-button"]')).toBeVisible();
@@ -322,15 +321,14 @@ test.describe('Azure AI Foundry Voice Interview', () => {
     await expect(metricsPanel).toContainText('Session Duration:');
   });
 
-  test('should fallback to legacy system when feature flag is disabled', async () => {
-    // Mock feature flag disabled
+  test('should handle voice interview disabled state', async () => {
+    // Mock feature flag disabled for voice interview
     await page.route('**/api/feature-flags', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          'features.voiceInterviewV2': false,
-          'features.voiceInterview': true
+          'features.voiceInterview': false
         })
       });
     });
@@ -338,12 +336,12 @@ test.describe('Azure AI Foundry Voice Interview', () => {
     // Reload page to get new feature flag
     await page.reload();
 
-    // Verify legacy component loads instead
-    const legacyAgent = page.locator('[data-testid="legacy-voice-agent"]');
-    await expect(legacyAgent).toBeVisible();
+    // Verify voice interview is disabled
+    const disabledMessage = page.locator('[data-testid="voice-disabled-message"]');
+    await expect(disabledMessage).toBeVisible();
     
-    const foundryAgent = page.locator('[data-testid="foundry-voice-agent"]');
-    await expect(foundryAgent).not.toBeVisible();
+    const voiceAgent = page.locator('[data-testid="voice-agent"]');
+    await expect(voiceAgent).not.toBeVisible();
   });
 
   test('should handle accessibility requirements', async () => {

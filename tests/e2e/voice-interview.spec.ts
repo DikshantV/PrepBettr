@@ -211,12 +211,12 @@ async function setupUserContext(page: Page) {
 
 async function enableVoiceFeatureFlag(page: Page) {
   // Mock feature flag API
-  await page.route('/api/config/features.voiceInterviewV2', async route => {
+  await page.route('/api/config/features.voiceInterview', async route => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        key: 'features.voiceInterviewV2',
+        key: 'features.voiceInterview',
         value: true,
         source: 'default',
         success: true
@@ -323,8 +323,8 @@ test.describe('Voice Interview E2E Flow', () => {
     // Wait for page to load and feature flag to be checked
     await page.waitForLoadState('networkidle');
     
-    // Verify Azure AI Foundry voice agent is loaded
-    await expect(page.locator('[data-testid="foundry-voice-agent"]')).toBeVisible({ timeout: 10000 });
+    // Verify voice agent is loaded
+    await expect(page.locator('[data-testid="voice-agent"]')).toBeVisible({ timeout: 10000 });
     
     // Check initial state
     await expect(page.locator('[data-testid="session-status"]')).toHaveText(/idle/i);
