@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 // Feature flag support for Azure AI Foundry voice system
 import { useFeatureFlag } from "@/lib/hooks/useUnifiedConfig";
-import FoundryVoiceAgent from "./FoundryVoiceAgent";
+// import FoundryVoiceAgent from "./FoundryVoiceAgent"; // REMOVED - Component deleted
 
 import { cn } from "@/lib/utils";
 import { createFeedback } from "@/lib/actions/general.action";
@@ -30,14 +30,14 @@ import {
   createAddUserMessageAction,
   createAddAIMessageAction,
   createUserSpokeAction
-} from "@/lib/voice/agent-state";
+} from "@/lib/voice/agent-state"; // TODO: May need legacy backup
 import {
   AUDIO_CONFIG,
   prepareAudioForUpload,
   createOptimizedAudioContext,
   resumeAudioContext,
   disposeAudioResources
-} from "@/lib/voice/audio-utils";
+} from "@/legacy-backup/voice/audio-utils";
 import {
   InterviewContext,
   speechToText,
@@ -46,7 +46,7 @@ import {
   endConversation,
   playAIResponse,
   playDirectAudioWithFallback
-} from "@/lib/voice/azure-adapters";
+} from "@/lib/voice/azure-adapters-legacy-backup";
 import { SavedMessage } from "@/lib/types/voice";
 
 interface ExtractedResumeData {
@@ -247,16 +247,9 @@ const Agent = ({
     if (useFoundryVoice) {
         console.log('🚀 [Agent] Using Azure AI Foundry voice system');
         return (
-            <FoundryVoiceAgent
-                userName={userName}
-                userId={userId}
-                interviewId={interviewId}
-                feedbackId={feedbackId}
-                type={type}
-                questions={questions}
-                resumeInfo={resumeInfo}
-                resumeQuestions={resumeQuestions}
-            />
+            <div className="text-center p-8">
+                <p className="text-red-600">FoundryVoiceAgent component removed - use consolidated Agent.tsx instead</p>
+            </div>
         );
     }
     

@@ -2,7 +2,7 @@
  * Advanced error recovery and network resilience for voice interviews
  */
 
-import { logger } from '../utils/logger';
+import { logger } from '../../lib/utils/logger';
 
 export interface ErrorRecoveryOptions {
   maxRetries?: number;

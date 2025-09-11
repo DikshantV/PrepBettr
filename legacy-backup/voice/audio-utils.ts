@@ -3,8 +3,8 @@
  * Extracted from Agent.tsx to reduce redundancy and improve maintainability
  */
 
-import { logger } from '../utils/logger';
-import { AudioError, reportError } from '../utils/error-utils';
+import { logger } from '../../lib/utils/logger';
+import { AudioError, reportError } from '../../lib/utils/error-utils';
 
 // Audio configuration constants
 export const AUDIO_CONFIG = {

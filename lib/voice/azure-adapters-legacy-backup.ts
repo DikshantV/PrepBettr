@@ -6,6 +6,41 @@
  * Client-side audio functions have been removed and consolidated into the new Agent component.
  */
 
+// Stub functions for legacy backup compatibility
+const withRetry = async (fn: () => Promise<any>, retries?: number, name?: string) => {
+  try {
+    return await fn();
+  } catch (error) {
+    throw error; // Simplified - no retry logic in stub
+  }
+};
+
+const logger = {
+  api: {
+    request: (path: string, method: string, data?: any) => console.log(`[LEGACY STUB] ${method} ${path}`, data),
+    response: (path: string, status: number, data?: any) => console.log(`[LEGACY STUB] Response ${status}`, data)
+  },
+  warn: (msg: string, data?: any) => console.warn(`[LEGACY STUB] ${msg}`, data),
+  error: (msg: string, error: any, data?: any) => console.error(`[LEGACY STUB] ${msg}`, error, data),
+  audio: {
+    speak: (msg: string, data?: any) => console.log(`[LEGACY STUB] ${msg}`, data)
+  }
+};
+
+const handleApiError = (response: Response, operation: string) => {
+  return new Error(`[LEGACY STUB] ${operation} failed with status ${response.status}`);
+};
+
+const sanitizeInterviewText = (text: string) => text; // No-op for stub
+const validateAudioBuffer = (data: any) => true; // Always valid for stub  
+const playAudioBuffer = async (data: any) => { /* No-op stub */ };
+
+// Stub types for legacy compatibility
+interface SavedMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface InterviewContext {
   userName: string;
   questions?: string[];

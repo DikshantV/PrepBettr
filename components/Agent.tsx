@@ -284,7 +284,7 @@ const Agent = ({
     };
 
     return (
-        <div data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"} className="space-y-8">
+        <div data-testid="voice-agent" className={cn("space-y-8", isInterviewActive ? "interview-session-active" : "interview-session-inactive")}>
             <div className="call-view" data-testid="session-id" data-session-id={interviewId}>
                 {/* Connection Error Display */}
                 {voiceBridge.lastError && (
