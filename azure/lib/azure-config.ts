@@ -51,8 +51,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     console.log('🔑 Fetching secrets from Azure Key Vault...');
     const client = createKeyVaultClient();
 
-    // Fetch all required secrets
-    const [speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment, azureOpenAIGpt35, azureOpenAIGpt4o, storageAccountName, storageAccountKey, formRecognizerEndpoint, formRecognizerKey] = await Promise.all([
+    // Fetch all required secrets - breaking into smaller groups to avoid transpilation issues
+    // Group 1: Speech and OpenAI base secrets
+    const secretsPromises = [
       client.getSecret('speech-key'),
       client.getSecret('speech-endpoint'),
       client.getSecret('azure-openai-key'),
@@ -64,9 +65,24 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       client.getSecret('azure-storage-account-key').catch(() => null), // Optional
       client.getSecret('azure-form-recognizer-endpoint').catch(() => null), // Optional
       client.getSecret('azure-form-recognizer-key').catch(() => null) // Optional
-    ]);
+    ];
+    
+    const secretsResults = await Promise.all(secretsPromises);
+    
+    // Extract secrets from results
+    const speechKey = secretsResults[0];
+    const speechEndpoint = secretsResults[1];
+    const azureOpenAIKey = secretsResults[2];
+    const azureOpenAIEndpoint = secretsResults[3];
+    const azureOpenAIDeployment = secretsResults[4];
+    const azureOpenAIGpt35 = secretsResults[5];
+    const azureOpenAIGpt4o = secretsResults[6];
+    const storageAccountName = secretsResults[7];
+    const storageAccountKey = secretsResults[8];
+    const formRecognizerEndpoint = secretsResults[9];
+    const formRecognizerKey = secretsResults[10];
 
-    if (!speechKey.value || !speechEndpoint.value || !azureOpenAIKey.value || !azureOpenAIEndpoint.value || !azureOpenAIDeployment.value) {
+    if (!speechKey?.value || !speechEndpoint?.value || !azureOpenAIKey?.value || !azureOpenAIEndpoint?.value || !azureOpenAIDeployment?.value) {
       throw new Error('One or more required secrets are missing from Azure Key Vault');
     }
 
@@ -92,18 +108,19 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     
     // Fallback to environment variables if Key Vault fails
     console.log('🔄 Falling back to environment variables...');
+    const processEnv = process.env as any;
     const fallbackSecrets = {
-      speechKey: process.env.SPEECH_KEY || process.env.NEXT_PUBLIC_SPEECH_KEY || '',
-      speechEndpoint: process.env.SPEECH_ENDPOINT || process.env.NEXT_PUBLIC_SPEECH_ENDPOINT || '',
-      azureOpenAIKey: process.env.AZURE_OPENAI_KEY || '',
-      azureOpenAIEndpoint: process.env.AZURE_OPENAI_ENDPOINT || '',
-      azureOpenAIDeployment: process.env.AZURE_OPENAI_DEPLOYMENT || '',
-      azureOpenAIGpt35Deployment: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
-      azureOpenAIGpt4oDeployment: process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o',
-      azureStorageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
-      azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
-      azureFormRecognizerEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
-      azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY
+      speechKey: processEnv['SPEECH_KEY'] || processEnv['NEXT_PUBLIC_SPEECH_KEY'] || '',
+      speechEndpoint: processEnv['SPEECH_ENDPOINT'] || processEnv['NEXT_PUBLIC_SPEECH_ENDPOINT'] || '',
+      azureOpenAIKey: processEnv['AZURE_OPENAI_KEY'] || '',
+      azureOpenAIEndpoint: processEnv['AZURE_OPENAI_ENDPOINT'] || '',
+      azureOpenAIDeployment: processEnv['AZURE_OPENAI_DEPLOYMENT'] || '',
+      azureOpenAIGpt35Deployment: processEnv['AZURE_OPENAI_GPT35_DEPLOYMENT'] || 'gpt-4o',
+      azureOpenAIGpt4oDeployment: processEnv['AZURE_OPENAI_GPT4O_DEPLOYMENT'] || 'gpt-4o',
+      azureStorageAccountName: processEnv['AZURE_STORAGE_ACCOUNT_NAME'],
+      azureStorageAccountKey: processEnv['AZURE_STORAGE_ACCOUNT_KEY'],
+      azureFormRecognizerEndpoint: processEnv['AZURE_FORM_RECOGNIZER_ENDPOINT'],
+      azureFormRecognizerKey: processEnv['AZURE_FORM_RECOGNIZER_KEY']
     };
 
     if (!fallbackSecrets.speechKey || !fallbackSecrets.azureOpenAIKey) {
@@ -123,21 +140,18 @@ export async function initializeAzureEnvironment(): Promise<void> {
   try {
     const secrets = await fetchAzureSecrets();
     
-    // Set environment variables for the application
-    process.env.NEXT_PUBLIC_SPEECH_KEY = secrets.speechKey;
-    process.env.NEXT_PUBLIC_SPEECH_ENDPOINT = secrets.speechEndpoint;
-    process.env.AZURE_OPENAI_KEY = secrets.azureOpenAIKey;
-    process.env.AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-    process.env.AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
-    process.env.AZURE_OPENAI_GPT35_DEPLOYMENT = secrets.azureOpenAIGpt35Deployment;
-    process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT = secrets.azureOpenAIGpt4oDeployment;
+    // Set environment variables for the application (using dynamic property assignment to avoid webpack replacement)
+    const processEnv = process.env as any;
+    processEnv['NEXT_PUBLIC_SPEECH_KEY'] = secrets.speechKey;
+    processEnv['NEXT_PUBLIC_SPEECH_ENDPOINT'] = secrets.speechEndpoint;
+    processEnv['AZURE_OPENAI_KEY'] = secrets.azureOpenAIKey;
+    processEnv['AZURE_OPENAI_ENDPOINT'] = secrets.azureOpenAIEndpoint;
+    processEnv['AZURE_OPENAI_DEPLOYMENT'] = secrets.azureOpenAIDeployment;
+    processEnv['AZURE_OPENAI_GPT35_DEPLOYMENT'] = secrets.azureOpenAIGpt35Deployment;
+    processEnv['AZURE_OPENAI_GPT4O_DEPLOYMENT'] = secrets.azureOpenAIGpt4oDeployment;
 
-    // Set Azure OpenAI keys for public environment
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY = secrets.azureOpenAIKey;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT = secrets.azureOpenAIEndpoint;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT = secrets.azureOpenAIDeployment;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT35_DEPLOYMENT = secrets.azureOpenAIGpt35Deployment;
-    process.env.NEXT_PUBLIC_AZURE_OPENAI_GPT4O_DEPLOYMENT = secrets.azureOpenAIGpt4oDeployment;
+    // Note: NEXT_PUBLIC_* variables are already handled by .env.local and don't need to be set here
+    // Avoid setting them dynamically to prevent webpack build-time replacement conflicts
 
     console.log('🌟 Azure environment initialized successfully');
   } catch (error) {
@@ -150,22 +164,23 @@ export async function initializeAzureEnvironment(): Promise<void> {
  * Get current Azure configuration (for debugging)
  */
 export function getAzureConfig() {
+  const processEnv = process.env as any;
   return {
     keyVaultUri: AZURE_KEY_VAULT_URI,
     hasSecretsCache: !!cachedSecrets,
     environment: {
-      speechKey: !!process.env.NEXT_PUBLIC_SPEECH_KEY,
-      speechEndpoint: !!process.env.NEXT_PUBLIC_SPEECH_ENDPOINT,
-      azureOpenAIKey: !!process.env.AZURE_OPENAI_KEY,
-      azureOpenAIEndpoint: !!process.env.AZURE_OPENAI_ENDPOINT,
-      azureOpenAIDeployment: !!process.env.AZURE_OPENAI_DEPLOYMENT,
-      azureOpenAIGpt35Deployment: !!process.env.AZURE_OPENAI_GPT35_DEPLOYMENT,
-      azureOpenAIGpt4oDeployment: !!process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT
+      speechKey: !!processEnv['NEXT_PUBLIC_SPEECH_KEY'],
+      speechEndpoint: !!processEnv['NEXT_PUBLIC_SPEECH_ENDPOINT'],
+      azureOpenAIKey: !!processEnv['AZURE_OPENAI_KEY'],
+      azureOpenAIEndpoint: !!processEnv['AZURE_OPENAI_ENDPOINT'],
+      azureOpenAIDeployment: !!processEnv['AZURE_OPENAI_DEPLOYMENT'],
+      azureOpenAIGpt35Deployment: !!processEnv['AZURE_OPENAI_GPT35_DEPLOYMENT'],
+      azureOpenAIGpt4oDeployment: !!processEnv['AZURE_OPENAI_GPT4O_DEPLOYMENT']
     },
     deployments: {
-      default: process.env.AZURE_OPENAI_DEPLOYMENT,
-      gpt35Turbo: process.env.AZURE_OPENAI_GPT35_DEPLOYMENT || 'gpt-4o',
-      gpt4o: process.env.AZURE_OPENAI_GPT4O_DEPLOYMENT || 'gpt-4o'
+      default: processEnv['AZURE_OPENAI_DEPLOYMENT'],
+      gpt35Turbo: processEnv['AZURE_OPENAI_GPT35_DEPLOYMENT'] || 'gpt-4o',
+      gpt4o: processEnv['AZURE_OPENAI_GPT4O_DEPLOYMENT'] || 'gpt-4o'
     }
   };
 }

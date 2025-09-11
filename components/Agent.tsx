@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 
 // Feature flag support for Azure AI Foundry voice system
 import { useFeatureFlag } from "@/lib/hooks/useUnifiedConfig";
-import FoundryVoiceAgent from "./FoundryVoiceAgent";
 
 import { cn } from "@/lib/utils";
 import { createFeedback } from "@/lib/actions/general.action";
@@ -243,22 +242,22 @@ const Agent = ({
         );
     }
     
-    // Use Azure AI Foundry voice system if feature flag is enabled
-    if (useFoundryVoice) {
-        console.log('🚀 [Agent] Using Azure AI Foundry voice system');
-        return (
-            <FoundryVoiceAgent
-                userName={userName}
-                userId={userId}
-                interviewId={interviewId}
-                feedbackId={feedbackId}
-                type={type}
-                questions={questions}
-                resumeInfo={resumeInfo}
-                resumeQuestions={resumeQuestions}
-            />
-        );
-    }
+    // Azure AI Foundry voice system temporarily disabled due to build issues
+    // if (useFoundryVoice) {
+    //     console.log('🚀 [Agent] Using Azure AI Foundry voice system');
+    //     return (
+    //         <FoundryVoiceAgent
+    //             userName={userName}
+    //             userId={userId}
+    //             interviewId={interviewId}
+    //             feedbackId={feedbackId}
+    //             type={type}
+    //             questions={questions}
+    //             resumeInfo={resumeInfo}
+    //             resumeQuestions={resumeQuestions}
+    //         />
+    //     );
+    // }
     
     // Fall back to legacy Speech SDK + OpenAI system
     console.log('📻 [Agent] Using legacy Speech SDK + OpenAI system');
