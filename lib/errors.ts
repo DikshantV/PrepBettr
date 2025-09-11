@@ -14,6 +14,11 @@ export interface ServerErrorContext {
   ip?: string;
   service?: string;
   action?: string;
+  errorCode?: string;
+  category?: string;
+  details?: any;
+  context?: string;
+  requestId?: string;
 }
 
 /**

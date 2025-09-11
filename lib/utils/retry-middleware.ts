@@ -83,7 +83,7 @@ export interface RetryMetrics {
   averageRetryDelay: number;
   
   /** Most common retry reasons */
-  retryReasons: Record<ErrorCode, number>;
+  retryReasons: Partial<Record<ErrorCode, number>>;
 }
 
 // ===== DEFAULT CONFIGURATIONS =====
@@ -159,7 +159,7 @@ export async function withRetry<T>(
   const finalConfig: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
   const startTime = Date.now();
   
-  let lastError: StructuredError;
+  let lastError: StructuredError | undefined;
   let totalDelayTime = 0;
   
   for (let attempt = 1; attempt <= finalConfig.maxRetries + 1; attempt++) {
@@ -249,7 +249,7 @@ export async function withRetry<T>(
   
   // All attempts failed
   return {
-    error: lastError,
+    error: lastError || toStructuredError(new Error('Operation failed'), ErrorCode.UNHANDLED_ERROR),
     totalAttempts: finalConfig.maxRetries + 1,
     totalDuration: Date.now() - startTime,
     success: false

@@ -90,55 +90,26 @@ const Agent = ({
     resumeInfo,
     resumeQuestions,
 }: AgentProps) => {
-    // Check for Azure AI Foundry voice system feature flag
+    // CRITICAL: ALL hooks must be called at the top level before any conditional logic
+    // This prevents "Rules of Hooks" violations
     const { enabled: useFoundryVoice, loading: flagLoading } = useFeatureFlag('voiceInterviewV2');
-    
-    // Show loading state while feature flag is being fetched
-    if (flagLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-lg text-gray-600 dark:text-gray-300">
-                    Loading interview system...
-                </div>
-            </div>
-        );
-    }
-    
-    // Use Azure AI Foundry voice system if feature flag is enabled
-    if (useFoundryVoice) {
-        console.log('🚀 [Agent] Using Azure AI Foundry voice system');
-        return (
-            <FoundryVoiceAgent
-                userName={userName}
-                userId={userId}
-                interviewId={interviewId}
-                feedbackId={feedbackId}
-                type={type}
-                questions={questions}
-                resumeInfo={resumeInfo}
-                resumeQuestions={resumeQuestions}
-            />
-        );
-    }
-    
-    // Fall back to legacy Speech SDK + OpenAI system
-    console.log('📻 [Agent] Using legacy Speech SDK + OpenAI system');
-    
     const router = useRouter();
     const [state, dispatch] = useReducer(agentReducer, initialAgentState);
     
-    // Audio recording state
+    // Audio recording state - MUST be called before any conditional returns
     const audioSamplesRef = useRef<Float32Array[]>([]);
     const isCurrentlyRecordingRef = useRef<boolean>(false);
     const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const audioCleanupRef = useRef<(() => Promise<void>) | null>(null);
     
-    // Voice activity detection state
+    // Voice activity detection state - MUST be called before any conditional returns
     const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastVoiceActivityRef = useRef<number>(0);
-    const SILENCE_DURATION_MS = 2000; // Stop recording after 2 seconds of silence
-
-    // Derived selectors from state
+    const recordingStartTimeRef = useRef<number>(0);
+    const SILENCE_DURATION_MS = 3500; // Allow users time to think - 3.5 seconds of silence
+    const MIN_RECORDING_DURATION_MS = 1200;  // Ensure we capture complete thoughts
+    
+    // Derived selectors from state - calculated values don't violate hooks rules
     const isRecording = selectIsRecording(state);
     const isProcessing = selectIsProcessing(state);
     const isSpeaking = selectIsSpeaking(state);
@@ -147,6 +118,7 @@ const Agent = ({
     const isInterviewFinished = selectIsInterviewFinished(state);
     const shouldShowFeedback = selectShouldShowFeedback(state);
 
+    // ALL useEffect hooks MUST be called at top level before any conditional returns
     // Load user profile image with fallbacks
     useEffect(() => {
         const loadUserProfileImage = async () => {
@@ -210,6 +182,87 @@ const Agent = ({
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
+    // Auto-end interview when complete
+    useEffect(() => {
+        if (state.isInterviewComplete && isInterviewActive) {
+            logger.success('Interview completed - auto-ending in 2 seconds');
+            const timeoutId = setTimeout(() => {
+                handleEndInterview();
+            }, 2000);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [state.isInterviewComplete, isInterviewActive]);
+
+    // Generate feedback when interview finishes
+    useEffect(() => {
+        if (isInterviewFinished && state.messages.length > 0 && interviewId && type !== "generate") {
+            handleAsyncError(
+                async () => {
+                    const { success, feedbackId: id } = await createFeedback({
+                        interviewId: interviewId!,
+                        userId: userId!,
+                        transcript: state.messages,
+                        feedbackId,
+                    });
+                    
+                    if (success && id) {
+                        dispatch({ 
+                            type: 'SET_FEEDBACK_GENERATED', 
+                            payload: { generated: true, id } 
+                        });
+                        logger.success('Feedback generated successfully', { id });
+                    }
+                },
+                'Failed to generate feedback'
+            );
+        }
+        // No cleanup needed for this effect
+    }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId]);
+    
+    // Cleanup on unmount - MUST be at top level
+    useEffect(() => {
+        return () => {
+            if (audioCleanupRef.current) {
+                audioCleanupRef.current();
+            }
+            if (recordingTimeoutRef.current) {
+                clearTimeout(recordingTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // NOW we can safely do conditional logic after ALL hooks have been called
+    // Show loading state while feature flag is being fetched
+    if (flagLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-lg text-gray-600 dark:text-gray-300">
+                    Loading interview system...
+                </div>
+            </div>
+        );
+    }
+    
+    // Use Azure AI Foundry voice system if feature flag is enabled
+    if (useFoundryVoice) {
+        console.log('🚀 [Agent] Using Azure AI Foundry voice system');
+        return (
+            <FoundryVoiceAgent
+                userName={userName}
+                userId={userId}
+                interviewId={interviewId}
+                feedbackId={feedbackId}
+                type={type}
+                questions={questions}
+                resumeInfo={resumeInfo}
+                resumeQuestions={resumeQuestions}
+            />
+        );
+    }
+    
+    // Fall back to legacy Speech SDK + OpenAI system
+    console.log('📻 [Agent] Using legacy Speech SDK + OpenAI system');
+
     const handleEndInterview = async (): Promise<void> => {
         try {
             logger.info('Ending interview', { totalMessages: state.messages.length, questionNumber: state.questionNumber });
@@ -250,43 +303,6 @@ const Agent = ({
             dispatch(createEndInterviewAction()); // Force end on error
         }
     };
-
-    // Auto-end interview when complete
-    useEffect(() => {
-        if (state.isInterviewComplete && isInterviewActive) {
-            logger.success('Interview completed - auto-ending in 2 seconds');
-            const timeoutId = setTimeout(() => {
-                handleEndInterview();
-            }, 2000);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [state.isInterviewComplete, isInterviewActive]);
-
-    // Generate feedback when interview finishes
-    useEffect(() => {
-        if (isInterviewFinished && state.messages.length > 0 && interviewId && type !== "generate") {
-            handleAsyncError(
-                async () => {
-                    const { success, feedbackId: id } = await createFeedback({
-                        interviewId: interviewId!,
-                        userId: userId!,
-                        transcript: state.messages,
-                        feedbackId,
-                    });
-                    
-                    if (success && id) {
-                        dispatch({ 
-                            type: 'SET_FEEDBACK_GENERATED', 
-                            payload: { generated: true, id } 
-                        });
-                        logger.success('Feedback generated successfully', { id });
-                    }
-                },
-                'Failed to generate feedback'
-            );
-        }
-        // No cleanup needed for this effect
-    }, [isInterviewFinished, state.messages.length, interviewId, userId, type, feedbackId]);
 
     /**
      * Process audio recording and handle transcription
@@ -474,7 +490,7 @@ const Agent = ({
                     const rms = event.data.rms;
                     
                     if (isCurrentlyRecordingRef.current) {
-                        if (rms > 0.01) {
+                        if (rms > 0.005) { // Lowered threshold for better voice detection
                             // Voice detected - reset silence timeout
                             lastVoiceActivityRef.current = Date.now();
                             if (silenceTimeoutRef.current) {
@@ -485,15 +501,22 @@ const Agent = ({
                         } else if (lastVoiceActivityRef.current > 0) {
                             // Check if we've been silent for too long
                             const silenceDuration = Date.now() - lastVoiceActivityRef.current;
+                            const recordingDuration = Date.now() - recordingStartTimeRef.current;
                             
+                            // Standard processing trigger - give users time to think
                             if (silenceDuration > SILENCE_DURATION_MS && !silenceTimeoutRef.current) {
-                                logger.audio.record('Voice activity stopped - auto-stopping recording');
-                                silenceTimeoutRef.current = setTimeout(() => {
-                                    if (isCurrentlyRecordingRef.current && (window as any).stopAudioContextRecording) {
-                                        logger.audio.record('Auto-stopping recording after silence');
-                                        (window as any).stopAudioContextRecording();
-                                    }
-                                }, 100); // Small delay to ensure clean stop
+                                // Check if we've recorded for minimum duration
+                                if (recordingDuration >= MIN_RECORDING_DURATION_MS) {
+                                    logger.audio.record('Voice activity stopped - auto-stopping recording');
+                                    silenceTimeoutRef.current = setTimeout(() => {
+                                        if (isCurrentlyRecordingRef.current && (window as any).stopAudioContextRecording) {
+                                            logger.audio.record('Auto-stopping recording after silence');
+                                            (window as any).stopAudioContextRecording();
+                                        }
+                                    }, 100); // Small delay to ensure clean stop
+                                } else {
+                                    logger.audio.record(`Recording too short (${recordingDuration}ms), continuing...`);
+                                }
                             }
                         }
                     }
@@ -506,6 +529,7 @@ const Agent = ({
                 logger.audio.record('Starting audio recording');
                 audioSamplesRef.current = [];
                 isCurrentlyRecordingRef.current = true;
+                recordingStartTimeRef.current = Date.now();
                 dispatch({ type: 'START_RECORDING' });
 
                 recordingTimeoutRef.current = setTimeout(() => {
@@ -580,20 +604,9 @@ const Agent = ({
     };
 
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (audioCleanupRef.current) {
-                audioCleanupRef.current();
-            }
-            if (recordingTimeoutRef.current) {
-                clearTimeout(recordingTimeoutRef.current);
-            }
-        };
-    }, []);
 
     return (
-        <div data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"}>
+        <div data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"} className="space-y-8">
             <div className="call-view" data-testid="session-id" data-session-id={interviewId}>
                 {/* AI Interviewer Card */}
                 <div className="card-interviewer">
@@ -655,25 +668,27 @@ const Agent = ({
             </div>
 
             {state.messages.length > 0 && (
-                <div className="transcript-border">
+                <div className="transcript-border mt-8">
                     <div className="dark-gradient rounded-2xl min-h-12 px-5 py-3 flex flex-col border-l-4 border-blue-500">
                         <div className="transcript-header mb-3">
                             <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 text-left">Live Transcript</h4>
                         </div>
                         <div className="transcript-messages max-h-40 overflow-y-auto space-y-2" data-testid="conversation-transcript">
-                            {state.messages.map((message, index) => {
-                                const isLastMessage = index === state.messages.length - 1;
+                            {/* Show only the last 5 messages before the currently spoken one */}
+                            {state.messages.slice(-6, -1).concat(state.messages.slice(-1)).map((message, index, displayedMessages) => {
+                                const isLastMessage = index === displayedMessages.length - 1;
                                 const isCurrentQuestion = message.role === "assistant" && isLastMessage;
+                                const actualIndex = state.messages.indexOf(message); // Get actual index in full array
                                 return (
                                     <div 
-                                        key={index}
+                                        key={actualIndex}
                                         className={cn(
                                             "transcript-message p-2 rounded-lg",
                                             message.role === "assistant" 
                                                 ? "bg-blue-50 dark:bg-blue-900/20" 
                                                 : "bg-gray-50 dark:bg-gray-800/50"
                                         )}
-                                        data-testid={isCurrentQuestion ? "current-question" : `message-${index}`}
+                                        data-testid={isCurrentQuestion ? "current-question" : `message-${actualIndex}`}
                                     >
                                         <div className="flex items-start space-x-2">
                                             <span className={cn(
@@ -691,6 +706,12 @@ const Agent = ({
                                     </div>
                                 );
                             })}
+                            {/* Show indicator if there are more messages */}
+                            {state.messages.length > 6 && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-2 italic">
+                                    ... {state.messages.length - 6} earlier messages (stored for feedback)
+                                </div>
+                            )}
                         </div>
                     </div>
                     {/* Status indicators for testing */}
@@ -703,7 +724,7 @@ const Agent = ({
             )}
 
             {/* Simple Interview Controls */}
-            <div className="w-full flex justify-center gap-4">
+            <div className="w-full flex justify-center gap-4 mt-8">
                 {!isInterviewActive ? (
                     <>
                         <button className="relative btn-call" onClick={handleStartInterview} data-testid="start-interview-btn">
@@ -730,7 +751,7 @@ const Agent = ({
                         {/* Voice Recording Controls */}
                         {isWaiting && (
                             <button 
-                                className="btn-record" 
+                                className="inline-block px-7 py-3 font-bold text-sm leading-5 text-white transition-colors duration-150 bg-green-600 hover:bg-green-700 border border-transparent rounded-full shadow-sm focus:outline-none focus:shadow-2xl active:bg-green-800 min-w-28 cursor-pointer" 
                                 onClick={() => (window as any).startAudioContextRecording && (window as any).startAudioContextRecording()}
                                 data-testid="voice-record-btn"
                                 disabled={!isWaiting}
@@ -740,7 +761,7 @@ const Agent = ({
                         )}
                         {isRecording && (
                             <button 
-                                className="btn-stop" 
+                                className="inline-block px-7 py-3 font-bold text-sm leading-5 text-white transition-colors duration-150 bg-red-600 hover:bg-red-700 border border-transparent rounded-full shadow-sm focus:outline-none focus:shadow-2xl active:bg-red-800 min-w-28 cursor-pointer" 
                                 onClick={() => (window as any).stopAudioContextRecording && (window as any).stopAudioContextRecording()}
                                 data-testid="voice-stop-btn"
                             >

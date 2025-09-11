@@ -1,16 +1,13 @@
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { Mona_Sans } from "next/font/google";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { RouterLoadingHandler } from "@/components/RouterLoadingHandler";
 import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
-import FirebaseClientInit from "@/components/FirebaseClientInit";
 import Providers from "./providers";
 import { initializeAzureServices } from '@/lib/azure-startup';
 import { RetryWithBackoff } from '@/lib/utils/retry-with-backoff';
 import { ErrorHandler } from '@/lib/middleware/error-handler';
-import NetworkLoggerInit from '@/components/NetworkLoggerInit';
 
 import "./globals.css";
 import TestHelperInitializer from "@/components/test/TestHelperInitializer";
@@ -70,16 +67,12 @@ export default function RootLayout({
         } as React.CSSProperties} suppressHydrationWarning={true}>
         <Providers>
             <LoadingProvider>
-                <NetworkLoggerInit />
-                <FirebaseClientInit />
                 <RouterLoadingHandler />
-                <AuthProvider>
-                    <TelemetryProvider>
-                        {/* TestHelperInitializer for E2E tests */}
-                        {(process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TESTING === 'true') && <TestHelperInitializer />}
-                        {children}
-                    </TelemetryProvider>
-                </AuthProvider>
+                <TelemetryProvider>
+                    {/* TestHelperInitializer for E2E tests */}
+                    {(process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TESTING === 'true') && <TestHelperInitializer />}
+                    {children}
+                </TelemetryProvider>
             </LoadingProvider>
         </Providers>
 

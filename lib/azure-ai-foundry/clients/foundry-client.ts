@@ -48,7 +48,7 @@ export class FoundryClientBase {
   protected buildHeaders(extra?: Record<string, string>): Record<string, string> {
     return {
       'Content-Type': 'application/json',
-      'Ocp-Apim-Subscription-Key': this.config.apiKey,
+      'api-key': this.config.apiKey, // Azure AI Foundry uses 'api-key' header
       'User-Agent': 'PrepBettr/FoundryClient',
       ...(extra || {}),
     };
@@ -62,7 +62,9 @@ export class FoundryClientBase {
     options: { method?: string; body?: any; headers?: Record<string, string> } = {}
   ): Promise<{ status: number; data: T | null; raw: string }> {
     const baseUrl = this.config.endpoint.replace(/\/$/, '');
-    const url = `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+    // Azure AI Foundry uses openai/deployments/{deployment-name} format
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const url = `${baseUrl}/openai/deployments/gpt-4o${normalizedPath}?api-version=2024-02-15-preview`;
     const { connection } = this.config;
 
     const method = options.method || 'GET';

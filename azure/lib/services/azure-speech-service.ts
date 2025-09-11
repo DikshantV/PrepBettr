@@ -11,6 +11,8 @@ export interface SpeechSynthesisOptions {
   voiceName?: string;
   rate?: string;
   pitch?: string;
+  onAudioChunk?: (chunk: ArrayBuffer) => void;
+  onSynthesisStart?: () => void;
 }
 
 export class AzureSpeechService {
@@ -128,7 +130,17 @@ export class AzureSpeechService {
     }
 
     try {
-      const audioConfig = SpeechSDK.AudioConfig.fromDefaultSpeakerOutput();
+      // Use streaming audio output if callback is provided
+      const audioConfig = options.onAudioChunk
+        ? SpeechSDK.AudioConfig.fromStreamOutput({
+            write: (buffer: ArrayBuffer) => {
+              console.log(`🔊 Streaming audio chunk: ${buffer.byteLength} bytes`);
+              options.onAudioChunk!(buffer);
+            },
+            close: () => console.log('🔊 Audio stream closed')
+          })
+        : SpeechSDK.AudioConfig.fromDefaultSpeakerOutput();
+        
       this.synthesizer = new SpeechSDK.SpeechSynthesizer(this.speechConfig, audioConfig);
 
       const voiceName = options.voiceName || 'en-US-SaraNeural';
@@ -146,12 +158,43 @@ export class AzureSpeechService {
       `;
 
       return new Promise((resolve, reject) => {
+        const audioChunks: ArrayBuffer[] = [];
+        
+        // Set up streaming events if callback provided
+        if (options.onAudioChunk) {
+          this.synthesizer!.synthesisStarted = (s, e) => {
+            console.log('🔊 Streaming synthesis started');
+            options.onSynthesisStart?.();
+          };
+          
+          this.synthesizer!.synthesizing = (s, e) => {
+            if (e.result.audioData && e.result.audioData.byteLength > 0) {
+              console.log(`🔊 Synthesizing chunk: ${e.result.audioData.byteLength} bytes`);
+              audioChunks.push(e.result.audioData.slice(0));
+              options.onAudioChunk!(e.result.audioData.slice(0));
+            }
+          };
+        }
+
         this.synthesizer!.speakSsmlAsync(
           ssml,
           (result) => {
             if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
               console.log('✅ Speech synthesis completed');
-              resolve(result.audioData);
+              
+              // If streaming was used, combine chunks, otherwise use result data
+              if (options.onAudioChunk && audioChunks.length > 0) {
+                const totalLength = audioChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+                const combined = new Uint8Array(totalLength);
+                let offset = 0;
+                audioChunks.forEach(chunk => {
+                  combined.set(new Uint8Array(chunk), offset);
+                  offset += chunk.byteLength;
+                });
+                resolve(combined.buffer);
+              } else {
+                resolve(result.audioData);
+              }
             } else {
               console.error('❌ Speech synthesis failed:', result.errorDetails);
               reject(new Error(result.errorDetails || 'Speech synthesis failed'));

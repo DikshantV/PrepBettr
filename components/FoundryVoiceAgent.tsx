@@ -376,7 +376,7 @@ const FoundryVoiceAgent = ({
 
       {/* User Avatar */}
       {state.userImage && (
-        <div className="mb-6">
+        <div className="mb-8">
           <div className={cn(
             "w-16 h-16 rounded-full border-2 transition-all",
             isRecording ? "border-red-400 shadow-lg" : "border-gray-300"
@@ -393,7 +393,7 @@ const FoundryVoiceAgent = ({
       )}
 
       {/* Interview Controls */}
-      <div className="flex flex-col items-center space-y-4" data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"}>
+      <div className="flex flex-col items-center space-y-4 mb-8" data-testid={isInterviewActive ? "interview-session-active" : "interview-session-inactive"}>
         {!isInterviewActive ? (
           <button
             onClick={handleStartInterview}
@@ -468,24 +468,26 @@ const FoundryVoiceAgent = ({
 
       {/* Messages Display */}
       {state.messages.length > 0 && (
-        <div className="mt-8 w-full max-w-2xl">
+        <div className="mt-12 w-full max-w-2xl">
           <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">
-            Conversation History
+            Live Transcript
           </h3>
           <div className="space-y-3 max-h-60 overflow-y-auto" data-testid="conversation-transcript">
-            {state.messages.slice(-5).map((message, index) => {
-              const isLastMessage = index === state.messages.slice(-5).length - 1;
+            {/* Show only the last 5 messages before the currently spoken one */}
+            {state.messages.slice(-6, -1).concat(state.messages.slice(-1)).map((message, index, displayedMessages) => {
+              const isLastMessage = index === displayedMessages.length - 1;
               const isCurrentQuestion = message.role !== 'user' && isLastMessage;
+              const actualIndex = state.messages.indexOf(message); // Get actual index in full array
               return (
                 <div
-                  key={index}
+                  key={actualIndex}
                   className={cn(
                     "p-3 rounded-lg",
                     message.role === 'user'
                       ? "bg-blue-100 dark:bg-blue-900 ml-8"
                       : "bg-gray-100 dark:bg-gray-800 mr-8"
                   )}
-                  data-testid={isCurrentQuestion ? "current-question" : `message-${index}`}
+                  data-testid={isCurrentQuestion ? "current-question" : `message-${actualIndex}`}
                 >
                   <div className="text-xs text-gray-500 mb-1">
                     {message.role === 'user' ? '👤 You' : '🤖 AI'}
@@ -494,6 +496,12 @@ const FoundryVoiceAgent = ({
                 </div>
               );
             })}
+            {/* Show indicator if there are more messages */}
+            {state.messages.length > 6 && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-2 italic">
+                ... {state.messages.length - 6} earlier messages (stored for feedback)
+              </div>
+            )}
           </div>
         </div>
       )}

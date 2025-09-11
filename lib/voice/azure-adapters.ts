@@ -6,6 +6,7 @@
 import { logger } from '../utils/logger';
 import { withRetry, handleApiError, showErrorNotification } from '../utils/error-utils';
 import { validateAudioBuffer, playAudioBuffer } from '../utils/audio-helpers';
+import { sanitizeInterviewText } from '../utils/markdown-sanitizer';
 import { SavedMessage, ConversationProcessResponse } from '@/lib/types/voice';
 
 export interface InterviewContext {
@@ -208,30 +209,87 @@ export const endConversation = async (): Promise<{ summary?: string }> => {
 };
 
 /**
- * Text-to-Speech adapter
+ * Text-to-Speech adapter with streaming support
  */
-export const textToSpeech = async (text: string): Promise<Blob> => {
+export const textToSpeech = async (
+  text: string, 
+  options?: { streaming?: boolean; onChunk?: (chunk: ArrayBuffer) => void }
+): Promise<Blob> => {
   return withRetry(async () => {
-    logger.api.request('/api/voice/tts', 'POST', { textLength: text.length });
+    // Sanitize text to remove Markdown formatting before TTS
+    const sanitizedText = sanitizeInterviewText(text);
+    
+    logger.api.request('/api/voice/tts', 'POST', { 
+      originalLength: text.length,
+      sanitizedLength: sanitizedText.length,
+      hadMarkdown: text !== sanitizedText,
+      streaming: options?.streaming || false
+    });
 
     const response = await fetch('/api/voice/tts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ 
+        text: sanitizedText,
+        streaming: options?.streaming || false 
+      }),
     });
 
     if (!response.ok) {
       throw handleApiError(response, 'Text-to-speech');
     }
 
-    const audioBlob = await response.blob();
-    logger.api.response('/api/voice/tts', response.status, { 
-      blobSize: audioBlob.size 
-    });
-
-    return audioBlob;
+    // Handle streaming response if requested
+    if (options?.streaming && options.onChunk && response.body) {
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          chunks.push(value);
+          
+          // Convert chunk to ArrayBuffer and send to callback
+          if (options.onChunk) {
+            options.onChunk(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+          }
+        }
+        
+        // Combine all chunks into final blob
+        const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        chunks.forEach(chunk => {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        });
+        
+        const audioBlob = new Blob([combined], { type: 'audio/wav' });
+        logger.api.response('/api/voice/tts', response.status, { 
+          blobSize: audioBlob.size,
+          chunksReceived: chunks.length,
+          streaming: true
+        });
+        
+        return audioBlob;
+        
+      } finally {
+        reader.releaseLock();
+      }
+    } else {
+      // Standard non-streaming response
+      const audioBlob = await response.blob();
+      logger.api.response('/api/voice/tts', response.status, { 
+        blobSize: audioBlob.size,
+        streaming: false 
+      });
+      
+      return audioBlob;
+    }
   }, 2, 'Text-to-speech');
 };
 
