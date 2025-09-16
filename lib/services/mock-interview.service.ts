@@ -8,7 +8,8 @@
 
 import { AzureOpenAIAdapter } from '@/lib/ai/azureOpenAI';
 import { getCompanyLogoForInterview } from '@/lib/utils';
-// Interview type is globally available from types/index.d.ts
+import type { Interview } from '@/types';
+// Interview type imported from types/index.ts
 
 // Types for generated content
 interface GeneratedRole {
@@ -267,6 +268,15 @@ Return ONLY a valid JSON object in this exact format:
       // Step 4: Generate questions based on role, type, and tech stack
       const questions = await this.generateQuestions(role, interviewType, techStack);
       
+      // Normalize questions into structured Question objects
+      const questionObjects = questions.map((q, idx) => ({
+        id: `q${idx + 1}`,
+        text: q,
+        question: q,
+        category: interviewType.toLowerCase(),
+        difficulty: 'medium',
+      }));
+      
       // Step 5: Generate unique interview ID
       const interviewId = this.generateInterviewId();
       
@@ -279,7 +289,7 @@ Return ONLY a valid JSON object in this exact format:
         userId: userId || 'mock-user',
         jobTitle: role.jobTitle,
         company: company,
-        questions: questions,
+        questions: questionObjects,
         finalized: true, // Mock interviews are pre-finalized
         createdAt: new Date().toISOString(),
         // Legacy properties for backward compatibility

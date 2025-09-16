@@ -11,6 +11,7 @@ import { OptimisticUpdateIndicator } from "@/components/ui/LoadingStates";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { normalizeTechstack } from "@/lib/utils";
+import type { Interview } from "@/types";
 
 interface InterviewCardRealtimeProps {
   interviewId: string;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Interview } from "@/types";
 
 export const mappings = {
   "react.js": "react",
@@ -214,13 +215,13 @@ export const dummyInterviews: Interview[] = [
     company: "TechCorp",
     jobDescription: "Frontend developer position working with React and TypeScript",
     questions: [
-      { question: "What is React?", category: "technical", difficulty: "medium" },
-      { question: "Explain TypeScript benefits", category: "technical", difficulty: "medium" }
+      { id: "q1", text: "What is React?", question: "What is React?", category: "technical", difficulty: "medium" },
+      { id: "q2", text: "Explain TypeScript benefits", question: "Explain TypeScript benefits", category: "technical", difficulty: "medium" }
     ],
     finalized: false,
     feedbackGenerated: false,
-    createdAt: "2024-03-15T10:00:00Z",
-    updatedAt: "2024-03-15T10:00:00Z",
+    createdAt: new Date("2024-03-15T10:00:00Z"),
+    updatedAt: new Date("2024-03-15T10:00:00Z"),
     // Legacy properties for backward compatibility
     role: "Frontend Developer",
     type: "Technical",
@@ -234,13 +235,13 @@ export const dummyInterviews: Interview[] = [
     company: "StartupXYZ",
     jobDescription: "Full stack developer position using Node.js and React",
     questions: [
-      { question: "What is Node.js?", category: "technical", difficulty: "medium" },
-      { question: "Explain RESTful APIs", category: "technical", difficulty: "medium" }
+      { id: "q3", text: "What is Node.js?", question: "What is Node.js?", category: "technical", difficulty: "medium" },
+      { id: "q4", text: "Explain RESTful APIs", question: "Explain RESTful APIs", category: "technical", difficulty: "medium" }
     ],
     finalized: false,
     feedbackGenerated: false,
-    createdAt: "2024-03-14T15:30:00Z",
-    updatedAt: "2024-03-14T15:30:00Z",
+    createdAt: new Date("2024-03-14T15:30:00Z"),
+    updatedAt: new Date("2024-03-14T15:30:00Z"),
     // Legacy properties for backward compatibility
     role: "Full Stack Developer",
     type: "Mixed",

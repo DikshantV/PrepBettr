@@ -329,7 +329,7 @@ describe('Interview Workflow API Integration', () => {
       const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
 
       const request = createRequest('http://localhost:3000/api/interview/session/nonexistent/status');
-      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'nonexistent' }) });
+      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'nonexistent' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(404);
@@ -351,7 +351,7 @@ describe('Interview Workflow API Integration', () => {
       const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
 
       const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
-      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(responseBody.computed.isActive).toBe(false);
@@ -372,7 +372,7 @@ describe('Interview Workflow API Integration', () => {
       const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
 
       const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
-      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(responseBody.computed.healthStatus).toBe('error'); // Status endpoint returns 'error' for failed status
@@ -387,7 +387,7 @@ describe('Interview Workflow API Integration', () => {
       const { GET: getSessionStatus } = await import('@/app/api/interview/session/[id]/status/route');
 
       const request = createRequest('http://localhost:3000/api/interview/session/interview_test_123/status');
-      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await getSessionStatus(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(500);
@@ -593,7 +593,7 @@ describe('Interview Workflow API Integration', () => {
         includeReport: true,
         candidateFeedback: true
       });
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(200);
@@ -611,7 +611,7 @@ describe('Interview Workflow API Integration', () => {
         json: jest.fn().mockRejectedValue(new Error('No JSON'))
       } as any;
       
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(200);
@@ -630,7 +630,7 @@ describe('Interview Workflow API Integration', () => {
       const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
 
       const request = createRequest({});
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(400);
@@ -651,7 +651,7 @@ describe('Interview Workflow API Integration', () => {
       const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
 
       const request = createRequest({});
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(400);
@@ -672,7 +672,7 @@ describe('Interview Workflow API Integration', () => {
       const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
 
       const request = createRequest({ force: true });
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(400); // Force completion still blocked in this mock implementation
@@ -686,7 +686,7 @@ describe('Interview Workflow API Integration', () => {
         includeReport: false,
         candidateFeedback: false
       });
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(responseBody.exports.pdfReportUrl).toContain('/report.pdf'); // Mock implementation always includes report URL
@@ -704,7 +704,7 @@ describe('Interview Workflow API Integration', () => {
         },
         candidateFeedback: true
       });
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(responseBody.sharing.recruiterId).toBe('recruiter_456');
@@ -721,7 +721,7 @@ describe('Interview Workflow API Integration', () => {
       const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
 
       const request = createRequest({});
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'nonexistent' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'nonexistent' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(404);
@@ -739,7 +739,7 @@ describe('Interview Workflow API Integration', () => {
       const { POST: completeInterview } = await import('@/app/api/interview/session/[id]/complete/route');
 
       const request = createRequest({});
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const responseBody = await response.json();
 
       expect(response.status).toBe(500);
@@ -753,7 +753,7 @@ describe('Interview Workflow API Integration', () => {
       
       const response = await getCompleteInfo(
         {} as NextRequest, 
-        { params: Promise.resolve({ id: 'interview_test_123' }) }
+        { params: Promise.resolve({ id: 'interview_test_123' } }
       );
       const responseBody = await response.json();
 
@@ -774,7 +774,7 @@ describe('Interview Workflow API Integration', () => {
 
       const response = await getCompleteInfo(
         {} as NextRequest, 
-        { params: Promise.resolve({ id: 'nonexistent' }) }
+        { params: Promise.resolve({ id: 'nonexistent' } }
       );
       const responseBody = await response.json();
 
@@ -815,7 +815,7 @@ describe('Interview Workflow API Integration', () => {
       // Both operations should succeed independently
       const [handoffResponse, completeResponse] = await Promise.all([
         agentHandoff(handoffRequest),
-        completeInterview(completeRequest, { params: Promise.resolve({ id: 'interview_test_123' }) })
+        completeInterview(completeRequest, { params: Promise.resolve({ id: 'interview_test_123' } })
       ]);
 
       expect(handoffResponse.status).toBe(200);
@@ -832,7 +832,7 @@ describe('Interview Workflow API Integration', () => {
       const statusRequest = {
         url: `http://localhost:3000/api/interview/session/${sessionId}/status`
       } as any;
-      const statusResponse = await getSessionStatus(statusRequest, { params: Promise.resolve({ id: sessionId }) });
+      const statusResponse = await getSessionStatus(statusRequest, { params: Promise.resolve({ id: sessionId } });
       const statusBody = await statusResponse.json();
 
       // Handoff should use same session
@@ -863,7 +863,7 @@ describe('Interview Workflow API Integration', () => {
       } as any;
       
       const startTime = Date.now();
-      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' }) });
+      const response = await completeInterview(request, { params: Promise.resolve({ id: 'interview_test_123' } });
       const endTime = Date.now();
       const responseBody = await response.json();
 

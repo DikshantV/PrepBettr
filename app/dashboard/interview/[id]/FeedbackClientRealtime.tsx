@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
+import { useParams } from 'next/navigation';
+import type { Interview, Feedback } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

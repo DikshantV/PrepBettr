@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getFeedbackByInterviewId } from '@/lib/actions/feedback.action';
+import type { Feedback } from '@/types';
 
 export function useServerFeedback(interviewId: string | null) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);

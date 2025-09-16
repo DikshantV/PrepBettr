@@ -156,9 +156,30 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         throw error;
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Google ${mode} Error:`, error);
-      toast.error(`Failed to ${mode === 'signup' ? 'sign up' : 'sign in'} with Google`);
+      
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error(
+          'An account already exists with this email but different sign-in method. Please try signing in with email/password instead.',
+          {
+            duration: 8000,
+            action: {
+              label: 'Sign In',
+              onClick: () => router.push('/sign-in')
+            }
+          }
+        );
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        toast.error('Sign-in was cancelled. Please try again.');
+      } else if (error.code === 'auth/popup-blocked') {
+        toast.error('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
+      } else if (error.code === 'auth/network-request-failed') {
+        toast.error('Network error. Please check your connection and try again.');
+      } else {
+        toast.error(`Failed to ${mode === 'signup' ? 'sign up' : 'sign in'} with Google`);
+      }
     } finally {
       setIsLoading(false);
     }

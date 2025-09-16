@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       
       // Provide specific error responses for different failure types
       const errorMessage = authResult.error || 'Invalid or expired token';
-      let statusCode = 401;
+      const statusCode = 401;
       let shouldRefresh = false;
       
       // Check if this is a token expiration issue

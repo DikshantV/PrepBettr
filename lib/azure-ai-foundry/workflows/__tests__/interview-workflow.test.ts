@@ -75,6 +75,22 @@ describe('InterviewWorkflow', () => {
     jest.clearAllMocks();
   });
 
+  // Helper function for full workflow config
+  const createFullWorkflowConfig = (): InterviewConfig => ({
+    sessionId: 'test-full-workflow',
+    role: 'Senior Software Engineer',
+    experienceLevel: 'senior',
+    candidateProfile: {
+      name: 'Full Workflow Test User',
+      skills: ['JavaScript', 'Python', 'System Design', 'Leadership'],
+      yearsExperience: 8
+    },
+    customization: {
+      enabledStages: ['technical', 'behavioral', 'industry', 'wrap-up'],
+      stageDurations: { technical: 15, behavioral: 10, industry: 10, 'wrap-up': 5 }
+    }
+  });
+
   describe('Single Agent Session Tests', () => {
     const createBasicConfig = (experienceLevel: ExperienceLevel = 'mid'): InterviewConfig => ({
       sessionId: 'test-single-agent',

@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useTelemetry } from "@/components/providers/TelemetryProvider";
 import RedirectGuard from "@/lib/utils/redirect-guard";
+import type { FormType } from "@/types";
 
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -71,10 +72,27 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 } else {
                     const errorData = await response.json().catch(() => ({}));
                     const errorMessage = errorData.error || 'Failed to create account. Please try again.';
-                    toast.error(errorMessage);
-                    // Track failed sign up
+                    const errorCode = errorData.code;
+                    const errorAction = errorData.action;
+                    
+                    // Handle specific error cases
+                    if (errorCode === 'email_already_exists' && errorAction === 'redirect_to_signin') {
+                        toast.error(errorMessage, {
+                            duration: 6000,
+                            action: {
+                                label: 'Sign In',
+                                onClick: () => router.push('/sign-in')
+                            }
+                        });
+                    } else {
+                        toast.error(errorMessage);
+                    }
+                    
+                    // Track failed sign up with additional context
                     await trackFormSubmission('signup_form', false, {
                         errorMessage,
+                        errorCode: errorCode || 'unknown',
+                        statusCode: response.status.toString(),
                         duration: (Date.now() - startTime).toString()
                     });
                     return;

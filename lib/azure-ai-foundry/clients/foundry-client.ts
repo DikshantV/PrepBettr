@@ -117,7 +117,7 @@ export class FoundryClientBase {
         // Optional: log slow requests
         const elapsed = Date.now() - start;
         if (elapsed > Math.max(2000, this.config.connection.timeout)) {
-          // eslint-disable-next-line no-console
+           
           console.warn(`[FoundryClient] Slow request ${method} ${url} took ${elapsed}ms`);
         }
       }

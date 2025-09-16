@@ -97,7 +97,7 @@ describe('Agent State Reducer', () => {
 
   test('END_INTERVIEW should reset to finished state', () => {
     // Set up an active interview first
-    let state = { 
+    const state = { 
       ...initialAgentState, 
       interviewState: InterviewState.ACTIVE,
       audioState: AudioState.SPEAKING,
@@ -114,7 +114,7 @@ describe('Agent State Reducer', () => {
 
   test('RESET_INTERVIEW should reset state but preserve user image', () => {
     // Set up an active state with multiple changes
-    let state: AgentState = { 
+    const state: AgentState = { 
       ...initialAgentState, 
       interviewState: InterviewState.ACTIVE,
       audioState: AudioState.SPEAKING,

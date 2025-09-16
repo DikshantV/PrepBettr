@@ -7,7 +7,7 @@
  */
 
 import { MockInterviewService } from './mock-interview.service';
-import { Interview } from '@/types/index.d';
+import { Interview } from '@/types';
 
 // Mock the Azure OpenAI Adapter
 jest.mock('@/lib/ai/azureOpenAI', () => ({
@@ -175,7 +175,7 @@ describe('MockInterviewService', () => {
         expect(interview.questions.length).toBeLessThanOrEqual(8); // Based on our mock
         
         // Verify questions are strings and not empty
-        interview.questions.forEach(question => {
+        interview.questions.forEach((question: any) => {
           expect(typeof question).toBe('string');
           expect(question.length).toBeGreaterThan(0);
         });
@@ -192,7 +192,7 @@ describe('MockInterviewService', () => {
         interviews.push(interview);
         
         // Extract job title from role (format: "JobTitle at Company")
-        const jobTitle = interview.role.split(' at ')[0];
+        const jobTitle = interview.role?.split(' at ')[0];
         jobTitles.add(jobTitle);
       }
 
@@ -210,11 +210,14 @@ describe('MockInterviewService', () => {
       
       // Tech stack should be an array with 4-6 technologies
       expect(Array.isArray(interview.techstack)).toBe(true);
-      expect(interview.techstack.length).toBeGreaterThanOrEqual(4);
-      expect(interview.techstack.length).toBeLessThanOrEqual(6);
+      expect(interview.techstack).toBeDefined();
+      if (Array.isArray(interview.techstack)) {
+        expect(interview.techstack.length).toBeGreaterThanOrEqual(4);
+        expect(interview.techstack.length).toBeLessThanOrEqual(6);
+      }
       
       // Each technology should be a non-empty string
-      interview.techstack.forEach(tech => {
+      interview.techstack?.forEach((tech: any) => {
         expect(typeof tech).toBe('string');
         expect(tech.length).toBeGreaterThan(0);
       });

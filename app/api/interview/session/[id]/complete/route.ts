@@ -32,8 +32,9 @@ function getWorkflow(): InterviewWorkflow {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   const resolvedParams = await params;
   const sessionId = resolvedParams.id;
   
@@ -161,8 +162,9 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   const resolvedParams = await params;
   const sessionId = resolvedParams.id;
   

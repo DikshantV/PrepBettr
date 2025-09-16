@@ -94,29 +94,41 @@ class FirebaseUserService {
       const firestore = await getAdminFirestore();
       const now = new Date();
       
-      const profileData = {
+      // Create profile data without undefined values (Firestore requirement)
+      const profileData: Record<string, any> = {
         email: userData.email,
         displayName: userData.displayName || userData.email.split('@')[0],
-        profilePictureUrl: undefined,
-        phoneNumber: userData.phoneNumber || undefined,
         emailVerified: userData.emailVerified || false,
         plan: userData.plan || 'free',
         createdAt: now,
         updatedAt: now,
-        about: undefined,
-        workplace: undefined,
-        skills: [],
-        dateOfBirth: undefined
+        skills: []
       };
+      
+      // Only add optional fields if they have values
+      if (userData.phoneNumber) {
+        profileData.phoneNumber = userData.phoneNumber;
+      }
 
       await firestore.collection('users').doc(uid).set(profileData);
       
       console.log(`✅ Created user profile for uid: ${uid}, email: ${userData.email}`);
       
+      // Return the complete profile with all required fields
       return {
         uid,
-        ...profileData,
-        skills: profileData.skills || []
+        email: profileData.email,
+        displayName: profileData.displayName,
+        profilePictureUrl: undefined, // Will be undefined in interface but not stored in Firestore
+        phoneNumber: profileData.phoneNumber,
+        emailVerified: profileData.emailVerified,
+        plan: profileData.plan,
+        createdAt: profileData.createdAt,
+        updatedAt: profileData.updatedAt,
+        about: undefined,
+        workplace: undefined,
+        skills: profileData.skills,
+        dateOfBirth: undefined
       };
     } catch (error) {
       console.error(`❌ Failed to create user profile for uid: ${uid}`, error);

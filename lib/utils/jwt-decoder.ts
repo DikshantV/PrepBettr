@@ -3,6 +3,8 @@
  * This bypasses Firebase Admin SDK to avoid SSL/gRPC issues
  */
 
+import type { User } from '@/types';
+
 interface DecodedToken {
   uid?: string;
   user_id?: string;

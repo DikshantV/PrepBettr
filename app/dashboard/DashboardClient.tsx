@@ -7,6 +7,7 @@ import BanterLoader from "@/components/ui/BanterLoader";
 import { Button } from "@/components/ui/button";
 import InterviewCardClient from "@/components/InterviewCardClient";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Interview } from "@/types";
 
 interface DashboardClientProps {
   userInterviews: Interview[];

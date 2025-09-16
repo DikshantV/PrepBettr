@@ -113,14 +113,46 @@ export async function POST(request: NextRequest) {
         
         // Handle specific Firebase Auth errors
         if (error.code === 'auth/email-already-exists') {
+          console.log(`⚠️ Account creation attempt for existing email: ${email}`);
           return NextResponse.json(
-            { error: 'Email already in use' },
+            { 
+              error: 'This email is already registered. Please sign in instead or use a different email.',
+              code: 'email_already_exists',
+              action: 'redirect_to_signin'
+            },
             { status: 409 }
           );
         }
         
+        if (error.code === 'auth/invalid-email') {
+          return NextResponse.json(
+            { 
+              error: 'Please enter a valid email address.',
+              code: 'invalid_email'
+            },
+            { status: 400 }
+          );
+        }
+        
+        if (error.code === 'auth/weak-password') {
+          return NextResponse.json(
+            { 
+              error: 'Password must be at least 6 characters long.',
+              code: 'weak_password'
+            },
+            { status: 400 }
+          );
+        }
+        
+        // Generic Firebase error handling
+        const errorMessage = error.message || 'Failed to create account';
+        console.error(`❌ Unhandled Firebase Auth error code: ${error.code}, message: ${errorMessage}`);
+        
         return NextResponse.json(
-          { error: 'Failed to create account' },
+          { 
+            error: errorMessage.includes('Firebase') ? 'Authentication service error. Please try again.' : errorMessage,
+            code: error.code || 'auth_error'
+          },
           { status: 400 }
         );
       }
@@ -152,13 +184,33 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create or ensure user profile exists in Firestore
-      const userProfile = await firebaseUserService.ensureUserProfile(authResult.user.uid, {
-        email: authResult.user.email,
-        displayName: authResult.user.name || name,
-        emailVerified: authResult.user.email_verified,
-        plan: 'free'
-      });
+      // Create or ensure user profile exists in Firestore with retry logic
+      let userProfile;
+      try {
+        userProfile = await firebaseUserService.ensureUserProfile(authResult.user.uid, {
+          email: authResult.user.email,
+          displayName: authResult.user.name || name,
+          emailVerified: authResult.user.email_verified,
+          plan: 'free'
+        });
+      } catch (profileError) {
+        console.error(`❌ Failed to create user profile for uid: ${authResult.user.uid}:`, profileError);
+        
+        // If this was a new Firebase Auth user creation and profile creation failed,
+        // we should clean up the orphaned Firebase Auth account
+        if (isNewUser) {
+          console.log(`🧹 Cleaning up orphaned Firebase Auth account for uid: ${authResult.user.uid}`);
+          try {
+            await firebaseUserService.deleteUser(authResult.user.uid);
+            console.log(`✅ Cleaned up orphaned Firebase Auth account`);
+          } catch (cleanupError) {
+            console.error(`❌ Failed to cleanup orphaned Firebase Auth account:`, cleanupError);
+            // Don't fail the request for cleanup errors - log for manual review
+          }
+        }
+        
+        throw profileError;
+      }
       
       console.log(`✅ User profile ${existingProfile ? 'confirmed' : 'created'} for uid: ${authResult.user.uid}`);
 

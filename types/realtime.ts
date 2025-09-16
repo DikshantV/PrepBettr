@@ -1,4 +1,5 @@
 // Types for real-time application status tracking
+import type { User, Interview, Feedback } from './index';
 
 export interface ApplicationStatus {
   id: string;
