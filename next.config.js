@@ -96,11 +96,28 @@ const nextConfig = {
       };
     }
     
-    // Temporarily disable minification to resolve webpack error
+    // Production optimizations
     if (!dev) {
       config.optimization = {
         ...config.optimization,
-        minimize: false,
+        usedExports: true,
+        sideEffects: false,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              enforce: true,
+            },
+          },
+        },
       };
     }
     
