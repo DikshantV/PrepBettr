@@ -101,10 +101,26 @@ Required environment variables in `local.settings.json`:
     "AZURE_OPENAI_KEY": "[Azure OpenAI API Key]",
     "APPINSIGHTS_INSTRUMENTATIONKEY": "[Application Insights Key]",
     "AZURE_OPENAI_KEY": "[Optional: Azure OpenAI Key]",
-    "AZURE_OPENAI_ENDPOINT": "[Optional: Azure OpenAI Endpoint]"
+    "AZURE_OPENAI_ENDPOINT": "[Optional: Azure OpenAI Endpoint]",
+    "SENDGRID_API_KEY": "[SendGrid API Key for email notifications]",
+    "SENDGRID_FROM_EMAIL": "[Sender email address - e.g., contact@prepbettr.com]"
   }
 }
 ```
+
+### Email Service Configuration
+
+The Azure Functions use SendGrid for sending email notifications including:
+- Job application confirmations
+- Follow-up reminders
+- Daily automation summaries
+- Error notifications
+
+**SendGrid Setup Requirements:**
+1. Create a SendGrid account and verify your sender email
+2. Generate an API key with "Mail Send" permissions
+3. Add the API key and sender email to your function app configuration
+4. For production, store these values in Azure Key Vault
 
 ## Deployment
 

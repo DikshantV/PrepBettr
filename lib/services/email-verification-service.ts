@@ -4,7 +4,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { EmailVerification } from '@/types/subscription';
 import { randomBytes } from 'crypto';
-import { awsSESService } from './aws-ses-service';
+import { awsSESService } from './sendgrid-service';
 
 export class EmailVerificationService {
   private _db: Awaited<ReturnType<typeof getAdminFirestore>> | null = null;

@@ -16,6 +16,8 @@ interface AzureSecrets {
   azureStorageAccountKey?: string; // Azure Storage Account Key
   azureFormRecognizerEndpoint?: string; // Azure Form Recognizer Endpoint
   azureFormRecognizerKey?: string; // Azure Form Recognizer Key
+  sendgridApiKey?: string; // SendGrid API Key
+  sendgridFromEmail?: string; // SendGrid From Email
 }
 
 let cachedSecrets: AzureSecrets | null = null;
@@ -64,7 +66,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       client.getSecret('azure-storage-account-name').catch(() => null), // Optional
       client.getSecret('azure-storage-account-key').catch(() => null), // Optional
       client.getSecret('azure-form-recognizer-endpoint').catch(() => null), // Optional
-      client.getSecret('azure-form-recognizer-key').catch(() => null) // Optional
+      client.getSecret('azure-form-recognizer-key').catch(() => null), // Optional
+      client.getSecret('sendgrid-api-key').catch(() => null), // Optional
+      client.getSecret('sendgrid-from-email').catch(() => null) // Optional
     ];
     
     const secretsResults = await Promise.all(secretsPromises);
@@ -81,6 +85,8 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
     const storageAccountKey = secretsResults[8];
     const formRecognizerEndpoint = secretsResults[9];
     const formRecognizerKey = secretsResults[10];
+    const sendgridApiKey = secretsResults[11];
+    const sendgridFromEmail = secretsResults[12];
 
     if (!speechKey?.value || !speechEndpoint?.value || !azureOpenAIKey?.value || !azureOpenAIEndpoint?.value || !azureOpenAIDeployment?.value) {
       throw new Error('One or more required secrets are missing from Azure Key Vault');
@@ -97,7 +103,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureStorageAccountName: storageAccountName?.value,
       azureStorageAccountKey: storageAccountKey?.value,
       azureFormRecognizerEndpoint: formRecognizerEndpoint?.value,
-      azureFormRecognizerKey: formRecognizerKey?.value
+      azureFormRecognizerKey: formRecognizerKey?.value,
+      sendgridApiKey: sendgridApiKey?.value,
+      sendgridFromEmail: sendgridFromEmail?.value
     };
 
     console.log('✅ Azure secrets loaded successfully');
@@ -120,7 +128,9 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
       azureStorageAccountName: processEnv['AZURE_STORAGE_ACCOUNT_NAME'],
       azureStorageAccountKey: processEnv['AZURE_STORAGE_ACCOUNT_KEY'],
       azureFormRecognizerEndpoint: processEnv['AZURE_FORM_RECOGNIZER_ENDPOINT'],
-      azureFormRecognizerKey: processEnv['AZURE_FORM_RECOGNIZER_KEY']
+      azureFormRecognizerKey: processEnv['AZURE_FORM_RECOGNIZER_KEY'],
+      sendgridApiKey: processEnv['SENDGRID_API_KEY'],
+      sendgridFromEmail: processEnv['SENDGRID_FROM_EMAIL']
     };
 
     if (!fallbackSecrets.speechKey || !fallbackSecrets.azureOpenAIKey) {
@@ -149,6 +159,14 @@ export async function initializeAzureEnvironment(): Promise<void> {
     processEnv['AZURE_OPENAI_DEPLOYMENT'] = secrets.azureOpenAIDeployment;
     processEnv['AZURE_OPENAI_GPT35_DEPLOYMENT'] = secrets.azureOpenAIGpt35Deployment;
     processEnv['AZURE_OPENAI_GPT4O_DEPLOYMENT'] = secrets.azureOpenAIGpt4oDeployment;
+    
+    // Set SendGrid environment variables if available
+    if (secrets.sendgridApiKey) {
+      processEnv['SENDGRID_API_KEY'] = secrets.sendgridApiKey;
+    }
+    if (secrets.sendgridFromEmail) {
+      processEnv['SENDGRID_FROM_EMAIL'] = secrets.sendgridFromEmail;
+    }
 
     // Note: NEXT_PUBLIC_* variables are already handled by .env.local and don't need to be set here
     // Avoid setting them dynamically to prevent webpack build-time replacement conflicts

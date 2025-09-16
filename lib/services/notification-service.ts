@@ -1,7 +1,7 @@
 // lib/services/notification-service.ts
 
 import { azureCosmosService } from './azure-cosmos-service';
-import { awsSESService, EmailParams } from './aws-ses-service';
+import { awsSESService, EmailParams } from './sendgrid-service';
 // MJML import with conditional loading for build compatibility
 let mjml2html: any;
 
