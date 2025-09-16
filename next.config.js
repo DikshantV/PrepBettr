@@ -1,6 +1,7 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true'
 });
+const webpack = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -55,6 +56,18 @@ const nextConfig = {
   
   // Custom webpack config for Azure packages
   webpack: (config, { isServer, dev }) => {
+    // Global polyfill for 'self' issue fix
+    config.plugins = config.plugins || [];
+    
+    if (isServer) {
+      // Server-side: Replace 'self' with globalThis
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          self: 'globalThis',
+        })
+      );
+    }
+    
     // Exclude Azure Functions from build
     config.module = config.module || {};
     config.module.rules = config.module.rules || [];
@@ -93,31 +106,6 @@ const nextConfig = {
         os: false,
         path: false,
         child_process: false,
-      };
-    }
-    
-    // Production optimizations
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        usedExports: true,
-        sideEffects: false,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              enforce: true,
-            },
-          },
-        },
       };
     }
     
