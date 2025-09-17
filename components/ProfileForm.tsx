@@ -8,6 +8,7 @@ import { Textarea } from "./ui/textarea";
 import BanterLoader from "./ui/BanterLoader";
 import Image from "next/image";
 import { auth } from "@/firebase/client";
+import { useFirebaseReady } from "@/components/FirebaseClientInit";
 import { toast } from "sonner";
 import { Mail, Loader2 } from "lucide-react";
 
@@ -25,6 +26,8 @@ interface ProfileUser {
 }
 
 export default function ProfileForm({ user }: { user: ProfileUser }) {
+  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
+  
   // Remove debug logging in production
   // console.log('ProfileForm user data:', user);
   // console.log('EmailVerified status:', user?.emailVerified);
@@ -115,10 +118,30 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
     e.preventDefault();
     setLoading(true);
     
+    // Check if Firebase is ready
+    if (!firebaseReady) {
+      toast.error("Authentication Error", {
+        description: "Authentication service is initializing. Please wait and try again.",
+        duration: 5000,
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (firebaseError) {
+      toast.error("Authentication Error", {
+        description: `Authentication service error: ${firebaseError}`,
+        duration: 5000,
+      });
+      setLoading(false);
+      return;
+    }
+    
     // Get the current user's ID token with force refresh
     let idToken = '';
     try {
-      const currentUser = auth?.currentUser;
+      const authService = auth();
+      const currentUser = authService?.currentUser;
       if (!currentUser) {
         throw new Error("User not authenticated");
       }
@@ -131,6 +154,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       });
       // Redirect to the sign-in page after showing the error
       window.location.href = '/sign-in';
+      setLoading(false);
       return;
     }
 

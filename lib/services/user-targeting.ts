@@ -50,7 +50,12 @@ export class UserTargetingService {
    * Get the current user's ID
    */
   getCurrentUserId(): string | null {
-    return auth?.currentUser?.uid || null;
+    try {
+      const authInstance = auth();
+      return authInstance?.currentUser?.uid || null;
+    } catch {
+      return null;
+    }
   }
 
   /**

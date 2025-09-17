@@ -5,7 +5,7 @@
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth as getFirebaseAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 // Firebase configuration interface
@@ -69,7 +69,7 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
-function initializeFirebase() {
+async function initializeFirebaseInternal() {
   // Only initialize on client side
   if (typeof window === 'undefined') {
     console.log('🔥 Firebase initialization skipped on server side');
@@ -100,8 +100,8 @@ function initializeFirebase() {
       console.log('🔥 Firebase app initialized successfully');
     }
 
-    // Initialize Firebase services
-    auth = getAuth(app);
+    // Initialize Firebase services directly (not through getters)
+    auth = getFirebaseAuth(app);
     db = getFirestore(app);
     
     // Initialize Google Auth Provider
@@ -120,37 +120,65 @@ function initializeFirebase() {
 
   } catch (error) {
     console.error('🔥 Firebase initialization error:', error);
-    
-    // Create fallback mock objects to prevent errors
-    auth = {
-      currentUser: null,
-      signOut: async () => {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('auth_token');
-          sessionStorage.removeItem('auth_token');
-          window.location.reload();
-        }
-      },
-      onAuthStateChanged: (callback: (user: any) => void) => {
-        callback(null);
-        return () => {};
-      }
-    } as any;
-    
-    googleProvider = {
-      setCustomParameters: () => {},
-      addScope: () => {}
-    } as any;
+    throw error; // Don't create fallback mocks, let the error propagate
   }
 }
 
-// Initialize Firebase when this module is loaded (client-side only)
-if (typeof window !== 'undefined') {
-  initializeFirebase();
+// Firebase readiness state
+let firebaseReady = false;
+
+// Initialize Firebase manually (not on module load)
+export async function initializeFirebaseAsync(): Promise<void> {
+  if (firebaseReady) {
+    return;
+  }
+  
+  // Call the internal initialization without using getters
+  await initializeFirebaseInternal();
+  
+  if (auth && googleProvider) {
+    firebaseReady = true;
+    // Dispatch ready event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('firebase-ready'));
+      (window as any).__FIREBASE_READY__ = true;
+    }
+    console.log('🔥 Firebase services are now ready');
+  }
 }
 
-// Export Firebase services with null checks
-export { auth, db, googleProvider, app };
+// Getters that check readiness
+function getAuth() {
+  if (!firebaseReady) {
+    throw new Error('Firebase Auth not ready. Please wait for initialization to complete.');
+  }
+  return auth;
+}
+
+function getGoogleProvider() {
+  if (!firebaseReady) {
+    throw new Error('Google Auth Provider not ready. Please wait for initialization to complete.');
+  }
+  return googleProvider;
+}
+
+function getDb() {
+  if (!firebaseReady) {
+    throw new Error('Firestore not ready. Please wait for initialization to complete.');
+  }
+  return db;
+}
+
+function getApp() {
+  if (!firebaseReady) {
+    throw new Error('Firebase App not ready. Please wait for initialization to complete.');
+  }
+  return app;
+}
+
+// Export getters and readiness checker
+export { getAuth as auth, getDb as db, getGoogleProvider as googleProvider, getApp as app };
+export const isFirebaseReady = () => firebaseReady;
 
 // Export default for backward compatibility
 export default {

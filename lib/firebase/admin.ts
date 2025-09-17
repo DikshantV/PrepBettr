@@ -78,6 +78,14 @@ async function initializeFirebaseAdmin(): Promise<any> {
       hasPrivateKey: !!firebaseConfig.privateKey && firebaseConfig.privateKey.length > 0
     });
 
+    // Debug: Show what configuration sources we tried
+    console.log('🔥 Firebase config sources:', {
+      azureConfig: !!config['FIREBASE_CLIENT_EMAIL'],
+      envVars: !!process.env.FIREBASE_CLIENT_EMAIL,
+      projectIdFromEnv: !!process.env.FIREBASE_PROJECT_ID,
+      projectIdFromAzure: !!config['FIREBASE_PROJECT_ID']
+    });
+
     // Validate project ID
     if (!firebaseConfig.projectId || firebaseConfig.projectId === 'prepbettr') {
       console.warn('🔥 Using default project ID - this may cause authentication issues');
@@ -111,10 +119,19 @@ async function initializeFirebaseAdmin(): Promise<any> {
       });
     } else {
       console.warn('🔥 Missing service account credentials, initializing with project ID only');
+      console.warn('🔥 This will work for development but ID token verification will fail');
       
-      adminApp = admin.initializeApp({
-        projectId: firebaseConfig.projectId
-      });
+      // For development, create a Firebase Admin app without credentials
+      // This won't be able to verify ID tokens but can still connect to Firestore in some cases
+      try {
+        adminApp = admin.initializeApp({
+          projectId: firebaseConfig.projectId
+        });
+        console.log('🔥 Firebase Admin initialized without service account (development mode)');
+      } catch (credentialError) {
+        console.error('🔥 Failed to initialize even without credentials:', credentialError);
+        throw credentialError;
+      }
     }
 
     console.log('🔥 Firebase Admin SDK initialized successfully');

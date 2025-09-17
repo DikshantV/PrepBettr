@@ -8,6 +8,7 @@ import Providers from "./providers";
 import { initializeAzureServices } from '@/lib/azure-startup';
 import { RetryWithBackoff } from '@/lib/utils/retry-with-backoff';
 import { ErrorHandler } from '@/lib/middleware/error-handler';
+import FirebaseClientInit from "@/components/FirebaseClientInit";
 
 import "./globals.css";
 import TestHelperInitializer from "@/components/test/TestHelperInitializer";
@@ -69,9 +70,11 @@ export default function RootLayout({
             <LoadingProvider>
                 <RouterLoadingHandler />
                 <TelemetryProvider>
-                    {/* TestHelperInitializer for E2E tests */}
-                    {(process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TESTING === 'true') && <TestHelperInitializer />}
-                    {children}
+                    <FirebaseClientInit>
+                        {/* TestHelperInitializer for E2E tests */}
+                        {(process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TESTING === 'true') && <TestHelperInitializer />}
+                        {children}
+                    </FirebaseClientInit>
                 </TelemetryProvider>
             </LoadingProvider>
         </Providers>

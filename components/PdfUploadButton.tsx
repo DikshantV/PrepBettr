@@ -16,6 +16,7 @@ import Uploady, {
 import { asUploadButton } from '@rpldy/upload-button';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/firebase/client';
+import { useFirebaseReady } from '@/components/FirebaseClientInit';
 import { useTelemetry } from '@/components/providers/TelemetryProvider';
 
 type UploadResponse = {
@@ -316,6 +317,7 @@ const PdfUploadButton = ({
 // Main component with Uploady provider
 export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
   const { user } = useAuth();
+  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
   const [authHeaders, setAuthHeaders] = useState<Record<string, string>>({
     'Accept': 'application/json',
     'Cache-Control': 'no-cache'
@@ -325,14 +327,32 @@ export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
   React.useEffect(() => {
     const updateAuthHeaders = async () => {
       try {
-        if (user && auth && auth.currentUser) {
-          const idToken = await auth.currentUser.getIdToken();
-          setAuthHeaders(prev => ({
-            ...prev,
-            'Authorization': `Bearer ${idToken}`
-          }));
+        if (user && firebaseReady && !firebaseError) {
+          try {
+            const authService = auth();
+            if (authService?.currentUser) {
+              const idToken = await authService.currentUser.getIdToken();
+              setAuthHeaders(prev => ({
+                ...prev,
+                'Authorization': `Bearer ${idToken}`
+              }));
+            } else {
+              // Remove auth header if no current user
+              setAuthHeaders(prev => {
+                const { Authorization, ...rest } = prev;
+                return rest;
+              });
+            }
+          } catch (firebaseError) {
+            console.error('Error accessing Firebase auth:', firebaseError);
+            // Remove auth header if Firebase access fails
+            setAuthHeaders(prev => {
+              const { Authorization, ...rest } = prev;
+              return rest;
+            });
+          }
         } else {
-          // Remove auth header if no user
+          // Remove auth header if no user or Firebase not ready
           setAuthHeaders(prev => {
             const { Authorization, ...rest } = prev;
             return rest;
@@ -345,7 +365,7 @@ export default function PdfUploadButtonWrapper(props: PdfUploadButtonProps) {
     };
 
     updateAuthHeaders();
-  }, [user]);
+  }, [user, firebaseReady, firebaseError]);
 
   return (
     <Uploady

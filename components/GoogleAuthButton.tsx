@@ -1,11 +1,13 @@
 "use client";
 
-import { authenticateWithGoogle, validateFirebaseIdToken } from "@/lib/firebase/auth.js";
+import { auth, googleProvider } from "@/firebase/client";
+import { signInWithPopup, getIdToken } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import RedirectGuard from "@/lib/utils/redirect-guard";
+import { useFirebaseReady } from "@/components/FirebaseClientInit";
 
 interface GoogleAuthButtonProps {
   mode: 'signin' | 'signup';
@@ -15,20 +17,46 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
+  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
 
   // Note: Redirect is now handled by middleware after successful authentication
   // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
 
   const handleGoogleAuth = async () => {
     if (isLoading) return; // Prevent multiple clicks
+    
+    // Check if Firebase is ready
+    if (!firebaseReady) {
+      toast.error('Authentication service is still initializing. Please wait a moment.');
+      return;
+    }
+    
+    if (firebaseError) {
+      toast.error(`Authentication service error: ${firebaseError}`);
+      return;
+    }
+    
     setIsLoading(true);
     console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
     
-    // Use the Firebase auth helper for better error handling
-    
     try {
-      console.log('🔐 Starting Google authentication using Firebase helper...');
-      const { user, idToken } = await authenticateWithGoogle();
+      console.log('🔐 Starting Google authentication using Firebase...');
+      
+      // Get Firebase services safely
+      const authService = auth();
+      const providerService = googleProvider();
+      
+      if (!authService || !providerService) {
+        throw new Error('Firebase services not available');
+      }
+      
+      // Perform Google sign-in
+      const result = await signInWithPopup(authService, providerService);
+      const user = result.user;
+      
+      if (!user) {
+        throw new Error('No user returned from Google authentication');
+      }
       
       console.log('🔐 Firebase authentication successful:', {
         uid: user.uid,
@@ -37,12 +65,14 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         emailVerified: user.emailVerified
       });
       
-      // Validate the Firebase ID token
-      if (!validateFirebaseIdToken(idToken)) {
+      // Get Firebase ID token
+      const idToken = await getIdToken(user, true); // Force refresh
+      
+      if (!idToken || !idToken.includes('.')) {
         throw new Error('Invalid Firebase ID token received');
       }
       
-      console.log('🔐 Firebase ID token validated successfully');
+      console.log('🔐 Firebase ID token obtained successfully');
       console.log(`🔐 Attempting ${mode} with Firebase ID token...`);
       
       if (!user.email) {
@@ -185,8 +215,15 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     }
   };
 
-  const buttonText = 'Google';
-  const loadingText = mode === 'signup' ? 'Creating account...' : 'Signing in...';
+  // Determine button states based on Firebase readiness
+  const isButtonDisabled = !firebaseReady || isLoading || !!firebaseError;
+  
+  const getButtonText = () => {
+    if (!firebaseReady) return 'Loading auth...';
+    if (firebaseError) return 'Auth unavailable';
+    if (isLoading) return mode === 'signup' ? 'Creating account...' : 'Signing in...';
+    return 'Google';
+  };
 
   return (
     <Button 
@@ -194,12 +231,18 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
       type="button" 
       className="w-full flex items-center justify-center gap-3 !bg-dark-200 hover:!bg-dark-200/80 !text-light-100 !border-white/20 hover:!border-white/30 !rounded-full !min-h-12"
       onClick={handleGoogleAuth}
-      disabled={isLoading}
+      disabled={isButtonDisabled}
+      data-testid="google-auth-button"
     >
-      {isLoading ? (
+      {(!firebaseReady || isLoading) ? (
         <>
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-400"></div>
-          <span>{loadingText}</span>
+          <span>{getButtonText()}</span>
+        </>
+      ) : firebaseError ? (
+        <>
+          <div className="w-5 h-5 text-red-400">⚠</div>
+          <span>{getButtonText()}</span>
         </>
       ) : (
         <>
@@ -210,7 +253,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 6.35l3.68 2.84c.86-2.6 3.28-4.53 6.14-4.53z" fill="#EA4335"/>
             <path d="M1 1h22v22H1z" fill="none"/>
           </svg>
-          <span>{buttonText}</span>
+          <span>{getButtonText()}</span>
         </>
       )}
     </Button>

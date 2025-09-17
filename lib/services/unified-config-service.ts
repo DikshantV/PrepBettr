@@ -553,12 +553,14 @@ class UnifiedConfigService {
       const { getRemoteConfig, getValue } = await import('firebase/remote-config');
       const { app } = await import('@/firebase/client');
       
-      if (!app) {
+      // Get the Firebase app instance
+      const firebaseApp = app();
+      if (!firebaseApp) {
         console.warn('Firebase app not available');
         return null;
       }
       
-      const remoteConfig = getRemoteConfig(app);
+      const remoteConfig = getRemoteConfig(firebaseApp);
       const value = getValue(remoteConfig, key);
       
       return value.asString();
