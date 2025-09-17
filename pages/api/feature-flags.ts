@@ -31,14 +31,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Return default flags on error
     return res.status(200).json({
-      autoApplyAzure: false,
-      portalIntegration: false,
       voiceInterview: false,
       premiumFeatures: false,
       newUI: false,
       rolloutStatus: {
-        autoApplyAzure: false,
-        portalIntegration: false,
         voiceInterview: false,
         premiumFeatures: false,
         newUI: false,

@@ -3,8 +3,6 @@ import { useUnifiedConfig } from '@/lib/hooks/useUnifiedConfig';
 
 // Define types locally to avoid importing server-only modules
 export interface FeatureFlags {
-  autoApplyAzure: boolean;
-  portalIntegration: boolean;
   voiceInterview: boolean;
   premiumFeatures: boolean;
   newUI: boolean;
@@ -12,8 +10,6 @@ export interface FeatureFlags {
 
 export interface EnhancedFeatureFlags extends FeatureFlags {
   rolloutStatus: {
-    autoApplyAzure: boolean;
-    portalIntegration: boolean;
     voiceInterview: boolean;
     premiumFeatures: boolean;
     newUI: boolean;
@@ -53,14 +49,10 @@ export const useFeatureFlags = () => {
         // Set default flags if loading fails
         if (!flags) {
           setFlags({
-            autoApplyAzure: false,
-            portalIntegration: false,
             voiceInterview: false,
             premiumFeatures: false,
             newUI: false,
             rolloutStatus: {
-              autoApplyAzure: false,
-              portalIntegration: false,
               voiceInterview: false,
               premiumFeatures: false,
               newUI: false,
@@ -104,8 +96,6 @@ export const useFeatureFlags = () => {
     getFeatureFlag,
     refreshFlags,
     // Convenience methods for specific flags
-    isAutoApplyAzureEnabled: () => getFeatureFlag('autoApplyAzure'),
-    isPortalIntegrationEnabled: () => getFeatureFlag('portalIntegration'),
     isVoiceInterviewEnabled: () => getFeatureFlag('voiceInterview'),
     isPremiumFeaturesEnabled: () => getFeatureFlag('premiumFeatures'),
     isNewUIEnabled: () => getFeatureFlag('newUI'),

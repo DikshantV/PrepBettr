@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const [reminderTime, setReminderTime] = useState('08:00');
   const timeInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { flags, loading, refreshFlags, isAutoApplyAzureEnabled, isPortalIntegrationEnabled } = useFeatureFlags();
+  const { flags, loading, refreshFlags } = useFeatureFlags();
 
   const handleLogout = async () => {
     try {
@@ -98,57 +98,10 @@ export default function SettingsPage() {
               ) : (
                 <>
                   <div className="space-y-3">
-                    {/* Azure Auto-Apply Feature */}
-                    <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
-                      <div className="flex-1">
-                        <Label className="text-white font-medium">Auto-Apply with Azure AI</Label>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Automatically apply to jobs using advanced Azure OpenAI integration
-                        </p>
-                        {flags?.rolloutStatus?.autoApplyAzure && (
-                          <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-900 text-blue-200 rounded">
-                            You're in the beta rollout!
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center ml-4">
-                        <Switch 
-                          checked={isAutoApplyAzureEnabled()} 
-                          disabled={!flags?.rolloutStatus?.autoApplyAzure}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Portal Integration Feature */}
-                    <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
-                      <div className="flex-1">
-                        <Label className="text-white font-medium">Enhanced Portal Integration</Label>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Seamless integration with LinkedIn, Indeed, and other job portals
-                        </p>
-                        {flags?.rolloutStatus?.portalIntegration && (
-                          <span className="inline-block mt-1 px-2 py-1 text-xs bg-blue-900 text-blue-200 rounded">
-                            You're in the beta rollout!
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center ml-4">
-                        <Switch 
-                          checked={isPortalIntegrationEnabled()} 
-                          disabled={!flags?.rolloutStatus?.portalIntegration}
-                        />
-                      </div>
-                    </div>
+                    <p className="text-gray-400 text-center py-8">
+                      Beta AI features will appear here as they become available.
+                    </p>
                   </div>
-
-                  {(!flags?.rolloutStatus?.autoApplyAzure && !flags?.rolloutStatus?.portalIntegration) && (
-                    <Alert className="mt-4 border-blue-600 bg-blue-900/20">
-                      <AlertCircle className="h-4 w-4 text-blue-400" />
-                      <AlertDescription className="text-blue-200">
-                        These features are currently in beta rollout. You'll be automatically included as we expand to more users.
-                      </AlertDescription>
-                    </Alert>
-                  )}
 
                   <Button 
                     variant="outline" 

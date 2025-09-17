@@ -1,0 +1,240 @@
+6c7bab2d5e0f07a0029954f7097f6d67
+"use strict";
+
+/* istanbul ignore next */
+function cov_1kmv1prehh() {
+  var path = "/Users/dikshantvashistha/PrepBettr/app/api/auth/signout/route.ts";
+  var hash = "20da5e7e36b8f2fa1824e474258730bdcf7bdc60";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/app/api/auth/signout/route.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 2,
+          column: 62
+        }
+      },
+      "1": {
+        start: {
+          line: 3,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 20
+        }
+      },
+      "2": {
+        start: {
+          line: 4,
+          column: 17
+        },
+        end: {
+          line: 4,
+          column: 39
+        }
+      },
+      "3": {
+        start: {
+          line: 5,
+          column: 18
+        },
+        end: {
+          line: 5,
+          column: 41
+        }
+      },
+      "4": {
+        start: {
+          line: 6,
+          column: 28
+        },
+        end: {
+          line: 6,
+          column: 37
+        }
+      },
+      "5": {
+        start: {
+          line: 8,
+          column: 4
+        },
+        end: {
+          line: 20,
+          column: 5
+        }
+      },
+      "6": {
+        start: {
+          line: 10,
+          column: 28
+        },
+        end: {
+          line: 10,
+          column: 58
+        }
+      },
+      "7": {
+        start: {
+          line: 11,
+          column: 8
+        },
+        end: {
+          line: 11,
+          column: 48
+        }
+      },
+      "8": {
+        start: {
+          line: 12,
+          column: 8
+        },
+        end: {
+          line: 15,
+          column: 11
+        }
+      },
+      "9": {
+        start: {
+          line: 18,
+          column: 8
+        },
+        end: {
+          line: 18,
+          column: 47
+        }
+      },
+      "10": {
+        start: {
+          line: 19,
+          column: 8
+        },
+        end: {
+          line: 19,
+          column: 95
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "POST",
+        decl: {
+          start: {
+            line: 7,
+            column: 15
+          },
+          end: {
+            line: 7,
+            column: 19
+          }
+        },
+        loc: {
+          start: {
+            line: 7,
+            column: 29
+          },
+          end: {
+            line: 21,
+            column: 1
+          }
+        },
+        line: 7
+      }
+    },
+    branchMap: {},
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0
+    },
+    f: {
+      "0": 0
+    },
+    b: {},
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/app/api/auth/signout/route.ts",
+      mappings: ";;AAKA,oBAkBC;AAvBD,wCAAwD;AACxD,0CAAuC;AAEvC,MAAM,mBAAmB,GAAG,SAAS,CAAC;AAE/B,KAAK,UAAU,IAAI,CAAC,OAAoB;IAC7C,IAAI,CAAC;QACH,uBAAuB;QACvB,MAAM,WAAW,GAAG,MAAM,IAAA,iBAAO,GAAE,CAAC;QACpC,WAAW,CAAC,MAAM,CAAC,mBAAmB,CAAC,CAAC;QAExC,OAAO,qBAAY,CAAC,IAAI,CAAC;YACvB,OAAO,EAAE,IAAI;YACb,OAAO,EAAE,yBAAyB;SACnC,CAAC,CAAC;IAEL,CAAC;IAAC,OAAO,KAAK,EAAE,CAAC;QACf,OAAO,CAAC,KAAK,CAAC,gBAAgB,EAAE,KAAK,CAAC,CAAC;QACvC,OAAO,qBAAY,CAAC,IAAI,CACtB,EAAE,KAAK,EAAE,uBAAuB,EAAE,EAClC,EAAE,MAAM,EAAE,GAAG,EAAE,CAChB,CAAC;IACJ,CAAC;AACH,CAAC",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/app/api/auth/signout/route.ts"],
+      sourcesContent: ["import { NextRequest, NextResponse } from 'next/server';\nimport { cookies } from 'next/headers';\n\nconst SESSION_COOKIE_NAME = 'session';\n\nexport async function POST(request: NextRequest) {\n  try {\n    // Clear session cookie\n    const cookieStore = await cookies();\n    cookieStore.delete(SESSION_COOKIE_NAME);\n    \n    return NextResponse.json({\n      success: true,\n      message: 'Signed out successfully'\n    });\n\n  } catch (error) {\n    console.error('Signout error:', error);\n    return NextResponse.json(\n      { error: 'Internal server error' },\n      { status: 500 }\n    );\n  }\n}\n"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "20da5e7e36b8f2fa1824e474258730bdcf7bdc60"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_1kmv1prehh = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_1kmv1prehh();
+cov_1kmv1prehh().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/* istanbul ignore next */
+cov_1kmv1prehh().s[1]++;
+exports.POST = POST;
+const server_1 =
+/* istanbul ignore next */
+(cov_1kmv1prehh().s[2]++, require("next/server"));
+const headers_1 =
+/* istanbul ignore next */
+(cov_1kmv1prehh().s[3]++, require("next/headers"));
+const SESSION_COOKIE_NAME =
+/* istanbul ignore next */
+(cov_1kmv1prehh().s[4]++, 'session');
+async function POST(request) {
+  /* istanbul ignore next */
+  cov_1kmv1prehh().f[0]++;
+  cov_1kmv1prehh().s[5]++;
+  try {
+    // Clear session cookie
+    const cookieStore =
+    /* istanbul ignore next */
+    (cov_1kmv1prehh().s[6]++, await (0, headers_1.cookies)());
+    /* istanbul ignore next */
+    cov_1kmv1prehh().s[7]++;
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    /* istanbul ignore next */
+    cov_1kmv1prehh().s[8]++;
+    return server_1.NextResponse.json({
+      success: true,
+      message: 'Signed out successfully'
+    });
+  } catch (error) {
+    /* istanbul ignore next */
+    cov_1kmv1prehh().s[9]++;
+    console.error('Signout error:', error);
+    /* istanbul ignore next */
+    cov_1kmv1prehh().s[10]++;
+    return server_1.NextResponse.json({
+      error: 'Internal server error'
+    }, {
+      status: 500
+    });
+  }
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfMWttdjFwcmVoaCIsImFjdHVhbENvdmVyYWdlIiwicyIsImV4cG9ydHMiLCJQT1NUIiwic2VydmVyXzEiLCJyZXF1aXJlIiwiaGVhZGVyc18xIiwiU0VTU0lPTl9DT09LSUVfTkFNRSIsInJlcXVlc3QiLCJmIiwiY29va2llU3RvcmUiLCJjb29raWVzIiwiZGVsZXRlIiwiTmV4dFJlc3BvbnNlIiwianNvbiIsInN1Y2Nlc3MiLCJtZXNzYWdlIiwiZXJyb3IiLCJjb25zb2xlIiwic3RhdHVzIl0sInNvdXJjZXMiOlsiL1VzZXJzL2Rpa3NoYW50dmFzaGlzdGhhL1ByZXBCZXR0ci9hcHAvYXBpL2F1dGgvc2lnbm91dC9yb3V0ZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBOZXh0UmVxdWVzdCwgTmV4dFJlc3BvbnNlIH0gZnJvbSAnbmV4dC9zZXJ2ZXInO1xuaW1wb3J0IHsgY29va2llcyB9IGZyb20gJ25leHQvaGVhZGVycyc7XG5cbmNvbnN0IFNFU1NJT05fQ09PS0lFX05BTUUgPSAnc2Vzc2lvbic7XG5cbmV4cG9ydCBhc3luYyBmdW5jdGlvbiBQT1NUKHJlcXVlc3Q6IE5leHRSZXF1ZXN0KSB7XG4gIHRyeSB7XG4gICAgLy8gQ2xlYXIgc2Vzc2lvbiBjb29raWVcbiAgICBjb25zdCBjb29raWVTdG9yZSA9IGF3YWl0IGNvb2tpZXMoKTtcbiAgICBjb29raWVTdG9yZS5kZWxldGUoU0VTU0lPTl9DT09LSUVfTkFNRSk7XG4gICAgXG4gICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHtcbiAgICAgIHN1Y2Nlc3M6IHRydWUsXG4gICAgICBtZXNzYWdlOiAnU2lnbmVkIG91dCBzdWNjZXNzZnVsbHknXG4gICAgfSk7XG5cbiAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICBjb25zb2xlLmVycm9yKCdTaWdub3V0IGVycm9yOicsIGVycm9yKTtcbiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oXG4gICAgICB7IGVycm9yOiAnSW50ZXJuYWwgc2VydmVyIGVycm9yJyB9LFxuICAgICAgeyBzdGF0dXM6IDUwMCB9XG4gICAgKTtcbiAgfVxufVxuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7SUFnQkc7SUFBQUEsY0FBQSxZQUFBQSxDQUFBO01BQUEsT0FBQUMsY0FBQTtJQUFBO0VBQUE7RUFBQSxPQUFBQSxjQUFBO0FBQUE7QUFBQUQsY0FBQTtBQUFBQSxjQUFBLEdBQUFFLENBQUE7Ozs7OztBQVhIQyxPQUFBLENBQUFDLElBQUEsR0FBQUEsSUFBQTtBQUxBLE1BQUFDLFFBQUE7QUFBQTtBQUFBLENBQUFMLGNBQUEsR0FBQUUsQ0FBQSxPQUFBSSxPQUFBO0FBQ0EsTUFBQUMsU0FBQTtBQUFBO0FBQUEsQ0FBQVAsY0FBQSxHQUFBRSxDQUFBLE9BQUFJLE9BQUE7QUFFQSxNQUFNRSxtQkFBbUI7QUFBQTtBQUFBLENBQUFSLGNBQUEsR0FBQUUsQ0FBQSxPQUFHLFNBQVM7QUFFOUIsZUFBZUUsSUFBSUEsQ0FBQ0ssT0FBb0I7RUFBQTtFQUFBVCxjQUFBLEdBQUFVLENBQUE7RUFBQVYsY0FBQSxHQUFBRSxDQUFBO0VBQzdDLElBQUk7SUFDRjtJQUNBLE1BQU1TLFdBQVc7SUFBQTtJQUFBLENBQUFYLGNBQUEsR0FBQUUsQ0FBQSxPQUFHLE1BQU0sSUFBQUssU0FBQSxDQUFBSyxPQUFPLEdBQUU7SUFBQztJQUFBWixjQUFBLEdBQUFFLENBQUE7SUFDcENTLFdBQVcsQ0FBQ0UsTUFBTSxDQUFDTCxtQkFBbUIsQ0FBQztJQUFDO0lBQUFSLGNBQUEsR0FBQUUsQ0FBQTtJQUV4QyxPQUFPRyxRQUFBLENBQUFTLFlBQVksQ0FBQ0MsSUFBSSxDQUFDO01BQ3ZCQyxPQUFPLEVBQUUsSUFBSTtNQUNiQyxPQUFPLEVBQUU7S0FDVixDQUFDO0VBRUosQ0FBQyxDQUFDLE9BQU9DLEtBQUssRUFBRTtJQUFBO0lBQUFsQixjQUFBLEdBQUFFLENBQUE7SUFDZGlCLE9BQU8sQ0FBQ0QsS0FBSyxDQUFDLGdCQUFnQixFQUFFQSxLQUFLLENBQUM7SUFBQztJQUFBbEIsY0FBQSxHQUFBRSxDQUFBO0lBQ3ZDLE9BQU9HLFFBQUEsQ0FBQVMsWUFBWSxDQUFDQyxJQUFJLENBQ3RCO01BQUVHLEtBQUssRUFBRTtJQUF1QixDQUFFLEVBQ2xDO01BQUVFLE1BQU0sRUFBRTtJQUFHLENBQUUsQ0FDaEI7RUFDSDtBQUNGIiwiaWdub3JlTGlzdCI6W119

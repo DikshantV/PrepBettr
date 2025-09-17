@@ -3,8 +3,6 @@ import { userTargetingService, UserTargetingService } from './user-targeting';
 
 // Updated interface to match unified config schema
 export interface FeatureFlags {
-  autoApplyAzure: boolean;
-  portalIntegration: boolean;
   voiceInterview: boolean;
   voiceInterviewV2: boolean;
   premiumFeatures: boolean;
@@ -14,8 +12,6 @@ export interface FeatureFlags {
 export interface EnhancedFeatureFlags extends FeatureFlags {
   // Rollout status for each feature
   rolloutStatus: {
-    autoApplyAzure: boolean;
-    portalIntegration: boolean;
     voiceInterview: boolean;
     voiceInterviewV2: boolean;
     premiumFeatures: boolean;
@@ -71,8 +67,6 @@ class FeatureFlagsService {
       
       // Extract flags from config keys
       const globalFlags: FeatureFlags = {
-        autoApplyAzure: allConfigs['features.autoApplyAzure'] || false,
-        portalIntegration: allConfigs['features.portalIntegration'] || false,
         voiceInterview: allConfigs['features.voiceInterview'] || false,
         voiceInterviewV2: allConfigs['features.voiceInterviewV2'] || false,
         premiumFeatures: allConfigs['features.premiumFeatures'] || false,
@@ -84,15 +78,11 @@ class FeatureFlagsService {
       
       // Combine both: feature must be enabled globally AND user must be in rollout
       const enhancedFlags: EnhancedFeatureFlags = {
-        autoApplyAzure: globalFlags.autoApplyAzure && rolloutStatus.autoApplyAzure,
-        portalIntegration: globalFlags.portalIntegration && rolloutStatus.portalIntegration,
         voiceInterview: globalFlags.voiceInterview && rolloutStatus.voiceInterview,
         voiceInterviewV2: globalFlags.voiceInterviewV2 && rolloutStatus.voiceInterviewV2,
         premiumFeatures: globalFlags.premiumFeatures && rolloutStatus.premiumFeatures,
         newUI: globalFlags.newUI && rolloutStatus.newUI,
         rolloutStatus: {
-          autoApplyAzure: rolloutStatus.autoApplyAzure || false,
-          portalIntegration: rolloutStatus.portalIntegration || false,
           voiceInterview: rolloutStatus.voiceInterview || false,
           voiceInterviewV2: rolloutStatus.voiceInterviewV2 || false,
           premiumFeatures: rolloutStatus.premiumFeatures || false,
@@ -104,15 +94,11 @@ class FeatureFlagsService {
     } catch (error) {
       console.error('Error getting all feature flags:', error);
       return {
-        autoApplyAzure: false,
-        portalIntegration: false,
         voiceInterview: false,
         voiceInterviewV2: false,
         premiumFeatures: false,
         newUI: false,
         rolloutStatus: {
-          autoApplyAzure: false,
-          portalIntegration: false,
           voiceInterview: false,
           voiceInterviewV2: false,
           premiumFeatures: false,
@@ -132,13 +118,6 @@ class FeatureFlagsService {
   /**
    * Convenience methods for specific features
    */
-  async isAutoApplyAzureEnabled(): Promise<boolean> {
-    return this.getFeatureFlag('autoApplyAzure');
-  }
-
-  async isPortalIntegrationEnabled(): Promise<boolean> {
-    return this.getFeatureFlag('portalIntegration');
-  }
 
   /**
    * Get debug information about feature flags
@@ -159,8 +138,6 @@ class FeatureFlagsService {
       unifiedConfig,
       rolloutStatus,
       finalFlags: {
-        autoApplyAzure: finalFlags.autoApplyAzure,
-        portalIntegration: finalFlags.portalIntegration,
         voiceInterview: finalFlags.voiceInterview,
         voiceInterviewV2: finalFlags.voiceInterviewV2,
         premiumFeatures: finalFlags.premiumFeatures,

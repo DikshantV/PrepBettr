@@ -1,0 +1,66 @@
+ca5e7064999f9be1732a3739e096d189
+"use strict";
+
+/**
+ * Notification Domain Types
+ *
+ * Extracted from the large notification-service.ts file.
+ * Contains all type definitions used across the notification system.
+ */
+/* istanbul ignore next */
+function cov_jlm64bho3() {
+  var path = "/Users/dikshantvashistha/PrepBettr/lib/services/notification/core/types.ts";
+  var hash = "f1a89de79fc5b0920e98138797cb8be6b924e8f7";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/dikshantvashistha/PrepBettr/lib/services/notification/core/types.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 8,
+          column: 0
+        },
+        end: {
+          line: 8,
+          column: 62
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      file: "/Users/dikshantvashistha/PrepBettr/lib/services/notification/core/types.ts",
+      mappings: ";AAAA;;;;;GAKG",
+      names: [],
+      sources: ["/Users/dikshantvashistha/PrepBettr/lib/services/notification/core/types.ts"],
+      sourcesContent: ["/**\n * Notification Domain Types\n * \n * Extracted from the large notification-service.ts file.\n * Contains all type definitions used across the notification system.\n */\n\nexport interface NotificationEvent {\n  id?: string;\n  userId: string;\n  type: NotificationType;\n  channel: NotificationChannel;\n  recipient: string;\n  subject: string;\n  content: string;\n  templateUsed?: string;\n  metadata?: Record<string, any>;\n  status: NotificationStatus;\n  createdAt: Date;\n  sentAt?: Date;\n  updatedAt?: Date;\n  error?: string;\n  messageId?: string;\n  jobId?: string;\n  applicationId?: string;\n}\n\nexport type NotificationType = \n  | 'job_discovered'\n  | 'application_submitted'\n  | 'follow_up_reminder'\n  | 'interview_scheduled'\n  | 'application_status_update'\n  | 'daily_summary'\n  | 'weekly_report'\n  | 'search_completed'\n  | 'quota_warning'\n  | 'welcome'\n  | 'verification'\n  | 'premium_upgrade';\n\nexport type NotificationChannel = 'email' | 'sms' | 'push' | 'in_app';\n\nexport type NotificationStatus = 'pending' | 'sent' | 'failed' | 'bounced' | 'delivered';\n\nexport interface JobDiscoveredData {\n  jobId: string;\n  jobTitle: string;\n  company: string;\n  location: string;\n  salary?: {\n    min?: number;\n    max?: number;\n    currency: string;\n    period: string;\n  };\n  relevancyScore: number;\n  matchedSkills: string[];\n  jobUrl?: string;\n  portal: string;\n}\n\nexport interface ApplicationSubmittedData {\n  applicationId: string;\n  jobId: string;\n  jobTitle: string;\n  company: string;\n  submittedAt: Date;\n  autoApplied: boolean;\n  coverLetterUsed: boolean;\n  resumeTailored: boolean;\n  relevancyScore: number;\n}\n\nexport interface FollowUpReminderData {\n  applicationId: string;\n  jobTitle: string;\n  company: string;\n  appliedDate: Date;\n  followUpType: 'initial' | 'second' | 'thank_you' | 'status_check';\n  suggestedMessage?: string;\n}\n\nexport interface DailySummaryData {\n  date: Date;\n  jobsFound: number;\n  applicationsSubmitted: number;\n  followUpsSent: number;\n  upcomingFollowUps: number;\n  topJobs: JobDiscoveredData[];\n}\n\nexport interface NotificationResult {\n  success: boolean;\n  error?: string;\n  messageId?: string;\n}\n\nexport interface EmailMessage {\n  to: string;\n  subject: string;\n  content: string;\n  html?: string;\n}\n\nexport interface EmailResult {\n  success: boolean;\n  messageId?: string;\n  error?: string;\n}\n\nexport interface EmailTemplateData {\n  userName: string;\n  [key: string]: any;\n}\n\nexport type EmailTemplateType = \n  | 'job_discovered'\n  | 'application_submitted'\n  | 'follow_up_reminder'\n  | 'daily_summary';\n\nexport interface NotificationHistoryOptions {\n  limit?: number;\n  type?: NotificationType;\n  status?: NotificationStatus;\n  startDate?: Date;\n  endDate?: Date;\n}\n\nexport interface NotificationStats {\n  total: number;\n  sent: number;\n  failed: number;\n  byType: Record<NotificationType, number>;\n}\n\nexport interface NotificationCleanupResult {\n  deleted: number;\n}"],
+      version: 3
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "f1a89de79fc5b0920e98138797cb8be6b924e8f7"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_jlm64bho3 = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_jlm64bho3();
+cov_jlm64bho3().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJjb3ZfamxtNjRiaG8zIiwicGF0aCIsImhhc2giLCJnbG9iYWwiLCJGdW5jdGlvbiIsImdjdiIsImNvdmVyYWdlRGF0YSIsInN0YXRlbWVudE1hcCIsInN0YXJ0IiwibGluZSIsImNvbHVtbiIsImVuZCIsImZuTWFwIiwiYnJhbmNoTWFwIiwicyIsImYiLCJiIiwiaW5wdXRTb3VyY2VNYXAiLCJmaWxlIiwibWFwcGluZ3MiLCJuYW1lcyIsInNvdXJjZXMiLCJzb3VyY2VzQ29udGVudCIsInZlcnNpb24iLCJfY292ZXJhZ2VTY2hlbWEiLCJjb3ZlcmFnZSIsImFjdHVhbENvdmVyYWdlIl0sInNvdXJjZXMiOlsiL1VzZXJzL2Rpa3NoYW50dmFzaGlzdGhhL1ByZXBCZXR0ci9saWIvc2VydmljZXMvbm90aWZpY2F0aW9uL2NvcmUvdHlwZXMudHMiXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBOb3RpZmljYXRpb24gRG9tYWluIFR5cGVzXG4gKiBcbiAqIEV4dHJhY3RlZCBmcm9tIHRoZSBsYXJnZSBub3RpZmljYXRpb24tc2VydmljZS50cyBmaWxlLlxuICogQ29udGFpbnMgYWxsIHR5cGUgZGVmaW5pdGlvbnMgdXNlZCBhY3Jvc3MgdGhlIG5vdGlmaWNhdGlvbiBzeXN0ZW0uXG4gKi9cblxuZXhwb3J0IGludGVyZmFjZSBOb3RpZmljYXRpb25FdmVudCB7XG4gIGlkPzogc3RyaW5nO1xuICB1c2VySWQ6IHN0cmluZztcbiAgdHlwZTogTm90aWZpY2F0aW9uVHlwZTtcbiAgY2hhbm5lbDogTm90aWZpY2F0aW9uQ2hhbm5lbDtcbiAgcmVjaXBpZW50OiBzdHJpbmc7XG4gIHN1YmplY3Q6IHN0cmluZztcbiAgY29udGVudDogc3RyaW5nO1xuICB0ZW1wbGF0ZVVzZWQ/OiBzdHJpbmc7XG4gIG1ldGFkYXRhPzogUmVjb3JkPHN0cmluZywgYW55PjtcbiAgc3RhdHVzOiBOb3RpZmljYXRpb25TdGF0dXM7XG4gIGNyZWF0ZWRBdDogRGF0ZTtcbiAgc2VudEF0PzogRGF0ZTtcbiAgdXBkYXRlZEF0PzogRGF0ZTtcbiAgZXJyb3I/OiBzdHJpbmc7XG4gIG1lc3NhZ2VJZD86IHN0cmluZztcbiAgam9iSWQ/OiBzdHJpbmc7XG4gIGFwcGxpY2F0aW9uSWQ/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCB0eXBlIE5vdGlmaWNhdGlvblR5cGUgPSBcbiAgfCAnam9iX2Rpc2NvdmVyZWQnXG4gIHwgJ2FwcGxpY2F0aW9uX3N1Ym1pdHRlZCdcbiAgfCAnZm9sbG93X3VwX3JlbWluZGVyJ1xuICB8ICdpbnRlcnZpZXdfc2NoZWR1bGVkJ1xuICB8ICdhcHBsaWNhdGlvbl9zdGF0dXNfdXBkYXRlJ1xuICB8ICdkYWlseV9zdW1tYXJ5J1xuICB8ICd3ZWVrbHlfcmVwb3J0J1xuICB8ICdzZWFyY2hfY29tcGxldGVkJ1xuICB8ICdxdW90YV93YXJuaW5nJ1xuICB8ICd3ZWxjb21lJ1xuICB8ICd2ZXJpZmljYXRpb24nXG4gIHwgJ3ByZW1pdW1fdXBncmFkZSc7XG5cbmV4cG9ydCB0eXBlIE5vdGlmaWNhdGlvbkNoYW5uZWwgPSAnZW1haWwnIHwgJ3NtcycgfCAncHVzaCcgfCAnaW5fYXBwJztcblxuZXhwb3J0IHR5cGUgTm90aWZpY2F0aW9uU3RhdHVzID0gJ3BlbmRpbmcnIHwgJ3NlbnQnIHwgJ2ZhaWxlZCcgfCAnYm91bmNlZCcgfCAnZGVsaXZlcmVkJztcblxuZXhwb3J0IGludGVyZmFjZSBKb2JEaXNjb3ZlcmVkRGF0YSB7XG4gIGpvYklkOiBzdHJpbmc7XG4gIGpvYlRpdGxlOiBzdHJpbmc7XG4gIGNvbXBhbnk6IHN0cmluZztcbiAgbG9jYXRpb246IHN0cmluZztcbiAgc2FsYXJ5Pzoge1xuICAgIG1pbj86IG51bWJlcjtcbiAgICBtYXg/OiBudW1iZXI7XG4gICAgY3VycmVuY3k6IHN0cmluZztcbiAgICBwZXJpb2Q6IHN0cmluZztcbiAgfTtcbiAgcmVsZXZhbmN5U2NvcmU6IG51bWJlcjtcbiAgbWF0Y2hlZFNraWxsczogc3RyaW5nW107XG4gIGpvYlVybD86IHN0cmluZztcbiAgcG9ydGFsOiBzdHJpbmc7XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgQXBwbGljYXRpb25TdWJtaXR0ZWREYXRhIHtcbiAgYXBwbGljYXRpb25JZDogc3RyaW5nO1xuICBqb2JJZDogc3RyaW5nO1xuICBqb2JUaXRsZTogc3RyaW5nO1xuICBjb21wYW55OiBzdHJpbmc7XG4gIHN1Ym1pdHRlZEF0OiBEYXRlO1xuICBhdXRvQXBwbGllZDogYm9vbGVhbjtcbiAgY292ZXJMZXR0ZXJVc2VkOiBib29sZWFuO1xuICByZXN1bWVUYWlsb3JlZDogYm9vbGVhbjtcbiAgcmVsZXZhbmN5U2NvcmU6IG51bWJlcjtcbn1cblxuZXhwb3J0IGludGVyZmFjZSBGb2xsb3dVcFJlbWluZGVyRGF0YSB7XG4gIGFwcGxpY2F0aW9uSWQ6IHN0cmluZztcbiAgam9iVGl0bGU6IHN0cmluZztcbiAgY29tcGFueTogc3RyaW5nO1xuICBhcHBsaWVkRGF0ZTogRGF0ZTtcbiAgZm9sbG93VXBUeXBlOiAnaW5pdGlhbCcgfCAnc2Vjb25kJyB8ICd0aGFua195b3UnIHwgJ3N0YXR1c19jaGVjayc7XG4gIHN1Z2dlc3RlZE1lc3NhZ2U/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgRGFpbHlTdW1tYXJ5RGF0YSB7XG4gIGRhdGU6IERhdGU7XG4gIGpvYnNGb3VuZDogbnVtYmVyO1xuICBhcHBsaWNhdGlvbnNTdWJtaXR0ZWQ6IG51bWJlcjtcbiAgZm9sbG93VXBzU2VudDogbnVtYmVyO1xuICB1cGNvbWluZ0ZvbGxvd1VwczogbnVtYmVyO1xuICB0b3BKb2JzOiBKb2JEaXNjb3ZlcmVkRGF0YVtdO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIE5vdGlmaWNhdGlvblJlc3VsdCB7XG4gIHN1Y2Nlc3M6IGJvb2xlYW47XG4gIGVycm9yPzogc3RyaW5nO1xuICBtZXNzYWdlSWQ/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgRW1haWxNZXNzYWdlIHtcbiAgdG86IHN0cmluZztcbiAgc3ViamVjdDogc3RyaW5nO1xuICBjb250ZW50OiBzdHJpbmc7XG4gIGh0bWw/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgRW1haWxSZXN1bHQge1xuICBzdWNjZXNzOiBib29sZWFuO1xuICBtZXNzYWdlSWQ/OiBzdHJpbmc7XG4gIGVycm9yPzogc3RyaW5nO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIEVtYWlsVGVtcGxhdGVEYXRhIHtcbiAgdXNlck5hbWU6IHN0cmluZztcbiAgW2tleTogc3RyaW5nXTogYW55O1xufVxuXG5leHBvcnQgdHlwZSBFbWFpbFRlbXBsYXRlVHlwZSA9IFxuICB8ICdqb2JfZGlzY292ZXJlZCdcbiAgfCAnYXBwbGljYXRpb25fc3VibWl0dGVkJ1xuICB8ICdmb2xsb3dfdXBfcmVtaW5kZXInXG4gIHwgJ2RhaWx5X3N1bW1hcnknO1xuXG5leHBvcnQgaW50ZXJmYWNlIE5vdGlmaWNhdGlvbkhpc3RvcnlPcHRpb25zIHtcbiAgbGltaXQ/OiBudW1iZXI7XG4gIHR5cGU/OiBOb3RpZmljYXRpb25UeXBlO1xuICBzdGF0dXM/OiBOb3RpZmljYXRpb25TdGF0dXM7XG4gIHN0YXJ0RGF0ZT86IERhdGU7XG4gIGVuZERhdGU/OiBEYXRlO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIE5vdGlmaWNhdGlvblN0YXRzIHtcbiAgdG90YWw6IG51bWJlcjtcbiAgc2VudDogbnVtYmVyO1xuICBmYWlsZWQ6IG51bWJlcjtcbiAgYnlUeXBlOiBSZWNvcmQ8Tm90aWZpY2F0aW9uVHlwZSwgbnVtYmVyPjtcbn1cblxuZXhwb3J0IGludGVyZmFjZSBOb3RpZmljYXRpb25DbGVhbnVwUmVzdWx0IHtcbiAgZGVsZXRlZDogbnVtYmVyO1xufSJdLCJtYXBwaW5ncyI6Ijs7QUFBQTs7Ozs7O0FBQUE7QUFBQSxTQUFBQSxjQUFBO0VBQUEsSUFBQUMsSUFBQTtFQUFBLElBQUFDLElBQUE7RUFBQSxJQUFBQyxNQUFBLE9BQUFDLFFBQUE7RUFBQSxJQUFBQyxHQUFBO0VBQUEsSUFBQUMsWUFBQTtJQUFBTCxJQUFBO0lBQUFNLFlBQUE7TUFBQTtRQUFBQyxLQUFBO1VBQUFDLElBQUE7VUFBQUMsTUFBQTtRQUFBO1FBQUFDLEdBQUE7VUFBQUYsSUFBQTtVQUFBQyxNQUFBO1FBQUE7TUFBQTtJQUFBO0lBQUFFLEtBQUE7SUFBQUMsU0FBQTtJQUFBQyxDQUFBO01BQUE7SUFBQTtJQUFBQyxDQUFBO0lBQUFDLENBQUE7SUFBQUMsY0FBQTtNQUFBQyxJQUFBO01BQUFDLFFBQUE7TUFBQUMsS0FBQTtNQUFBQyxPQUFBO01BQUFDLGNBQUE7TUFBQUMsT0FBQTtJQUFBO0lBQUFDLGVBQUE7SUFBQXRCLElBQUE7RUFBQTtFQUFBLElBQUF1QixRQUFBLEdBQUF0QixNQUFBLENBQUFFLEdBQUEsTUFBQUYsTUFBQSxDQUFBRSxHQUFBO0VBQUEsS0FBQW9CLFFBQUEsQ0FBQXhCLElBQUEsS0FBQXdCLFFBQUEsQ0FBQXhCLElBQUEsRUFBQUMsSUFBQSxLQUFBQSxJQUFBO0lBQUF1QixRQUFBLENBQUF4QixJQUFBLElBQUFLLFlBQUE7RUFBQTtFQUFBLElBQUFvQixjQUFBLEdBQUFELFFBQUEsQ0FBQXhCLElBQUE7RUFBQSIsImlnbm9yZUxpc3QiOltdfQ==

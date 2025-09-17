@@ -1,7 +1,7 @@
 // Auto-generated feature flags types
 // Generated at: 2025-08-18T14:49:26.286Z
 
-export type FeatureFlagName = 'voiceInterviews' | 'premiumFeatures' | 'autoApplyAzure' | 'portalIntegration' | 'maintenanceMode';
+export type FeatureFlagName = 'voiceInterviews' | 'premiumFeatures' | 'maintenanceMode';
 
 export interface FeatureFlag {
   enabled: boolean;
@@ -24,7 +24,5 @@ export interface FeatureFlagsConfig {
 export const FEATURE_FLAGS = {
   VOICEINTERVIEWS: 'voiceInterviews' as const,
   PREMIUMFEATURES: 'premiumFeatures' as const,
-  AUTOAPPLYAZURE: 'autoApplyAzure' as const,
-  PORTALINTEGRATION: 'portalIntegration' as const,
   MAINTENANCEMODE: 'maintenanceMode' as const
 } as const;

@@ -36,10 +36,7 @@ export default function FeatureFlagManager() {
   const [loading, setLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [errorBudgets, setErrorBudgets] = useState<Record<string, ErrorBudget>>({});
-  const [rolloutPercentages, setRolloutPercentages] = useState({
-    autoApplyAzure: 20,
-    portalIntegration: 15,
-  });
+  const [rolloutPercentages, setRolloutPercentages] = useState({});
 
   useEffect(() => {
     loadData();
@@ -163,146 +160,12 @@ export default function FeatureFlagManager() {
 
         {/* Rollout Control */}
         <TabsContent value="rollout" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Auto Apply Azure */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center justify-between">
-                  Auto Apply Azure
-                  <Badge variant={flags?.autoApplyAzure ? "default" : "secondary"}>
-                    {flags?.autoApplyAzure ? "Active" : "Inactive"}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-gray-300">Rollout Percentage</Label>
-                    <span className="text-white font-bold">
-                      {rolloutPercentages.autoApplyAzure}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={rolloutPercentages.autoApplyAzure} 
-                    className="h-2"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => decreaseRollout('autoApplyAzure')}
-                    className="flex items-center gap-1"
-                  >
-                    <TrendingDown className="h-3 w-3" />
-                    -5%
-                  </Button>
-                  <Button
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => increaseRollout('autoApplyAzure')}
-                    className="flex items-center gap-1"
-                  >
-                    <TrendingUp className="h-3 w-3" />
-                    +5%
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Custom Percentage</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={rolloutPercentages.autoApplyAzure}
-                      onChange={(e) => setRolloutPercentages(prev => ({ 
-                        ...prev, 
-                        autoApplyAzure: parseInt(e.target.value) || 0 
-                      }))}
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => updateRolloutPercentage('autoApplyAzure', rolloutPercentages.autoApplyAzure)}
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Portal Integration */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center justify-between">
-                  Portal Integration
-                  <Badge variant={flags?.portalIntegration ? "default" : "secondary"}>
-                    {flags?.portalIntegration ? "Active" : "Inactive"}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-gray-300">Rollout Percentage</Label>
-                    <span className="text-white font-bold">
-                      {rolloutPercentages.portalIntegration}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={rolloutPercentages.portalIntegration} 
-                    className="h-2"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => decreaseRollout('portalIntegration')}
-                    className="flex items-center gap-1"
-                  >
-                    <TrendingDown className="h-3 w-3" />
-                    -5%
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => increaseRollout('portalIntegration')}
-                    className="flex items-center gap-1"
-                  >
-                    <TrendingUp className="h-3 w-3" />
-                    +5%
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Custom Percentage</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={rolloutPercentages.portalIntegration}
-                      onChange={(e) => setRolloutPercentages(prev => ({ 
-                        ...prev, 
-                        portalIntegration: parseInt(e.target.value) || 0 
-                      }))}
-                      className="bg-gray-800 border-gray-600 text-white"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => updateRolloutPercentage('portalIntegration', rolloutPercentages.portalIntegration)}
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="text-center py-12">
+            <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-300 mb-2">No Feature Rollouts Active</h3>
+            <p className="text-gray-500">
+              Feature rollouts will appear here when configured.
+            </p>
           </div>
         </TabsContent>
 

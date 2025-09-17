@@ -5,9 +5,6 @@ class QueueService {
     constructor() {
         this.queueServiceClient = null;
         this.queues = {
-            SEARCH_JOBS: 'search-jobs',
-            PROCESS_APPLICATIONS: 'process-applications',
-            FOLLOW_UP_REMINDERS: 'follow-up-reminders',
             AUTOMATION_LOGS: 'automation-logs'
         };
     }

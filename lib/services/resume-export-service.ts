@@ -1,5 +1,6 @@
-import jsPDF from 'jspdf';
-import mammoth from 'mammoth';
+// Heavy PDF libraries will be imported dynamically to avoid bundling in main chunk
+// import jsPDF from 'jspdf';
+// import mammoth from 'mammoth';
 
 export interface ResumeData {
   personalInfo: {
@@ -90,6 +91,8 @@ export class ResumeExportService {
   }
 
   async generatePDF(resumeData: ResumeData, template: string = 'classic'): Promise<Blob> {
+    // Dynamic import to avoid bundling jsPDF in main bundle
+    const { default: jsPDF } = await import('jspdf');
     const pdf = new jsPDF();
     const templateConfig = ATS_TEMPLATES[template] || ATS_TEMPLATES.classic;
 

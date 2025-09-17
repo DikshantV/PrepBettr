@@ -187,7 +187,7 @@ export const techIconMap = {
   FaJoomla,
   FaApple,
   FaAndroid,
-  
+
   // Simple Icons
   SiNextdotjs,
   SiSvelte,

@@ -178,8 +178,9 @@ class ResumeProcessingService {
     let text = '';
 
     if (mimeType === 'application/pdf') {
-      const pdfParse = await import('pdf-parse');
-      const pdfData = await pdfParse.default(fileBuffer);
+      // Dynamic import to avoid bundling pdf-parse in main bundle
+      const { default: pdfParse } = await import('pdf-parse');
+      const pdfData = await pdfParse(fileBuffer);
       text = pdfData.text;
     } else if (mimeType.includes('text')) {
       text = fileBuffer.toString('utf-8');

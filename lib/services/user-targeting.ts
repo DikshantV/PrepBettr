@@ -88,16 +88,6 @@ export class UserTargetingService {
    * Predefined rollout configurations
    */
   static ROLLOUT_CONFIGS = {
-    autoApplyAzure: {
-      percentage: 5, // Start with 5% rollout
-      featureName: 'autoApplyAzure'
-    } as RolloutConfig,
-    
-    portalIntegration: {
-      percentage: 5, // Start with 5% rollout
-      featureName: 'portalIntegration'
-    } as RolloutConfig,
-    
     voiceInterview: {
       percentage: 10, // Start with 10% rollout
       featureName: 'voiceInterview'
@@ -124,8 +114,6 @@ export class UserTargetingService {
    */
   getCurrentUserRolloutStatus(): Record<string, boolean> {
     return {
-      autoApplyAzure: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.autoApplyAzure),
-      portalIntegration: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.portalIntegration),
       voiceInterview: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.voiceInterview),
       voiceInterviewV2: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.voiceInterviewV2),
       premiumFeatures: this.isCurrentUserInRollout(UserTargetingService.ROLLOUT_CONFIGS.premiumFeatures),
