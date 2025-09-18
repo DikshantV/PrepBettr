@@ -33,10 +33,7 @@ const BrandSlide = dynamic(() => import('@/components/BrandSlide'), {
 import FAQSection from '@/components/FAQsection';
 import Image from 'next/image';
 
-const SiteNavigation = dynamic(
-  () => import('@/components/SiteNavigation').then((mod) => mod.SiteNavigation),
-  { ssr: false }
-);
+import { SiteNavigation } from '@/components/SiteNavigation';
 
 export default function HomePage() {
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
