@@ -9,13 +9,16 @@ interface ScrollState {
 
 export function useScrollDirection() {
   const [scrollState, setScrollState] = useState<ScrollState>({
-    visible: false,
+    visible: true, // Initialize as visible for SSR
     isScrolled: false,
     isScrollingUp: false,
     lastScrollY: 0,
   });
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') return;
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       

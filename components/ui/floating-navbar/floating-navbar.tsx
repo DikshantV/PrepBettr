@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
@@ -25,12 +25,57 @@ export const FloatingNav = ({
   className?: string;
   onDashboardClick?: () => void;
 }) => {
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const isClient = useIsClient();
   const { visible, isScrolled, isScrollingUp } = useScrollDirection();
   // Safe auth hook that doesn't throw when context is unavailable
   const authContext = useContext(AuthContext);
   const user = authContext?.user || null;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Return minimal skeleton during SSR and initial hydration
+  if (!mounted) {
+    return (
+      <div className="fixed left-1/2 top-6 z-50 w-full max-w-6xl -translate-x-1/2 transform px-4">
+        <div className="mx-auto flex w-full items-center justify-between rounded-full px-6 py-3 bg-transparent border border-transparent">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
+            <span className="text-xl font-bold text-black dark:text-white">
+              PrepBettr
+            </span>
+          </div>
+
+          {/* Placeholder for navigation items */}
+          <div className="hidden md:flex items-center space-x-8">
+            {/* Invisible placeholders to maintain layout */}
+            {navItems.map((_, idx) => (
+              <div key={idx} className="w-16 h-5 opacity-0" />
+            ))}
+          </div>
+
+          {/* Sign In Button placeholder */}
+          <div className="ml-auto">
+            <div className="relative inline-flex h-10 items-center justify-center overflow-hidden rounded-full p-[1px]">
+              <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 py-2 text-sm font-medium text-white backdrop-blur-3xl">
+                Sign In
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
