@@ -331,6 +331,7 @@ describe('GoogleAuthButton', () => {
       expect(componentSource).not.toContain('getIdToken');
       expect(componentSource).not.toContain('from "firebase/auth"');
       expect(componentSource).not.toContain('from "@/firebase/client"');
+      expect(componentSource).not.toContain('from "@/firebase/simple-client"');
       
       // The correct import should be present
       expect(componentSource).toContain('authenticateWithGoogle');

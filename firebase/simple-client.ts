@@ -5,7 +5,7 @@
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence, setPersistence, GoogleAuthProvider } from 'firebase/auth';
+import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence, setPersistence, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration from environment variables
@@ -90,5 +90,136 @@ console.log('🔥 Firebase services ready:', {
   firestore: !!db,
   googleProvider: !!googleProvider
 });
+
+// Authentication helper with popup-to-redirect fallback
+export async function authenticateWithGoogle(): Promise<{
+  user: any;
+  idToken: string;
+}> {
+  try {
+    console.log('🔐 Starting Firebase Google authentication with popup...');
+    
+    // Try popup sign-in first
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    
+    if (!user) {
+      throw new Error('No user returned from Google authentication');
+    }
+
+    console.log('🔐 Popup authentication successful, getting Firebase ID token...');
+    
+    // Get Firebase ID token
+    const idToken = await user.getIdToken(true); // Force refresh to ensure fresh token
+    
+    console.log('🔐 Firebase ID token obtained successfully');
+    
+    return {
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified
+      },
+      idToken
+    };
+  } catch (error: any) {
+    console.warn('🔐 Popup sign-in failed:', error.message);
+    
+    // Check if error indicates popup was blocked or other popup-related issues
+    if (error.code === 'auth/popup-blocked' || 
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-popup-request' ||
+        error.code === 'auth/internal-error' ||
+        error.message?.includes('popup')) {
+      
+      console.log('🔐 Falling back to redirect sign-in...');
+      
+      try {
+        // Use redirect as fallback
+        await signInWithRedirect(auth, googleProvider);
+        // This will redirect the page, so we won't reach this point
+        // The redirect result will be handled on page load
+        return Promise.reject(new Error('REDIRECT_IN_PROGRESS'));
+      } catch (redirectError: any) {
+        console.error('🔐 Redirect sign-in also failed:', redirectError);
+        throw redirectError;
+      }
+    }
+    
+    // Re-throw non-popup-related errors
+    throw error;
+  }
+}
+
+// Handle redirect result on page load
+export async function handleRedirectResult(): Promise<{
+  user: any;
+  idToken: string;
+} | null> {
+  try {
+    console.log('🔐 Checking for redirect result...');
+    const result = await getRedirectResult(auth);
+    
+    if (!result || !result.user) {
+      console.log('🔐 No redirect result found');
+      return null;
+    }
+
+    console.log('🔐 Redirect authentication successful, getting Firebase ID token...');
+    
+    const user = result.user;
+    const idToken = await user.getIdToken(true);
+    
+    console.log('🔐 Firebase ID token obtained from redirect result');
+    
+    return {
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified
+      },
+      idToken
+    };
+  } catch (error) {
+    console.error('🔐 Error handling redirect result:', error);
+    return null;
+  }
+}
+
+// Sign out helper
+export async function signOutUser(): Promise<void> {
+  try {
+    await signOut(auth);
+    console.log('🔐 Firebase sign out successful');
+  } catch (error) {
+    console.error('🔐 Firebase sign out failed:', error);
+    throw error;
+  }
+}
+
+// Check if Firebase is ready
+export function isFirebaseReady(): boolean {
+  return !!(auth && db && googleProvider);
+}
+
+// Initialize Firebase asynchronously (for compatibility with existing code)
+export async function initializeFirebaseAsync(): Promise<void> {
+  // Firebase is already initialized synchronously above
+  // This function exists for compatibility with existing FirebaseClientInit component
+  if (!isFirebaseReady()) {
+    throw new Error('Firebase failed to initialize');
+  }
+  
+  // Mark as ready in window for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).__FIREBASE_READY__ = true;
+  }
+  
+  console.log('🔥 Firebase async initialization complete');
+}
 
 export { auth, db, googleProvider, app };

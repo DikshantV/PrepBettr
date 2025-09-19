@@ -1,4 +1,4 @@
-import { auth } from '@/firebase/client';
+import { auth } from '@/firebase/simple-client';
 
 export interface RolloutConfig {
   percentage: number; // 0-100, percentage of users to include

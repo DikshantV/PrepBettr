@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   console.log(`🆕 [${timestamp}] AUTH SIGNUP POST called`);
   
   try {
-    const { email, password, name, idToken, bypass } = await request.json();
+    const { email, password, name, idToken } = await request.json();
     
     console.log(`🆕 [${timestamp}] Signup request details:`, {
       hasEmail: !!email,
@@ -32,40 +32,7 @@ export async function POST(request: NextRequest) {
     let sessionToken = idToken;
     let isNewUser = false;
 
-    if (idToken && bypass) {
-      // Handle bypass/development token flow
-      console.log(`🔐 [${timestamp}] Processing bypass token for development signup`);
-      
-      try {
-        // For bypass tokens, decode directly since they're mock tokens
-        const parts = idToken.split('.');
-        if (parts.length >= 3) {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-          
-          authResult = {
-            success: true,
-            user: {
-              uid: payload.uid,
-              email: payload.email,
-              name: payload.name,
-              email_verified: payload.email_verified || true
-            }
-          };
-          
-          sessionToken = idToken; // Use the bypass token as session token
-          console.log(`✅ [${timestamp}] Bypass token processed for signup uid: ${authResult.user.uid}`);
-        } else {
-          throw new Error('Invalid bypass token format');
-        }
-      } catch (error) {
-        console.error(`❌ [${timestamp}] Bypass token processing failed:`, error);
-        return NextResponse.json(
-          { error: 'Invalid bypass token' },
-          { status: 401 }
-        );
-      }
-      
-    } else if (idToken) {
+    if (idToken) {
       // Handle Firebase ID token flow (for Google Sign-in)
       console.log(`🔐 [${timestamp}] Verifying Firebase ID token for Google Sign-up`);
       console.log(`🔐 [${timestamp}] ID Token format check:`, {

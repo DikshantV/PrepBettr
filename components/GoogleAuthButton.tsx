@@ -1,11 +1,11 @@
 "use client";
 
-import { authenticateWithGoogleFallback, handleRedirectResult } from "@/lib/firebase/simple-auth";
+import { authenticateWithGoogle, validateFirebaseIdToken } from "@/lib/firebase/auth.js";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import RedirectGuard from "@/lib/utils/redirect-guard";
+import { useFirebaseReady } from "./FirebaseClientInit";
 
 interface GoogleAuthButtonProps {
   mode: 'signin' | 'signup';
@@ -14,39 +14,60 @@ interface GoogleAuthButtonProps {
 export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [authSuccess, setAuthSuccess] = useState(false);
-
+  const [redirectChecked, setRedirectChecked] = useState(false);
+  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
+  
   // Check for redirect result on component mount
   useEffect(() => {
-    const checkRedirectResult = async () => {
+    if (redirectChecked) return; // Prevent multiple checks
+    
+    async function checkRedirectResult() {
       try {
+        console.log('🔐 Checking for redirect authentication result...');
+        // Check if we're returning from a redirect authentication
+        const { handleRedirectResult } = await import('@/firebase/client');
         const result = await handleRedirectResult();
+        
         if (result) {
-          console.log('🔐 Found redirect result, processing authentication...');
-          await processAuthenticationResult(result);
+          console.log('🔐 Redirect authentication successful:', result.user.email);
+          setIsLoading(true); // Show loading state
+          
+          // Handle successful redirect authentication
+          try {
+            await handleSuccessfulAuthInternal(result.idToken, result.user);
+          } catch (error) {
+            console.error('🔐 Error processing redirect authentication:', error);
+            toast.error('Authentication failed. Please try again.');
+            setIsLoading(false);
+          }
+        } else {
+          console.log('🔐 No redirect authentication result found');
         }
       } catch (error) {
-        console.error('🔐 Error handling redirect result:', error);
+        console.error('🔐 Redirect result check failed:', error);
+      } finally {
+        setRedirectChecked(true);
       }
-    };
+    }
     
     checkRedirectResult();
-  }, []);
+  }, [redirectChecked, mode]); // Add dependencies but prevent infinite loops
 
-  const processAuthenticationResult = async (authResult: any) => {
-    const { user, idToken } = authResult;
+  // Helper function to handle successful authentication (both popup and redirect)
+  const handleSuccessfulAuthInternal = async (idToken: string, user: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`🔐 [${timestamp}] Processing successful authentication for: ${user.email}`);
     
-    console.log('🔐 Processing authentication result:', {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      emailVerified: user.emailVerified
-    });
+    // Validate the Firebase ID token
+    if (!validateFirebaseIdToken(idToken)) {
+      throw new Error('Invalid Firebase ID token received');
+    }
+    
+    console.log('🔐 Firebase ID token validated successfully');
+    console.log(`🔐 Attempting ${mode} with Firebase ID token...`);
     
     if (!user.email) {
-      const error = new Error("No email provided by Google");
-      console.error(error);
-      throw error;
+      throw new Error("No email provided by Google");
     }
     
     // Determine endpoint based on mode
@@ -68,11 +89,10 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     
     if (authResponse.ok) {
       const responseData = await authResponse.json();
-      console.log(`🚀 GoogleAuthButton: ${mode} API call successful!`, {
+      console.log(`🚀 ${mode} API call successful!`, {
         status: authResponse.status,
         hasToken: !!responseData.token,
-        hasUser: !!responseData.user,
-        responseKeys: Object.keys(responseData)
+        hasUser: !!responseData.user
       });
       
       // Store token in localStorage if provided
@@ -81,48 +101,106 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         console.log('🚀 Token stored in localStorage');
       }
       
-      console.log('🚀 About to show success toast and trigger redirect...');
+      console.log(`🚀 [${timestamp}] About to show success toast and reload page...`);
       toast.success(mode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!');
       
       // Authentication successful! Let the middleware handle the redirect
-      console.log('🚀 Authentication successful! Cookie set, page will refresh to trigger middleware redirect...');
-      
-      // Just refresh the current page - the middleware will see the session cookie 
-      // and redirect authenticated users from /sign-in to /dashboard
       setTimeout(() => {
-        console.log('🚀 Refreshing page to allow middleware to handle redirect...');
+        console.log(`🚀 [${timestamp}] Refreshing page to allow middleware to handle redirect...`);
         window.location.reload();
       }, 500);
-    } else {
-      // Handle errors...
-      const errorData = await authResponse.json().catch(() => ({}));
-      throw new Error(`Failed to ${mode}: ${errorData.error || 'Unknown error'}`);
-    }
-  };
-
-  const handleGoogleAuth = async () => {
-    if (isLoading) return; // Prevent multiple clicks
-    
-    setIsLoading(true);
-    console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
-    
-    try {
-      console.log('🔐 Starting fallback Google authentication...');
-      const result = await authenticateWithGoogleFallback();
       
-      // Check if user was redirected
-      if (result && (result as any).redirected) {
-        console.log('🔐 User was redirected for authentication');
-        // Don't set loading to false - user will come back from redirect
+      return;
+    }
+    
+    // Handle API errors
+    const errorData = await authResponse.json().catch(() => ({}));
+    
+    // Handle specific error cases
+    if (mode === 'signup' && authResponse.status === 409) {
+      // User already exists, try signing in instead
+      console.log('User already exists, attempting sign in...');
+      
+      const signInResponse = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (signInResponse.ok) {
+        const signInData = await signInResponse.json();
+        if (signInData.token) {
+          localStorage.setItem('auth_token', signInData.token);
+        }
+        
+        console.log('Sign in after signup conflict successful');
+        toast.success('Welcome back! Signed in successfully!');
+        
+        // Let middleware handle redirect after successful fallback sign-in
+        setTimeout(() => {
+          console.log('🚀 Refreshing page to allow middleware redirect after signup conflict resolution...');
+          window.location.reload();
+        }, 500);
         return;
       }
+    }
+    
+    if (mode === 'signin' && authResponse.status === 401) {
+      // For sign-in, if user doesn't exist, suggest sign-up
+      console.log('User not found, suggesting sign up...');
+      toast.error('Account not found. Please sign up first or try with a different Google account.');
+      return;
+    }
+    
+    throw new Error(`Failed to ${mode}: ${errorData.error || 'Unknown error'}`);
+  };
+
+  // Note: Redirect is now handled by middleware after successful authentication
+  // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
+
+
+  const handleGoogleAuth = async () => {
+    const timestamp = new Date().toISOString();
+    console.log(`🚀 [${timestamp}] handleGoogleAuth called - mode: ${mode}`);
+    
+    if (isLoading) {
+      console.log(`⚠️ [${timestamp}] Google auth already in progress, ignoring click`);
+      return; // Prevent multiple clicks
+    }
+    
+    // Check if Firebase is ready
+    if (!firebaseReady) {
+      console.log(`⚠️ [${timestamp}] Firebase not ready yet, cannot start authentication`);
+      toast.error('Authentication service is initializing. Please wait a moment and try again.');
+      return;
+    }
+    
+    if (firebaseError) {
+      console.error(`⚠️ [${timestamp}] Firebase initialization error:`, firebaseError);
+      toast.error('Authentication service unavailable. Please refresh the page.');
+      return;
+    }
+    
+    console.log(`🚀 [${timestamp}] Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
+    setIsLoading(true);
+    
+    // Use the Firebase auth helper for better error handling
+    
+    try {
+      console.log('🔐 Starting Google authentication using Firebase helper...');
+      const { user, idToken } = await authenticateWithGoogle();
       
-      // If we got a result without redirect, process it
-      if (result && (result as any).user && (result as any).idToken) {
-        await processAuthenticationResult(result);
-      } else if (!result || !(result as any).redirected) {
-        throw new Error('Authentication failed - no result received');
-      }
+      console.log('🔐 Firebase authentication successful:', {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        emailVerified: user.emailVerified
+      });
+      
+      // Use the helper function to handle successful authentication
+      await handleSuccessfulAuthInternal(idToken, user);
       
     } catch (error: any) {
       console.error(`Google ${mode} Error:`, error);
@@ -139,8 +217,20 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
             }
           }
         );
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign-in was cancelled. Please try again.');
+      } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        console.log('⚠️ Popup closed by user, attempting redirect sign-in...');
+        try {
+          const { signInWithRedirect, auth, googleProvider } = await import('@/firebase/client');
+          await signInWithRedirect(auth, googleProvider);
+          console.log('🔀 Redirect initiated successfully - page will redirect');
+          // Don't set loading to false here - the page will redirect
+          toast.info('Redirecting for authentication...');
+          return; // Important: return here to prevent setIsLoading(false)
+        } catch (redirectError: any) {
+          console.error('❌ Redirect sign-in also failed:', redirectError);
+          toast.error('Authentication failed. Please try again.');
+          // Only set loading to false if redirect also failed
+        }
       } else if (error.code === 'auth/popup-blocked') {
         toast.error('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
       } else if (error.code === 'auth/network-request-failed') {
@@ -153,9 +243,9 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     }
   };
 
-  // Show loading state when signing in
-  const isButtonDisabled = isLoading;
-  const buttonText = isLoading ? (mode === 'signup' ? 'Creating account...' : 'Signing in...') : 'Google';
+
+  const buttonText = firebaseError ? 'Service Unavailable' : (!firebaseReady ? 'Initializing...' : 'Google');
+  const loadingText = mode === 'signup' ? 'Creating account...' : 'Signing in...';
 
   return (
     <Button 
@@ -163,12 +253,12 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
       type="button" 
       className="w-full flex items-center justify-center gap-3 !bg-dark-200 hover:!bg-dark-200/80 !text-light-100 !border-white/20 hover:!border-white/30 !rounded-full !min-h-12"
       onClick={handleGoogleAuth}
-      disabled={isButtonDisabled}
+      disabled={isLoading || !firebaseReady || !!firebaseError}
     >
       {isLoading ? (
         <>
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-400"></div>
-          <span>{buttonText}</span>
+          <span>{loadingText}</span>
         </>
       ) : (
         <>
@@ -184,4 +274,4 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
       )}
     </Button>
   );
-}
+};

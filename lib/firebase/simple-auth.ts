@@ -5,7 +5,7 @@
  */
 
 import { signInWithRedirect, getRedirectResult, getIdToken, onAuthStateChanged } from 'firebase/auth';
-import { auth, googleProvider } from '@/firebase/simple-client';
+import { auth, googleProvider } from '@/firebase/client';
 
 /**
  * Authenticate with Google using Firebase redirect flow

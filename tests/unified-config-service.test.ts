@@ -79,8 +79,8 @@ jest.mock('firebase/remote-config', () => ({
 }));
 
 // Mock Firebase Client
-jest.mock('@/firebase/client', () => ({
-  app: {}
+jest.mock('@/firebase/simple-client', () => ({
+  app: () => ({})
 }));
 
 // Mock Cosmos DB Service

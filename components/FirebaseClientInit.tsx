@@ -34,10 +34,16 @@ export default function FirebaseClientInit({ children }: { children?: ReactNode 
         
         // Check if Firebase config is already available
         const hasFirebaseConfig = !!(
-          process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY ||
-          process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+          process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
           process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
         );
+        
+        console.log('🔥 Firebase config availability check:', {
+          hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+          hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          hasAuthDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+          overallAvailable: hasFirebaseConfig
+        });
 
         if (!hasFirebaseConfig) {
           console.log('🔥 Firebase client config not found, fetching from Azure Key Vault...');

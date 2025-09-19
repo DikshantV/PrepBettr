@@ -136,7 +136,7 @@ const nextConfig = {
           },
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups',
+            value: 'unsafe-none',
           },
           {
             key: 'Cross-Origin-Embedder-Policy',
@@ -144,7 +144,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com; frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com; connect-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com;",
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://apis.google.com https://www.gstatic.com https://*.googleapis.com; frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://accounts.google.com https://*.firebaseapp.com https://prepbettr.firebaseapp.com; connect-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://*.paypalobjects.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://accounts.google.com https://*.firebaseapp.com https://prepbettr.firebaseapp.com;",
           },
         ],
       },

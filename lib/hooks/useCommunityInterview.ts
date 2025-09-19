@@ -3,7 +3,7 @@
 
 import useSWR from 'swr';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/client';
+import { db } from '@/firebase/simple-client';
 
 // Define the fetcher function for SWR
 const fetcher = async (id: string) => {
