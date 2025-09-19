@@ -15,7 +15,7 @@ import Uploady, {
 } from '@rpldy/uploady';
 import { asUploadButton } from '@rpldy/upload-button';
 import { useAuth } from '@/contexts/AuthContext';
-import { auth } from '@/firebase/simple-client';
+import { auth } from '@/firebase/client';
 import { useFirebaseReady } from '@/components/FirebaseClientInit';
 import { useTelemetry } from '@/components/providers/TelemetryProvider';
 

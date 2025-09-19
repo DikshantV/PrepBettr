@@ -407,7 +407,3 @@ async function applyGrouping(metrics, groupBy, dateRange) {
   return metrics;
 }
 
-export default {
-  GET,
-  POST
-};

@@ -282,8 +282,8 @@ export async function authenticateWithGoogle(): Promise<{
     });
     console.log('🔐 Provider config:', {
       providerId: provider.providerId,
-      scopes: provider.scopes || [],
-      customParameters: provider.customParameters || {}
+      // scopes: provider.scopes || [],
+      // customParameters: provider.customParameters || {}
     });
     
     // Skip connectivity test - Firebase SDK will handle network issues internally
@@ -438,3 +438,6 @@ export default {
   googleProvider,
   app
 };
+
+// Additional exports for compatibility
+export { signInWithRedirect, getRedirectResult, signOut };

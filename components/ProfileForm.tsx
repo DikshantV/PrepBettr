@@ -7,7 +7,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import BanterLoader from "./ui/BanterLoader";
 import Image from "next/image";
-import { auth } from "@/firebase/simple-client";
+import { auth } from "@/firebase/client";
 import { useFirebaseReady } from "@/components/FirebaseClientInit";
 import { toast } from "sonner";
 import { Mail, Loader2 } from "lucide-react";

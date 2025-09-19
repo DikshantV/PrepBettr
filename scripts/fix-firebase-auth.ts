@@ -39,7 +39,7 @@ async function checkAndEnableFirebaseAuth() {
     {
       name: 'Identity Toolkit API (with key param)',
       url: `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/config?key=${apiKey}`,
-      headers: {}
+      headers: {} as Record<string, string>
     }
   ];
 
@@ -49,7 +49,7 @@ async function checkAndEnableFirebaseAuth() {
     try {
       const response = await fetch(endpoint.url, {
         method: 'GET',
-        headers: endpoint.headers
+        headers: endpoint.headers as HeadersInit
       });
       
       console.log(`\n📡 ${endpoint.name}:`);
@@ -101,51 +101,6 @@ async function suggestAlternativeApproach() {
   }
 }
 
-async function createWorkingAuthImplementation() {
-  console.log('\n🔨 Creating working auth implementation...');
-  
-  const fallbackAuthCode = `
-// Fallback authentication using Firebase Admin SDK + redirect flow
-import { getAuth, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
-
-export async function authenticateWithGoogleFallback() {
-  const auth = getAuth();
-  const provider = new GoogleAuthProvider();
-  
-  // Use redirect instead of popup to avoid internal-error
-  try {
-    await signInWithRedirect(auth, provider);
-    // User will be redirected and come back with auth state
-  } catch (error) {
-    console.error('Redirect auth failed:', error);
-    throw error;
-  }
-}
-
-// Handle redirect result
-import { getRedirectResult } from 'firebase/auth';
-
-export async function handleAuthRedirect() {
-  const auth = getAuth();
-  try {
-    const result = await getRedirectResult(auth);
-    if (result) {
-      const user = result.user;
-      const idToken = await user.getIdToken();
-      return { user, idToken };
-    }
-    return null;
-  } catch (error) {
-    console.error('Redirect result error:', error);
-    throw error;
-  }
-}
-`;
-
-  console.log('💾 Suggested fallback implementation:');
-  console.log(fallbackAuthCode);
-}
-
 async function main() {
   console.log('🚀 Starting Firebase Auth diagnosis and fix...\n');
   
@@ -153,7 +108,6 @@ async function main() {
   
   if (!authWorking) {
     await suggestAlternativeApproach();
-    await createWorkingAuthImplementation();
     
     console.log('\n🎯 Quick Fix: Try redirect-based auth instead of popup');
     console.log('The auth/internal-error often occurs with popup-based auth.');

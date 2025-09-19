@@ -221,7 +221,7 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
         console.log('⚠️ Popup closed by user, attempting redirect sign-in...');
         try {
           const { signInWithRedirect, auth, googleProvider } = await import('@/firebase/client');
-          await signInWithRedirect(auth, googleProvider);
+          const authInstance = auth(); const provider = googleProvider(); if (authInstance && provider) { await signInWithRedirect(authInstance, provider); }
           console.log('🔀 Redirect initiated successfully - page will redirect');
           // Don't set loading to false here - the page will redirect
           toast.info('Redirecting for authentication...');

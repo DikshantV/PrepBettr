@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, ArrowRight, Crown, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-const SubscriptionSuccessPage = () => {
+const SubscriptionSuccessContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -245,6 +245,25 @@ const SubscriptionSuccessPage = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+const SubscriptionSuccessPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-dark-100 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md bg-gray-900/50 border-gray-700">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary-200" />
+            <h2 className="text-xl font-semibold text-white mb-2">
+              Loading...
+            </h2>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <SubscriptionSuccessContent />
+    </Suspense>
   );
 };
 

@@ -5,7 +5,7 @@
  */
 
 import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '@/firebase/simple-client';
+import { auth } from '@/firebase/client';
 
 export async function createCustomAuthToken() {
   try {
@@ -35,14 +35,15 @@ export async function createCustomAuthToken() {
 
 export async function signInWithCustomTokenWorkaround() {
   try {
-    if (!auth) {
+    const authInstance = auth();
+    if (!authInstance) {
       throw new Error('Firebase Auth not initialized');
     }
 
     console.log('🔐 Using custom token workaround...');
     
     const customToken = await createCustomAuthToken();
-    const userCredential = await signInWithCustomToken(auth, customToken);
+    const userCredential = await signInWithCustomToken(authInstance, customToken);
     
     const idToken = await userCredential.user.getIdToken();
     

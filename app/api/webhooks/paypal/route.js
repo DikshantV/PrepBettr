@@ -421,5 +421,3 @@ export async function GET(request) {
   });
 }
 
-// Export webhook store for testing
-export { webhookStore };

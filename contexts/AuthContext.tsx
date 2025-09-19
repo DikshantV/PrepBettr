@@ -76,10 +76,27 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     let mounted = true;
     
     const checkAuthState = async () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('🔍 [AuthContext] checkAuthState started', { mounted, initialUser });
+      }
+      
+      // Add a safety timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        if (mounted) {
+          console.warn('⏰ AuthContext: Auth check timed out after 10 seconds, forcing loading to false');
+          setLoading(false);
+          setUser(null);
+        }
+      }, 10000);
+      
       // Skip auth checks on authentication and marketing pages to prevent API loops and hydration issues
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const isAuthPage = ['/sign-in', '/sign-up'].includes(currentPath);
       const isMarketingPage = currentPath === '/' || currentPath.startsWith('/marketing');
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('🔍 [AuthContext] Path check', { currentPath, isAuthPage, isMarketingPage });
+      }
       
       if (isAuthPage || isMarketingPage) {
         console.log(`🚫 Auth check skipped: on ${isAuthPage ? 'authentication' : 'marketing'} page (${currentPath})`);
@@ -87,6 +104,10 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
           setUser(null);
           setLoading(false);
         }
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('🔍 [AuthContext] Early return - auth/marketing page', { mounted });
+        }
+        clearTimeout(timeoutId);
         return;
       }
       try {
@@ -102,10 +123,14 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
         
         // If no session cookie and no token, user is not authenticated
         if (!sessionCookie && !token) {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('🔍 [AuthContext] No session cookie or token found', { mounted });
+          }
           if (mounted) {
             setUser(null);
             setLoading(false);
           }
+          clearTimeout(timeoutId);
           return;
         }
         
@@ -123,15 +148,22 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
               // Use cached result if less than 15 minutes old
               if (cacheAge < 15 * 60 * 1000) {
                 console.log('🚀 Using cached auth verification');
+                if (process.env.NODE_ENV === 'development') {
+                  console.debug('🔍 [AuthContext] Cache hit', { mounted, verified: cached.verified, hasUser: !!cached.user });
+                }
                 if (mounted && cached.verified && cached.user) {
                   setUser(cached.user);
                 }
                 if (mounted) {
                   setLoading(false);
                 }
+                clearTimeout(timeoutId);
                 return;
               } else {
                 // Remove expired cache
+                if (process.env.NODE_ENV === 'development') {
+                  console.debug('🔍 [AuthContext] Cache expired, removing', { cacheAge: cacheAge / 1000 + 's' });
+                }
                 localStorage.removeItem(cacheKey);
               }
             } catch (error) {
@@ -141,14 +173,29 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
           }
           
           console.log('🔍 Verifying auth token via API');
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('🔍 [AuthContext] Making /api/auth/verify request', { tokenLength: token?.length });
+          }
+          
+          // Create AbortController for timeout
+          const abortController = new AbortController();
+          const requestTimeout = setTimeout(() => abortController.abort(), 5000);
+          
           const response = await fetch('/api/auth/verify', {
             headers: {
               'Authorization': `Bearer ${token}`
-            }
+            },
+            signal: abortController.signal
           });
+          
+          clearTimeout(requestTimeout);
           
           if (response.ok) {
             const userData = await response.json();
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.debug('🔍 [AuthContext] API verification success', { mounted, hasUser: !!userData.user });
+            }
             
             // Cache successful verification
             const cacheData = {
@@ -160,6 +207,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
             
             if (mounted) {
               setUser(userData.user);
+              setLoading(false);
             }
           } else if (response.status === 401) {
             // Token is invalid/expired, check if server suggests refresh
@@ -175,11 +223,17 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
                 const refreshed = await refreshAuthToken();
                 if (refreshed && mounted) {
                   // Retry verification with new token
+                  const retryAbortController = new AbortController();
+                  const retryTimeout = setTimeout(() => retryAbortController.abort(), 5000);
+                  
                   const retryResponse = await fetch('/api/auth/verify', {
                     headers: {
                       'Authorization': `Bearer ${refreshed}`
-                    }
+                    },
+                    signal: retryAbortController.signal
                   });
+                  
+                  clearTimeout(retryTimeout);
                   
                   if (retryResponse.ok) {
                     const userData = await retryResponse.json();
@@ -195,7 +249,9 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
                     
                     if (mounted) {
                       setUser(userData.user);
+                      setLoading(false);
                     }
+                    clearTimeout(timeoutId);
                     return;
                   }
                 }
@@ -215,6 +271,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
             
             if (mounted) {
               setUser(null);
+              setLoading(false);
             }
           } else {
             // Other error, cache failed verification temporarily (1 min)
@@ -228,6 +285,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
             localStorage.removeItem('auth_token');
             if (mounted) {
               setUser(null);
+              setLoading(false);
             }
           }
         } else if (sessionCookie) {
@@ -235,14 +293,29 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
           // but with minimal user data
           if (mounted) {
             setUser({ uid: 'session-user', email: 'unknown@session.com', email_verified: false });
+            setLoading(false);
           }
         }
       } catch (error) {
+        clearTimeout(timeoutId);
         console.error('Auth state check failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('🔍 [AuthContext] Auth check error', { 
+            mounted, 
+            error: (error as Error).message,
+            name: (error as Error).name,
+            isAbortError: (error as Error).name === 'AbortError'
+          });
+        }
         if (mounted) {
           setUser(null);
+          setLoading(false);
         }
       } finally {
+        clearTimeout(timeoutId);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('🔍 [AuthContext] Auth check completed', { mounted });
+        }
         if (mounted) {
           setLoading(false);
         }

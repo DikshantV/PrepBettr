@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { PayPalScriptProvider } from '@paypal/react-paypal-js';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+// PayPal SDK is now handled by PayPalSDKWrapper
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -23,11 +24,35 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
+  AlertCircle,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import PayPalSubscriptionButton from './PayPalSubscriptionButton';
 import { toast } from 'sonner';
+import PropTypes from 'prop-types';
+import {
+  trackSubscriptionPageView,
+  trackPayPalSDKPerformance,
+  trackSubscriptionAction,
+  trackComponentPerformance,
+  trackError
+} from '@/lib/services/application-insights-service';
+import PayPalSDKWrapper from './PayPalSDKWrapper';
+
+// Lazy load PayPal components for better performance
+const PayPalSubscriptionButton = dynamic(() => import('./PayPalSubscriptionButton'), {
+  loading: () => (
+    <div className="flex items-center justify-center py-4">
+      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+      <span className="text-gray-400">Loading payment options...</span>
+    </div>
+  ),
+  ssr: false
+});
+
+// PayPal SDK Status is now handled by PayPalSDKWrapper component
 
 const SubscriptionCheckout = ({ 
   userEmail, 
@@ -40,9 +65,10 @@ const SubscriptionCheckout = ({
   const [selectedPlan, setSelectedPlan] = useState('individual');
   const [showMobileComparison, setShowMobileComparison] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [paypalSDKError, setPaypalSDKError] = useState(null);
 
-  // Plan configurations
-  const plans = {
+  // Plan configurations (Memoized for performance)
+  const plans = useMemo(() => ({
     individual: {
       name: 'Individual',
       description: 'Perfect for job seekers',
@@ -101,38 +127,60 @@ const SubscriptionCheckout = ({
       popular: true,
       recommended: true
     }
-  };
+  }), []);
 
-  const formatPrice = (price) => {
+  const formatPrice = useCallback((price) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(price);
-  };
+  }, []);
 
-  const calculateYearlySavings = (monthlyPrice) => {
+  const calculateYearlySavings = useCallback((monthlyPrice) => {
     const yearlyTotal = monthlyPrice * 12;
     const yearlyPrice = monthlyPrice * 10;
     return yearlyTotal - yearlyPrice;
-  };
+  }, []);
 
-  const handleSubscriptionSuccess = (subscriptionData, planType) => {
+  const handleSubscriptionSuccess = useCallback((subscriptionData, planType) => {
     console.log('Subscription successful:', subscriptionData, planType);
+    
+    // Track successful subscription conversion
+    trackSubscriptionAction('completed', planType, true, {
+      subscriptionId: subscriptionData?.subscriptionId,
+      billingCycle: isYearly ? 'yearly' : 'monthly'
+    });
+    
     if (onSubscriptionSuccess) {
       onSubscriptionSuccess(subscriptionData, planType);
     }
-  };
+  }, [onSubscriptionSuccess, isYearly]);
 
-  const handleSubscriptionError = (error, planType) => {
+  const handleSubscriptionError = useCallback((error, planType) => {
     console.error('Subscription error:', error, planType);
+    
+    // Track failed subscription attempt
+    trackSubscriptionAction('failed', planType, false, {
+      error: error?.message || 'Unknown error',
+      billingCycle: isYearly ? 'yearly' : 'monthly'
+    });
+    
+    // Track error for debugging
+    trackError(error instanceof Error ? error : new Error(error?.message || 'Subscription Error'), {
+      component: 'SubscriptionCheckout',
+      context: 'subscription processing',
+      planType,
+      billingCycle: isYearly ? 'yearly' : 'monthly'
+    });
+    
     if (onSubscriptionError) {
       onSubscriptionError(error, planType);
     }
-  };
+  }, [onSubscriptionError, isYearly]);
 
-  const PlanComparisonTable = () => (
+  const PlanComparisonTable = useMemo(() => (
     <div className="w-full overflow-hidden">
       <div className="bg-dark-200/50 rounded-2xl p-6 backdrop-blur-sm">
         <h3 className="text-2xl font-bold text-white text-center mb-8">
@@ -205,9 +253,9 @@ const SubscriptionCheckout = ({
         </div>
       </div>
     </div>
-  );
+  ), [plans, isYearly, formatPrice]);
 
-  const PlanCard = ({ planKey, plan }) => {
+  const PlanCard = memo(({ planKey, plan }) => {
     const currentPlan = isYearly ? plan.yearly : plan.monthly;
     const isSelected = selectedPlan === planKey;
     const isPopular = plan.popular;
@@ -221,7 +269,14 @@ const SubscriptionCheckout = ({
           isPopular && "scale-105 ring-2 ring-primary-200/30",
           className
         )}
-        onClick={() => setSelectedPlan(planKey)}
+        onClick={() => {
+          setSelectedPlan(planKey);
+          // Track plan selection for funnel analysis
+          trackSubscriptionAction('plan_selected', planKey, true, {
+            billingCycle: isYearly ? 'yearly' : 'monthly',
+            price: isYearly ? plan.yearly.price : plan.monthly.price
+          });
+        }}
       >
         {isPopular && (
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
@@ -315,9 +370,9 @@ const SubscriptionCheckout = ({
         </CardContent>
       </Card>
     );
-  };
+  });
 
-  const SelectedPlanSummary = () => {
+  const SelectedPlanSummary = useMemo(() => {
     const plan = plans[selectedPlan];
     const currentPlan = isYearly ? plan.yearly : plan.monthly;
     
@@ -386,9 +441,9 @@ const SubscriptionCheckout = ({
         </div>
       </div>
     );
-  };
+  }, [plans, selectedPlan, isYearly, formatPrice, calculateYearlySavings]);
 
-  const TrustSignals = () => (
+  const TrustSignals = useMemo(() => (
     <div className="text-center space-y-4 py-6">
       <div className="flex items-center justify-center space-x-8 text-sm text-gray-500">
         <div className="flex items-center">
@@ -408,9 +463,9 @@ const SubscriptionCheckout = ({
         Secure payments powered by PayPal • No setup fees • No hidden charges
       </p>
     </div>
-  );
+  ), []);
 
-  const FAQSection = () => (
+  const FAQSection = useMemo(() => (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold text-white text-center mb-12">
         Frequently Asked Questions
@@ -482,15 +537,162 @@ const SubscriptionCheckout = ({
         </div>
       </div>
     </div>
-  );
+  ), []);
+
+  // Performance monitoring
+  const [sdkLoadStartTime] = useState(Date.now());
+  const [componentRenderTime] = useState(Date.now());
+  const [renderCount, setRenderCount] = useState(0);
+  
+  // Track component renders for performance monitoring
+  useEffect(() => {
+    setRenderCount(prev => prev + 1);
+    const renderTime = Date.now() - componentRenderTime;
+    
+    if (renderCount > 0) {
+      trackComponentPerformance('SubscriptionCheckout', renderTime, renderCount);
+    }
+  });
+  
+  // Track page view on component mount
+  useEffect(() => {
+    trackSubscriptionPageView('Subscription Checkout');
+  }, []);
+  
+  // PayPal SDK error handling
+  const handlePayPalSDKError = useCallback((error) => {
+    const loadTime = Date.now() - sdkLoadStartTime;
+    console.error('PayPal SDK Error:', error, { loadTime });
+    
+    // Application Insights tracking
+    trackPayPalSDKPerformance({
+      loadTime,
+      success: false,
+      error: error?.message || 'PayPal SDK failed to load'
+    });
+    
+    // Error tracking
+    trackError(error instanceof Error ? error : new Error(error?.message || 'PayPal SDK Error'), {
+      component: 'SubscriptionCheckout',
+      context: 'PayPal SDK initialization',
+      loadTime
+    });
+    
+    // Legacy Google Analytics tracking
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'paypal_sdk_error', {
+        'event_category': 'payment',
+        'event_label': error?.message || 'unknown',
+        'value': Math.round(loadTime)
+      });
+    }
+    
+    setPaypalSDKError(error?.message || 'PayPal SDK failed to load');
+    toast.error('Payment Service Error', {
+      description: 'Unable to load payment services. Please refresh the page.',
+      duration: 10000
+    });
+  }, [sdkLoadStartTime]);
+  
+  // Track successful PayPal SDK load
+  useEffect(() => {
+    const checkSDKLoaded = () => {
+      if (typeof window !== 'undefined' && window.paypal) {
+        const loadTime = Date.now() - sdkLoadStartTime;
+        console.log('PayPal SDK loaded successfully in', loadTime, 'ms');
+        
+        // Application Insights tracking
+        trackPayPalSDKPerformance({
+          loadTime,
+          success: true
+        });
+        
+        // Legacy Google Analytics tracking
+        if (window.gtag) {
+          window.gtag('event', 'paypal_sdk_loaded', {
+            'event_category': 'payment',
+            'event_label': 'success',
+            'value': Math.round(loadTime)
+          });
+        }
+      }
+    };
+    
+    // Check periodically if PayPal SDK is loaded
+    const interval = setInterval(checkSDKLoaded, 1000);
+    
+    // Clear interval after 30 seconds
+    const timeout = setTimeout(() => clearInterval(interval), 30000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [sdkLoadStartTime]);
+
+  // Validate PayPal configuration
+  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  
+  if (!paypalClientId) {
+    return (
+      <div className={cn("w-full max-w-4xl mx-auto px-4", className)}>
+        <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-yellow-400 mb-2">Payment Configuration Issue</h2>
+          <p className="text-gray-300 mb-6">
+            Payment services are currently being configured. Please try again in a few minutes.
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()}
+            className="bg-yellow-900/30 border-yellow-500/50 text-yellow-300 hover:bg-yellow-900/50"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (paypalSDKError) {
+    return (
+      <div className={cn("w-full max-w-4xl mx-auto px-4", className)}>
+        <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Payment Service Error</h2>
+          <p className="text-gray-300 mb-2">
+            Unable to initialize payment services:
+          </p>
+          <p className="text-sm text-red-300 mb-6 font-mono bg-red-900/20 p-2 rounded">
+            {paypalSDKError}
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setPaypalSDKError(null);
+              window.location.reload();
+            }}
+            className="bg-red-900/30 border-red-500/50 text-red-300 hover:bg-red-900/50"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <PayPalScriptProvider
-      options={{
-        "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-        vault: true,
-        intent: "subscription",
-        currency: "USD"
+    <PayPalSDKWrapper
+      onSDKReady={() => {
+        const loadTime = Date.now() - sdkLoadStartTime;
+        trackPayPalSDKPerformance({ loadTime, success: true });
+      }}
+      onSDKError={(error) => {
+        const loadTime = Date.now() - sdkLoadStartTime;
+        trackPayPalSDKPerformance({ loadTime, success: false, error: error.message });
+        trackError(error, { component: 'SubscriptionCheckout', context: 'PayPal SDK' });
       }}
     >
       <div className={cn("w-full max-w-7xl mx-auto px-4 space-y-16", className)}>
@@ -570,6 +772,8 @@ const SubscriptionCheckout = ({
               Complete Your Subscription
             </h3>
             
+            {/* PayPal buttons will render when SDK is ready */}
+            
             <PayPalSubscriptionButton
               planId={plans[selectedPlan][isYearly ? 'yearly' : 'monthly'].planId}
               planType={selectedPlan}
@@ -590,9 +794,26 @@ const SubscriptionCheckout = ({
 
         {/* FAQ Section */}
         <FAQSection />
-      </div>
-    </PayPalScriptProvider>
+        
+        </div>
+    </PayPalSDKWrapper>
   );
 };
 
-export default SubscriptionCheckout;
+// PropTypes for better optimization
+SubscriptionCheckout.propTypes = {
+  userEmail: PropTypes.string.isRequired,
+  userName: PropTypes.string,
+  className: PropTypes.string,
+  onSubscriptionSuccess: PropTypes.func,
+  onSubscriptionError: PropTypes.func
+};
+
+SubscriptionCheckout.defaultProps = {
+  userName: '',
+  className: '',
+  onSubscriptionSuccess: null,
+  onSubscriptionError: null
+};
+
+export default memo(SubscriptionCheckout);

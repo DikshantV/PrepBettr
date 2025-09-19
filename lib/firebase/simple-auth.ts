@@ -4,7 +4,7 @@
  * Uses signInWithRedirect to avoid popup-related auth/internal-error issues
  */
 
-import { signInWithRedirect, getRedirectResult, getIdToken, onAuthStateChanged } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, getIdToken, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/firebase/client';
 
 /**
@@ -15,19 +15,22 @@ export async function authenticateWithGoogleRedirect() {
   try {
     console.log('🔐 Starting Firebase Google authentication (redirect)...');
     
-    if (!auth) {
+    const authInstance = auth();
+    const providerInstance = googleProvider();
+    
+    if (!authInstance) {
       throw new Error('Firebase Auth not initialized');
     }
     
-    if (!googleProvider) {
+    if (!providerInstance) {
       throw new Error('Google Auth Provider not initialized');
     }
     
-    console.log('🔐 Firebase Auth instance available:', !!auth);
-    console.log('🔐 Google Provider instance available:', !!googleProvider);
+    console.log('🔐 Firebase Auth instance available:', !!authInstance);
+    console.log('🔐 Google Provider instance available:', !!providerInstance);
     
     // Use redirect instead of popup to avoid auth/internal-error
-    await signInWithRedirect(auth, googleProvider);
+    await signInWithRedirect(authInstance, providerInstance);
     
     // User will be redirected to Google and back
     // The result is handled by handleRedirectResult
@@ -45,11 +48,12 @@ export async function handleRedirectResult() {
   try {
     console.log('🔐 Checking for redirect result...');
     
-    if (!auth) {
+    const authInstance = auth();
+    if (!authInstance) {
       throw new Error('Firebase Auth not initialized');
     }
     
-    const result = await getRedirectResult(auth);
+    const result = await getRedirectResult(authInstance);
     
     if (result) {
       const user = result.user;
@@ -92,17 +96,17 @@ export async function handleRedirectResult() {
  */
 export async function authenticateWithGoogleFallback() {
   try {
-    // Import popup method dynamically to avoid loading issues
-    const { signInWithPopup } = await import('firebase/auth');
-    
     console.log('🔐 Trying popup authentication first...');
     
-    if (!auth || !googleProvider) {
+    const authInstance = auth();
+    const providerInstance = googleProvider();
+    
+    if (!authInstance || !providerInstance) {
       throw new Error('Firebase Auth not initialized');
     }
     
     // Try popup first
-    const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(authInstance, providerInstance);
     const user = result.user;
     
     if (!user) {
@@ -154,11 +158,12 @@ export async function authenticateWithGoogleFallback() {
  */
 export async function signOutFromFirebaseSimple() {
   try {
-    if (!auth) {
+    const authInstance = auth();
+    if (!authInstance) {
       throw new Error('Firebase Auth not initialized');
     }
     
-    await auth.signOut();
+    await authInstance.signOut();
     console.log('🔐 Firebase sign out successful');
   } catch (error) {
     console.error('🔐 Firebase sign out failed:', error);

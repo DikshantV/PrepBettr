@@ -551,7 +551,7 @@ class UnifiedConfigService {
     try {
       // Import Firebase Remote Config dynamically
       const { getRemoteConfig, getValue } = await import('firebase/remote-config');
-      const { app } = await import('@/firebase/simple-client');
+      const { app } = await import('@/firebase/client');
       
       // Get the Firebase app instance
       const firebaseApp = app();

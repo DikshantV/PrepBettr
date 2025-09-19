@@ -79,7 +79,7 @@ jest.mock('firebase/remote-config', () => ({
 }));
 
 // Mock Firebase Client
-jest.mock('@/firebase/simple-client', () => ({
+jest.mock('@/firebase/client', () => ({
   app: () => ({})
 }));
 
