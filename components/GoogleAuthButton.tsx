@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import RedirectGuard from "@/lib/utils/redirect-guard";
+import { useFirebaseReady } from "@/components/FirebaseClientInit";
 
 interface GoogleAuthButtonProps {
   mode: 'signin' | 'signup';
@@ -15,12 +16,25 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
+  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
 
   // Note: Redirect is now handled by middleware after successful authentication
   // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
 
   const handleGoogleAuth = async () => {
     if (isLoading) return; // Prevent multiple clicks
+    
+    // Check if Firebase is ready
+    if (!firebaseReady) {
+      toast.error('Authentication service is still initializing. Please wait a moment.');
+      return;
+    }
+    
+    if (firebaseError) {
+      toast.error(`Authentication service error: ${firebaseError}`);
+      return;
+    }
+    
     setIsLoading(true);
     console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
     
@@ -185,8 +199,11 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     }
   };
 
-  const buttonText = 'Google';
-  const loadingText = mode === 'signup' ? 'Creating account...' : 'Signing in...';
+  // Show loading state if Firebase is not ready or if signing in
+  const isButtonDisabled = !firebaseReady || isLoading || !!firebaseError;
+  const buttonText = !firebaseReady ? 'Loading auth...' : 
+                     firebaseError ? 'Auth unavailable' :
+                     isLoading ? (mode === 'signup' ? 'Creating account...' : 'Signing in...') : 'Google';
 
   return (
     <Button 
@@ -194,12 +211,17 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
       type="button" 
       className="w-full flex items-center justify-center gap-3 !bg-dark-200 hover:!bg-dark-200/80 !text-light-100 !border-white/20 hover:!border-white/30 !rounded-full !min-h-12"
       onClick={handleGoogleAuth}
-      disabled={isLoading}
+      disabled={isButtonDisabled}
     >
-      {isLoading ? (
+      {(!firebaseReady || isLoading) ? (
         <>
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-400"></div>
-          <span>{loadingText}</span>
+          <span>{buttonText}</span>
+        </>
+      ) : firebaseError ? (
+        <>
+          <div className="w-5 h-5 text-red-400">⚠</div>
+          <span>{buttonText}</span>
         </>
       ) : (
         <>
