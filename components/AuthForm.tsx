@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 
 import FormField from "./FormField";
 import GoogleAuthButton from "./GoogleAuthButton";
+import BypassGoogleAuth from "./BypassGoogleAuth";
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -29,6 +30,7 @@ const authFormSchema = (type: FormType) => {
 const AuthForm = ({ type }: { type: FormType }) => {
     const router = useRouter();
     const [signInSuccess, setSignInSuccess] = useState(false);
+    const [showBypass, setShowBypass] = useState(false);
     const { trackFormSubmission, trackUserAction, trackError } = useTelemetry();
 
     const formSchema = authFormSchema(type);
@@ -256,7 +258,30 @@ const AuthForm = ({ type }: { type: FormType }) => {
                     </div>
                 </div>
 
-                <GoogleAuthButton mode={isSignIn ? 'signin' : 'signup'} />
+                {/* Primary Google authentication */}
+                {showBypass ? (
+                    <BypassGoogleAuth mode={isSignIn ? 'signin' : 'signup'} />
+                ) : (
+                    <GoogleAuthButton mode={isSignIn ? 'signin' : 'signup'} />
+                )}
+                
+                {/* Development toggle */}
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="text-center space-y-2">
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => setShowBypass(!showBypass)}
+                                className="text-xs text-gray-500 hover:text-gray-300 underline"
+                            >
+                                {showBypass ? 'Try Normal Auth' : 'Try Development Mode'}
+                            </button>
+                        </div>
+                        <div className="text-xs text-gray-600">
+                            {showBypass ? 'Using development bypass mode' : 'Using Firebase authentication'}
+                        </div>
+                    </div>
+                )}
 
                 <p className="text-center">
                     {isSignIn ? "No account yet?" : "Have an account already?"}
