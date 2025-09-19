@@ -5,8 +5,8 @@
  */
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence, setPersistence, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -54,8 +54,25 @@ if (getApps().length === 0) {
   console.log('🔥 Using existing Firebase app');
 }
 
-// Initialize Auth
-const auth = getAuth(app);
+// Initialize Auth with robust persistence fallback (handles Safari Private Mode / IndexedDB issues)
+let auth;
+try {
+  // Try to use initializeAuth with persistence fallback
+  const existingAuth = getApps().length > 0 ? getAuth(app) : null;
+  if (existingAuth) {
+    auth = existingAuth;
+    console.log('🔥 Using existing Firebase Auth instance');
+  } else {
+    // Initialize with persistence fallback
+    auth = initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+    });
+    console.log('🔥 Initialized Firebase Auth with persistence fallback');
+  }
+} catch (e) {
+  console.warn('🔥 Auth initializeAuth failed, using default getAuth():', e);
+  auth = getAuth(app);
+}
 
 // Initialize Firestore
 const db = getFirestore(app);

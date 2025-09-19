@@ -1,6 +1,6 @@
 "use client";
 
-import { authenticateWithGoogleSimple } from "@/lib/firebase/simple-auth";
+import { authenticateWithGoogleFallback, handleRedirectResult } from "@/lib/firebase/simple-auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -16,8 +16,89 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
 
-  // Note: Redirect is now handled by middleware after successful authentication
-  // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
+  // Check for redirect result on component mount
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await handleRedirectResult();
+        if (result) {
+          console.log('🔐 Found redirect result, processing authentication...');
+          await processAuthenticationResult(result);
+        }
+      } catch (error) {
+        console.error('🔐 Error handling redirect result:', error);
+      }
+    };
+    
+    checkRedirectResult();
+  }, []);
+
+  const processAuthenticationResult = async (authResult: any) => {
+    const { user, idToken } = authResult;
+    
+    console.log('🔐 Processing authentication result:', {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified
+    });
+    
+    if (!user.email) {
+      const error = new Error("No email provided by Google");
+      console.error(error);
+      throw error;
+    }
+    
+    // Determine endpoint based on mode
+    const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
+    
+    const authResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email,
+      }),
+    });
+
+    console.log(`🔐 ${mode} response status:`, authResponse.status);
+    
+    if (authResponse.ok) {
+      const responseData = await authResponse.json();
+      console.log(`🚀 GoogleAuthButton: ${mode} API call successful!`, {
+        status: authResponse.status,
+        hasToken: !!responseData.token,
+        hasUser: !!responseData.user,
+        responseKeys: Object.keys(responseData)
+      });
+      
+      // Store token in localStorage if provided
+      if (responseData.token) {
+        localStorage.setItem('auth_token', responseData.token);
+        console.log('🚀 Token stored in localStorage');
+      }
+      
+      console.log('🚀 About to show success toast and trigger redirect...');
+      toast.success(mode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!');
+      
+      // Authentication successful! Let the middleware handle the redirect
+      console.log('🚀 Authentication successful! Cookie set, page will refresh to trigger middleware redirect...');
+      
+      // Just refresh the current page - the middleware will see the session cookie 
+      // and redirect authenticated users from /sign-in to /dashboard
+      setTimeout(() => {
+        console.log('🚀 Refreshing page to allow middleware to handle redirect...');
+        window.location.reload();
+      }, 500);
+    } else {
+      // Handle errors...
+      const errorData = await authResponse.json().catch(() => ({}));
+      throw new Error(`Failed to ${mode}: ${errorData.error || 'Unknown error'}`);
+    }
+  };
 
   const handleGoogleAuth = async () => {
     if (isLoading) return; // Prevent multiple clicks
@@ -26,127 +107,21 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
     
     try {
-      console.log('🔐 Starting simplified Google authentication...');
-      const { user, idToken } = await authenticateWithGoogleSimple();
+      console.log('🔐 Starting fallback Google authentication...');
+      const result = await authenticateWithGoogleFallback();
       
-      console.log('🔐 Simplified Firebase authentication successful:', {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified
-      });
-      
-      console.log(`🔐 Attempting ${mode} with Firebase ID token...`);
-      
-      if (!user.email) {
-        const error = new Error("No email provided by Google");
-        console.error(error);
-        throw error;
+      // Check if user was redirected
+      if (result && (result as any).redirected) {
+        console.log('🔐 User was redirected for authentication');
+        // Don't set loading to false - user will come back from redirect
+        return;
       }
       
-      // Determine endpoint based on mode
-      const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
-      
-      try {
-        const authResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken,
-            name: user.displayName || user.email?.split('@')[0] || 'User',
-            email: user.email,
-          }),
-        });
-
-        console.log(`🔐 ${mode} response status:`, authResponse.status);
-        
-        if (!authResponse.ok) {
-          const errorText = await authResponse.text();
-          console.error(`🔐 ${mode} failed with status ${authResponse.status}:`, errorText);
-        }
-        
-        if (authResponse.ok) {
-          const responseData = await authResponse.json();
-          console.log(`🚀 GoogleAuthButton: ${mode} API call successful!`, {
-            status: authResponse.status,
-            hasToken: !!responseData.token,
-            hasUser: !!responseData.user,
-            responseKeys: Object.keys(responseData)
-          });
-          
-          // Store token in localStorage if provided
-          if (responseData.token) {
-            localStorage.setItem('auth_token', responseData.token);
-            console.log('🚀 Token stored in localStorage');
-          }
-          
-          console.log('🚀 About to show success toast and trigger redirect...');
-          toast.success(mode === 'signup' ? 'Account created successfully!' : 'Signed in successfully!');
-          
-          // Authentication successful! Let the middleware handle the redirect
-          console.log('🚀 Authentication successful! Cookie set, page will refresh to trigger middleware redirect...');
-          
-          // Just refresh the current page - the middleware will see the session cookie 
-          // and redirect authenticated users from /sign-in to /dashboard
-          setTimeout(() => {
-            console.log('🚀 Refreshing page to allow middleware to handle redirect...');
-            window.location.reload();
-          }, 500);
-          
-          console.log('🚀 GoogleAuthButton: Returning from successful auth handler');
-          return;
-        }
-
-        // Handle specific error cases
-        const errorData = await authResponse.json().catch(() => ({}));
-        
-        if (mode === 'signup' && authResponse.status === 409) {
-          // User already exists, try signing in instead
-          console.log('User already exists, attempting sign in...');
-          
-          const signInResponse = await fetch('/api/auth/signin', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken }),
-          });
-
-          if (signInResponse.ok) {
-            const signInData = await signInResponse.json();
-            if (signInData.token) {
-              localStorage.setItem('auth_token', signInData.token);
-            }
-            
-            console.log('GoogleAuthButton: Sign in after signup conflict successful');
-            toast.success('Welcome back! Signed in successfully!');
-            
-            // Let middleware handle redirect after successful fallback sign-in
-            setTimeout(() => {
-              console.log('🚀 Refreshing page to allow middleware redirect after signup conflict resolution...');
-              window.location.reload();
-            }, 500);
-            return;
-          }
-        }
-        
-        if (mode === 'signin' && authResponse.status === 401) {
-          // For sign-in, if user doesn't exist, suggest sign-up
-          console.log('User not found, suggesting sign up...');
-          toast.error('Account not found. Please sign up first or try with a different Google account.');
-          return;
-        }
-        
-        // Generic error handling
-        const error = new Error(`Failed to ${mode}: ${errorData.error || 'Unknown error'}`);
-        console.error(error);
-        throw error;
-        
-      } catch (error) {
-        console.error(`${mode} error:`, error);
-        throw error;
+      // If we got a result without redirect, process it
+      if (result && (result as any).user && (result as any).idToken) {
+        await processAuthenticationResult(result);
+      } else if (!result || !(result as any).redirected) {
+        throw new Error('Authentication failed - no result received');
       }
       
     } catch (error: any) {

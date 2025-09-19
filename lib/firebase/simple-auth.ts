@@ -1,19 +1,19 @@
 /**
- * Simplified Firebase Authentication Helper
+ * Redirect-based Firebase Authentication Helper
  * 
- * Direct Firebase integration without complex initialization patterns
+ * Uses signInWithRedirect to avoid popup-related auth/internal-error issues
  */
 
-import { signInWithPopup, getIdToken } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, getIdToken, onAuthStateChanged } from 'firebase/auth';
 import { auth, googleProvider } from '@/firebase/simple-client';
 
 /**
- * Authenticate with Google using Firebase (simplified approach)
- * Returns Firebase ID token (not Google OAuth token)
+ * Authenticate with Google using Firebase redirect flow
+ * This avoids popup-related auth/internal-error issues
  */
-export async function authenticateWithGoogleSimple() {
+export async function authenticateWithGoogleRedirect() {
   try {
-    console.log('🔐 Starting simplified Firebase Google authentication...');
+    console.log('🔐 Starting Firebase Google authentication (redirect)...');
     
     if (!auth) {
       throw new Error('Firebase Auth not initialized');
@@ -26,7 +26,82 @@ export async function authenticateWithGoogleSimple() {
     console.log('🔐 Firebase Auth instance available:', !!auth);
     console.log('🔐 Google Provider instance available:', !!googleProvider);
     
-    // Sign in with Google using Firebase
+    // Use redirect instead of popup to avoid auth/internal-error
+    await signInWithRedirect(auth, googleProvider);
+    
+    // User will be redirected to Google and back
+    // The result is handled by handleRedirectResult
+    
+  } catch (error) {
+    console.error('🔐 Firebase Google redirect authentication failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle redirect result after user returns from Google OAuth
+ */
+export async function handleRedirectResult() {
+  try {
+    console.log('🔐 Checking for redirect result...');
+    
+    if (!auth) {
+      throw new Error('Firebase Auth not initialized');
+    }
+    
+    const result = await getRedirectResult(auth);
+    
+    if (result) {
+      const user = result.user;
+      
+      console.log('🔐 Redirect authentication successful, getting Firebase ID token...');
+      
+      // Get Firebase ID token (this is crucial - not Google OAuth token)
+      const idToken = await getIdToken(user, true); // Force refresh to ensure fresh token
+      
+      console.log('🔐 Firebase ID token obtained successfully');
+      console.log('🔐 Token preview:', idToken.substring(0, 50) + '...');
+      
+      // Validate token format (Firebase ID tokens are JWT)
+      if (!idToken.includes('.')) {
+        throw new Error('Invalid Firebase ID token format - not a JWT');
+      }
+      
+      return {
+        user: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          emailVerified: user.emailVerified
+        },
+        idToken
+      };
+    } else {
+      console.log('🔐 No redirect result found');
+      return null;
+    }
+  } catch (error) {
+    console.error('🔐 Redirect result handling failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fallback: Try popup first, then redirect if popup fails with internal-error
+ */
+export async function authenticateWithGoogleFallback() {
+  try {
+    // Import popup method dynamically to avoid loading issues
+    const { signInWithPopup } = await import('firebase/auth');
+    
+    console.log('🔐 Trying popup authentication first...');
+    
+    if (!auth || !googleProvider) {
+      throw new Error('Firebase Auth not initialized');
+    }
+    
+    // Try popup first
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     
@@ -34,18 +109,13 @@ export async function authenticateWithGoogleSimple() {
       throw new Error('No user returned from Google authentication');
     }
     
-    console.log('🔐 Google authentication successful, getting Firebase ID token...');
+    console.log('🔐 Popup authentication successful, getting Firebase ID token...');
     
-    // Get Firebase ID token (this is crucial - not Google OAuth token)
-    const idToken = await getIdToken(user, true); // Force refresh to ensure fresh token
+    // Get Firebase ID token
+    const idToken = await getIdToken(user, true);
     
     console.log('🔐 Firebase ID token obtained successfully');
     console.log('🔐 Token preview:', idToken.substring(0, 50) + '...');
-    
-    // Validate token format (Firebase ID tokens are JWT)
-    if (!idToken.includes('.')) {
-      throw new Error('Invalid Firebase ID token format - not a JWT');
-    }
     
     return {
       user: {
@@ -57,9 +127,25 @@ export async function authenticateWithGoogleSimple() {
       },
       idToken
     };
-  } catch (error) {
-    console.error('🔐 Simplified Firebase Google authentication failed:', error);
-    throw error;
+    
+  } catch (error: any) {
+    console.warn('🔐 Popup authentication failed:', error?.code || error?.message);
+    
+    // Check if it's the dreaded auth/internal-error or popup issues
+    if (error?.code === 'auth/internal-error' || 
+        error?.code === 'auth/popup-blocked' || 
+        error?.code === 'auth/popup-closed-by-user' ||
+        error?.message?.includes('popup')) {
+      
+      console.log('🔐 Falling back to redirect authentication...');
+      
+      // Fall back to redirect
+      await authenticateWithGoogleRedirect();
+      return { redirected: true }; // Signal that user was redirected
+    } else {
+      // Re-throw other errors
+      throw error;
+    }
   }
 }
 
