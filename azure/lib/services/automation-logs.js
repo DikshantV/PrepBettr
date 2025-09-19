@@ -1,5 +1,5 @@
 const queueService = require('./queue-service');
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 
 class AutomationLogger {
     constructor() {
@@ -11,14 +11,14 @@ class AutomationLogger {
      */
     createLogEntry(action, status, message, details = {}) {
         return {
-            id: uuidv4(),
+            id: nanoid(),
             timestamp: new Date().toISOString(),
             action: action,
             status: status,
             message: message,
             details: details,
             functionName: process.env.AZURE_FUNCTIONS_NAME || 'unknown',
-            invocationId: process.env.INVOCATION_ID || uuidv4()
+            invocationId: process.env.INVOCATION_ID || nanoid()
         };
     }
 

@@ -96,7 +96,7 @@ app.http('searchSchedulerHttp', {
             const searchMessage = {
                 userId,
                 filters: filters || await getUserSearchFilters(userId),
-                requestId: require('uuid').v4(),
+                requestId: require('nanoid').nanoid(),
                 requestedAt: new Date().toISOString(),
                 priority: immediate ? 'high' : 'normal'
             };
@@ -225,7 +225,7 @@ async function scheduleJobSearch(user) {
         const searchMessage = {
             userId: user.id,
             filters: user.autoApplySettings.filters,
-            requestId: require('uuid').v4(),
+            requestId: require('nanoid').nanoid(),
             requestedAt: new Date().toISOString(),
             priority: 'normal',
             autoApply: true,

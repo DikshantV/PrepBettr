@@ -1,7 +1,7 @@
 const { app } = require('@azure/functions');
 const queueService = require('../lib/services/queue-service');
 const automationLogger = require('../lib/services/automation-logs');
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 const { initializeAzureOpenAI, getAzureOpenAIClient } = require('../lib/azure-openai-client');
 
 // Queue trigger function for processing follow-up reminders

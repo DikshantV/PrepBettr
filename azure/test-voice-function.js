@@ -1,6 +1,6 @@
 const { OpenAI } = require('openai');
 const sdk = require('microsoft-cognitiveservices-speech-sdk');
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 
 async function testComponents() {
     console.log('Testing Azure Function components...\n');
@@ -66,7 +66,7 @@ async function testComponents() {
     
     // Test UUID generation
     console.log('\n3. Testing UUID generation...');
-    const testId = uuidv4();
+    const testId = nanoid();
     console.log('✅ Generated UUID:', testId);
     
     console.log('\n✅ Component testing completed!');

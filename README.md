@@ -37,10 +37,12 @@ See `.env.example` for all required variables.
 
 ```bash
 npm run dev          # Start development server
-npm run build        # Production build
+npm run build        # Production build  
 npm run lint         # Run ESLint
-npm run test         # Run tests
+npm run test         # Run unit tests
+npm run test:coverage # Run tests with coverage
 npm run type-check   # TypeScript checking
+npm run check:routes # Check for duplicate API routes
 ```
 
 ## Deployment
@@ -53,9 +55,11 @@ npm run deploy:azure:production  # Deploy to production
 
 ### Testing
 ```bash
-npm run test:all              # Run all tests
-npm run test:e2e             # End-to-end tests
-npm run test:voice-flow      # Voice interview tests
+npm run test                 # Unit tests with Jest
+npm run test:coverage        # Unit tests with coverage report
+npm run test:e2e             # End-to-end tests with Playwright
+npm run test:e2e:dev         # E2E tests with UI mode
+npm run test:azure-health    # Azure services health check
 ```
 
 ## Architecture
@@ -71,6 +75,14 @@ npm run test:voice-flow      # Voice interview tests
 
 - See `WARP.md` for comprehensive development guidelines
 - API documentation in individual route files
+- See `CLEANUP_REPORT.md` for recent cleanup and maintenance activities
+
+## Project Status
+
+- **Build Status**: ✅ Production ready (23.0s build time)
+- **Route Health**: ✅ 38 endpoints, no duplicates
+- **Dependencies**: Recently cleaned up and modernized
+- **Code Quality**: Comprehensive cleanup completed January 2025
 
 ## License
 

@@ -1,14 +1,14 @@
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 
 /**
  * Error details for Azure Functions
  */
 class FunctionErrorDetails {
   constructor(error, context, req) {
-    this.errorId = uuidv4();
+    this.errorId = nanoid();
     this.timestamp = new Date().toISOString();
     this.functionName = context?.functionName || 'unknown';
-    this.invocationId = context?.invocationId || uuidv4();
+    this.invocationId = context?.invocationId || nanoid();
     this.executionId = context?.executionContext?.invocationId || this.invocationId;
     
     // Extract request details if available
@@ -65,7 +65,7 @@ class FunctionErrorHandler {
       try {
         // Add request ID if not present
         if (req && !req.headers['x-request-id']) {
-          req.headers['x-request-id'] = uuidv4();
+          req.headers['x-request-id'] = nanoid();
         }
 
         // Execute the handler
