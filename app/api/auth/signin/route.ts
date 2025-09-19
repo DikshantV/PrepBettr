@@ -10,19 +10,53 @@ export async function POST(request: NextRequest) {
   const timestamp = new Date().toISOString();
   console.log(`🔑 [${timestamp}] AUTH SIGNIN POST called - User-Agent: ${request.headers.get('user-agent')?.substring(0, 50)}`);
   try {
-    const { email, password, idToken } = await request.json();
+    const { email, password, idToken, bypass } = await request.json();
     
     console.log(`🔑 [${timestamp}] Signin request details:`, {
       hasEmail: !!email,
       hasPassword: !!password,
       hasIdToken: !!idToken,
+      isBypass: !!bypass,
       idTokenPrefix: idToken ? idToken.substring(0, 50) + '...' : 'none'
     });
 
     let authResult;
     let sessionToken = idToken;
 
-    if (idToken) {
+    if (idToken && bypass) {
+      // Handle bypass/development token flow
+      console.log(`🔐 [${timestamp}] Processing bypass token for development authentication`);
+      
+      try {
+        // For bypass tokens, we can decode them directly since they're mock tokens
+        const parts = idToken.split('.');
+        if (parts.length >= 3) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          
+          authResult = {
+            success: true,
+            user: {
+              uid: payload.uid,
+              email: payload.email,
+              name: payload.name,
+              email_verified: payload.email_verified || true
+            }
+          };
+          
+          sessionToken = idToken; // Use the bypass token as session token
+          console.log(`✅ [${timestamp}] Bypass token processed for uid: ${authResult.user.uid}`);
+        } else {
+          throw new Error('Invalid bypass token format');
+        }
+      } catch (error) {
+        console.error(`❌ [${timestamp}] Bypass token processing failed:`, error);
+        return NextResponse.json(
+          { error: 'Invalid bypass token' },
+          { status: 401 }
+        );
+      }
+      
+    } else if (idToken) {
       // Handle Firebase ID token flow (for Google Sign-in)
       console.log(`🔐 [${timestamp}] Verifying Firebase ID token for Google Sign-in`);
       console.log(`🔐 [${timestamp}] ID Token format check:`, {

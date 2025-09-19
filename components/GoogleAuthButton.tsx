@@ -1,12 +1,11 @@
 "use client";
 
-import { authenticateWithGoogle, validateFirebaseIdToken } from "@/lib/firebase/auth.js";
+import { authenticateWithGoogleSimple } from "@/lib/firebase/simple-auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import RedirectGuard from "@/lib/utils/redirect-guard";
-import { useFirebaseReady } from "@/components/FirebaseClientInit";
 
 interface GoogleAuthButtonProps {
   mode: 'signin' | 'signup';
@@ -16,7 +15,6 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
-  const { ready: firebaseReady, error: firebaseError } = useFirebaseReady();
 
   // Note: Redirect is now handled by middleware after successful authentication
   // The middleware will detect the session cookie and redirect authenticated users from /sign-in to /dashboard
@@ -24,39 +22,20 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
   const handleGoogleAuth = async () => {
     if (isLoading) return; // Prevent multiple clicks
     
-    // Check if Firebase is ready
-    if (!firebaseReady) {
-      toast.error('Authentication service is still initializing. Please wait a moment.');
-      return;
-    }
-    
-    if (firebaseError) {
-      toast.error(`Authentication service error: ${firebaseError}`);
-      return;
-    }
-    
     setIsLoading(true);
     console.log(`Starting Google ${mode === 'signup' ? 'Sign Up' : 'Sign In'}...`);
     
-    // Use the Firebase auth helper for better error handling
-    
     try {
-      console.log('🔐 Starting Google authentication using Firebase helper...');
-      const { user, idToken } = await authenticateWithGoogle();
+      console.log('🔐 Starting simplified Google authentication...');
+      const { user, idToken } = await authenticateWithGoogleSimple();
       
-      console.log('🔐 Firebase authentication successful:', {
+      console.log('🔐 Simplified Firebase authentication successful:', {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         emailVerified: user.emailVerified
       });
       
-      // Validate the Firebase ID token
-      if (!validateFirebaseIdToken(idToken)) {
-        throw new Error('Invalid Firebase ID token received');
-      }
-      
-      console.log('🔐 Firebase ID token validated successfully');
       console.log(`🔐 Attempting ${mode} with Firebase ID token...`);
       
       if (!user.email) {
@@ -199,11 +178,9 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
     }
   };
 
-  // Show loading state if Firebase is not ready or if signing in
-  const isButtonDisabled = !firebaseReady || isLoading || !!firebaseError;
-  const buttonText = !firebaseReady ? 'Loading auth...' : 
-                     firebaseError ? 'Auth unavailable' :
-                     isLoading ? (mode === 'signup' ? 'Creating account...' : 'Signing in...') : 'Google';
+  // Show loading state when signing in
+  const isButtonDisabled = isLoading;
+  const buttonText = isLoading ? (mode === 'signup' ? 'Creating account...' : 'Signing in...') : 'Google';
 
   return (
     <Button 
@@ -213,14 +190,9 @@ export default function GoogleAuthButton({ mode }: GoogleAuthButtonProps) {
       onClick={handleGoogleAuth}
       disabled={isButtonDisabled}
     >
-      {(!firebaseReady || isLoading) ? (
+      {isLoading ? (
         <>
           <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-400"></div>
-          <span>{buttonText}</span>
-        </>
-      ) : firebaseError ? (
-        <>
-          <div className="w-5 h-5 text-red-400">⚠</div>
           <span>{buttonText}</span>
         </>
       ) : (

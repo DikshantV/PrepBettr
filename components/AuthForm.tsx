@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import FormField from "./FormField";
 import GoogleAuthButton from "./GoogleAuthButton";
 import BypassGoogleAuth from "./BypassGoogleAuth";
+import FirebaseDiagnostic from "./FirebaseDiagnostic";
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -292,6 +293,8 @@ const AuthForm = ({ type }: { type: FormType }) => {
                         {!isSignIn ? "Sign In" : "Sign Up"}
                     </Link>
                 </p>
+                
+                <FirebaseDiagnostic />
         </div>
     );
 };

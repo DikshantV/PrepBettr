@@ -21,7 +21,7 @@ interface FirebaseConfig {
 // Get Firebase configuration from various sources
 function getFirebaseConfig(): FirebaseConfig | null {
   // Try to get from client-side environment variables first
-  const clientApiKey = process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const clientApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY;
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
   
   // Try to get from window globals (set by server-side fetch)

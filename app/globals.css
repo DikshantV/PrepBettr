@@ -646,3 +646,253 @@ input[type="range"].slider-thumb::-moz-range-thumb {
   transform: translateY(-50%) scale(0.95);
   transition: transform 0.1s ease-out;
 }
+
+/* Subscription Page Specific Styles */
+@layer components {
+  .subscription-checkout {
+    @apply relative;
+  }
+
+  /* Plan Card Animations */
+  .plan-card {
+    @apply transition-all duration-500 ease-out;
+    transform-origin: center;
+  }
+
+  .plan-card:hover {
+    @apply scale-105;
+    box-shadow: 0 25px 50px -12px rgba(202, 197, 254, 0.25);
+  }
+
+  .plan-card.selected {
+    @apply scale-105 ring-2 ring-primary-200/50;
+    box-shadow: 0 25px 50px -12px rgba(202, 197, 254, 0.4);
+  }
+
+  .plan-card.popular {
+    @apply ring-2 ring-primary-200/30;
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  /* Billing Toggle Animations */
+  .billing-toggle {
+    @apply relative overflow-hidden;
+  }
+
+  .savings-badge {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Feature List Animations */
+  .feature-item {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .feature-item:hover {
+    @apply text-white transform translate-x-1;
+  }
+
+  /* Price Display Animations */
+  .price-display {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .price-change {
+    animation: priceChange 0.5s ease-out;
+  }
+
+  /* Comparison Table Animations */
+  .comparison-table {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .comparison-toggle {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Trust Signals */
+  .trust-signal {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .trust-signal:hover {
+    @apply text-success-100 transform scale-105;
+  }
+
+  /* PayPal Button Container */
+  .paypal-container {
+    @apply relative overflow-hidden rounded-2xl;
+  }
+
+  .paypal-container::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary-200/10 to-transparent opacity-0 transition-opacity duration-300;
+  }
+
+  .paypal-container:hover::before {
+    @apply opacity-100;
+  }
+
+  /* FAQ Section */
+  .faq-item {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .faq-item:hover {
+    @apply transform scale-105;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Mobile Responsive Enhancements */
+  @media (max-width: 768px) {
+    .plan-card:hover {
+      @apply scale-100;
+    }
+
+    .plan-card.selected {
+      @apply scale-100;
+    }
+  }
+
+  /* Loading States */
+  .loading-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(202, 197, 254, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Success/Error States */
+  .success-pulse {
+    animation: successPulse 1s ease-out;
+  }
+
+  .error-shake {
+    animation: errorShake 0.5s ease-out;
+  }
+}
+
+/* Keyframe Animations */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(202, 197, 254, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(202, 197, 254, 0.6);
+  }
+}
+
+@keyframes priceChange {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(73, 222, 80, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(73, 222, 80, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(73, 222, 80, 0);
+  }
+}
+
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Enhanced Scroll Behavior */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Dark mode enhancements for subscription page */
+.dark .subscription-checkout {
+  color-scheme: dark;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .plan-card {
+    @apply border-2 border-white;
+  }
+  
+  .plan-card.selected {
+    @apply border-primary-200;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .plan-card,
+  .feature-item,
+  .price-display,
+  .comparison-table,
+  .trust-signal,
+  .faq-item {
+    @apply transition-none;
+  }
+
+  .plan-card:hover,
+  .plan-card.selected {
+    @apply scale-100;
+  }
+
+  .savings-badge {
+    animation: none;
+  }
+}
+
+/* Focus indicators for accessibility */
+.plan-card:focus-visible {
+  @apply outline-2 outline-primary-200 outline-offset-2;
+}
+
+.comparison-toggle:focus-visible {
+  @apply outline-2 outline-primary-200 outline-offset-2;
+}
+
+/* Print styles */
+@media print {
+  .subscription-checkout {
+    @apply text-black bg-white;
+  }
+  
+  .plan-card {
+    @apply border border-gray-300 bg-white text-black;
+  }
+  
+  .paypal-container {
+    display: none;
+  }
+}

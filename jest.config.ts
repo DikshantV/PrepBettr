@@ -10,18 +10,20 @@
 import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
-  // Test environment and setup
+  // Test environment and setup  
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: [
     '<rootDir>/tests/setup/global-setup.ts',
     '<rootDir>/tests/setup/azure-mocks.ts',
-    '<rootDir>/tests/setup/performance-baseline.ts'
+    '<rootDir>/tests/setup/performance-baseline.ts',
+    '<rootDir>/tests/setup/react-setup.ts'
   ],
 
   // File patterns
   testMatch: [
     '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/tests/**/*.test.tsx',
     '<rootDir>/tests/**/*.test.js',
     '<rootDir>/azure/**/__tests__/**/*.test.ts',
     '<rootDir>/lib/**/__tests__/**/*.test.ts'

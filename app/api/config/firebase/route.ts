@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     
     // Construct Firebase configuration
     const firebaseConfig = {
-      apiKey: secrets.firebaseClientKey || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
+      apiKey: secrets.firebaseClientKey || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
       authDomain: `${secrets.firebaseProjectId || 'prepbettr'}.firebaseapp.com`,
       projectId: secrets.firebaseProjectId || process.env.FIREBASE_PROJECT_ID || 'prepbettr',
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${secrets.firebaseProjectId || 'prepbettr'}.appspot.com`,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     
     // Fallback to environment variables only
     const fallbackConfig = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_CLIENT_KEY || '',
       authDomain: `${process.env.FIREBASE_PROJECT_ID || 'prepbettr'}.firebaseapp.com`,
       projectId: process.env.FIREBASE_PROJECT_ID || 'prepbettr',
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID || 'prepbettr'}.appspot.com`,
