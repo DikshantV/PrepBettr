@@ -69,7 +69,7 @@ async function initializeFirebaseAdmin(): Promise<any> {
     const firebaseConfig = {
       projectId: config['FIREBASE_PROJECT_ID'] || process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'prepbettr',
       clientEmail: config['FIREBASE_CLIENT_EMAIL'] || process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: config['FIREBASE_PRIVATE_KEY'] || process.env.FIREBASE_PRIVATE_KEY
+      privateKey: config['FIREBASE_PRIVATE_KEY'] || process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY_DIRECT
     };
 
     console.log('🔥 Firebase config loaded:', {
