@@ -34,8 +34,8 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  AZURE_RESOURCE_GROUP: prepbettr-prod-rg
-  APP_NAME: prepbettr-app-prod
+  AZURE_RESOURCE_GROUP: PrepBettr_group
+  APP_NAME: PrepBettr
   STAGING_SLOT: staging
   
 jobs:
@@ -86,7 +86,7 @@ jobs:
           
           # Create Cosmos DB snapshot (using CLI)
           az cosmosdb sql container create-continuous-backup \
-            --account-name prepbettr-cosmos-prod \
+            --account-name prepbettr-cosmosdb \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --database-name prepbettr \
             --container-name snapshots \
