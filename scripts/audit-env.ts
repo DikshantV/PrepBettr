@@ -309,7 +309,7 @@ class EnvironmentAuditor {
         this.result.recommendations.push('\n📘 Azure App Service specific recommendations:');
         this.result.recommendations.push('   • Check Application Settings in Azure Portal');
         this.result.recommendations.push('   • Verify Managed Identity has Key Vault access');
-        this.result.recommendations.push('   • Use the debug endpoint: /api/debug/firebase-config');
+        this.result.recommendations.push('   • Use health endpoint: /api/health for service status');
         this.result.recommendations.push('   • Check Application Insights for detailed error logs');
       }
     }
@@ -416,4 +416,5 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { EnvironmentAuditor, AuditResult };
+export { EnvironmentAuditor };
+export type { AuditResult };

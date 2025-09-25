@@ -272,60 +272,43 @@ export class UnifiedAuth {
         isMockToken: idToken.startsWith('mock-token-')
       });
       
-      // Handle mock tokens for development
-      if (idToken.startsWith('mock-token-')) {
-        this.log('debug', 'Verifying mock token');
-        return this.verifyMockToken(idToken);
+      this.log('debug', 'Verifying Firebase ID token via new verifyIdToken function', { 
+        tokenPrefix: idToken.substring(0, 20) + '...' 
+      });
+      
+      // Use the new verifyIdToken function from firebase/admin.ts
+      const { verifyIdToken } = await import('@/lib/firebase/admin');
+      const result = await verifyIdToken(idToken, true);
+      
+      if (!result.valid) {
+        return {
+          valid: false,
+          error: result.error || 'Firebase token verification failed',
+          errorCode: this.mapFirebaseErrorCode(result.errorCode)
+        };
       }
-
-      if (!this.firebaseAuth) {
-        console.error('🔥 UnifiedAuth: Firebase Auth not initialized in verifyFirebaseToken');
-        console.error('🔥 UnifiedAuth: Current initialization status:', {
-          initialized: this.initialized,
-          firebaseAuthExists: !!this.firebaseAuth,
-          azureAuthExists: !!this.azureAuth
-        });
-        throw new UnifiedAuthError(AuthErrorCode.SERVICE_UNAVAILABLE, 'Firebase Auth not initialized');
-      }
-
-      this.log('debug', 'Verifying Firebase ID token', { tokenPrefix: idToken.substring(0, 20) + '...' });
-      console.log('🔥 UnifiedAuth: About to call firebaseAuth.verifyIdToken...', {
-        firebaseAuthType: typeof this.firebaseAuth,
-        verifyIdTokenExists: typeof this.firebaseAuth.verifyIdToken,
-        adminSDKVersion: admin?.SDK_VERSION || 'unknown'
-      });
       
-      // Add additional validation options
-      const decodedToken = await this.firebaseAuth.verifyIdToken(idToken, true);
-      console.log('🔥 UnifiedAuth: Firebase verifyIdToken successful', {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        issuer: decodedToken.iss,
-        audience: decodedToken.aud,
-        expiry: new Date(decodedToken.exp * 1000).toISOString()
-      });
-      
-      this.log('debug', 'Firebase token verification successful', { 
-        uid: decodedToken.uid, 
-        email: decodedToken.email,
-        exp: decodedToken.exp
-      });
-      
+      // Convert to UnifiedAuth format
       const user: AuthenticatedUser = {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        name: decodedToken.name || decodedToken.display_name || decodedToken.email?.split('@')[0],
-        picture: decodedToken.picture,
-        email_verified: decodedToken.email_verified || false,
-        firebase: decodedToken.firebase,
-        custom_claims: decodedToken.custom_claims || {},
+        uid: result.user!.uid,
+        email: result.user!.email,
+        name: result.user!.name,
+        picture: result.user!.picture,
+        email_verified: result.user!.email_verified || false,
+        firebase: result.user!.firebase,
+        custom_claims: result.user!.custom_claims || {},
         provider: 'firebase'
       };
 
+      this.log('debug', 'Firebase token verification successful', { 
+        uid: user.uid, 
+        email: user.email
+      });
+      
       return {
         valid: true,
         user,
-        expiresAt: new Date(decodedToken.exp * 1000)
+        expiresAt: result.user!.firebase?.sign_in_provider ? new Date(Date.now() + 60 * 60 * 1000) : undefined // 1 hour default
       };
 
     } catch (error: any) {
@@ -335,48 +318,6 @@ export class UnifiedAuth {
         tokenPrefix: idToken.substring(0, 20) + '...'
       });
       
-      // Handle specific Firebase Auth errors
-      if (error.code === 'auth/id-token-expired') {
-        return {
-          valid: false,
-          error: 'Token has expired',
-          errorCode: AuthErrorCode.EXPIRED_TOKEN
-        };
-      }
-      
-      if (error.code === 'auth/id-token-revoked') {
-        return {
-          valid: false,
-          error: 'Token has been revoked',
-          errorCode: AuthErrorCode.INVALID_TOKEN
-        };
-      }
-      
-      if (error.code === 'auth/invalid-id-token') {
-        return {
-          valid: false,
-          error: 'Invalid ID token format',
-          errorCode: AuthErrorCode.INVALID_TOKEN
-        };
-      }
-      
-      if (error.code === 'auth/project-not-found') {
-        return {
-          valid: false,
-          error: 'Firebase project not found',
-          errorCode: AuthErrorCode.SERVICE_UNAVAILABLE
-        };
-      }
-      
-      // Handle the specific "kid" claim error (expired token)
-      if (error.code === 'auth/argument-error' && error.message.includes('kid')) {
-        return {
-          valid: false,
-          error: 'Token has expired or is invalid. Please refresh your authentication.',
-          errorCode: AuthErrorCode.EXPIRED_TOKEN
-        };
-      }
-
       return {
         valid: false,
         error: error.message || 'Firebase token verification failed',
@@ -384,59 +325,27 @@ export class UnifiedAuth {
       };
     }
   }
-
+  
   /**
-   * Verify mock token for development
+   * Map Firebase error codes to UnifiedAuth error codes
    */
-  private verifyMockToken(token: string): TokenVerificationResult {
-    try {
-      // Parse mock token: mock-token-{uid}-{timestamp}
-      const parts = token.split('-');
-      if (parts.length < 4) {
-        return {
-          valid: false,
-          error: 'Invalid mock token format',
-          errorCode: AuthErrorCode.INVALID_TOKEN
-        };
-      }
-
-      const uid = parts[2];
-      const timestamp = parseInt(parts[3]);
-      
-      // Check if token is not too old (24 hours)
-      const tokenAge = Date.now() - timestamp;
-      if (tokenAge > 24 * 60 * 60 * 1000) {
-        return {
-          valid: false,
-          error: 'Mock token has expired',
-          errorCode: AuthErrorCode.EXPIRED_TOKEN
-        };
-      }
-
-      const user: AuthenticatedUser = {
-        uid: uid,
-        email: uid.includes('@') ? uid : `${uid}@mock.com`,
-        name: uid.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim() || 'Mock User',
-        email_verified: true,
-        provider: 'custom'
-      };
-
-      this.log('debug', 'Mock token verified successfully', { uid });
-
-      return {
-        valid: true,
-        user,
-        expiresAt: new Date(timestamp + 24 * 60 * 60 * 1000) // 24 hours from creation
-      };
-
-    } catch (error) {
-      return {
-        valid: false,
-        error: error instanceof Error ? error.message : 'Mock token verification failed',
-        errorCode: AuthErrorCode.INVALID_TOKEN
-      };
+  private mapFirebaseErrorCode(firebaseErrorCode?: string): AuthErrorCode {
+    switch (firebaseErrorCode) {
+      case 'EXPIRED_TOKEN':
+        return AuthErrorCode.EXPIRED_TOKEN;
+      case 'INVALID_TOKEN':
+        return AuthErrorCode.INVALID_TOKEN;
+      case 'MISSING_TOKEN':
+        return AuthErrorCode.MISSING_TOKEN;
+      case 'SERVICE_UNAVAILABLE':
+        return AuthErrorCode.SERVICE_UNAVAILABLE;
+      case 'FIREBASE_ERROR':
+        return AuthErrorCode.FIREBASE_ERROR;
+      default:
+        return AuthErrorCode.UNKNOWN_ERROR;
     }
   }
+
 
   /**
    * Verify Azure AD token (placeholder)

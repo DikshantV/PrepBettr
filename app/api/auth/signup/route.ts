@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { verifyFirebaseToken } from '@/lib/middleware/authMiddleware';
+import { verifyIdToken } from '@/lib/firebase/admin';
 import { firebaseUserService } from '@/lib/services/firebase-user-service';
 
 const SESSION_COOKIE_NAME = 'session';
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       });
       
       try {
-        console.log(`🔍 [${timestamp}] About to call verifyFirebaseToken with token:`, {
+        console.log(`🔍 [${timestamp}] About to call verifyIdToken with token:`, {
           tokenLength: idToken.length,
           tokenParts: idToken.split('.').length,
           tokenHeader: idToken.split('.')[0] ? 'present' : 'missing',
@@ -60,12 +60,20 @@ export async function POST(request: NextRequest) {
           tokenSignature: idToken.split('.')[2] ? 'present' : 'missing'
         });
         
-        authResult = await verifyFirebaseToken(idToken);
+        const verificationResult = await verifyIdToken(idToken);
+        
+        authResult = {
+          success: verificationResult.valid,
+          user: verificationResult.user || null,
+          error: verificationResult.error
+        };
+        
         console.log(`🔐 [${timestamp}] Firebase token verification result:`, {
           success: authResult.success,
           hasUser: !!authResult.user,
           uid: authResult.user?.uid,
-          error: authResult.error
+          error: authResult.error,
+          errorCode: verificationResult.errorCode
         });
       } catch (verifyError) {
         console.error(`🔐 [${timestamp}] Firebase token verification threw error:`, {
@@ -125,8 +133,8 @@ export async function POST(request: NextRequest) {
         };
 
         // Create a custom token for the new user
-        const auth = await import('@/lib/firebase/admin').then(m => m.getAdminAuth());
-        sessionToken = await auth.createCustomToken(newUserRecord.uid);
+        const { createCustomToken } = await import('@/lib/firebase/admin');
+        sessionToken = await createCustomToken(newUserRecord.uid);
         isNewUser = true;
         
         console.log(`✅ Firebase Auth user created for uid: ${authResult.user.uid}`);

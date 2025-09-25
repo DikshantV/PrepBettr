@@ -108,15 +108,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<ATSOptimi
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const idToken = authHeader.split(' ')[1];
-      const decodedToken = await verifyIdToken(idToken);
+      const verificationResult = await verifyIdToken(idToken);
       
-      if (!decodedToken) {
+      if (!verificationResult.valid || !verificationResult.user) {
         return NextResponse.json(
           { success: false, error: 'Unauthorized - Invalid token' },
           { status: 401 }
         );
       }
-      currentUserId = decodedToken.uid;
+      currentUserId = verificationResult.user.uid;
     } else if (process.env.NODE_ENV === 'production') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - No token provided' },

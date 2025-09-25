@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth, isFirebaseReady } from '@/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { debugFirebaseAuth } from '@/lib/utils/firebase-auth-debug';
 import { useFirebaseReady } from '@/components/FirebaseClientInit';
 
 export function AuthSync() {
@@ -34,7 +33,10 @@ export function AuthSync() {
           console.log('User from context:', user);
           console.log('Firebase current user:', authService?.currentUser);
           
-          debugFirebaseAuth(authService);
+          // Additional debug info
+          console.log('Firebase auth initialized:', !!authService);
+          console.log('Firebase user uid:', authService?.currentUser?.uid);
+          console.log('Firebase user email:', authService?.currentUser?.email);
         }
 
         // If we have a user from server context but no Firebase user, 

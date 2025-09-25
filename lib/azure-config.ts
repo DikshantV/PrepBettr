@@ -18,6 +18,7 @@ interface AzureSecrets {
   azureOpenAIEndpoint: string;
   azureOpenAIDeployment: string;
   // Firebase configuration
+  firebaseServiceAccountKey?: string;
   firebaseProjectId: string;
   firebaseClientEmail: string;
   firebasePrivateKey: string;
@@ -98,7 +99,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     // Fetch all secrets (some are optional)
     const [
       speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment,
-      firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
+      firebaseServiceAccountKey, firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
       azureFormRecognizerKey, azureFormRecognizerEndpoint, 
       azureStorageAccount, azureStorageAccountKey, azureStorageConnectionString,
       azureStorageContainer, storageProvider
@@ -108,6 +109,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       client.getSecret('azure-openai-key'),
       client.getSecret('azure-openai-endpoint'),
       client.getSecret('azure-openai-deployment'),
+      getOptionalSecret('firebase-service-account-key'),
       getOptionalSecret('firebase-project-id'),
       getOptionalSecret('firebase-client-email'),
       getOptionalSecret('firebase-private-key'),
@@ -153,6 +155,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       azureOpenAIKey: azureOpenAIKey.value!,
       azureOpenAIEndpoint: azureOpenAIEndpoint.value!,
       azureOpenAIDeployment: azureOpenAIDeployment.value!,
+      firebaseServiceAccountKey: firebaseServiceAccountKey?.value || '',
       firebaseProjectId: firebaseProjectId?.value || process.env.FIREBASE_PROJECT_ID || '',
       firebaseClientEmail: firebaseClientEmail?.value || process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: firebasePrivateKey?.value || process.env.FIREBASE_PRIVATE_KEY || '',
@@ -320,6 +323,7 @@ export async function getConfiguration(): Promise<Record<string, string>> {
       'AZURE_FORM_RECOGNIZER_ENDPOINT': secrets.azureFormRecognizerEndpoint || '',
       
       // Firebase configuration
+      'FIREBASE_SERVICE_ACCOUNT_KEY': secrets.firebaseServiceAccountKey || '',
       'FIREBASE_PROJECT_ID': secrets.firebaseProjectId,
       'FIREBASE_CLIENT_EMAIL': secrets.firebaseClientEmail,
       'FIREBASE_PRIVATE_KEY': secrets.firebasePrivateKey,
@@ -342,6 +346,7 @@ export async function getConfiguration(): Promise<Record<string, string>> {
       'AZURE_SPEECH_ENDPOINT': process.env.SPEECH_ENDPOINT || '',
       'AZURE_FORM_RECOGNIZER_KEY': process.env.AZURE_FORM_RECOGNIZER_KEY || '',
       'AZURE_FORM_RECOGNIZER_ENDPOINT': process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || '',
+      'FIREBASE_SERVICE_ACCOUNT_KEY': process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '',
       'FIREBASE_PROJECT_ID': process.env.FIREBASE_PROJECT_ID || '',
       'FIREBASE_CLIENT_EMAIL': process.env.FIREBASE_CLIENT_EMAIL || '',
       'FIREBASE_PRIVATE_KEY': process.env.FIREBASE_PRIVATE_KEY || '',
