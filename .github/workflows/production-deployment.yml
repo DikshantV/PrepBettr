@@ -65,10 +65,10 @@ jobs:
           echo "🏥 Checking production system health..."
           
           # Check production slot health
-          PROD_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health)
+          PROD_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health/simple)
           
           # Check staging slot health  
-          STAGING_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health)
+          STAGING_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health/simple)
           
           echo "Production health: $PROD_HEALTH"
           echo "Staging health: $STAGING_HEALTH"
@@ -224,7 +224,7 @@ jobs:
           elapsed=0
           
           while [ $elapsed -lt $timeout ]; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health/simple)
             
             if [ "$STATUS" = "200" ]; then
               echo "✅ Staging deployment successful"
@@ -404,7 +404,7 @@ jobs:
           echo "🔍 Pre-swap validation..."
           
           # Verify staging slot is healthy
-          STAGING_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health)
+          STAGING_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}-staging.azurewebsites.net/api/health/simple)
           
           if [ "$STAGING_HEALTH" != "200" ]; then
             echo "❌ Staging slot is not healthy - aborting swap"
@@ -461,7 +461,7 @@ jobs:
               --name ${{ env.APP_NAME }} \
               --query "[?name=='DEPLOYMENT_ID'].value | [0]" -o tsv)
             
-            PROD_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health)
+            PROD_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health/simple)
             
             if [ "$PROD_DEPLOYMENT" = "${{ github.run_id }}" ] && [ "$PROD_HEALTH" = "200" ]; then
               echo "✅ Slot swap verified successfully"
@@ -540,7 +540,7 @@ jobs:
           
           # Quick performance check
           START_TIME=$(date +%s%N | cut -b1-13)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code};%{time_total}" "https://${{ env.APP_NAME }}.azurewebsites.net/api/health")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code};%{time_total}" "https://${{ env.APP_NAME }}.azurewebsites.net/api/health/simple")
           END_TIME=$(date +%s%N | cut -b1-13)
           
           HTTP_CODE=$(echo $STATUS | cut -d';' -f1)
@@ -592,7 +592,7 @@ jobs:
           sleep 60
           
           # Check production health
-          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health)
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/api/health/simple)
           
           if [ "$HEALTH_STATUS" = "200" ]; then
             echo "✅ Rollback verified - production is healthy"
