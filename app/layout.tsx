@@ -14,7 +14,7 @@ import "./globals.css";
 import TestHelperInitializer from "@/components/test/TestHelperInitializer";
 
 // Initialize Azure services on server-side
-// initializeAzureServices(); // Temporarily disabled for testing
+initializeAzureServices();
 
 // Initialize retry logic and error handler with Application Insights
 const instrumentationKey = process.env.NEXT_PUBLIC_AZURE_APPLICATION_INSIGHTS_INSTRUMENTATION_KEY;
