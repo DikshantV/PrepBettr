@@ -42,7 +42,24 @@ export async function POST(request: NextRequest) {
         preview: idToken.substring(0, 100) + '...'
       });
       
+      console.log(`🔍 [${timestamp}] Environment check before token verification:`, {
+        hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'not set',
+        nodeEnv: process.env.NODE_ENV,
+        privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
+      });
+      
       try {
+        console.log(`🔍 [${timestamp}] About to call verifyFirebaseToken with token:`, {
+          tokenLength: idToken.length,
+          tokenParts: idToken.split('.').length,
+          tokenHeader: idToken.split('.')[0] ? 'present' : 'missing',
+          tokenPayload: idToken.split('.')[1] ? 'present' : 'missing',
+          tokenSignature: idToken.split('.')[2] ? 'present' : 'missing'
+        });
+        
         authResult = await verifyFirebaseToken(idToken);
         console.log(`🔐 [${timestamp}] Firebase token verification result:`, {
           success: authResult.success,
@@ -51,7 +68,12 @@ export async function POST(request: NextRequest) {
           error: authResult.error
         });
       } catch (verifyError) {
-        console.error(`🔐 [${timestamp}] Firebase token verification threw error:`, verifyError);
+        console.error(`🔐 [${timestamp}] Firebase token verification threw error:`, {
+          error: verifyError instanceof Error ? verifyError.message : 'Unknown error',
+          stack: verifyError instanceof Error ? verifyError.stack?.substring(0, 500) + '...' : 'No stack trace',
+          code: verifyError instanceof Error ? (verifyError as any).code : 'unknown',
+          name: verifyError instanceof Error ? verifyError.name : 'unknown'
+        });
         authResult = {
           success: false,
           user: null,
