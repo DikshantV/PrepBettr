@@ -265,6 +265,13 @@ export class UnifiedAuth {
    */
   private async verifyFirebaseToken(idToken: string): Promise<TokenVerificationResult> {
     try {
+      console.log('🔥 UnifiedAuth: verifyFirebaseToken called with token:', {
+        tokenLength: idToken.length,
+        tokenParts: idToken.split('.').length,
+        tokenPreview: idToken.substring(0, 30) + '...',
+        isMockToken: idToken.startsWith('mock-token-')
+      });
+      
       // Handle mock tokens for development
       if (idToken.startsWith('mock-token-')) {
         this.log('debug', 'Verifying mock token');
@@ -273,15 +280,30 @@ export class UnifiedAuth {
 
       if (!this.firebaseAuth) {
         console.error('🔥 UnifiedAuth: Firebase Auth not initialized in verifyFirebaseToken');
+        console.error('🔥 UnifiedAuth: Current initialization status:', {
+          initialized: this.initialized,
+          firebaseAuthExists: !!this.firebaseAuth,
+          azureAuthExists: !!this.azureAuth
+        });
         throw new UnifiedAuthError(AuthErrorCode.SERVICE_UNAVAILABLE, 'Firebase Auth not initialized');
       }
 
       this.log('debug', 'Verifying Firebase ID token', { tokenPrefix: idToken.substring(0, 20) + '...' });
-      console.log('🔥 UnifiedAuth: About to call firebaseAuth.verifyIdToken...');
+      console.log('🔥 UnifiedAuth: About to call firebaseAuth.verifyIdToken...', {
+        firebaseAuthType: typeof this.firebaseAuth,
+        verifyIdTokenExists: typeof this.firebaseAuth.verifyIdToken,
+        adminSDKVersion: admin?.SDK_VERSION || 'unknown'
+      });
       
       // Add additional validation options
       const decodedToken = await this.firebaseAuth.verifyIdToken(idToken, true);
-      console.log('🔥 UnifiedAuth: Firebase verifyIdToken successful');
+      console.log('🔥 UnifiedAuth: Firebase verifyIdToken successful', {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        issuer: decodedToken.iss,
+        audience: decodedToken.aud,
+        expiry: new Date(decodedToken.exp * 1000).toISOString()
+      });
       
       this.log('debug', 'Firebase token verification successful', { 
         uid: decodedToken.uid, 
