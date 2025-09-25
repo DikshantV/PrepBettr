@@ -39,16 +39,29 @@ async function initializeFirebaseAdmin(): Promise<any> {
   }
   
   if (adminApp) {
+    console.log('🔥 Firebase Admin SDK already initialized, returning existing app');
     return adminApp;
   }
 
   try {
     console.log('🔥 Starting Firebase Admin SDK initialization...');
+    console.log('🔍 Environment check:', {
+      hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+      hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+      hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+      projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'not set',
+      nodeEnv: process.env.NODE_ENV,
+      privateKeyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
+      privateKeyFormat: process.env.FIREBASE_PRIVATE_KEY?.includes('-----BEGIN PRIVATE KEY-----') ? 'PEM' : 'unknown'
+    });
     
     // Check if Firebase Admin is already initialized
     const existingApps = admin.apps;
     if (existingApps.length > 0) {
-      console.log('🔥 Found existing Firebase Admin app, reusing...');
+      console.log('🔥 Found existing Firebase Admin app, reusing...', {
+        appCount: existingApps.length,
+        appNames: existingApps.map(app => app?.name)
+      });
       adminApp = existingApps[0];
       return adminApp;
     }
@@ -57,12 +70,21 @@ async function initializeFirebaseAdmin(): Promise<any> {
     let config: Record<string, string> = {};
     try {
       if (getConfiguration && typeof getConfiguration === 'function') {
+        console.log('🔥 Attempting to get config from Azure Key Vault...');
         config = await getConfiguration();
+        console.log('🔥 Azure Key Vault config loaded successfully:', {
+          hasFirebaseProjectId: !!config['FIREBASE_PROJECT_ID'],
+          hasFirebaseClientEmail: !!config['FIREBASE_CLIENT_EMAIL'],
+          hasFirebasePrivateKey: !!config['FIREBASE_PRIVATE_KEY']
+        });
       } else {
         console.warn('🔥 getConfiguration not available, using environment variables directly');
       }
     } catch (configError) {
-      console.warn('🔥 Failed to get config from Azure, using environment variables:', configError);
+      console.warn('🔥 Failed to get config from Azure, using environment variables:', {
+        error: configError instanceof Error ? configError.message : 'Unknown error',
+        code: configError instanceof Error ? (configError as any).code : 'unknown'
+      });
       config = {};
     }
     
@@ -94,29 +116,56 @@ async function initializeFirebaseAdmin(): Promise<any> {
     // Initialize Firebase Admin SDK
     if (firebaseConfig.clientEmail && firebaseConfig.privateKey) {
       console.log('🔥 Initializing with service account credentials...');
+      console.log('🔍 Service account details:', {
+        projectId: firebaseConfig.projectId,
+        clientEmail: firebaseConfig.clientEmail,
+        privateKeyPreview: firebaseConfig.privateKey.substring(0, 50) + '...',
+        privateKeyHasNewlines: firebaseConfig.privateKey.includes('\n'),
+        privateKeyHasEscapedNewlines: firebaseConfig.privateKey.includes('\\n')
+      });
       
       // Clean up private key format (handle escaped newlines)
       let cleanPrivateKey = firebaseConfig.privateKey;
       if (cleanPrivateKey.includes('\\n')) {
+        console.log('🔧 Converting escaped newlines in private key...');
         cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
       }
       
       // Validate private key format
       if (!cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        console.error('❌ Invalid private key format - missing BEGIN marker');
+        console.error('🔍 Private key preview:', cleanPrivateKey.substring(0, 100));
         throw new Error('Invalid private key format - missing BEGIN marker');
       }
       if (!cleanPrivateKey.includes('-----END PRIVATE KEY-----')) {
+        console.error('❌ Invalid private key format - missing END marker');
+        console.error('🔍 Private key preview:', cleanPrivateKey.substring(cleanPrivateKey.length - 100));
         throw new Error('Invalid private key format - missing END marker');
       }
       
-      adminApp = admin.initializeApp({
-        credential: admin.credential.cert({
+      console.log('🔥 Creating Firebase Admin credential...');
+      try {
+        const credential = admin.credential.cert({
           projectId: firebaseConfig.projectId,
           clientEmail: firebaseConfig.clientEmail,
           privateKey: cleanPrivateKey
-        }),
-        projectId: firebaseConfig.projectId
-      });
+        });
+        console.log('✅ Firebase credential created successfully');
+        
+        console.log('🔥 Initializing Firebase Admin app...');
+        adminApp = admin.initializeApp({
+          credential: credential,
+          projectId: firebaseConfig.projectId
+        });
+        console.log('✅ Firebase Admin app initialized successfully');
+      } catch (credError) {
+        console.error('❌ Firebase credential/app initialization failed:', {
+          error: credError instanceof Error ? credError.message : 'Unknown error',
+          stack: credError instanceof Error ? credError.stack : 'No stack trace',
+          code: credError instanceof Error ? (credError as any).code : 'unknown'
+        });
+        throw credError;
+      }
     } else {
       console.warn('🔥 Missing service account credentials, initializing with project ID only');
       console.warn('🔥 This will work for development but ID token verification will fail');
