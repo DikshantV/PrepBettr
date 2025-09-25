@@ -138,6 +138,15 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       throw new Error(`Required Azure secrets missing from Key Vault: ${missingAzureSecrets.join(', ')}`);
     }
 
+    // Log which secrets came from where
+    const secretSources = {
+      firebaseProjectId: firebaseProjectId?.value ? 'Azure KV' : (process.env.FIREBASE_PROJECT_ID ? 'env' : 'missing'),
+      firebaseClientEmail: firebaseClientEmail?.value ? 'Azure KV' : (process.env.FIREBASE_CLIENT_EMAIL ? 'env' : 'missing'),
+      firebasePrivateKey: firebasePrivateKey?.value ? 'Azure KV' : (process.env.FIREBASE_PRIVATE_KEY ? 'env' : 'missing')
+    };
+    
+    console.log('🔑 Secret sources for Firebase configuration:', secretSources);
+    
     cachedSecrets = {
       speechKey: speechKey.value!,
       speechEndpoint: speechEndpoint.value!,
@@ -165,6 +174,16 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     
     // Fallback to environment variables if Key Vault fails
     console.log('🔄 Falling back to environment variables...');
+    
+    // Log fallback sources for Firebase
+    const fallbackSources = {
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID ? 'env fallback' : 'missing',
+      firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL ? 'env fallback' : 'missing',
+      firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY ? 'env fallback' : 'missing'
+    };
+    
+    console.log('🔑 Fallback secret sources for Firebase configuration:', fallbackSources);
+    
     const fallbackSecrets: AzureSecrets = {
       speechKey: process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY || '',
       speechEndpoint: process.env.SPEECH_ENDPOINT || 'https://eastus2.api.cognitive.microsoft.com/',
