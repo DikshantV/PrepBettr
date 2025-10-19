@@ -2,21 +2,7 @@
 
 import { azureCosmosService } from './azure-cosmos-service';
 import { awsSESService, EmailParams } from './sendgrid-service';
-// MJML import with conditional loading for build compatibility
-let mjml2html: any;
-
-try {
-  // Only import MJML in runtime, not during build
-  if (typeof window === 'undefined' && process.env.NODE_ENV !== 'development') {
-    // For production builds, use dynamic import
-    mjml2html = null;
-  } else {
-    mjml2html = require('mjml').default || require('mjml');
-  }
-} catch (error) {
-  console.warn('MJML not available, falling back to simple HTML templates');
-  mjml2html = null;
-}
+// Using SendGrid Dynamic Templates - no MJML compilation needed
 
 export interface NotificationEvent {
   id?: string;

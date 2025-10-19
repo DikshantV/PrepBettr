@@ -3,7 +3,8 @@
  * 
  * Extracted from notification-service.ts
  * Handles email sending using various providers (SendGrid, Resend, etc.)
- * Uses the MJML template engine for professional email formatting.
+ * Uses SendGrid Dynamic Templates for professional email formatting.
+ * MJML compilation removed - now using SendGrid's template editor.
  */
 
 // Import type declarations for optional dependencies
@@ -19,7 +20,8 @@ import {
   EmailResult,
   NotificationResult 
 } from '../core/types';
-import { mjmlTemplateEngine } from '../templates/mjml-template-engine';
+// REMOVED: MJML template engine - using SendGrid Dynamic Templates instead
+// import { mjmlTemplateEngine } from '../templates/mjml-template-engine';
 
 // Email provider interfaces
 interface EmailProvider {
@@ -336,12 +338,16 @@ export class EmailService {
   private async generateEmailContent(type: EmailTemplateType, data: any): Promise<string> {
     const userName = data.userName || 'User';
 
+    // NOTE: For production, use SendGrid Dynamic Templates instead of generating HTML here
+    // Configure template IDs in SendGrid dashboard and pass them via SendGrid API
+    // This method provides fallback HTML for development/testing only
+
     switch (type) {
       case 'job_discovered':
-        return mjmlTemplateEngine.generateJobDiscoveredEmail(userName, data as JobDiscoveredData);
+        return this.generateJobDiscoveredEmailFallback(userName, data as JobDiscoveredData);
 
       case 'application_submitted':
-        return mjmlTemplateEngine.generateApplicationSubmittedEmail(userName, data as ApplicationSubmittedData);
+        return this.generateApplicationSubmittedEmailFallback(userName, data as ApplicationSubmittedData);
 
       case 'follow_up_reminder':
         return this.generateFollowUpReminderEmail(userName, data as FollowUpReminderData);
@@ -352,6 +358,108 @@ export class EmailService {
       default:
         return this.generateGenericEmail(userName, type, data);
     }
+  }
+
+  private generateJobDiscoveredEmailFallback(userName: string, data: JobDiscoveredData): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>New Job Match Found</title>
+        <style>
+          body { font-family: Inter, Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 20px; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+          .header { background-color: #ffffff; padding: 40px 20px; text-align: center; }
+          .content { padding: 20px; }
+          .job-details { border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 20px 0; }
+          .button { display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+          .footer { background-color: #f9fafb; padding: 30px 20px; text-align: center; font-size: 14px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="font-size: 24px; font-weight: 600; color: #111827; margin: 0;">🎯 New Job Match Found!</h1>
+            <p style="font-size: 18px; color: #6b7280; margin: 10px 0 0;">Hi ${userName}, we found a job that matches your profile</p>
+          </div>
+          
+          <div class="content">
+            <div class="job-details">
+              <h3 style="margin: 0 0 10px; color: #111827;">${data.jobTitle}</h3>
+              <p style="margin: 5px 0; color: #6b7280;">${data.company} • ${data.location}</p>
+              <p style="margin: 10px 0;"><strong>Match Score:</strong> <span style="color: #059669; font-weight: 600;">${data.relevancyScore}%</span></p>
+              <p style="margin: 10px 0;"><strong>Portal:</strong> ${data.portal}</p>
+              ${data.matchedSkills.length > 0 ? `
+                <div style="margin-top: 15px;">
+                  <strong>Matched Skills:</strong><br>
+                  ${data.matchedSkills.map(skill => `<span style="background-color: #ecfccb; color: #365314; padding: 4px 8px; border-radius: 12px; margin: 4px 4px 4px 0; display: inline-block; font-size: 14px;">${skill}</span>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              ${data.jobUrl ? `<a href="${data.jobUrl}" class="button">View Job Details</a>` : ''}
+              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/jobs/${data.jobId}" class="button" style="background-color: #059669;">Manage in PrepBettr</a>
+            </div>
+          </div>
+          
+          <div class="footer">
+            This job was automatically discovered by PrepBettr based on your preferences.<br>
+            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateApplicationSubmittedEmailFallback(userName: string, data: ApplicationSubmittedData): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Application Submitted</title>
+        <style>
+          body { font-family: Inter, Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 20px; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+          .header { background-color: #ffffff; padding: 40px 20px; text-align: center; }
+          .content { padding: 20px; }
+          .app-details { border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 20px 0; }
+          .button { display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+          .footer { background-color: #f9fafb; padding: 30px 20px; text-align: center; font-size: 14px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="font-size: 24px; font-weight: 600; color: #111827; margin: 0;">✅ Application Submitted!</h1>
+            <p style="font-size: 18px; color: #6b7280; margin: 10px 0 0;">Hi ${userName}, your application has been successfully submitted</p>
+          </div>
+          
+          <div class="content">
+            <div class="app-details">
+              <h3 style="margin: 0 0 10px; color: #111827;">${data.jobTitle}</h3>
+              <p style="margin: 5px 0; color: #6b7280;">${data.company}</p>
+              <p style="margin: 10px 0;"><strong>Submitted:</strong> ${data.submittedAt.toLocaleDateString()} at ${data.submittedAt.toLocaleTimeString()}</p>
+              <p style="margin: 10px 0;"><strong>Type:</strong> ${data.autoApplied ? '<span style="background-color: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 12px; font-size: 14px;">Auto-Applied</span>' : '<span style="background-color: #ecfccb; color: #365314; padding: 2px 8px; border-radius: 12px; font-size: 14px;">Manual</span>'}</p>
+              <p style="margin: 10px 0;"><strong>Match Score:</strong> <span style="color: #059669; font-weight: 600;">${data.relevancyScore}%</span></p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/applications/${data.applicationId}" class="button">View Application</a>
+            </div>
+          </div>
+          
+          <div class="footer">
+            We'll notify you of any updates regarding this application.<br>
+            <a href="${process.env.NEXTAUTH_URL || 'https://prepbettr.com'}/settings/notifications" style="color: #2563eb;">Manage notification preferences</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 
   private generateFollowUpReminderEmail(userName: string, data: FollowUpReminderData): string {
