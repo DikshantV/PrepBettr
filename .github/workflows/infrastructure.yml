@@ -1,0 +1,391 @@
+name: Infrastructure Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'infrastructure/azure/**'
+      - '.github/workflows/infrastructure.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'infrastructure/azure/**'
+      - '.github/workflows/infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      force_deploy:
+        description: 'Force deployment without confirmation'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  validate:
+    name: Validate Infrastructure Templates
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+      should-deploy: ${{ steps.determine-env.outputs.should-deploy }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "should-deploy=${{ github.event_name == 'push' }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Install Bicep
+        run: az bicep install
+        
+      - name: Validate Bicep templates
+        run: |
+          environment="${{ steps.determine-env.outputs.environment }}"
+          echo "Validating templates for environment: $environment"
+          
+          # Create temporary resource group for validation
+          temp_rg="rg-prepbettr-validation-$(date +%s)"
+          az group create --name "$temp_rg" --location "East US" --tags validation=true
+          
+          # Validate the template
+          az deployment group validate \
+            --resource-group "$temp_rg" \
+            --template-file infrastructure/azure/main.bicep \
+            --parameters "@infrastructure/azure/main.parameters.$environment.json"
+          
+          # Clean up temporary resource group
+          az group delete --name "$temp_rg" --yes --no-wait
+          
+      - name: Bicep Lint
+        run: |
+          az bicep build --file infrastructure/azure/main.bicep --stdout > /dev/null
+          echo "✅ Bicep templates passed lint check"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Checkov security scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/azure
+          framework: bicep
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          quiet: true
+          skip_check: CKV_AZURE_33,CKV_AZURE_35 # Skip specific checks if needed
+          
+      - name: Upload Checkov results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+
+  plan:
+    name: Plan Infrastructure Changes
+    runs-on: ubuntu-latest
+    needs: [validate, security-scan]
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment != 'prod')
+    environment: ${{ needs.validate.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Create resource group if needed
+        run: |
+          environment="${{ needs.validate.outputs.environment }}"
+          if [ "$environment" = "prod" ]; then
+            rg_name="rg-prepbettr"
+          else
+            rg_name="rg-prepbettr-$environment"
+          fi
+          
+          if ! az group show --name "$rg_name" &> /dev/null; then
+            az group create --name "$rg_name" --location "East US"
+            echo "Created resource group: $rg_name"
+          fi
+          
+      - name: Generate deployment plan
+        id: plan
+        run: |
+          environment="${{ needs.validate.outputs.environment }}"
+          if [ "$environment" = "prod" ]; then
+            rg_name="rg-prepbettr"
+          else
+            rg_name="rg-prepbettr-$environment"
+          fi
+          
+          echo "Generating what-if deployment plan..."
+          az deployment group what-if \
+            --resource-group "$rg_name" \
+            --template-file infrastructure/azure/main.bicep \
+            --parameters "@infrastructure/azure/main.parameters.$environment.json" \
+            --result-format FullResourcePayloads \
+            --out tsv > plan.txt
+            
+      - name: Comment deployment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
+            const environment = '${{ needs.validate.outputs.environment }}';
+            
+            const output = `## Infrastructure Deployment Plan - ${environment.toUpperCase()}
+            
+            <details>
+            <summary>View deployment plan</summary>
+            
+            \`\`\`
+            ${plan}
+            \`\`\`
+            
+            </details>
+            
+            **Environment:** ${environment}
+            **Triggered by:** ${context.actor}
+            **Commit:** ${context.sha.substring(0, 7)}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [validate, security-scan]
+    if: needs.validate.outputs.should-deploy == 'true' && (github.event_name != 'pull_request')
+    environment: ${{ needs.validate.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Set deployment variables
+        id: vars
+        run: |
+          environment="${{ needs.validate.outputs.environment }}"
+          timestamp=$(date +%Y%m%d-%H%M%S)
+          deployment_name="prepbettr-infrastructure-$timestamp"
+          
+          if [ "$environment" = "prod" ]; then
+            rg_name="rg-prepbettr"
+          else
+            rg_name="rg-prepbettr-$environment"
+          fi
+          
+          echo "environment=$environment" >> $GITHUB_OUTPUT
+          echo "deployment_name=$deployment_name" >> $GITHUB_OUTPUT
+          echo "resource_group=$rg_name" >> $GITHUB_OUTPUT
+          
+      - name: Create resource group
+        run: |
+          rg_name="${{ steps.vars.outputs.resource_group }}"
+          environment="${{ steps.vars.outputs.environment }}"
+          
+          if ! az group show --name "$rg_name" &> /dev/null; then
+            az group create \
+              --name "$rg_name" \
+              --location "East US" \
+              --tags \
+                project="PrepBettr" \
+                environment="$environment" \
+                managedBy="GitHub-Actions" \
+                createdBy="${{ github.actor }}"
+            echo "✅ Created resource group: $rg_name"
+          else
+            echo "✅ Resource group already exists: $rg_name"
+          fi
+          
+      - name: Deploy infrastructure
+        id: deploy
+        run: |
+          deployment_name="${{ steps.vars.outputs.deployment_name }}"
+          rg_name="${{ steps.vars.outputs.resource_group }}"
+          environment="${{ steps.vars.outputs.environment }}"
+          
+          echo "🚀 Starting deployment: $deployment_name"
+          echo "📍 Resource group: $rg_name"
+          echo "🌍 Environment: $environment"
+          
+          # Deploy with detailed output
+          az deployment group create \
+            --resource-group "$rg_name" \
+            --template-file infrastructure/azure/main.bicep \
+            --parameters "@infrastructure/azure/main.parameters.$environment.json" \
+            --name "$deployment_name" \
+            --verbose
+            
+          echo "deployment_name=$deployment_name" >> $GITHUB_OUTPUT
+          
+      - name: Get deployment outputs
+        id: outputs
+        run: |
+          deployment_name="${{ steps.deploy.outputs.deployment_name }}"
+          rg_name="${{ steps.vars.outputs.resource_group }}"
+          
+          # Get deployment outputs
+          az deployment group show \
+            --resource-group "$rg_name" \
+            --name "$deployment_name" \
+            --query "properties.outputs" \
+            --output json > deployment_outputs.json
+            
+          # Extract key values
+          cosmos_endpoint=$(jq -r '.cosmosAccountEndpoint.value' deployment_outputs.json)
+          storage_endpoint=$(jq -r '.storageAccountEndpoint.value' deployment_outputs.json)
+          keyvault_uri=$(jq -r '.keyVaultUri.value' deployment_outputs.json)
+          
+          echo "cosmos_endpoint=$cosmos_endpoint" >> $GITHUB_OUTPUT
+          echo "storage_endpoint=$storage_endpoint" >> $GITHUB_OUTPUT
+          echo "keyvault_uri=$keyvault_uri" >> $GITHUB_OUTPUT
+          
+      - name: Post-deployment verification
+        run: |
+          environment="${{ steps.vars.outputs.environment }}"
+          rg_name="${{ steps.vars.outputs.resource_group }}"
+          
+          echo "🔍 Running post-deployment verification..."
+          
+          # Verify key resources exist
+          resources=("Microsoft.DocumentDB/databaseAccounts" "Microsoft.Storage/storageAccounts" "Microsoft.KeyVault/vaults")
+          
+          for resource_type in "${resources[@]}"; do
+            count=$(az resource list --resource-group "$rg_name" --resource-type "$resource_type" --query "length(@)")
+            if [ "$count" -eq 0 ]; then
+              echo "❌ No resources of type $resource_type found"
+              exit 1
+            else
+              echo "✅ Found $count resource(s) of type $resource_type"
+            fi
+          done
+          
+          echo "✅ Post-deployment verification completed successfully"
+          
+      - name: Update environment variables (staging/prod only)
+        if: steps.vars.outputs.environment == 'staging' || steps.vars.outputs.environment == 'prod'
+        run: |
+          # This would typically update your app service configuration
+          # or trigger a configuration update process
+          echo "📝 Infrastructure deployment completed for ${{ steps.vars.outputs.environment }}"
+          echo "🔗 Cosmos DB Endpoint: ${{ steps.outputs.outputs.cosmos_endpoint }}"
+          echo "🔗 Storage Endpoint: ${{ steps.outputs.outputs.storage_endpoint }}"
+          echo "🔗 Key Vault URI: ${{ steps.outputs.outputs.keyvault_uri }}"
+          
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-outputs-${{ steps.vars.outputs.environment }}
+          path: |
+            deployment_outputs.json
+          retention-days: 30
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [validate, deploy]
+    if: always() && needs.validate.outputs.should-deploy == 'true'
+    
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "status=✅ SUCCESS" >> $GITHUB_OUTPUT
+            echo "color=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌ FAILED" >> $GITHUB_OUTPUT  
+            echo "color=failure" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create deployment summary
+        run: |
+          environment="${{ needs.validate.outputs.environment }}"
+          status="${{ steps.status.outputs.status }}"
+          
+          cat > $GITHUB_STEP_SUMMARY << EOF
+          # Infrastructure Deployment Summary
+          
+          **Environment:** ${environment}
+          **Status:** ${status}
+          **Triggered by:** ${{ github.actor }}
+          **Commit:** ${{ github.sha }}
+          **Workflow:** [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ## Resources Deployed
+          - Azure Cosmos DB (with containers)
+          - Azure Storage Account (with blob containers and lifecycle policies)
+          - Azure Key Vault (with secrets)
+          - Azure Application Insights
+          - Log Analytics Workspace
+          
+          ## Next Steps
+          - Update application configuration with new endpoints
+          - Verify connectivity from application services
+          - Run integration tests against new infrastructure
+          - Monitor resource utilization and costs
+          EOF

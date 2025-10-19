@@ -1,0 +1,22 @@
+{
+  "scripts": {
+    "test:data-layer": "jest --config jest.config.data-layer.js",
+    "test:data-layer:watch": "jest --config jest.config.data-layer.js --watch",
+    "test:data-layer:coverage": "jest --config jest.config.data-layer.js --coverage",
+    "test:data-layer:unit": "jest --config jest.config.data-layer.js --testPathPattern=unit",
+    "test:data-layer:integration": "jest --config jest.config.data-layer.js --testPathPattern=integration",
+    
+    "test:cosmos-emulator": "docker run -p 8081:8081 -p 10250:10250 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest",
+    "test:cosmos-emulator:stop": "docker stop $(docker ps -q --filter ancestor=mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest)",
+    
+    "test:migration:e2e": "playwright test tests/e2e/data-consolidation.spec.ts",
+    "test:migration:integration": "npm run test:cosmos-emulator:start && npm run test:data-layer:integration && npm run test:cosmos-emulator:stop",
+    
+    "test:data-all": "npm run test:data-layer:unit && npm run test:migration:integration && npm run test:migration:e2e",
+    "test:data-ci": "npm run test:data-layer:coverage -- --ci --watchAll=false --passWithNoTests",
+    
+    "validate:data-migration": "node scripts/validate-migration.js",
+    "validate:dual-write": "node scripts/validate-dual-write.js",
+    "validate:data-consistency": "node scripts/validate-data-consistency.js"
+  }
+}

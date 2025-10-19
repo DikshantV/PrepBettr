@@ -1,0 +1,371 @@
+name: Data Layer Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/data-layer/**'
+      - 'tests/unit/data-layer/**'
+      - 'tests/integration/data-layer/**'
+      - 'jest.config.data-layer.js'
+      - 'scripts/validate-*.js'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'lib/data-layer/**'
+      - 'tests/unit/data-layer/**'
+      - 'tests/integration/data-layer/**'
+      - 'jest.config.data-layer.js'
+      - 'scripts/validate-*.js'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run unit tests
+      run: npm run test:data-layer:unit -- --coverage --ci
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: data-layer-unit
+        name: data-layer-unit-tests
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    
+    services:
+      cosmos-emulator:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+        ports:
+          - 8081:8081
+          - 10250:10250
+          - 10251:10251
+          - 10252:10252
+          - 10253:10253
+          - 10254:10254
+        env:
+          AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+          AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
+        options: >-
+          --name cosmos-emulator
+          --health-cmd "curl -k https://localhost:8081/_explorer/emulator.pem"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Firebase Emulator
+      run: |
+        npm install -g firebase-tools
+        firebase emulators:start --only firestore --project demo-test &
+        sleep 10
+
+    - name: Wait for Cosmos DB Emulator
+      run: |
+        timeout 300 bash -c 'until curl -k https://localhost:8081/_explorer/emulator.pem; do sleep 5; done'
+
+    - name: Run integration tests
+      run: npm run test:data-layer:integration
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_PROJECT_ID: demo-test
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: |
+          test-results/
+          logs/
+
+  validation-tests:
+    runs-on: ubuntu-latest
+    name: Validation Tests
+    needs: [unit-tests]
+    
+    services:
+      cosmos-emulator:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+        ports:
+          - 8081:8081
+          - 10250:10250
+          - 10251:10251
+          - 10252:10252
+          - 10253:10253
+          - 10254:10254
+        env:
+          AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+          AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Firebase Emulator
+      run: |
+        npm install -g firebase-tools
+        firebase emulators:start --only firestore --project demo-test &
+        sleep 10
+
+    - name: Wait for Cosmos DB Emulator
+      run: |
+        timeout 300 bash -c 'until curl -k https://localhost:8081/_explorer/emulator.pem; do sleep 5; done'
+
+    - name: Run migration validation
+      run: node scripts/validate-migration.js
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_PROJECT_ID: demo-test
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    - name: Run dual-write validation
+      run: node scripts/validate-dual-write.js
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_PROJECT_ID: demo-test
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: End-to-End Tests
+    needs: [integration-tests, validation-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    services:
+      cosmos-emulator:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+        ports:
+          - 8081:8081
+          - 10250:10250
+          - 10251:10251
+          - 10252:10252
+          - 10253:10253
+          - 10254:10254
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    - name: Setup Firebase Emulator
+      run: |
+        npm install -g firebase-tools
+        firebase emulators:start --only firestore,auth --project demo-test &
+        sleep 15
+
+    - name: Wait for Cosmos DB Emulator
+      run: |
+        timeout 300 bash -c 'until curl -k https://localhost:8081/_explorer/emulator.pem; do sleep 5; done'
+
+    - name: Build Next.js app
+      run: npm run build
+      env:
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+
+    - name: Start Next.js app
+      run: npm start &
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    - name: Wait for app to be ready
+      run: |
+        timeout 60 bash -c 'until curl http://localhost:3000; do sleep 2; done'
+
+    - name: Run E2E tests
+      run: npm run test:migration:e2e
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-test
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          playwright-report/
+          test-results/
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run security audit
+      run: npm audit --audit-level moderate
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    name: Performance Tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    services:
+      cosmos-emulator:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+        ports:
+          - 8081:8081
+          - 10250:10250
+          - 10251:10251
+          - 10252:10252
+          - 10253:10253
+          - 10254:10254
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Firebase Emulator
+      run: |
+        npm install -g firebase-tools
+        firebase emulators:start --only firestore --project demo-test &
+        sleep 10
+
+    - name: Wait for Cosmos DB Emulator
+      run: |
+        timeout 300 bash -c 'until curl -k https://localhost:8081/_explorer/emulator.pem; do sleep 5; done'
+
+    - name: Run performance benchmarks
+      run: |
+        node scripts/benchmark-data-operations.js
+        node scripts/benchmark-migration-performance.js
+      env:
+        COSMOS_ENDPOINT: https://localhost:8081
+        COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+        FIRESTORE_EMULATOR_HOST: localhost:8080
+        FIREBASE_PROJECT_ID: demo-test
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: |
+          performance-reports/
+          benchmarks/
+
+  notify-status:
+    runs-on: ubuntu-latest
+    name: Notify Status
+    needs: [unit-tests, integration-tests, validation-tests, security-scan]
+    if: always()
+    
+    steps:
+    - name: Send notification
+      uses: 8398a7/action-slack@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        status: ${{ job.status }}
+        channel: '#engineering'
+        text: |
+          Data Layer Tests - ${{ job.status }}
+          
+          Unit Tests: ${{ needs.unit-tests.result }}
+          Integration Tests: ${{ needs.integration-tests.result }}
+          Validation Tests: ${{ needs.validation-tests.result }}
+          Security Scan: ${{ needs.security-scan.result }}
+          
+          Branch: ${{ github.ref }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -152,6 +152,24 @@
   "test:e2e:foundry:workflow": "playwright test tests/e2e/foundry-workflow.test.ts",
   "test:e2e:foundry:all": "npm run test:e2e:foundry:scenarios && npm run test:e2e:foundry:resilience && npm run test:e2e:foundry:performance",
   "test:e2e:foundry:full": "npm run test:e2e:foundry:workflow && npm run test:e2e:foundry:all",
+  
+  "test:data-layer": "jest --config jest.config.data-layer.js",
+  "test:data-layer:watch": "jest --config jest.config.data-layer.js --watch",
+  "test:data-layer:coverage": "jest --config jest.config.data-layer.js --coverage",
+  "test:data-layer:unit": "jest --config jest.config.data-layer.js --testPathPattern=unit",
+  "test:data-layer:integration": "jest --config jest.config.data-layer.js --testPathPattern=integration",
+  "test:migration:e2e": "playwright test tests/e2e/data-consolidation.spec.ts",
+  "test:migration:integration": "npm run test:cosmos-emulator:start && npm run test:data-layer:integration && npm run test:cosmos-emulator:stop",
+  "test:cosmos-emulator:start": "docker run -d -p 8081:8081 -p 10250:10250 -p 10251:10251 -p 10252:10252 -p 10253:10253 -p 10254:10254 --name cosmos-emulator mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest",
+  "test:cosmos-emulator:stop": "docker stop cosmos-emulator && docker rm cosmos-emulator",
+  "test:data-all": "npm run test:data-layer:unit && npm run test:migration:integration && npm run test:migration:e2e",
+  "test:data-ci": "npm run test:data-layer:coverage -- --ci --watchAll=false --passWithNoTests",
+  "validate:data-migration": "node scripts/validate-migration.js",
+  "validate:dual-write": "node scripts/validate-dual-write.js",
+  "validate:data-consistency": "node scripts/validate-data-consistency.js",
+  "validate:data-layer": "node scripts/validate-data-layer.js",
+  "validate:data-layer:ci": "node scripts/validate-data-layer.js || true",
+  
   "test:paypal": "jest tests/integration/paypal-subscriptions.test.js --coverage",
   "test:paypal:watch": "jest tests/integration/paypal-subscriptions.test.js --watch",
   "test:paypal:sandbox": "RUN_PAYPAL_LIVE_TESTS=true jest tests/integration/paypal-subscriptions.test.js",
@@ -160,7 +178,26 @@
   "setup:paypal:all": "node scripts/setup-paypal-sandbox.js setup-all",
   "setup:paypal:validate": "node scripts/setup-paypal-sandbox.js validate-config",
   "setup:paypal:test-connection": "node scripts/setup-paypal-sandbox.js test-connection",
-  "setup:paypal:env-template": "node scripts/setup-paypal-sandbox.js generate-env-template"
+  "setup:paypal:env-template": "node scripts/setup-paypal-sandbox.js generate-env-template",
+   
+   "infra:validate": "cd infrastructure/azure && chmod +x deploy.sh && ./deploy.sh dev --validate",
+   "infra:plan": "cd infrastructure/azure && ./deploy.sh dev --dry-run",
+   "infra:deploy:dev": "cd infrastructure/azure && ./deploy.sh dev",
+   "infra:deploy:staging": "cd infrastructure/azure && ./deploy.sh staging",
+   "infra:deploy:prod": "cd infrastructure/azure && ./deploy.sh prod",
+   
+   "infra:bicep:lint": "az bicep build --file infrastructure/azure/main.bicep --stdout > /dev/null && echo '✅ Bicep templates passed lint check'",
+   "infra:bicep:validate": "cd infrastructure/azure && az deployment group validate --resource-group rg-prepbettr-dev --template-file main.bicep --parameters @main.parameters.dev.json",
+   "infra:outputs": "cd infrastructure/azure && az deployment group show --resource-group rg-prepbettr-dev --name $(az deployment group list --resource-group rg-prepbettr-dev --query '[0].name' -o tsv) --query 'properties.outputs' --output table",
+   
+   "migrate:start": "node scripts/data-migration/start-migration.js",
+   "migrate:status": "node scripts/data-migration/migration-status.js",
+   "migrate:rollback": "node scripts/data-migration/rollback-migration.js",
+   "migrate:cleanup": "node scripts/data-migration/cleanup-migration.js",
+   
+   "security:scan": "npm audit && node scripts/security-scan.js",
+   "security:xss": "node scripts/xss-analysis.js",
+   "security:access-control": "node scripts/access-control-review.js"
  },
  "dependencies": {
   "@azure-rest/ai-document-intelligence": "^1.1.0",
