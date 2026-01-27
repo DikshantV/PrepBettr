@@ -15,17 +15,29 @@ async function parsePdfFile(file: File): Promise<string> {
     const response = await fetch('/api/parse-pdf', {
       method: 'POST',
       body: formData,
+      credentials: 'include', // Include cookies for session authentication
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to parse PDF');
+      // Check if response is JSON or HTML error page
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to parse PDF');
+      } else {
+        // HTML error page returned
+        console.error('Server returned HTML error page instead of JSON');
+        throw new Error('Server error while parsing PDF. Please try again.');
+      }
     }
 
     const data = await response.json();
     return data.text || '';
   } catch (error) {
     console.error('Error parsing PDF:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
     throw new Error('Failed to parse PDF file. Please try converting to text format.');
   }
 }
@@ -33,19 +45,13 @@ async function parsePdfFile(file: File): Promise<string> {
 // Function to scrape job description from URL
 async function scrapeJobUrl(jobUrl: string): Promise<string> {
   try {
-    // Get auth token from localStorage
-    const token = localStorage.getItem('authToken');
-    
-    if (!token) {
-      throw new Error('Please sign in to use this feature');
-    }
-
+    // Note: Authentication via session cookies (no need for localStorage token)
     const response = await fetch('/api/scrape-job', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
+      credentials: 'include', // Include cookies for session authentication
       body: JSON.stringify({ jobUrl }),
     });
 
@@ -78,19 +84,13 @@ async function scrapeJobUrl(jobUrl: string): Promise<string> {
 // Function to generate cover letter using server-side API
 async function generateCoverLetter(resumeText: string, jobDescription: string): Promise<string> {
   try {
-    // Get auth token from localStorage
-    const token = localStorage.getItem('authToken');
-    
-    if (!token) {
-      throw new Error('Please sign in to generate a cover letter');
-    }
-
+    // Note: Authentication via session cookies (no need for localStorage token)
     const response = await fetch('/api/cover-letter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
+      credentials: 'include', // Include cookies for session authentication
       body: JSON.stringify({
         resumeText,
         jobDescription,
@@ -120,8 +120,12 @@ const CoverLetterGeneratorSection = () => {
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isScrapingJob, setIsScrapingJob] = useState(false);
+  const [isParsingResume, setIsParsingResume] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Computed property - explicitly track if generation is ready
+  const canGenerate = Boolean(resumeText.trim() && jobDescription.trim() && !isProcessing && !isScrapingJob && !isParsingResume);
   
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'resume' | 'job') => {
@@ -129,7 +133,7 @@ const CoverLetterGeneratorSection = () => {
     if (!files || files.length === 0) return;
 
     setError(null);
-    setIsProcessing(true);
+    setIsParsingResume(true);
     
     try {
       const file = files[0];
@@ -149,15 +153,18 @@ const CoverLetterGeneratorSection = () => {
 
       if (type === 'resume') {
         setResumeText(text);
+        console.log('✅ Resume uploaded successfully - ready to paste job description or URL');
       } else {
         setJobDescription(text);
+        console.log('✅ Job description uploaded successfully');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to process the file.';
       setError(errorMessage);
       console.error('Error parsing file:', error);
     } finally {
-      setIsProcessing(false);
+      setIsParsingResume(false);
+      // Note: We do NOT auto-generate here - user must explicitly click Generate button
     }
   };
 
@@ -376,6 +383,7 @@ const CoverLetterGeneratorSection = () => {
     <div className="w-full h-full p-6 mb-8">
       {isProcessing && <BanterLoader overlay text="Generating Cover Letter..." />}
       {isScrapingJob && <BanterLoader overlay text="Extracting job description..." />}
+      {isParsingResume && <BanterLoader overlay text="Processing resume..." />}
       <div className="mb-6">
         <p className="text-gray-300">
           Upload your resume and a job description to generate a compelling, AI-powered cover letter tailored to the role.
@@ -496,9 +504,10 @@ const CoverLetterGeneratorSection = () => {
 
           <button
             onClick={handleGenerateCoverLetter}
-            disabled={!resumeText || !jobDescription || isProcessing || isScrapingJob}
+            disabled={!canGenerate}
+            aria-disabled={!canGenerate}
             className={`w-full flex items-center justify-center px-6 py-3 text-base font-medium rounded-md transition-colors ${
-              !resumeText || !jobDescription || isProcessing || isScrapingJob
+              !canGenerate
                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed border border-gray-600'
                 : 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600'
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -515,6 +524,17 @@ const CoverLetterGeneratorSection = () => {
               </>
             )}
           </button>
+          {!canGenerate && !isProcessing && (
+            <p className="text-sm text-gray-400 text-center mt-2">
+              {!resumeText && !jobDescription
+                ? 'Upload your resume and provide a job description to get started'
+                : !resumeText
+                ? 'Please upload your resume first'
+                : !jobDescription
+                ? 'Please provide a job description or paste a job URL'
+                : 'Processing... please wait'}
+            </p>
+          )}
         </div>
 
         {/* Right Column - Results */}

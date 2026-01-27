@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export interface UseUnifiedConfigResult<T> {
+interface UseUnifiedConfigResult<T> {
   value: T;
   loading: boolean;
   error: string | null;
@@ -63,7 +63,7 @@ export function useUnifiedConfig<T = any>(
 /**
  * Hook to get multiple configuration values at once
  */
-export function useUnifiedConfigs<T extends Record<string, any>>(
+function useUnifiedConfigs<T extends Record<string, any>>(
   keys: Array<keyof T>,
   defaultValues?: Partial<T>
 ): {
@@ -142,7 +142,7 @@ export function useFeatureFlag(flagName: string): {
 /**
  * Hook for multiple feature flags
  */
-export function useFeatureFlags<T extends Record<string, boolean>>(
+function useFeatureFlags<T extends Record<string, boolean>>(
   flagNames: Array<keyof T>
 ): {
   flags: T;
@@ -170,7 +170,7 @@ export function useFeatureFlags<T extends Record<string, boolean>>(
 /**
  * Hook for application configuration
  */
-export function useAppConfig() {
+function useAppConfig() {
   const configKeys = [
     'core.app.environment',
     'core.app.version',
@@ -205,7 +205,7 @@ export function useAppConfig() {
 /**
  * Hook for quotas and limits
  */
-export function useQuotaConfig() {
+function useQuotaConfig() {
   const configKeys = [
     'quotas.freeInterviews',
     'quotas.freeResumes',
@@ -233,4 +233,3 @@ export function useQuotaConfig() {
   };
 }
 
-export default useUnifiedConfig;

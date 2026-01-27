@@ -22,7 +22,7 @@ interface TaskConfigurations {
   [key: string]: ModelConfiguration;
 }
 
-export class EnhancedAzureOpenAIService {
+class EnhancedAzureOpenAIService {
   private clients: Map<string, OpenAI> = new Map();
   private isInitialized = false;
   private secrets: any = null;

@@ -21,7 +21,7 @@ import { configMonitoringService } from './config-monitoring-service';
 
 // ===== INTERFACES =====
 
-export interface ConfigValue {
+interface ConfigValue {
   value: any;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
   metadata?: {
@@ -34,7 +34,7 @@ export interface ConfigValue {
   };
 }
 
-export interface ConfigValidationRule {
+interface ConfigValidationRule {
   required: boolean;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
   enum?: any[];
@@ -43,7 +43,7 @@ export interface ConfigValidationRule {
   pattern?: RegExp;
 }
 
-export interface ConfigAuditEntry {
+interface ConfigAuditEntry {
   id: string;
   key: string;
   oldValue: any;
@@ -56,7 +56,7 @@ export interface ConfigAuditEntry {
   metadata?: Record<string, any>;
 }
 
-export interface ConfigDriftDetection {
+interface ConfigDriftDetection {
   key: string;
   azureValue: any;
   firebaseValue: any;
@@ -830,7 +830,7 @@ export const unifiedConfigService = new UnifiedConfigService();
 // Note: This hook should be used in client-side components only
 // The actual implementation will be moved to a separate file to avoid
 // bundling React in server-side code
-export function useUnifiedConfig<T = any>(key: string, defaultValue?: T): {
+function useUnifiedConfig<T = any>(key: string, defaultValue?: T): {
   value: T;
   loading: boolean;
   error: string | null;
@@ -845,4 +845,3 @@ export function useUnifiedConfig<T = any>(key: string, defaultValue?: T): {
   };
 }
 
-export default unifiedConfigService;

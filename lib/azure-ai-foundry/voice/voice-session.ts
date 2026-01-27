@@ -26,7 +26,7 @@ interface AudioConfig {
 /**
  * Transcript event data
  */
-export interface TranscriptEvent {
+interface TranscriptEvent {
   text: string;
   timestamp: number;
   confidence?: number;
@@ -36,7 +36,7 @@ export interface TranscriptEvent {
 /**
  * Audio response event data
  */
-export interface AudioResponseEvent {
+interface AudioResponseEvent {
   audioData: Blob;
   timestamp: number;
   duration?: number;
@@ -45,7 +45,7 @@ export interface AudioResponseEvent {
 /**
  * Session state tracking
  */
-export type SessionState = 'idle' | 'starting' | 'active' | 'stopping' | 'stopped' | 'error';
+type SessionState = 'idle' | 'starting' | 'active' | 'stopping' | 'stopped' | 'error';
 
 /**
  * Voice Session class for managing real-time voice streaming

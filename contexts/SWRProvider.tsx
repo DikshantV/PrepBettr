@@ -76,7 +76,7 @@ export function SWRProvider({ children }: SWRProviderProps) {
 }
 
 // Utility function to create optimistic updates
-export function createOptimisticUpdate<T>(
+function createOptimisticUpdate<T>(
   currentData: T[],
   newItem: T,
   getId: (item: T) => string,
@@ -102,7 +102,7 @@ export function createOptimisticUpdate<T>(
 }
 
 // Utility function for cache invalidation patterns
-export const cacheKeys = {
+const cacheKeys = {
   userInterviews: (userId: string) => `user-interviews/${userId}`,
   publicInterviews: (userId: string) => `public-interviews/${userId}`,
   interview: (interviewId: string) => `interviews/${interviewId}`,

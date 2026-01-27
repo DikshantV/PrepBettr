@@ -178,7 +178,7 @@ interface AuthenticatedLayoutProps {
   children: React.ReactNode;
 }
 
-export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
+const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();

@@ -7,7 +7,7 @@
 
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/admin';
 
-export interface UserProfile {
+interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
@@ -24,7 +24,7 @@ export interface UserProfile {
   dateOfBirth?: string;
 }
 
-export interface CreateUserData {
+interface CreateUserData {
   email: string;
   displayName?: string;
   phoneNumber?: string;
@@ -312,4 +312,3 @@ class FirebaseUserService {
 
 // Export singleton instance
 export const firebaseUserService = FirebaseUserService.getInstance();
-export default firebaseUserService;

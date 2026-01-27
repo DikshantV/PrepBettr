@@ -3,7 +3,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { getCosmosDbConfig } from '@/lib/config/environment-loader';
 
 // Data interfaces
-export interface UserDocument {
+interface UserDocument {
   id: string;
   userId: string;
   email: string;
@@ -16,7 +16,7 @@ export interface UserDocument {
   _partitionKey?: string;
 }
 
-export interface InterviewDocument {
+interface InterviewDocument {
   id: string;
   userId: string;
   jobTitle: string;
@@ -35,7 +35,7 @@ export interface InterviewDocument {
   _partitionKey?: string;
 }
 
-export interface FeedbackDocument {
+interface FeedbackDocument {
   id: string;
   userId: string;
   interviewId: string;
@@ -47,7 +47,7 @@ export interface FeedbackDocument {
   _partitionKey?: string;
 }
 
-export interface ResumeDocument {
+interface ResumeDocument {
   id: string;
   userId: string;
   fileName: string;
@@ -76,7 +76,7 @@ export interface ResumeDocument {
   _partitionKey?: string;
 }
 
-export interface UsageDocument {
+interface UsageDocument {
   id: string;
   userId: string;
   interviews: {
@@ -93,7 +93,7 @@ export interface UsageDocument {
   _partitionKey?: string;
 }
 
-export interface JobListingDocument {
+interface JobListingDocument {
   id: string;
   company: string;
   position: string;
@@ -105,7 +105,7 @@ export interface JobListingDocument {
   _partitionKey?: string;
 }
 
-export interface ApplicationDocument {
+interface ApplicationDocument {
   id: string;
   userId: string;
   jobId: string;
@@ -115,7 +115,7 @@ export interface ApplicationDocument {
   _partitionKey?: string;
 }
 
-export interface AutoApplySettingsDocument {
+interface AutoApplySettingsDocument {
   id: string;
   userId: string;
   preferences: any;
@@ -124,7 +124,7 @@ export interface AutoApplySettingsDocument {
   _partitionKey?: string;
 }
 
-export interface AutomationLogDocument {
+interface AutomationLogDocument {
   id: string;
   userId: string;
   action: string;
@@ -134,7 +134,7 @@ export interface AutomationLogDocument {
   _partitionKey?: string;
 }
 
-export interface SubscriptionEventDocument {
+interface SubscriptionEventDocument {
   id: string;
   userId?: string;
   eventType: string;
@@ -144,7 +144,7 @@ export interface SubscriptionEventDocument {
   _partitionKey?: string;
 }
 
-export interface DataDeletionRequestDocument {
+interface DataDeletionRequestDocument {
   id: string;
   userId: string;
   requestedBy: string;
@@ -155,7 +155,7 @@ export interface DataDeletionRequestDocument {
   _partitionKey?: string;
 }
 
-export interface DataProtectionAuditLogDocument {
+interface DataProtectionAuditLogDocument {
   id: string;
   userId: string;
   action: string;
@@ -164,7 +164,7 @@ export interface DataProtectionAuditLogDocument {
   _partitionKey?: string;
 }
 
-export interface NotificationEventDocument {
+interface NotificationEventDocument {
   id: string;
   userId: string;
   type: string;
@@ -185,7 +185,7 @@ export interface NotificationEventDocument {
   _partitionKey?: string;
 }
 
-export interface ErrorEventDocument {
+interface ErrorEventDocument {
   id: string;
   featureName: string;
   errorType: string;
@@ -198,7 +198,7 @@ export interface ErrorEventDocument {
   _partitionKey?: string;
 }
 
-export interface ErrorBudgetDocument {
+interface ErrorBudgetDocument {
   id: string;
   featureName: string;
   breachedAt: Date;
@@ -209,7 +209,7 @@ export interface ErrorBudgetDocument {
   _partitionKey?: string;
 }
 
-export interface EmailVerificationDocument {
+interface EmailVerificationDocument {
   id: string;
   userId: string;
   email: string;
@@ -223,7 +223,7 @@ export interface EmailVerificationDocument {
   _partitionKey?: string;
 }
 
-export interface ProfileDocument {
+interface ProfileDocument {
   id: string;
   userId: string;
   name?: string;
@@ -1060,4 +1060,3 @@ class AzureCosmosService {
 
 // Export singleton instance
 export const azureCosmosService = new AzureCosmosService();
-export default azureCosmosService;

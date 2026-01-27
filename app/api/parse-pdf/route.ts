@@ -8,7 +8,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import * as DOMPurify from 'isomorphic-dompurify';
 import { rateLimiter, getRateLimitHeaders } from '@/lib/middleware/rate-limit';
 
 export const runtime = 'nodejs';
@@ -58,13 +57,14 @@ async function parsePDF(buffer: Buffer): Promise<string> {
     const { default: pdf } = await import('pdf-parse');
     const data = await pdf(buffer);
     
-    // Sanitize extracted text with DOMPurify
-    const sanitizedText = DOMPurify.sanitize(data.text, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-    
-    return sanitizedText.trim();
+    // Basic sanitization: normalize whitespace and strip non-printable characters
+    const sanitizedText = (data.text || '')
+      .replace(/[\x00-\x09\x0B-\x1F\x7F]/g, ' ') // Remove control chars except \n
+      .replace(/\s+\n/g, '\n') // Trim trailing spaces before newlines
+      .replace(/\n{3,}/g, '\n\n') // Collapse excessive blank lines
+      .trim();
+
+    return sanitizedText;
   } catch (error) {
     console.error('Error parsing PDF:', sanitizeForLogging(error instanceof Error ? error.message : 'Unknown error'));
     throw new Error('Failed to extract text from PDF');

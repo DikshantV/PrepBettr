@@ -9,16 +9,16 @@
 
 export {
   UnifiedAuth,
-  UnifiedAuthError,
+  
   getUnifiedAuth,
-  getGlobalAuth,
-  resetGlobalAuth,
+  
+  
   verifyToken,
   verifyAuthHeader,
-  verifyRoles,
-  createAuthError,
-  TokenUtils,
-  AuthPerformanceMonitor
+  
+  
+  
+  
 } from './core';
 
 // Also import for local use
@@ -35,31 +35,26 @@ export type {
   AuthenticatedUser,
   UserSession,
   AuthResult,
-  TokenVerificationResult,
-  AuthConfig,
+  
+  
   AuthMiddlewareOptions,
-  AuthMiddlewareResult,
-  TokenInfo,
-  AuthMetrics,
-  NextAuthRequest,
-  NextAuthResponse,
-  AzureContext,
-  AzureRequest,
-  ExpressRequest,
-  ExpressResponse,
-  ExpressNext,
-  TokenProvider
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 } from './types';
 
 // Import types for local use
 import type { AuthConfig, AuthenticatedUser, AuthMetrics } from './types';
 
-export { 
-  AuthErrorCode,
-  isAuthenticatedUser,
-  isAuthError,
-  isTokenInfo
-} from './types';
+;
 
 // ===== PLATFORM ADAPTER EXPORTS =====
 
@@ -79,44 +74,17 @@ export {
 } from './adapters/next-auth';
 
 // Azure Functions adapters
-export {
-  azureAuthMiddleware,
-  azureRoleMiddleware,
-  azureAdminMiddleware,
-  createAuthenticatedAzureFunction,
-  createAdminAzureFunction,
-  createRoleBasedAzureFunction,
-  createAzureHealthResponse,
-  extractUserFromAzureRequest,
-  legacyAzureAuthMiddleware,
-  initializeFirebaseForAzure,
-  benchmarkAzureAuth
-} from './adapters/azure-auth';
+;
 
 // Express.js adapters
-export {
-  expressAuthMiddleware,
-  expressOptionalAuth,
-  expressRoleMiddleware,
-  expressAdminMiddleware,
-  extractUserFromExpressRequest,
-  isExpressRequestAuthenticated,
-  getUserRoles,
-  hasRole,
-  hasAnyRole,
-  expressAuthErrorHandler,
-  benchmarkExpressAuth,
-  protectExpressRouter,
-  protectExpressRouteWithRoles,
-  protectExpressAdminRoutes
-} from './adapters/express-auth';
+;
 
 // ===== CONVENIENCE FUNCTIONS =====
 
 /**
  * Initialize unified authentication with default configuration
  */
-export async function initializeUnifiedAuth(config?: Partial<AuthConfig>): Promise<UnifiedAuth> {
+async function initializeUnifiedAuth(config?: Partial<AuthConfig>): Promise<UnifiedAuth> {
   const auth = getUnifiedAuth(config);
   await auth.initialize();
   return auth;
@@ -125,7 +93,7 @@ export async function initializeUnifiedAuth(config?: Partial<AuthConfig>): Promi
 /**
  * Quick authentication check for any platform
  */
-export async function quickAuthCheck(authHeader: string | null | undefined): Promise<{
+async function quickAuthCheck(authHeader: string | null | undefined): Promise<{
   authenticated: boolean;
   user: AuthenticatedUser | null;
   error?: string;
@@ -197,7 +165,7 @@ export async function authSystemHealthCheck(): Promise<{
 /**
  * Check if current authentication implementation needs migration
  */
-export function shouldMigrateAuth(): boolean {
+function shouldMigrateAuth(): boolean {
   // Check if old middleware files exist
   const fs = require('fs');
   const path = require('path');
@@ -220,7 +188,7 @@ export function shouldMigrateAuth(): boolean {
 /**
  * Validate migration readiness
  */
-export async function validateMigrationReadiness(): Promise<{
+async function validateMigrationReadiness(): Promise<{
   ready: boolean;
   issues: string[];
   suggestions: string[];

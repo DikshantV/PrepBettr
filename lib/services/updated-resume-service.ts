@@ -9,7 +9,7 @@ import { resumeServiceDataLayer } from './resume-service-data-layer';
 import { unifiedConfigService } from './unified-config-service';
 import { logServerError } from '@/lib/errors';
 
-export interface ResumeServiceConfig {
+interface ResumeServiceConfig {
   maxResumeSize: number;
   allowedFileTypes: string[];
   generateQuestions: boolean;

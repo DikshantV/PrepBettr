@@ -8,7 +8,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 // Base resume data structure (existing)
-export interface BaseResumeData {
+interface BaseResumeData {
   personalInfo: {
     name?: string;
     email?: string;
@@ -101,7 +101,7 @@ export interface BaseResumeData {
 }
 
 // Enhanced resume document structure
-export interface EnhancedResumeDocument {
+interface EnhancedResumeDocument {
   // User identification
   userId: string;
   
@@ -299,17 +299,17 @@ export interface MigrationRecord {
 }
 
 // Type guards for version checking
-export function isEnhancedResumeDocument(doc: any): doc is EnhancedResumeDocument {
+function isEnhancedResumeDocument(doc: any): doc is EnhancedResumeDocument {
   return doc && 
          typeof doc.processorVersion === 'string' &&
          ['foundry-v1', 'legacy-v1'].includes(doc.processorVersion);
 }
 
-export function isFoundryProcessedResume(doc: EnhancedResumeDocument): boolean {
+function isFoundryProcessedResume(doc: EnhancedResumeDocument): boolean {
   return doc.processorVersion === 'foundry-v1';
 }
 
-export function isLegacyProcessedResume(doc: EnhancedResumeDocument): boolean {
+function isLegacyProcessedResume(doc: EnhancedResumeDocument): boolean {
   return doc.processorVersion === 'legacy-v1';
 }
 
@@ -357,7 +357,7 @@ export const DEFAULT_ENHANCED_FIELDS: Partial<EnhancedResumeDocument> = {
 };
 
 // Firestore security rules schema (for reference)
-export const FIRESTORE_SECURITY_RULES_SCHEMA = `
+const FIRESTORE_SECURITY_RULES_SCHEMA = `
 // Enhanced resume document rules
 match /profiles/{userId} {
   allow read, write: if request.auth != null && request.auth.uid == userId;

@@ -5,7 +5,7 @@
 /**
  * Response interface for conversation start action
  */
-export interface ConversationStartResponse {
+interface ConversationStartResponse {
   success: boolean;
   message: string;
   questionNumber: number;
@@ -61,7 +61,7 @@ export interface InterviewContext {
 /**
  * Voice conversation API request body
  */
-export interface VoiceConversationRequest {
+interface VoiceConversationRequest {
   action: 'start' | 'process' | 'summary' | 'clear';
   userTranscript?: string;
   interviewContext?: Partial<InterviewContext>;
@@ -70,7 +70,7 @@ export interface VoiceConversationRequest {
 /**
  * Audio processing result interface
  */
-export interface AudioProcessingResult {
+interface AudioProcessingResult {
   success: boolean;
   audioBlob?: Blob;
   duration?: number;
@@ -82,7 +82,7 @@ export interface AudioProcessingResult {
 /**
  * Speech-to-text response interface
  */
-export interface SpeechToTextResponse {
+interface SpeechToTextResponse {
   success: boolean;
   text: string;
   confidence?: number;
@@ -94,7 +94,7 @@ export interface SpeechToTextResponse {
 /**
  * Text-to-speech request interface
  */
-export interface TextToSpeechRequest {
+interface TextToSpeechRequest {
   text: string;
   voice?: string;
   speed?: number;

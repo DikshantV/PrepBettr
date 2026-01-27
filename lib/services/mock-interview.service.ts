@@ -535,6 +535,6 @@ Return ONLY a valid JSON object in this exact format:
 export const mockInterviewService = new MockInterviewService();
 
 // Export the main creation function for convenience
-export async function createMockInterview(userId?: string): Promise<Interview> {
+async function createMockInterview(userId?: string): Promise<Interview> {
   return mockInterviewService.createMockInterview(userId);
 }

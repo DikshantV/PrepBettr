@@ -29,7 +29,7 @@ export interface ResumeInfo {
   skills: string;
 }
 
-export interface AIResponse<T = any> {
+interface AIResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
@@ -317,19 +317,14 @@ export function dispose(): void {
 
 // Export the unified Azure AI service for modern usage
 export { azureAI };
-export { azureAI as unifiedAI }; // Alias for clarity
+; // Alias for clarity
 
 // Export types from the unified service
 export type {
   AzureAIResponse,
-  ResumeExtractionOptions,
-  QuestionGenerationOptions
+  
+  
 } from './azure-ai';
 
 // Re-export individual services for direct access if needed
-export {
-  azureOpenAIService,
-  enhancedAzureOpenAIService,
-  azureFormRecognizer,
-  foundryDocumentIntelligenceService
-} from './azure-ai';
+;

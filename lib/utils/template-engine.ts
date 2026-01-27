@@ -21,11 +21,11 @@ import * as path from 'path';
 
 // ===== TYPES =====
 
-export interface TemplateContext {
+interface TemplateContext {
   [key: string]: any;
 }
 
-export interface TemplateConfig {
+interface TemplateConfig {
   name: string;
   description?: string;
   version?: string;
@@ -34,14 +34,14 @@ export interface TemplateConfig {
   metadata?: Record<string, any>;
 }
 
-export interface TemplateEngine {
+interface TemplateEngine {
   render(template: string, context: TemplateContext): string;
   renderFromConfig(config: TemplateConfig, context: TemplateContext): string;
   loadTemplate(filePath: string): TemplateConfig;
   loadTemplateSet(directoryPath: string): Record<string, TemplateConfig>;
 }
 
-export interface HelperFunction {
+interface HelperFunction {
   (value: any, ...args: any[]): string;
 }
 
@@ -423,7 +423,7 @@ export const renderTemplate = (template: string, context: TemplateContext = {}):
   return templateEngine.render(template, context);
 };
 
-export const loadAndRenderTemplate = (filePath: string, context: TemplateContext = {}): string => {
+const loadAndRenderTemplate = (filePath: string, context: TemplateContext = {}): string => {
   const config = templateEngine.loadTemplate(filePath);
   return templateEngine.renderFromConfig(config, context);
 };

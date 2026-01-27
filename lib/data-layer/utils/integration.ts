@@ -326,7 +326,7 @@ export class MigrationPhaseController {
 /**
  * Data layer middleware for Next.js API routes
  */
-export function withDataLayer(handler: (
+function withDataLayer(handler: (
   repositories: { resumeRepository: IResumeRepository; usageRepository: IUsageRepository }
 ) => Promise<any>) {
   return async (req: any, res: any) => {
@@ -386,12 +386,12 @@ class RepositoryCache {
   }
 }
 
-export const repositoryCache = RepositoryCache.getInstance();
+const repositoryCache = RepositoryCache.getInstance();
 
 /**
  * Metrics collector for data layer operations
  */
-export class DataLayerMetricsCollector {
+class DataLayerMetricsCollector {
   private metrics: Array<{
     operation: string;
     duration: number;

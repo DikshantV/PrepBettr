@@ -15,7 +15,7 @@ interface PerformanceMetric {
 }
 
 // Initialize Application Insights
-export const initializeAppInsights = () => {
+const initializeAppInsights = () => {
   if (typeof window === 'undefined' || appInsights) {
     return appInsights;
   }
@@ -127,7 +127,7 @@ export const trackPayPalSDKPerformance = (metric: {
 };
 
 // Track subscription API latency
-export const trackSubscriptionAPILatency = (endpoint: string, latency: number, success: boolean) => {
+const trackSubscriptionAPILatency = (endpoint: string, latency: number, success: boolean) => {
   if (!appInsights) return;
 
   appInsights.trackDependencyData({
@@ -238,7 +238,7 @@ const getRevenue = (planType: string): number => {
 };
 
 // Performance observer for Core Web Vitals
-export const initializeWebVitalsTracking = () => {
+const initializeWebVitalsTracking = () => {
   if (typeof window === 'undefined' || !appInsights) return;
 
   // Track Largest Contentful Paint (LCP)
@@ -278,13 +278,3 @@ export const initializeWebVitalsTracking = () => {
 };
 
 // Export the service
-export default {
-  initializeAppInsights,
-  trackSubscriptionPageView,
-  trackPayPalSDKPerformance,
-  trackSubscriptionAPILatency,
-  trackSubscriptionAction,
-  trackComponentPerformance,
-  trackError,
-  initializeWebVitalsTracking
-};

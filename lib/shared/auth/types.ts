@@ -109,13 +109,13 @@ export interface AuthMiddlewareResult<TResponse = any> {
 // ===== PLATFORM-SPECIFIC TYPES =====
 
 // Next.js specific
-export interface NextAuthRequest {
+interface NextAuthRequest {
   headers: {
     get(name: string): string | null;
   };
 }
 
-export interface NextAuthResponse {
+interface NextAuthResponse {
   json(data: any, init?: { status?: number }): any;
 }
 
@@ -152,7 +152,7 @@ export interface ExpressNext {
 
 // ===== UTILITY TYPES =====
 
-export type TokenProvider = 'firebase' | 'azure' | 'jwt' | 'custom';
+type TokenProvider = 'firebase' | 'azure' | 'jwt' | 'custom';
 
 export interface TokenInfo {
   provider: TokenProvider;
@@ -172,14 +172,14 @@ export interface AuthMetrics {
 
 // ===== TYPE GUARDS =====
 
-export function isAuthenticatedUser(obj: any): obj is AuthenticatedUser {
+function isAuthenticatedUser(obj: any): obj is AuthenticatedUser {
   return obj && typeof obj === 'object' && typeof obj.uid === 'string';
 }
 
-export function isAuthError(error: any): error is AuthError {
+function isAuthError(error: any): error is AuthError {
   return error instanceof Error && 'code' in error && Object.values(AuthErrorCode).includes(error.code as AuthErrorCode);
 }
 
-export function isTokenInfo(obj: any): obj is TokenInfo {
+function isTokenInfo(obj: any): obj is TokenInfo {
   return obj && typeof obj === 'object' && typeof obj.provider === 'string' && typeof obj.value === 'string';
 }

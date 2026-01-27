@@ -113,7 +113,7 @@ export async function azureAuthMiddleware(
 /**
  * Role-based authentication middleware for Azure Functions
  */
-export async function azureRoleMiddleware(
+async function azureRoleMiddleware(
   context: AzureContext,
   req: AzureRequest,
   requiredRoles: string[]
@@ -124,7 +124,7 @@ export async function azureRoleMiddleware(
 /**
  * Admin-only middleware for Azure Functions
  */
-export async function azureAdminMiddleware(
+async function azureAdminMiddleware(
   context: AzureContext,
   req: AzureRequest
 ): Promise<AuthMiddlewareResult<any>> {
@@ -169,7 +169,7 @@ export function createAdminAzureFunction(
 /**
  * Create role-based Azure Function wrapper
  */
-export function createRoleBasedAzureFunction(
+function createRoleBasedAzureFunction(
   handlerFunction: (context: AzureContext, req: AzureRequest, user: AuthenticatedUser) => Promise<void>,
   requiredRoles: string[]
 ) {
@@ -198,7 +198,7 @@ function createAzureErrorResponse(error: UnifiedAuthError): any {
 /**
  * Create health check response for Azure Functions
  */
-export function createAzureHealthResponse(): any {
+function createAzureHealthResponse(): any {
   return {
     status: 200,
     headers: {
@@ -215,7 +215,7 @@ export function createAzureHealthResponse(): any {
 /**
  * Extract user from Azure Functions request
  */
-export async function extractUserFromAzureRequest(
+async function extractUserFromAzureRequest(
   context: AzureContext,
   req: AzureRequest
 ): Promise<AuthenticatedUser | null> {
@@ -235,7 +235,7 @@ export async function extractUserFromAzureRequest(
 /**
  * Legacy Azure Functions middleware format (for backward compatibility)
  */
-export async function legacyAzureAuthMiddleware(context: AzureContext, req: AzureRequest) {
+async function legacyAzureAuthMiddleware(context: AzureContext, req: AzureRequest) {
   const authResult = await azureAuthMiddleware(context, req);
   
   // Return in the old format for backward compatibility
@@ -249,7 +249,7 @@ export async function legacyAzureAuthMiddleware(context: AzureContext, req: Azur
 /**
  * Initialize Firebase for Azure Functions (backward compatibility)
  */
-export async function initializeFirebaseForAzure(): Promise<any> {
+async function initializeFirebaseForAzure(): Promise<any> {
   const auth = getUnifiedAuth();
   await auth.initialize();
   return auth;
@@ -260,7 +260,7 @@ export async function initializeFirebaseForAzure(): Promise<any> {
 /**
  * Benchmark Azure Functions authentication performance
  */
-export async function benchmarkAzureAuth(
+async function benchmarkAzureAuth(
   context: AzureContext,
   req: AzureRequest,
   iterations: number = 100

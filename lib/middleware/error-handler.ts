@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApplicationInsights } from '@microsoft/applicationinsights-web';
 
-export interface ErrorDetails {
+interface ErrorDetails {
   userId?: string;
   jobId?: string;
   action?: string;
@@ -14,7 +14,7 @@ export interface ErrorDetails {
   timestamp: string;
 }
 
-export interface ApiError extends Error {
+interface ApiError extends Error {
   statusCode?: number;
   code?: string;
   isOperational?: boolean;
@@ -341,12 +341,12 @@ export class ErrorHandler {
 }
 
 // Convenience function for wrapping API handlers
-export function withErrorHandler(
+function withErrorHandler(
   handler: (req: NextRequest) => Promise<NextResponse>
 ) {
   return ErrorHandler.withErrorHandler(handler);
 }
 
 // Convenience functions for creating errors
-export const createOperationalError = ErrorHandler.createOperationalError;
-export const createProgrammingError = ErrorHandler.createProgrammingError;
+const createOperationalError = ErrorHandler.createOperationalError;
+const createProgrammingError = ErrorHandler.createProgrammingError;

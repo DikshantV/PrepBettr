@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Interview } from "@/types";
 
-export const mappings = {
+const mappings = {
   "react.js": "react",
   reactjs: "react",
   react: "react",
@@ -98,7 +98,7 @@ export const mappings = {
 
 
 // Azure-based interviewer configuration
-export const azureInterviewer = {
+const azureInterviewer = {
   name: "PrepBettr AI Interviewer",
   first_message: "Hello {{candidateName}}! Thank you for taking the time to speak with me today. I'm excited to learn more about you and your experience.",
   system_prompt: `You are a professional job interviewer conducting a real-time voice interview with a candidate. Your goal is to assess their qualifications, motivation, and fit for the role.
@@ -142,7 +142,7 @@ End the conversation on a polite and positive note.
   }
 };
 
-export const feedbackSchema = z.object({
+const feedbackSchema = z.object({
   totalScore: z.number(),
   categoryScores: z.tuple([
     z.object({
@@ -205,9 +205,9 @@ export const companyLogos = [
 ];
 
 // Legacy array for backward compatibility
-export const interviewCovers = companyLogos.map(c => c.logo);
+const interviewCovers = companyLogos.map(c => c.logo);
 
-export const dummyInterviews: Interview[] = [
+const dummyInterviews: Interview[] = [
   {
     id: "1",
     userId: "user1",

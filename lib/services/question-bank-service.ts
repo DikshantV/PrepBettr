@@ -11,7 +11,7 @@ import type { AzureAIResponse } from '@/lib/ai';
 
 // ===== INTERFACES =====
 
-export interface QuestionBankQuestion {
+interface QuestionBankQuestion {
   id: string;
   content: string;
   type: 'technical' | 'behavioral' | 'mixed';
@@ -43,7 +43,7 @@ export interface InterviewTemplate {
   };
 }
 
-export interface QuestionBankOptions {
+interface QuestionBankOptions {
   role?: string;
   type?: 'technical' | 'behavioral' | 'mixed';
   difficulty?: 'easy' | 'medium' | 'hard';
@@ -53,7 +53,7 @@ export interface QuestionBankOptions {
   includeGenerated?: boolean;
 }
 
-export interface CacheConfig {
+interface CacheConfig {
   enabled: boolean;
   ttl: number; // seconds
   maxSize: number;

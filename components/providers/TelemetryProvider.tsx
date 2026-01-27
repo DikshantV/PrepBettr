@@ -186,4 +186,3 @@ export function useTelemetry(): TelemetryContextValue {
   return context;
 }
 
-export default TelemetryProvider;

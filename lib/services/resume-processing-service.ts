@@ -7,7 +7,7 @@ import { azureFormRecognizer, ExtractedResumeData } from './azure-form-recognize
 // Import will be done dynamically when needed
 import { logServerError } from '@/lib/errors';
 
-export interface ProcessedResumeResult {
+interface ProcessedResumeResult {
   success: boolean;
   data?: {
     resumeId: string;
@@ -20,7 +20,7 @@ export interface ProcessedResumeResult {
   error?: string;
 }
 
-export interface ResumeProcessingOptions {
+interface ResumeProcessingOptions {
   generateQuestions?: boolean;
   maxQuestions?: number;
 }

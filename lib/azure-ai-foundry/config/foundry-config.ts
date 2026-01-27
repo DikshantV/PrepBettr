@@ -39,7 +39,7 @@ export interface ModelConfig {
 /**
  * Retry policy configuration
  */
-export interface RetryPolicy {
+interface RetryPolicy {
   maxRetries: number;
   baseDelay: number; // milliseconds
   maxDelay: number; // milliseconds
@@ -60,7 +60,7 @@ export interface ConnectionSettings {
 /**
  * Document Intelligence configuration
  */
-export interface DocumentIntelligenceConfig {
+interface DocumentIntelligenceConfig {
   endpoint: string;
   apiKey: string;
   projectId?: string;
@@ -246,7 +246,7 @@ export async function getFoundryConfig(forceRefresh: boolean = false): Promise<F
 /**
  * Get environment-specific configuration defaults
  */
-export function getEnvironmentDefaults(): Partial<FoundryConfig> {
+function getEnvironmentDefaults(): Partial<FoundryConfig> {
   const environment = process.env.ENVIRONMENT || process.env.NODE_ENV || 'development';
   
   const defaults: Record<string, Partial<FoundryConfig>> = {
@@ -270,7 +270,7 @@ export function getEnvironmentDefaults(): Partial<FoundryConfig> {
 /**
  * Get default model configurations for Azure AI Foundry
  */
-export function getDefaultModelConfigurations(): Record<string, ModelConfig> {
+function getDefaultModelConfigurations(): Record<string, ModelConfig> {
   return {
     'gpt-4o': {
       deploymentName: process.env.AZURE_FOUNDRY_GPT4O_DEPLOYMENT || 'gpt-4o',
@@ -315,7 +315,7 @@ export function getDefaultModelConfigurations(): Record<string, ModelConfig> {
 /**
  * Get default connection settings
  */
-export function getDefaultConnectionSettings(): ConnectionSettings {
+function getDefaultConnectionSettings(): ConnectionSettings {
   const environment = process.env.ENVIRONMENT || process.env.NODE_ENV || 'development';
   
   return {
@@ -396,7 +396,7 @@ export function validateFoundryConfig(config: FoundryConfig): { isValid: boolean
 /**
  * Get foundry configuration for specific environment
  */
-export async function getFoundryConfigForEnvironment(
+async function getFoundryConfigForEnvironment(
   environment: 'development' | 'staging' | 'production'
 ): Promise<FoundryConfig> {
   // Get config without modifying process.env to avoid webpack issues

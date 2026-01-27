@@ -61,7 +61,7 @@ export function DashboardSkeleton() {
 }
 
 // Feedback page skeleton
-export function FeedbackSkeleton() {
+function FeedbackSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 p-6">
       {/* Header skeleton */}
@@ -92,7 +92,7 @@ export function FeedbackSkeleton() {
 }
 
 // Interview detail skeleton
-export function InterviewDetailSkeleton() {
+function InterviewDetailSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,7 +121,7 @@ export function InterviewDetailSkeleton() {
 }
 
 // Real-time status indicator
-export function RealtimeStatusIndicator({ 
+function RealtimeStatusIndicator({ 
   isConnected, 
   lastUpdate 
 }: { 
@@ -199,7 +199,7 @@ export function DataSuspense({
 }
 
 // Optimistic update indicator
-export function OptimisticUpdateIndicator({ 
+function OptimisticUpdateIndicator({ 
   isPending, 
   message = "Saving..." 
 }: { 

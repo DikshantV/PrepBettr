@@ -36,7 +36,7 @@ export interface Interview {
   companyName?: string;
 }
 
-export interface Question {
+interface Question {
   id: string;
   text: string;
   question?: string; // For backward compatibility
@@ -64,7 +64,7 @@ export interface Feedback {
   createdAt: Date;
 }
 
-export interface FeedbackCategory {
+interface FeedbackCategory {
   name: string;
   score: number;
   feedback?: string;
@@ -72,14 +72,14 @@ export interface FeedbackCategory {
   suggestions?: string[];
 }
 
-export interface SessionState {
+interface SessionState {
   id: string;
   status: 'active' | 'completed' | 'failed';
   phases: InterviewPhase[];
   metadata: Record<string, unknown>;
 }
 
-export interface InterviewPhase {
+interface InterviewPhase {
   id: string;
   name: string;
   agentType: string;
@@ -87,7 +87,7 @@ export interface InterviewPhase {
   agentConfig: Record<string, unknown>;
 }
 
-export interface InterviewConfig {
+interface InterviewConfig {
   sessionId: string;
   phases: InterviewPhase[];
   companyInfo?: {
@@ -103,28 +103,28 @@ export interface InterviewConfig {
 }
 
 // Extended Error interface for application errors
-export interface ExtendedError extends Error {
+interface ExtendedError extends Error {
   code?: string;
   status?: number;
   recoverable?: boolean;
 }
 
 // Common utility types
-export type ApiResponse<T = unknown> = {
+type ApiResponse<T = unknown> = {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
 };
 
-export type AsyncResult<T, E = Error> = {
+type AsyncResult<T, E = Error> = {
   success: boolean;
   data?: T;
   error?: E | string;
 };
 
 // User profile types
-export interface UserProfile {
+interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
@@ -136,7 +136,7 @@ export interface UserProfile {
 }
 
 // Firebase user types
-export interface FirebaseUser {
+interface FirebaseUser {
   uid: string;
   email: string;
   name?: string;
@@ -144,7 +144,7 @@ export interface FirebaseUser {
 }
 
 // General User interface
-export interface User {
+interface User {
   id: string;
   uid: string;
   email: string;
@@ -158,7 +158,7 @@ export interface User {
 }
 
 // Voice session types
-export interface VoiceSessionMetadata {
+interface VoiceSessionMetadata {
   sessionId: string;
   userId: string;
   startTime: Date;
@@ -167,7 +167,7 @@ export interface VoiceSessionMetadata {
 }
 
 // Telemetry service types
-export interface VoiceTelemetryService {
+interface VoiceTelemetryService {
   trackSessionStart: (metadata: VoiceSessionMetadata) => void;
   trackSessionEnd: (metadata: VoiceSessionMetadata) => void;
   trackSessionReady: (metadata: VoiceSessionMetadata) => void;
@@ -178,23 +178,23 @@ export interface VoiceTelemetryService {
 }
 
 // Test utility types
-export type MockedFunction<T extends (...args: any[]) => any> = jest.MockedFunction<T>;
-export type MockedObject<T> = {
+type MockedFunction<T extends (...args: any[]) => any> = jest.MockedFunction<T>;
+type MockedObject<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any ? MockedFunction<T[K]> : T[K];
 };
 
 // Next.js route handler types
-export type RouteContext<T = Record<string, string>> = {
+type RouteContext<T = Record<string, string>> = {
   params: Promise<T>;
 };
 
-export type NextRouteHandler<T = Record<string, string>, R = Response> = (
+type NextRouteHandler<T = Record<string, string>, R = Response> = (
   request: Request,
   context: RouteContext<T>
 ) => Promise<R>;
 
 // Common configurations
-export interface ConfigOptions {
+interface ConfigOptions {
   inputAudioFormat?: string;
   inputSampleRate?: number;
   language?: string;
@@ -204,7 +204,7 @@ export interface ConfigOptions {
 }
 
 // Component prop types
-export interface InterviewCardProps {
+interface InterviewCardProps {
   interview?: Interview;
   interviewId?: string;
   userId?: string;
@@ -220,6 +220,6 @@ export interface InterviewCardProps {
 export type FormType = 'sign-in' | 'sign-up' | 'signin' | 'signup' | 'forgot-password';
 
 // Utility types
-export type DeepPartial<T> = {
+type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };

@@ -23,7 +23,7 @@ import {
  * 
  * Replaces the old verifySession function with unified implementation
  */
-export async function verifySession(request: NextRequest): Promise<UserSession | null> {
+async function verifySession(request: NextRequest): Promise<UserSession | null> {
   try {
     const user = await extractUserFromRequest(request);
     
@@ -60,14 +60,14 @@ export async function requireAuth(request: NextRequest): Promise<UserSession> {
  * 
  * Enhanced version that returns full user details
  */
-export async function getAuthenticatedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
+async function getAuthenticatedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
   return extractUserFromRequest(request);
 }
 
 /**
  * Check if request is authenticated
  */
-export async function isAuthenticated(request: NextRequest): Promise<boolean> {
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
   const user = await getAuthenticatedUser(request);
   return !!user;
 }
@@ -75,7 +75,7 @@ export async function isAuthenticated(request: NextRequest): Promise<boolean> {
 /**
  * Verify token directly (for custom implementations)
  */
-export async function verifyToken(token: string): Promise<AuthResult> {
+async function verifyToken(token: string): Promise<AuthResult> {
   const { verifyToken: coreVerifyToken } = await import('@/lib/shared/auth');
   const result = await coreVerifyToken(token);
   
@@ -93,7 +93,7 @@ export async function verifyToken(token: string): Promise<AuthResult> {
  * 
  * Unified implementation replacing the old function
  */
-export async function getUserFromSession(sessionCookie: string): Promise<AuthResult> {
+async function getUserFromSession(sessionCookie: string): Promise<AuthResult> {
   try {
     const user = await getUserFromSessionCookie(sessionCookie);
     
@@ -114,7 +114,7 @@ export async function getUserFromSession(sessionCookie: string): Promise<AuthRes
 /**
  * Extract user session from various sources
  */
-export async function extractSession(request: NextRequest): Promise<UserSession | null> {
+async function extractSession(request: NextRequest): Promise<UserSession | null> {
   try {
     // Try authorization header first
     const authHeader = request.headers.get('authorization');
@@ -154,7 +154,7 @@ export async function extractSession(request: NextRequest): Promise<UserSession 
 /**
  * Check if user has specific role
  */
-export async function userHasRole(request: NextRequest, role: string): Promise<boolean> {
+async function userHasRole(request: NextRequest, role: string): Promise<boolean> {
   const user = await getAuthenticatedUser(request);
   if (!user) return false;
   
@@ -165,7 +165,7 @@ export async function userHasRole(request: NextRequest, role: string): Promise<b
 /**
  * Check if user has any of the specified roles
  */
-export async function userHasAnyRole(request: NextRequest, requiredRoles: string[]): Promise<boolean> {
+async function userHasAnyRole(request: NextRequest, requiredRoles: string[]): Promise<boolean> {
   const user = await getAuthenticatedUser(request);
   if (!user) return false;
   
@@ -176,14 +176,14 @@ export async function userHasAnyRole(request: NextRequest, requiredRoles: string
 /**
  * Check if user is admin
  */
-export async function isAdmin(request: NextRequest): Promise<boolean> {
+async function isAdmin(request: NextRequest): Promise<boolean> {
   return userHasRole(request, 'admin');
 }
 
 /**
  * Get user roles
  */
-export async function getUserRoles(request: NextRequest): Promise<string[]> {
+async function getUserRoles(request: NextRequest): Promise<string[]> {
   const user = await getAuthenticatedUser(request);
   return user?.custom_claims?.roles || [];
 }
@@ -195,14 +195,14 @@ export async function getUserRoles(request: NextRequest): Promise<string[]> {
  * 
  * Replaces the old createHealthCheckResponse
  */
-export function createHealthCheckResponse() {
+function createHealthCheckResponse() {
   return createNextHealthResponse();
 }
 
 /**
  * Create error response for authentication failures
  */
-export function createAuthErrorResponse(message: string, statusCode: number = 401) {
+function createAuthErrorResponse(message: string, statusCode: number = 401) {
   return new Response(
     JSON.stringify({
       error: message,
@@ -222,7 +222,7 @@ export function createAuthErrorResponse(message: string, statusCode: number = 40
 /**
  * Get authentication performance metrics
  */
-export function getAuthPerformanceMetrics(): Record<string, any> {
+function getAuthPerformanceMetrics(): Record<string, any> {
   const { getAuthMetrics } = require('@/lib/shared/auth');
   return getAuthMetrics();
 }
@@ -230,7 +230,7 @@ export function getAuthPerformanceMetrics(): Record<string, any> {
 /**
  * Benchmark authentication performance
  */
-export async function benchmarkAuth(
+async function benchmarkAuth(
   request: NextRequest,
   iterations: number = 100
 ): Promise<Record<string, any>> {
@@ -243,7 +243,7 @@ export async function benchmarkAuth(
 /**
  * Validate that unified auth is working correctly
  */
-export async function validateUnifiedAuth(): Promise<{
+async function validateUnifiedAuth(): Promise<{
   valid: boolean;
   issues: string[];
 }> {
@@ -273,4 +273,4 @@ export async function validateUnifiedAuth(): Promise<{
 // ===== LEGACY TYPE EXPORTS =====
 
 // Re-export types for backward compatibility
-export type { AuthenticatedUser, UserSession, AuthResult };
+;

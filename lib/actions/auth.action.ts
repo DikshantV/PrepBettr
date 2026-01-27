@@ -152,7 +152,7 @@ export async function getCurrentUser(token?: string): Promise<AuthenticatedUser 
  * Sign out the current user (client-side)
  * This is a compatibility function - actual sign out happens on client
  */
-export async function signOut(): Promise<void> {
+async function signOut(): Promise<void> {
   // In a real implementation, this would handle server-side logout
   // For now, this is a placeholder for client-side logout
   if (typeof window !== 'undefined') {
@@ -167,7 +167,7 @@ export async function signOut(): Promise<void> {
  * @param token - Firebase ID token
  * @returns Promise<AuthResult>
  */
-export async function signIn(token: string): Promise<AuthResult> {
+async function signIn(token: string): Promise<AuthResult> {
   try {
     const result = await verifyToken(token);
     return {
@@ -189,9 +189,9 @@ export async function signIn(token: string): Promise<AuthResult> {
  * @param token - Firebase ID token
  * @returns Promise<AuthResult>
  */
-export async function verifyFirebaseToken(token: string): Promise<AuthResult> {
+async function verifyFirebaseToken(token: string): Promise<AuthResult> {
   return signIn(token);
 }
 
 // Re-export types for convenience
-export type { AuthenticatedUser, AuthResult };
+;

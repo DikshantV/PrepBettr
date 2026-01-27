@@ -6,7 +6,7 @@
 // Environment-based debug flag
 const DEBUG = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
 
-export interface LogContext {
+interface LogContext {
   [key: string]: any;
 }
 
@@ -109,4 +109,4 @@ export const logger = {
 };
 
 // Convenience exports
-export const { debug, info, success, warn, error } = logger;
+export const {      } = logger;

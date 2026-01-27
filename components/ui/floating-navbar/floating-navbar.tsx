@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useContext, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useScrollDirection } from '@/hooks/useScrollDirection';
-import { useIsClient } from '@/hooks/useIsClient';
+import { useScrollDirection } from '@/apps/frontend/src/hooks/useScrollDirection';
+import { useIsClient } from '@/apps/frontend/src/hooks/useIsClient';
 import { AuthContext } from '@/contexts/AuthContext';
 import type { JSX } from 'react';
 

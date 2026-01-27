@@ -120,7 +120,7 @@ export const MacbookScroll = ({
   );
 };
 
-export const Lid = ({
+const Lid = ({
                       scaleX,
                       scaleY,
                       rotate,
@@ -178,7 +178,7 @@ export const Lid = ({
   );
 };
 
-export const Trackpad = () => {
+const Trackpad = () => {
   return (
       <div
           className="mx-auto my-1 h-32 w-[40%] rounded-xl"
@@ -189,7 +189,7 @@ export const Trackpad = () => {
   );
 };
 
-export const Keypad = () => {
+const Keypad = () => {
   return (
       <div className="mx-1 h-full [transform:translateZ(0)] rounded-md bg-[#050505] p-1 [will-change:transform]">
         {/* First Row */}
@@ -547,7 +547,7 @@ export const Keypad = () => {
   );
 };
 
-export const KBtn = ({
+const KBtn = ({
                        className,
                        children,
                        childrenClassName,
@@ -589,7 +589,7 @@ export const KBtn = ({
   );
 };
 
-export const SpeakerGrid = () => {
+const SpeakerGrid = () => {
   return (
       <div
           className="mt-2 flex h-40 gap-[2px] px-[0.5px]"
@@ -602,7 +602,7 @@ export const SpeakerGrid = () => {
   );
 };
 
-export const OptionKey = ({ className }: { className: string }) => {
+const OptionKey = ({ className }: { className: string }) => {
   return (
       <svg
           fill="none"

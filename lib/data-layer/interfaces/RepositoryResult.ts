@@ -15,7 +15,7 @@ export interface RepositoryResult<T> {
 }
 
 // Extended result interface with pagination support
-export interface PaginatedRepositoryResult<T> extends RepositoryResult<T[]> {
+interface PaginatedRepositoryResult<T> extends RepositoryResult<T[]> {
   pagination?: {
     currentPage: number;
     totalPages: number;
@@ -28,7 +28,7 @@ export interface PaginatedRepositoryResult<T> extends RepositoryResult<T[]> {
 }
 
 // Result interface for batch operations
-export interface BatchRepositoryResult<T> extends RepositoryResult<T[]> {
+interface BatchRepositoryResult<T> extends RepositoryResult<T[]> {
   batchMetadata?: {
     totalRequested: number;
     successfulOperations: number;
@@ -43,7 +43,7 @@ export interface BatchRepositoryResult<T> extends RepositoryResult<T[]> {
 }
 
 // Result interface for dual-write operations
-export interface DualWriteRepositoryResult<T> extends RepositoryResult<T> {
+interface DualWriteRepositoryResult<T> extends RepositoryResult<T> {
   primaryResult?: RepositoryResult<T>;
   secondaryResult?: RepositoryResult<T>;
   consistencyCheck?: {
@@ -55,7 +55,7 @@ export interface DualWriteRepositoryResult<T> extends RepositoryResult<T> {
 }
 
 // Result interface for migration operations
-export interface MigrationRepositoryResult<T> extends RepositoryResult<T> {
+interface MigrationRepositoryResult<T> extends RepositoryResult<T> {
   migrationMetadata?: {
     sourceStore: 'firestore' | 'cosmos';
     targetStore: 'firestore' | 'cosmos';
@@ -68,7 +68,7 @@ export interface MigrationRepositoryResult<T> extends RepositoryResult<T> {
 }
 
 // Result interface for analytics operations
-export interface AnalyticsRepositoryResult<T> extends RepositoryResult<T> {
+interface AnalyticsRepositoryResult<T> extends RepositoryResult<T> {
   analyticsMetadata?: {
     calculationTimeMs: number;
     dataRange?: {
@@ -82,7 +82,7 @@ export interface AnalyticsRepositoryResult<T> extends RepositoryResult<T> {
 }
 
 // Result interface for health check operations
-export interface HealthCheckRepositoryResult extends RepositoryResult<{
+interface HealthCheckRepositoryResult extends RepositoryResult<{
   status: 'healthy' | 'unhealthy' | 'degraded';
   checks: {
     [checkName: string]: {
@@ -106,7 +106,7 @@ export interface HealthCheckRepositoryResult extends RepositoryResult<{
 /**
  * Create a successful result
  */
-export function createSuccessResult<T>(
+function createSuccessResult<T>(
   data: T,
   message?: string,
   metadata?: { [key: string]: any }
@@ -122,7 +122,7 @@ export function createSuccessResult<T>(
 /**
  * Create a failed result
  */
-export function createErrorResult<T>(
+function createErrorResult<T>(
   error: string,
   data?: T,
   metadata?: { [key: string]: any }
@@ -138,7 +138,7 @@ export function createErrorResult<T>(
 /**
  * Create a paginated result
  */
-export function createPaginatedResult<T>(
+function createPaginatedResult<T>(
   data: T[],
   pagination: PaginatedRepositoryResult<T>['pagination'],
   message?: string
@@ -154,7 +154,7 @@ export function createPaginatedResult<T>(
 /**
  * Create a batch result
  */
-export function createBatchResult<T>(
+function createBatchResult<T>(
   data: T[],
   batchMetadata: BatchRepositoryResult<T>['batchMetadata'],
   message?: string
@@ -170,7 +170,7 @@ export function createBatchResult<T>(
 /**
  * Create a dual-write result
  */
-export function createDualWriteResult<T>(
+function createDualWriteResult<T>(
   data: T,
   primaryResult: RepositoryResult<T>,
   secondaryResult: RepositoryResult<T>,
@@ -201,7 +201,7 @@ export function createDualWriteResult<T>(
 /**
  * Create a migration result
  */
-export function createMigrationResult<T>(
+function createMigrationResult<T>(
   data: T,
   migrationMetadata: MigrationRepositoryResult<T>['migrationMetadata'],
   success: boolean = true,
@@ -221,7 +221,7 @@ export function createMigrationResult<T>(
 /**
  * Create an analytics result
  */
-export function createAnalyticsResult<T>(
+function createAnalyticsResult<T>(
   data: T,
   analyticsMetadata: AnalyticsRepositoryResult<T>['analyticsMetadata'],
   message?: string
@@ -237,7 +237,7 @@ export function createAnalyticsResult<T>(
 /**
  * Create a health check result
  */
-export function createHealthCheckResult(
+function createHealthCheckResult(
   status: 'healthy' | 'unhealthy' | 'degraded',
   checks: HealthCheckRepositoryResult['data']['checks'],
   healthMetadata?: HealthCheckRepositoryResult['healthMetadata']
@@ -253,7 +253,7 @@ export function createHealthCheckResult(
 /**
  * Transform a result to a different type
  */
-export function transformResult<T, U>(
+function transformResult<T, U>(
   result: RepositoryResult<T>,
   transformer: (data: T) => U
 ): RepositoryResult<U> {
@@ -286,7 +286,7 @@ export function transformResult<T, U>(
 /**
  * Combine multiple results into a single result
  */
-export function combineResults<T>(
+function combineResults<T>(
   results: RepositoryResult<T>[],
   combiner?: (data: T[]) => T
 ): RepositoryResult<T | T[]> {
@@ -339,27 +339,27 @@ export function combineResults<T>(
 /**
  * Type guard to check if result is successful
  */
-export function isSuccessfulResult<T>(result: RepositoryResult<T>): result is RepositoryResult<T> & { success: true; data: T } {
+function isSuccessfulResult<T>(result: RepositoryResult<T>): result is RepositoryResult<T> & { success: true; data: T } {
   return result.success === true && result.data !== undefined;
 }
 
 /**
  * Type guard to check if result is a dual-write result
  */
-export function isDualWriteResult<T>(result: RepositoryResult<T>): result is DualWriteRepositoryResult<T> {
+function isDualWriteResult<T>(result: RepositoryResult<T>): result is DualWriteRepositoryResult<T> {
   return 'primaryResult' in result && 'secondaryResult' in result;
 }
 
 /**
  * Type guard to check if result is a batch result
  */
-export function isBatchResult<T>(result: RepositoryResult<T[]>): result is BatchRepositoryResult<T> {
+function isBatchResult<T>(result: RepositoryResult<T[]>): result is BatchRepositoryResult<T> {
   return 'batchMetadata' in result;
 }
 
 /**
  * Type guard to check if result is a paginated result
  */
-export function isPaginatedResult<T>(result: RepositoryResult<T[]>): result is PaginatedRepositoryResult<T> {
+function isPaginatedResult<T>(result: RepositoryResult<T[]>): result is PaginatedRepositoryResult<T> {
   return 'pagination' in result;
 }

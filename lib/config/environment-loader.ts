@@ -14,7 +14,7 @@ import { logServerError } from '@/lib/errors';
 
 // ===== INTERFACES =====
 
-export interface CosmosDbConfig {
+interface CosmosDbConfig {
   connectionString: string;
   database: string;
   maxRUPerSecond: number;
@@ -23,7 +23,7 @@ export interface CosmosDbConfig {
   retryAttempts: number;
 }
 
-export interface EnvironmentConfig {
+interface EnvironmentConfig {
   environment: 'development' | 'staging' | 'production';
   cosmosDb: CosmosDbConfig;
   azure: {
@@ -306,14 +306,14 @@ class EnvironmentConfigurationLoader {
 
 // ===== SINGLETON INSTANCE =====
 
-export const environmentLoader = new EnvironmentConfigurationLoader();
+const environmentLoader = new EnvironmentConfigurationLoader();
 
 // ===== CONVENIENCE FUNCTIONS =====
 
 /**
  * Load environment configuration (idempotent)
  */
-export async function loadEnvironmentConfig(): Promise<EnvironmentConfig> {
+async function loadEnvironmentConfig(): Promise<EnvironmentConfig> {
   return await environmentLoader.load();
 }
 
@@ -328,7 +328,7 @@ export async function getCosmosDbConfig(): Promise<CosmosDbConfig> {
 /**
  * Check if Cosmos DB is enabled
  */
-export async function isCosmosDbEnabled(): Promise<boolean> {
+async function isCosmosDbEnabled(): Promise<boolean> {
   try {
     const config = await loadEnvironmentConfig();
     return config.features.enableCosmosDb && !!config.cosmosDb.connectionString;
@@ -341,9 +341,8 @@ export async function isCosmosDbEnabled(): Promise<boolean> {
 /**
  * Get environment name
  */
-export async function getEnvironmentName(): Promise<string> {
+async function getEnvironmentName(): Promise<string> {
   const config = await loadEnvironmentConfig();
   return config.environment;
 }
 
-export default environmentLoader;

@@ -2,14 +2,14 @@ import { unifiedConfigService } from './unified-config-service';
 import { userTargetingService, UserTargetingService } from './user-targeting';
 
 // Updated interface to match unified config schema
-export interface FeatureFlags {
+interface FeatureFlags {
   voiceInterview: boolean;
   voiceInterviewV2: boolean;
   premiumFeatures: boolean;
   newUI: boolean;
 }
 
-export interface EnhancedFeatureFlags extends FeatureFlags {
+interface EnhancedFeatureFlags extends FeatureFlags {
   // Rollout status for each feature
   rolloutStatus: {
     voiceInterview: boolean;

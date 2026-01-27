@@ -9,7 +9,7 @@
 // Core Data Store Interface
 // =============================================================================
 
-export interface IDataStore {
+interface IDataStore {
   initialize(): Promise<void>;
   healthCheck(): Promise<{ healthy: boolean; details: Record<string, any> }>;
   close?(): Promise<void>;
@@ -19,7 +19,7 @@ export interface IDataStore {
 // Document Operations Interface
 // =============================================================================
 
-export interface IDocumentRepository<T> {
+interface IDocumentRepository<T> {
   create(data: Omit<T, 'id' | '_partitionKey'>): Promise<string>;
   get(id: string, partitionKey: string): Promise<T | null>;
   update(id: string, partitionKey: string, updates: Partial<T>): Promise<void>;
@@ -314,13 +314,13 @@ export class ConflictError extends DataStoreError {
   }
 }
 
-export class QuotaExceededError extends DataStoreError {
+class QuotaExceededError extends DataStoreError {
   constructor(userId: string, quotaType: string) {
     super(`Quota exceeded for user ${userId}: ${quotaType}`, 'QUOTA_EXCEEDED');
   }
 }
 
-export class ValidationError extends DataStoreError {
+class ValidationError extends DataStoreError {
   constructor(message: string, validationErrors: string[]) {
     super(message, 'VALIDATION_ERROR', { validationErrors });
   }
@@ -330,9 +330,9 @@ export class ValidationError extends DataStoreError {
 // Utility Types
 // =============================================================================
 
-export type DocumentType = 'resume' | 'interview' | 'usage' | 'consent' | 'audit' | 'notification' | 'payment';
+type DocumentType = 'resume' | 'interview' | 'usage' | 'consent' | 'audit' | 'notification' | 'payment';
 
-export interface MigrationInfo {
+interface MigrationInfo {
   sourceProvider: 'firestore' | 'cosmos';
   targetProvider: 'firestore' | 'cosmos';
   migrationDate: Date;
@@ -347,7 +347,7 @@ export interface MigrationInfo {
   }>;
 }
 
-export interface DualWriteMetadata {
+interface DualWriteMetadata {
   primaryWrite: boolean;
   secondaryWrite: boolean;
   primaryProvider: 'cosmos' | 'firestore';

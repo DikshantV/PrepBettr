@@ -11,12 +11,12 @@ import {
 } from '@/lib/utils/structured-errors';
 import { logServerError } from '@/lib/errors';
 
-export interface ConversationMessage {
+interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-export interface CandidateProfile {
+interface CandidateProfile {
   currentRole?: string;
   techStack?: string;
   yearsExperience?: string;
@@ -24,7 +24,7 @@ export interface CandidateProfile {
   questionCount?: string;
 }
 
-export interface InterviewContext {
+interface InterviewContext {
   type: 'technical' | 'behavioral' | 'general';
   position?: string;
   company?: string;
@@ -34,14 +34,14 @@ export interface InterviewContext {
   maxQuestions?: number; // Default: 10 - Maximum number of questions for the interview
 }
 
-export interface GenerationResponse {
+interface GenerationResponse {
   content: string;
   questionNumber?: number;
   isComplete?: boolean;
   followUpSuggestions?: string[];
 }
 
-export class AzureOpenAIServiceServer {
+class AzureOpenAIServiceServer {
   private client: MigrationOpenAIClient | null = null;
   private isInitialized = false;
   private modelDeployment: string = 'gpt-4o'; // Store the deployment name as model

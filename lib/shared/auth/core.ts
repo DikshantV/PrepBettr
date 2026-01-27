@@ -587,7 +587,7 @@ export async function verifyAuthHeader(authHeader: string | null | undefined): P
 /**
  * Verify user has required roles
  */
-export function verifyRoles(user: AuthenticatedUser, requiredRoles: string[]): boolean {
+function verifyRoles(user: AuthenticatedUser, requiredRoles: string[]): boolean {
   const auth = getUnifiedAuth();
   return auth.hasRequiredRoles(user, requiredRoles);
 }
@@ -749,13 +749,13 @@ export class AuthPerformanceMonitor {
 
 let globalAuth: UnifiedAuth | null = null;
 
-export function getGlobalAuth(): UnifiedAuth {
+function getGlobalAuth(): UnifiedAuth {
   if (!globalAuth) {
     globalAuth = UnifiedAuth.getInstance();
   }
   return globalAuth;
 }
 
-export function resetGlobalAuth(): void {
+function resetGlobalAuth(): void {
   globalAuth = null;
 }

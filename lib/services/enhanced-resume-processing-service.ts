@@ -22,7 +22,7 @@ import { unifiedConfigService } from './unified-config-service';
 import { templateEngine } from '@/lib/utils/template-engine';
 import path from 'path';
 
-export interface EnhancedProcessedResumeResult {
+interface EnhancedProcessedResumeResult {
   success: boolean;
   data?: {
     resumeId: string;

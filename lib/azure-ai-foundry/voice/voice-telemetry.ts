@@ -9,7 +9,7 @@ import { logger } from '@/lib/utils/logger';
 import { reportError, showErrorNotification } from '@/lib/utils/error-utils';
 
 // Type definitions for telemetry events
-export interface VoiceTelemetryEvent {
+interface VoiceTelemetryEvent {
   name: string;
   timestamp: number;
   sessionId?: string;
@@ -18,7 +18,7 @@ export interface VoiceTelemetryEvent {
   measurements?: Record<string, number>;
 }
 
-export interface ConnectionMetrics {
+interface ConnectionMetrics {
   connectionTime: number;
   retryCount: number;
   reconnectCount: number;
@@ -26,7 +26,7 @@ export interface ConnectionMetrics {
   networkLatency?: number;
 }
 
-export interface AudioMetrics {
+interface AudioMetrics {
   sttLatency: number;      // Speech-to-text latency
   ttsLatency: number;      // Text-to-speech latency
   audioQuality: number;    // 0-1 quality score
@@ -34,7 +34,7 @@ export interface AudioMetrics {
   bufferUnderruns: number; // Audio buffer issues
 }
 
-export interface SessionMetrics {
+interface SessionMetrics {
   sessionDuration: number;
   messageCount: number;
   transcriptAccuracy: number;
@@ -461,7 +461,7 @@ let voiceTelemetryInstance: VoiceTelemetryService | null = null;
 /**
  * Get shared VoiceTelemetryService instance
  */
-export function getVoiceTelemetry(): VoiceTelemetryService {
+function getVoiceTelemetry(): VoiceTelemetryService {
   if (!voiceTelemetryInstance) {
     voiceTelemetryInstance = new VoiceTelemetryService();
   }

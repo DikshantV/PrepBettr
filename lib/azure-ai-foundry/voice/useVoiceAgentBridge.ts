@@ -156,7 +156,7 @@ export interface UseVoiceAgentBridgeConfig {
   onSessionError?: (error: Error) => void;
 }
 
-export interface VoiceAgentBridgeResult {
+interface VoiceAgentBridgeResult {
   // Agent State (existing compatibility)
   state: AgentState;
   dispatch: React.Dispatch<any>;
@@ -679,4 +679,3 @@ export function useVoiceAgentBridge(config: UseVoiceAgentBridgeConfig): VoiceAge
   };
 }
 
-export default useVoiceAgentBridge;

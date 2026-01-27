@@ -22,20 +22,20 @@ if (isClient) {
 /**
  * Enhanced extraction interfaces extending existing types
  */
-export interface DocumentBoundingBox {
+interface DocumentBoundingBox {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-export interface DocumentField {
+interface DocumentField {
   content: string;
   confidence: number;
   boundingBox?: DocumentBoundingBox;
 }
 
-export interface DocumentTable {
+interface DocumentTable {
   rowCount: number;
   columnCount: number;
   cells: Array<{

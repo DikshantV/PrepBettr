@@ -1,6 +1,6 @@
 import { auth } from '@/firebase/client';
 
-export interface RolloutConfig {
+interface RolloutConfig {
   percentage: number; // 0-100, percentage of users to include
   featureName: string;
 }

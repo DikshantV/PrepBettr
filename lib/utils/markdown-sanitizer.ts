@@ -10,7 +10,7 @@
  * @param text - Raw text that may contain Markdown formatting
  * @returns Clean text suitable for speech synthesis
  */
-export function sanitizeTextForTTS(text: string): string {
+function sanitizeTextForTTS(text: string): string {
   if (!text || typeof text !== 'string') {
     return '';
   }
@@ -118,7 +118,7 @@ export function sanitizeInterviewText(text: string): string {
  * Quick test function to verify sanitization
  * @param markdownText - Text to test
  */
-export function testMarkdownSanitization(markdownText: string): void {
+function testMarkdownSanitization(markdownText: string): void {
   console.log('Original:', markdownText);
   console.log('Sanitized:', sanitizeTextForTTS(markdownText));
   console.log('Interview-optimized:', sanitizeInterviewText(markdownText));

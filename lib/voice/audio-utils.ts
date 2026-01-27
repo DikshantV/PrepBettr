@@ -20,7 +20,7 @@ export const AUDIO_CONFIG = {
 /**
  * Get the best supported MIME type for MediaRecorder
  */
-export const getSupportedMimeType = (): string | null => {
+const getSupportedMimeType = (): string | null => {
   const preferredTypes = [
     'audio/webm;codecs=pcm',     // Best: PCM in WebM container
     'audio/wav',                 // Good: WAV format
@@ -44,7 +44,7 @@ export const getSupportedMimeType = (): string | null => {
 /**
  * Trim initial silence from audio chunks
  */
-export const trimInitialSilence = (
+const trimInitialSilence = (
   audioChunks: Float32Array[], 
   sampleRate: number
 ): { 
@@ -105,7 +105,7 @@ export const trimInitialSilence = (
 /**
  * Convert Float32Array chunks to WAV blob
  */
-export const convertToWav = (audioChunks: Float32Array[], sampleRate: number): Blob => {
+const convertToWav = (audioChunks: Float32Array[], sampleRate: number): Blob => {
   try {
     const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
     const combinedAudio = new Float32Array(totalLength);

@@ -10,12 +10,12 @@
 import { AzureOpenAI } from 'openai';
 import { fetchAzureSecrets } from '../../../lib/azure-config-browser';
 
-export interface ConversationMessage {
+interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-export interface CandidateProfile {
+interface CandidateProfile {
   currentRole?: string;
   techStack?: string;
   yearsExperience?: string;
@@ -23,7 +23,7 @@ export interface CandidateProfile {
   questionCount?: string;
 }
 
-export interface InterviewContext {
+interface InterviewContext {
   type: 'technical' | 'behavioral' | 'general';
   position?: string;
   company?: string;
@@ -33,7 +33,7 @@ export interface InterviewContext {
   maxQuestions?: number; // Default: 10 - Maximum number of questions for the interview
 }
 
-export interface GenerationResponse {
+interface GenerationResponse {
   content: string;
   questionNumber?: number;
   isComplete?: boolean;
@@ -610,4 +610,4 @@ export class AzureOpenAIService {
 }
 
 // Export singleton instance
-export const azureOpenAIService = new AzureOpenAIService();
+const azureOpenAIService = new AzureOpenAIService();

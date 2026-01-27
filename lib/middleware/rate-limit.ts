@@ -5,7 +5,7 @@
  * Provides configurable rate limits per endpoint with automatic cleanup.
  */
 
-export interface RateLimitResult {
+interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetAt: number;
@@ -51,7 +51,7 @@ const DEFAULT_RATE_LIMIT: RateLimitConfig = {
 /**
  * RateLimiter class - manages in-memory rate limiting with automatic cleanup
  */
-export class RateLimiter {
+class RateLimiter {
   private storage: Map<string, RateLimitRecord>;
   private cleanupInterval: NodeJS.Timeout | null;
   private readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes

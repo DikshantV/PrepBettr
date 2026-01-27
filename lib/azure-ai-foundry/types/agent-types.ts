@@ -26,7 +26,7 @@ export interface Question {
   };
 }
 
-export interface CandidateProfile {
+interface CandidateProfile {
   name?: string;
   experience: string;
   skills: string[];
@@ -39,14 +39,14 @@ export interface CandidateProfile {
   certifications?: string[];
 }
 
-export interface CompanyInfo {
+interface CompanyInfo {
   name?: string;
   industry?: string;
   size?: string;
   description?: string;
 }
 
-export interface SessionHistory {
+interface SessionHistory {
   previousQuestions: Question[];
   previousAnswers?: Array<{
     questionId: string;
@@ -122,7 +122,7 @@ export interface AgentMetadata {
   averageDuration?: number; // in minutes
 }
 
-export interface AgentConfig {
+interface AgentConfig {
   agentId: string;
   model: string;
   systemInstructions: string;

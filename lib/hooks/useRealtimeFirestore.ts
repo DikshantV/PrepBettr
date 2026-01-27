@@ -37,7 +37,7 @@ interface ApplicationStatus {
  * @param interviewId - Interview ID to watch
  * @returns Realtime interview data
  */
-export function useRealtimeInterview(interviewId: string) {
+function useRealtimeInterview(interviewId: string) {
   const [interview, setInterview] = useState<Interview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export function useRealtimeInterview(interviewId: string) {
  * @param applicationId - Application ID to watch
  * @returns Realtime application status
  */
-export function useRealtimeApplicationStatus(applicationId: string) {
+function useRealtimeApplicationStatus(applicationId: string) {
   const [status, setStatus] = useState<ApplicationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -254,4 +254,4 @@ export function useRealtimeFeedback(interviewId: string) {
   return { feedback, loading, error };
 }
 
-export type { Interview, ApplicationStatus };
+;

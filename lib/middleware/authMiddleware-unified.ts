@@ -31,7 +31,7 @@ import {
  * 
  * Replaces the old authMiddleware with unified implementation
  */
-export async function authMiddleware(
+async function authMiddleware(
   request: NextRequest,
   options: AuthMiddlewareOptions = {}
 ): Promise<{
@@ -51,7 +51,7 @@ export async function authMiddleware(
 /**
  * Verify Firebase ID token (unified implementation)
  */
-export async function verifyFirebaseToken(idToken: string): Promise<AuthResult> {
+async function verifyFirebaseToken(idToken: string): Promise<AuthResult> {
   const { verifyToken } = await import('@/lib/shared/auth');
   const result = await verifyToken(idToken);
   
@@ -65,7 +65,7 @@ export async function verifyFirebaseToken(idToken: string): Promise<AuthResult> 
 /**
  * Role-based authorization middleware
  */
-export async function roleMiddleware(
+async function roleMiddleware(
   request: NextRequest, 
   requiredRoles: string[] = []
 ): Promise<{
@@ -85,14 +85,14 @@ export async function roleMiddleware(
 /**
  * Admin-only middleware
  */
-export function adminMiddleware(request: NextRequest) {
+function adminMiddleware(request: NextRequest) {
   return roleMiddleware(request, ['admin']);
 }
 
 /**
  * Middleware for API routes that need to handle both authenticated and anonymous users
  */
-export async function optionalAuth(request: NextRequest): Promise<{
+async function optionalAuth(request: NextRequest): Promise<{
   user: AuthenticatedUser | null;
   isAuthenticated: boolean;
 }> {
@@ -102,7 +102,7 @@ export async function optionalAuth(request: NextRequest): Promise<{
 /**
  * Health check utility (no auth required)
  */
-export function createHealthCheckResponse() {
+function createHealthCheckResponse() {
   const { createNextHealthResponse } = require('@/lib/shared/auth');
   return createNextHealthResponse();
 }
@@ -120,17 +120,17 @@ export function createHealthCheckResponse() {
  *   return NextResponse.json({ message: `Hello ${user.email}` });
  * });
  */
-export { withNextAuth as withAuth };
+;
 
 /**
  * Admin-only handler wrapper
  */
-export { withNextAdminAuth as withAdminAuth };
+;
 
 /**
  * Role-based handler wrapper
  */
-export { withNextRoleAuth as withRoleAuth };
+;
 
 // ===== UTILITY FUNCTIONS =====
 
@@ -139,7 +139,7 @@ export { withNextRoleAuth as withRoleAuth };
  * 
  * Replaces getUserFromSessionCookie from the old implementation
  */
-export async function getUserFromSession(sessionCookie: string): Promise<AuthResult> {
+async function getUserFromSession(sessionCookie: string): Promise<AuthResult> {
   try {
     const user = await getUserFromSessionCookie(sessionCookie);
     
@@ -160,7 +160,7 @@ export async function getUserFromSession(sessionCookie: string): Promise<AuthRes
 /**
  * Extract user from request context (trying both auth header and session cookie)
  */
-export async function getUserFromRequest(request: NextRequest): Promise<AuthenticatedUser | null> {
+async function getUserFromRequest(request: NextRequest): Promise<AuthenticatedUser | null> {
   return extractUserFromRequest(request);
 }
 
@@ -170,19 +170,19 @@ export async function getUserFromRequest(request: NextRequest): Promise<Authenti
  * Legacy interface compatibility
  * Maintains the exact same interface as the old authMiddleware for easy migration
  */
-export interface AuthRequest extends NextRequest {
+interface AuthRequest extends NextRequest {
   user?: AuthenticatedUser;
 }
 
 // Re-export types for backward compatibility
-export type { AuthenticatedUser, AuthResult };
+export type { AuthenticatedUser,  };
 
 // ===== PERFORMANCE MONITORING =====
 
 /**
  * Get authentication performance metrics
  */
-export function getAuthPerformanceMetrics(): Record<string, any> {
+function getAuthPerformanceMetrics(): Record<string, any> {
   const { getAuthMetrics } = require('@/lib/shared/auth');
   return getAuthMetrics();
 }
@@ -190,7 +190,7 @@ export function getAuthPerformanceMetrics(): Record<string, any> {
 /**
  * Reset authentication performance metrics
  */
-export function resetAuthPerformanceMetrics(): void {
+function resetAuthPerformanceMetrics(): void {
   const { resetAuthMetrics } = require('@/lib/shared/auth');
   resetAuthMetrics();
 }
@@ -198,7 +198,7 @@ export function resetAuthPerformanceMetrics(): void {
 /**
  * Run authentication performance benchmark
  */
-export async function runAuthBenchmark(
+async function runAuthBenchmark(
   request: NextRequest,
   iterations: number = 100
 ): Promise<Record<string, any>> {

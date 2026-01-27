@@ -27,7 +27,7 @@ export interface InterviewContext {
   };
 }
 
-export interface ConversationResponse {
+interface ConversationResponse {
   message: string;
   questionNumber?: number;
   isComplete?: boolean;
@@ -105,7 +105,7 @@ export const startConversation = async (
 /**
  * Process conversation turn adapter  
  */
-export const processConversation = async (
+const processConversation = async (
   userTranscript: string
 ): Promise<ConversationResponse> => {
   console.log('🧪 [PROCESS CONVERSATION] Starting with transcript:', {
@@ -211,7 +211,7 @@ export const endConversation = async (): Promise<{ summary?: string }> => {
 /**
  * Text-to-Speech adapter with streaming support
  */
-export const textToSpeech = async (
+const textToSpeech = async (
   text: string, 
   options?: { streaming?: boolean; onChunk?: (chunk: ArrayBuffer) => void }
 ): Promise<Blob> => {

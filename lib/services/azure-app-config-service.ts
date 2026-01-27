@@ -2,7 +2,7 @@ import { AppConfigurationClient } from '@azure/app-configuration';
 import { DefaultAzureCredential } from '@azure/identity';
 import { logServerError } from '@/lib/errors';
 
-export interface FeatureFlag {
+interface FeatureFlag {
   key: string;
   enabled: boolean;
   conditions?: {
@@ -15,7 +15,7 @@ export interface FeatureFlag {
   };
 }
 
-export interface ConfigValue {
+interface ConfigValue {
   key: string;
   value: string;
   label?: string;
@@ -467,4 +467,3 @@ class AzureAppConfigService {
 
 // Export singleton instance
 export const azureAppConfigService = new AzureAppConfigService();
-export default azureAppConfigService;

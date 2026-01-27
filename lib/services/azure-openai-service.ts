@@ -12,12 +12,12 @@ if (!isClient) {
   fetchAzureSecrets = azureConfig.fetchAzureSecrets;
 }
 
-export interface ConversationMessage {
+interface ConversationMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-export interface GenerationResponse {
+interface GenerationResponse {
   content: string;
   questionNumber?: number;
   isComplete?: boolean;

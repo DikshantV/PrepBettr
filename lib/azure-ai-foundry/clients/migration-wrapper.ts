@@ -17,14 +17,14 @@ import type { TokenUsage } from '../types/foundry-types';
  * OpenAI SDK Compatible Interfaces
  * These match the exact structure expected by existing code
  */
-export interface ChatCompletionMessage {
+interface ChatCompletionMessage {
   role: 'system' | 'user' | 'assistant' | 'function';
   content: string;
   name?: string;
   function_call?: any;
 }
 
-export interface ChatCompletionCreateParams {
+interface ChatCompletionCreateParams {
   model: string;
   messages: ChatCompletionMessage[];
   temperature?: number;
@@ -39,13 +39,13 @@ export interface ChatCompletionCreateParams {
   user?: string;
 }
 
-export interface ChatCompletionChoice {
+interface ChatCompletionChoice {
   index: number;
   message: ChatCompletionMessage;
   finish_reason: string | null;
 }
 
-export interface ChatCompletionResponse {
+interface ChatCompletionResponse {
   id: string;
   object: 'chat.completion';
   created: number;
@@ -54,7 +54,7 @@ export interface ChatCompletionResponse {
   usage?: TokenUsage;
 }
 
-export interface CompletionCreateParams {
+interface CompletionCreateParams {
   model: string;
   prompt: string;
   temperature?: number;
@@ -66,13 +66,13 @@ export interface CompletionCreateParams {
   n?: number;
 }
 
-export interface CompletionChoice {
+interface CompletionChoice {
   text: string;
   index: number;
   finish_reason: string | null;
 }
 
-export interface CompletionResponse {
+interface CompletionResponse {
   id: string;
   object: 'text_completion';
   created: number;
@@ -81,7 +81,7 @@ export interface CompletionResponse {
   usage?: TokenUsage;
 }
 
-export interface ModelListResponse {
+interface ModelListResponse {
   object: 'list';
   data: Array<{
     id: string;
@@ -404,8 +404,7 @@ export class MigrationOpenAIClient extends FoundryClientBase {
 export const migrationOpenAIClient = new MigrationOpenAIClient();
 
 // Export class for custom instantiation
-export { MigrationOpenAIClient as OpenAI };
-export { MigrationOpenAIClient as OpenAIClient };
+;
+;
 
 // Default export for CommonJS compatibility
-export default MigrationOpenAIClient;

@@ -8,7 +8,7 @@
 /**
  * Minimal session data needed for WebSocket proxy
  */
-export interface VoiceSessionProxy {
+interface VoiceSessionProxy {
   sessionId: string;
   wsUrl: string;
   createdAt: Date;

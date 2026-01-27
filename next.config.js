@@ -50,7 +50,9 @@ const nextConfig = {
     '@azure/app-configuration',
     'firebase-admin',
     'applicationinsights',
-    '@grpc/grpc-js'
+    '@grpc/grpc-js',
+    'pdf-parse',
+    'canvas'
   ],
   experimental: {
     // Disable static optimization to avoid Html import issues
@@ -95,6 +97,8 @@ const nextConfig = {
         '@azure/storage-blob': 'commonjs @azure/storage-blob',
         '@azure/keyvault-secrets': 'commonjs @azure/keyvault-secrets',
         '@azure/functions': 'commonjs @azure/functions',
+        'pdf-parse': 'commonjs pdf-parse',
+        'canvas': 'commonjs canvas',
       });
     } else {
       // Client-side fallbacks for Node.js modules

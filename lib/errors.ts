@@ -1,11 +1,11 @@
 // lib/errors.ts
 
-export interface StandardErrorResponse {
+interface StandardErrorResponse {
   error: string;
   status: number;
 }
 
-export interface ServerErrorContext {
+interface ServerErrorContext {
   userId?: string;
   url?: string;
   method?: string;
@@ -24,7 +24,7 @@ export interface ServerErrorContext {
 /**
  * Creates a standardized error response
  */
-export function createErrorResponse(
+function createErrorResponse(
   error: string,
   status: number
 ): StandardErrorResponse {
@@ -37,7 +37,7 @@ export function createErrorResponse(
 /**
  * Creates a NextResponse error for API routes
  */
-export function createApiErrorResponse(
+function createApiErrorResponse(
   error: string,
   status: number
 ) {
@@ -85,7 +85,7 @@ export function logServerError(
 /**
  * Determines if an error should be retried
  */
-export function isRetryableError(status: number): boolean {
+function isRetryableError(status: number): boolean {
   // Retry for 5xx errors and specific 4xx errors
   return status >= 500 || status === 408 || status === 429;
 }
@@ -93,7 +93,7 @@ export function isRetryableError(status: number): boolean {
 /**
  * Maps common error types to standard error responses
  */
-export function mapErrorToResponse(error: any): StandardErrorResponse {
+function mapErrorToResponse(error: any): StandardErrorResponse {
   // Network/Connection errors
   if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
     return createErrorResponse('Request timeout. Please try again.', 408);
@@ -139,12 +139,12 @@ export function mapErrorToResponse(error: any): StandardErrorResponse {
 /**
  * Standard fallback message for network failures
  */
-export const NETWORK_FAILURE_MESSAGE = "Could not fetch job description from the provided URL.";
+const NETWORK_FAILURE_MESSAGE = "Could not fetch job description from the provided URL.";
 
 /**
  * Gets user-friendly error message for frontend display
  */
-export function getUserFriendlyErrorMessage(error: any, context?: string): string {
+function getUserFriendlyErrorMessage(error: any, context?: string): string {
   if (error?.error) {
     return error.error;
   }

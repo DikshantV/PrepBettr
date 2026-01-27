@@ -6,7 +6,7 @@
 import { RepositoryResult } from './RepositoryResult';
 
 // Base repository interface with common operations
-export interface IBaseRepository<T> {
+interface IBaseRepository<T> {
   findById(id: string): Promise<RepositoryResult<T>>;
   create(item: T): Promise<RepositoryResult<T>>;
   update(id: string, item: Partial<T>): Promise<RepositoryResult<T>>;
@@ -51,7 +51,7 @@ export interface IUsageRepository<T> extends IBaseRepository<T> {
 }
 
 // Interview repository interface
-export interface IInterviewRepository<T> extends IBaseRepository<T> {
+interface IInterviewRepository<T> extends IBaseRepository<T> {
   findByUserId(userId: string): Promise<RepositoryResult<T[]>>;
   findBySessionId(sessionId: string): Promise<RepositoryResult<T>>;
   findByStatus(status: string, userId?: string): Promise<RepositoryResult<T[]>>;
@@ -68,7 +68,7 @@ export interface IInterviewRepository<T> extends IBaseRepository<T> {
 }
 
 // Job application repository interface
-export interface IJobApplicationRepository<T> extends IBaseRepository<T> {
+interface IJobApplicationRepository<T> extends IBaseRepository<T> {
   findByUserId(userId: string): Promise<RepositoryResult<T[]>>;
   findByStatus(status: string, userId: string): Promise<RepositoryResult<T[]>>;
   findByCompany(companyName: string, userId: string): Promise<RepositoryResult<T[]>>;
@@ -84,7 +84,7 @@ export interface IJobApplicationRepository<T> extends IBaseRepository<T> {
 }
 
 // User profile repository interface
-export interface IUserProfileRepository<T> extends IBaseRepository<T> {
+interface IUserProfileRepository<T> extends IBaseRepository<T> {
   findByUserId(userId: string): Promise<RepositoryResult<T>>;
   findByEmail(email: string): Promise<RepositoryResult<T>>;
   updateProfile(userId: string, profile: Partial<T>): Promise<RepositoryResult<T>>;
@@ -95,7 +95,7 @@ export interface IUserProfileRepository<T> extends IBaseRepository<T> {
 }
 
 // Migration repository interface
-export interface IMigrationRepository<T> extends IBaseRepository<T> {
+interface IMigrationRepository<T> extends IBaseRepository<T> {
   findByMigrationId(migrationId: string): Promise<RepositoryResult<T>>;
   findByStatus(status: string): Promise<RepositoryResult<T[]>>;
   findByType(type: string): Promise<RepositoryResult<T[]>>;
@@ -110,7 +110,7 @@ export interface IMigrationRepository<T> extends IBaseRepository<T> {
 }
 
 // Audit log repository interface
-export interface IAuditLogRepository<T> extends IBaseRepository<T> {
+interface IAuditLogRepository<T> extends IBaseRepository<T> {
   findByUserId(userId: string): Promise<RepositoryResult<T[]>>;
   findByAction(action: string): Promise<RepositoryResult<T[]>>;
   findByResourceType(resourceType: string): Promise<RepositoryResult<T[]>>;
@@ -123,7 +123,7 @@ export interface IAuditLogRepository<T> extends IBaseRepository<T> {
 }
 
 // Configuration repository interface
-export interface IConfigRepository<T> extends IBaseRepository<T> {
+interface IConfigRepository<T> extends IBaseRepository<T> {
   findByKey(key: string): Promise<RepositoryResult<T>>;
   findByEnvironment(environment: string): Promise<RepositoryResult<T[]>>;
   findByTags(tags: string[]): Promise<RepositoryResult<T[]>>;
@@ -152,13 +152,13 @@ export interface IQueryOptions {
 }
 
 // Extended repository interface with query support
-export interface IQueryableRepository<T> extends IBaseRepository<T> {
+interface IQueryableRepository<T> extends IBaseRepository<T> {
   query(options: IQueryOptions): Promise<RepositoryResult<T[]>>;
   count(filters?: IQueryOptions['filters']): Promise<RepositoryResult<number>>;
 }
 
 // Batch operation interface
-export interface IBatchOperation<T> {
+interface IBatchOperation<T> {
   operations: {
     type: 'create' | 'update' | 'delete';
     id?: string;
@@ -168,7 +168,7 @@ export interface IBatchOperation<T> {
 }
 
 // Batch repository interface
-export interface IBatchRepository<T> extends IBaseRepository<T> {
+interface IBatchRepository<T> extends IBaseRepository<T> {
   executeBatch(operations: IBatchOperation<T>): Promise<RepositoryResult<{
     successful: number;
     failed: number;
@@ -177,7 +177,7 @@ export interface IBatchRepository<T> extends IBaseRepository<T> {
 }
 
 // Health check interface
-export interface IRepositoryHealth {
+interface IRepositoryHealth {
   isHealthy: boolean;
   latency?: number;
   error?: string;
@@ -190,32 +190,32 @@ export interface IRepositoryHealth {
 }
 
 // Repository with health check capability
-export interface IHealthCheckable {
+interface IHealthCheckable {
   checkHealth(): Promise<IRepositoryHealth>;
 }
 
 // Full-featured repository interface combining all capabilities
-export interface IFullRepository<T> 
+interface IFullRepository<T> 
   extends IQueryableRepository<T>, 
           IBatchRepository<T>, 
           IHealthCheckable {
 }
 
 // Type definitions for common repository operations
-export type CreateOperation<T> = {
+type CreateOperation<T> = {
   type: 'create';
   data: T;
 };
 
-export type UpdateOperation<T> = {
+type UpdateOperation<T> = {
   type: 'update';
   id: string;
   data: Partial<T>;
 };
 
-export type DeleteOperation = {
+type DeleteOperation = {
   type: 'delete';
   id: string;
 };
 
-export type RepositoryOperation<T> = CreateOperation<T> | UpdateOperation<T> | DeleteOperation;
+type RepositoryOperation<T> = CreateOperation<T> | UpdateOperation<T> | DeleteOperation;

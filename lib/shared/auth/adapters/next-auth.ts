@@ -228,15 +228,25 @@ export function createNextHealthResponse(): NextResponse {
 
 /**
  * Get user from session cookie (for server components)
+ * Note: Despite the name, this actually verifies ID tokens stored in cookies,
+ * not Firebase session cookies. This is by design for this application.
  */
 export async function getUserFromSessionCookie(sessionCookie: string): Promise<AuthenticatedUser | null> {
   try {
+    console.log('🔑 getUserFromSessionCookie: Verifying token...');
     const auth = getUnifiedAuth();
-    const result = await auth.verifySessionCookie(sessionCookie);
+    // Use verifyToken instead of verifySessionCookie since we store ID tokens in cookies
+    const result = await auth.verifyToken(sessionCookie);
     
-    return result.valid ? result.user || null : null;
+    if (result.valid && result.user) {
+      console.log('✅ getUserFromSessionCookie: Token valid for user:', result.user.uid);
+      return result.user;
+    } else {
+      console.log('❌ getUserFromSessionCookie: Token invalid -', result.error || 'Unknown error');
+      return null;
+    }
   } catch (error) {
-    console.error('Session cookie verification failed:', error);
+    console.error('❌ getUserFromSessionCookie: Exception during verification:', error);
     return null;
   }
 }
@@ -249,21 +259,32 @@ export async function extractUserFromRequest(request: NextRequest): Promise<Auth
     // Try Authorization header first
     const authHeader = request.headers.get('authorization');
     if (authHeader) {
+      console.log('🔐 extractUserFromRequest: Found Authorization header');
       const authResult = await verifyAuthHeader(authHeader);
       if (authResult.success && authResult.user) {
+        console.log('✅ extractUserFromRequest: Auth header verification successful');
         return authResult.user;
       }
+      console.log('⚠️ extractUserFromRequest: Auth header verification failed');
     }
 
     // Try session cookie as fallback
     const sessionCookie = request.cookies.get('session')?.value;
     if (sessionCookie) {
-      return await getUserFromSessionCookie(sessionCookie);
+      console.log('🍪 extractUserFromRequest: Found session cookie, length:', sessionCookie.length);
+      const user = await getUserFromSessionCookie(sessionCookie);
+      if (user) {
+        console.log('✅ extractUserFromRequest: Session cookie verification successful, uid:', user.uid);
+      } else {
+        console.log('❌ extractUserFromRequest: Session cookie verification failed');
+      }
+      return user;
     }
 
+    console.log('⚠️ extractUserFromRequest: No authentication credentials found (no header or cookie)');
     return null;
   } catch (error) {
-    console.error('Failed to extract user from request:', error);
+    console.error('❌ extractUserFromRequest: Exception during authentication:', error);
     return null;
   }
 }

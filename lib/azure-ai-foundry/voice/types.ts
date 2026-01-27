@@ -49,7 +49,7 @@ export interface ConfigOptions extends VoiceSettings {
 
 // ===== AGENT-SPECIFIC VOICE SETTINGS =====
 
-export interface AgentVoiceConfig {
+interface AgentVoiceConfig {
   agentType: 'technical' | 'behavioral' | 'industry' | 'general';
   defaultVoiceSettings: Partial<VoiceSettings>;
   voicePersonality: {
@@ -80,7 +80,7 @@ export interface TranscriptEntry {
   }[];
 }
 
-export interface TranscriptSession {
+interface TranscriptSession {
   sessionId: string;
   startTime: number;
   endTime?: number;
@@ -108,7 +108,7 @@ export interface SentimentAnalysis {
   };
 }
 
-export interface SentimentTrend {
+interface SentimentTrend {
   sessionId: string;
   timeline: {
     timestamp: number;
@@ -157,7 +157,7 @@ export interface SessionRecording {
 
 // ===== VOICE SESSION STATE TYPES =====
 
-export interface VoiceSessionState {
+interface VoiceSessionState {
   sessionId: string;
   status: 'initializing' | 'connected' | 'active' | 'paused' | 'ended' | 'error';
   currentAgent: string;
@@ -218,7 +218,7 @@ export interface VoiceEventTypes {
 
 export type VoiceEventHandler<T extends keyof VoiceEventTypes> = (event: VoiceEventTypes[T]) => void;
 
-export interface VoiceCapabilities {
+interface VoiceCapabilities {
   supportedLanguages: string[];
   supportedVoices: string[];
   supportedFormats: {
@@ -236,7 +236,7 @@ export interface VoiceCapabilities {
 
 // ===== AZURE AI FOUNDRY SPECIFIC TYPES =====
 
-export interface FoundryVoiceSession {
+interface FoundryVoiceSession {
   id: string;
   status: 'active' | 'inactive' | 'terminated';
   model: string;
@@ -250,12 +250,12 @@ export interface FoundryVoiceSession {
   maxResponseOutputTokens: number | null;
 }
 
-export interface FoundryVoiceMessage {
+interface FoundryVoiceMessage {
   type: string;
   [key: string]: any;
 }
 
-export interface FoundryVoiceError {
+interface FoundryVoiceError {
   type: string;
   code: string;
   message: string;

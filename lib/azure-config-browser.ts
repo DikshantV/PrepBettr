@@ -81,7 +81,7 @@ export async function fetchAzureSecrets(): Promise<AzureSecrets> {
 /**
  * Get current Azure configuration (for debugging)
  */
-export function getAzureConfig() {
+function getAzureConfig() {
   return {
     environment: 'browser',
     hasSecretsCache: !!cachedSecrets,
@@ -111,14 +111,14 @@ export function getAzureConfig() {
 /**
  * Check if we're running in a browser environment
  */
-export function isBrowser(): boolean {
+function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
 /**
  * Clear cached secrets (useful for testing or re-initialization)
  */
-export function clearCache(): void {
+function clearCache(): void {
   cachedSecrets = null;
   console.log('🧹 Azure configuration cache cleared');
 }

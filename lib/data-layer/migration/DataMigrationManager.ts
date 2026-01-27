@@ -12,7 +12,7 @@ import { FirestoreResumeRepository } from '../firestore/FirestoreResumeRepositor
 import { IResumeDocument, IUsageDocument } from '../interfaces/IDocuments';
 import { RepositoryResult } from '../interfaces/RepositoryResult';
 
-export interface MigrationConfig {
+interface MigrationConfig {
   direction: 'firestore-to-cosmos' | 'cosmos-to-firestore';
   collections: string[];
   batchSize?: number;
@@ -24,7 +24,7 @@ export interface MigrationConfig {
   retryAttempts?: number;
 }
 
-export interface MigrationStatus {
+interface MigrationStatus {
   id: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'completed_with_errors';
   startTime: string;
@@ -37,7 +37,7 @@ export interface MigrationStatus {
   estimatedTimeRemaining?: number;
 }
 
-export interface MigrationError {
+interface MigrationError {
   collection: string;
   documentId?: string;
   error: string;
@@ -56,7 +56,7 @@ export interface MigrationOptions {
   progressReportingIntervalMs?: number;
 }
 
-export interface ValidationResult {
+interface ValidationResult {
   success: boolean;
   inconsistencies: Array<{
     id: string;
@@ -67,7 +67,7 @@ export interface ValidationResult {
   consistentDocuments: number;
 }
 
-export interface CompletenessCheck {
+interface CompletenessCheck {
   complete: boolean;
   sourceCount: number;
   targetCount: number;

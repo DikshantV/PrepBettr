@@ -110,5 +110,4 @@ export class FirebaseService {
 }
 
 // Export singleton instance
-export const firebaseService = FirebaseService.getInstance();
-export default firebaseService;
+const firebaseService = FirebaseService.getInstance();

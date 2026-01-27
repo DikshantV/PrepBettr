@@ -18,7 +18,7 @@ import { logServerError } from '@/lib/errors';
 
 // ===== ERROR CATEGORIES =====
 
-export enum ErrorCategory {
+enum ErrorCategory {
   AUTHENTICATION = 'AUTHENTICATION',
   AUTHORIZATION = 'AUTHORIZATION', 
   VALIDATION = 'VALIDATION',
@@ -84,7 +84,7 @@ export enum ErrorCode {
 
 // ===== RETRY STRATEGIES =====
 
-export enum RetryStrategy {
+enum RetryStrategy {
   NONE = 'NONE',                    // Don't retry
   IMMEDIATE = 'IMMEDIATE',          // Retry immediately
   LINEAR = 'LINEAR',                // Linear backoff (1s, 2s, 3s...)
@@ -107,19 +107,19 @@ export interface StructuredError {
   maxRetries?: number;
 }
 
-export interface APIErrorResponse {
+interface APIErrorResponse {
   error: StructuredError;
   success: false;
   data: null;
 }
 
-export interface APISuccessResponse<T = any> {
+interface APISuccessResponse<T = any> {
   error: null;
   success: true;
   data: T;
 }
 
-export type APIResponse<T = any> = APISuccessResponse<T> | APIErrorResponse;
+type APIResponse<T = any> = APISuccessResponse<T> | APIErrorResponse;
 
 // ===== ERROR DEFINITIONS =====
 
@@ -411,7 +411,7 @@ export function createErrorResponse(
 /**
  * Create a success API response
  */
-export function createSuccessResponse<T>(data: T): APISuccessResponse<T> {
+function createSuccessResponse<T>(data: T): APISuccessResponse<T> {
   return {
     error: null,
     success: true,
@@ -422,7 +422,7 @@ export function createSuccessResponse<T>(data: T): APISuccessResponse<T> {
 /**
  * Convert HTTP status to appropriate error code
  */
-export function getErrorCodeFromHTTPStatus(status: number): ErrorCode {
+function getErrorCodeFromHTTPStatus(status: number): ErrorCode {
   switch (status) {
     case 400: return ErrorCode.INVALID_REQUEST;
     case 401: return ErrorCode.AUTH_TOKEN_INVALID;
@@ -471,14 +471,14 @@ export function getHTTPStatusFromErrorCode(code: ErrorCode): number {
 /**
  * Check if an error is retryable
  */
-export function isRetryableError(error: StructuredError): boolean {
+function isRetryableError(error: StructuredError): boolean {
   return error.retryable === true;
 }
 
 /**
  * Get retry delay in milliseconds based on attempt number
  */
-export function getRetryDelay(
+function getRetryDelay(
   error: StructuredError, 
   attemptNumber: number,
   baseDelay?: number
@@ -541,7 +541,7 @@ export function toStructuredError(
 /**
  * Send a structured error response in Next.js API routes
  */
-export function sendErrorResponse(
+function sendErrorResponse(
   res: any, // NextResponse or Response
   code: ErrorCode,
   details?: Record<string, any>,
@@ -569,7 +569,7 @@ export function sendErrorResponse(
 /**
  * Send a structured success response in Next.js API routes
  */
-export function sendSuccessResponse<T>(data: T, status: number = 200) {
+function sendSuccessResponse<T>(data: T, status: number = 200) {
   const successResponse = createSuccessResponse(data);
   
   return new Response(JSON.stringify(successResponse), {

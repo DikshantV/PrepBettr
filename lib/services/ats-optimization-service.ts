@@ -31,7 +31,7 @@ export interface ATSAnalysisResult {
   prioritizedRecommendations: ATSRecommendation[];
 }
 
-export interface KeywordAnalysis {
+interface KeywordAnalysis {
   score: number;
   totalKeywords: number;
   matchedKeywords: string[];
@@ -41,7 +41,7 @@ export interface KeywordAnalysis {
   recommendations: string[];
 }
 
-export interface IndustryKeyword {
+interface IndustryKeyword {
   keyword: string;
   importance: 'critical' | 'high' | 'medium' | 'low';
   category: 'technical' | 'soft' | 'industry' | 'role';
@@ -49,34 +49,34 @@ export interface IndustryKeyword {
   variations: string[];
 }
 
-export interface FormatAnalysis {
+interface FormatAnalysis {
   score: number;
   issues: FormatIssue[];
   strengths: string[];
 }
 
-export interface FormatIssue {
+interface FormatIssue {
   type: 'critical' | 'warning' | 'suggestion';
   issue: string;
   solution: string;
   impact: string;
 }
 
-export interface StructureAnalysis {
+interface StructureAnalysis {
   score: number;
   missingElements: string[];
   presentElements: string[];
   recommendations: string[];
 }
 
-export interface ContentAnalysis {
+interface ContentAnalysis {
   score: number;
   strengthAreas: string[];
   improvementAreas: string[];
   recommendations: string[];
 }
 
-export interface ATSRecommendation {
+interface ATSRecommendation {
   priority: 'high' | 'medium' | 'low';
   category: 'keywords' | 'formatting' | 'structure' | 'content';
   recommendation: string;
@@ -86,13 +86,13 @@ export interface ATSRecommendation {
 }
 
 // Types for skills normalization
-export interface SkillsNormalizationResult {
+interface SkillsNormalizationResult {
   normalizedSkills: NormalizedSkill[];
   skillCategories: SkillCategories;
   industryAlignment: IndustryAlignment;
 }
 
-export interface NormalizedSkill {
+interface NormalizedSkill {
   originalSkill: string;
   normalizedSkill: string;
   category: string;
@@ -110,7 +110,7 @@ export interface NormalizedSkill {
   learningPath: string[];
 }
 
-export interface SkillCategories {
+interface SkillCategories {
   technical: string[];
   soft: string[];
   language: string[];
@@ -118,7 +118,7 @@ export interface SkillCategories {
   tool: string[];
 }
 
-export interface IndustryAlignment {
+interface IndustryAlignment {
   score: number;
   wellAlignedSkills: string[];
   missingIndustrySkills: string[];
@@ -141,7 +141,7 @@ export interface JobMatchResult {
   missingKeywords: string[];
 }
 
-export interface SkillsMatchAnalysis {
+interface SkillsMatchAnalysis {
   score: number;
   matchedSkills: MatchedSkill[];
   missingSkills: MissingSkill[];
@@ -152,21 +152,21 @@ export interface SkillsMatchAnalysis {
   };
 }
 
-export interface MatchedSkill {
+interface MatchedSkill {
   skill: string;
   resumeLevel: string;
   requiredLevel: string;
   match: 'exceeds' | 'meets' | 'below';
 }
 
-export interface MissingSkill {
+interface MissingSkill {
   skill: string;
   importance: 'high' | 'medium' | 'low';
   canLearn: boolean;
   timeToLearn: string;
 }
 
-export interface ExperienceMatchAnalysis {
+interface ExperienceMatchAnalysis {
   score: number;
   yearsRequired: number;
   yearsCandidate: number;
@@ -183,7 +183,7 @@ export interface ExperienceMatchAnalysis {
   };
 }
 
-export interface EducationMatchAnalysis {
+interface EducationMatchAnalysis {
   score: number;
   degreeMatch: boolean;
   fieldRelevance: 'high' | 'medium' | 'low';
@@ -191,14 +191,14 @@ export interface EducationMatchAnalysis {
   additionalQualifications: string[];
 }
 
-export interface CulturalFitAnalysis {
+interface CulturalFitAnalysis {
   score: number;
   indicators: string[];
   concerns: string[];
   strengths: string[];
 }
 
-export interface JobMatchRecommendation {
+interface JobMatchRecommendation {
   category: 'skills' | 'experience' | 'education' | 'presentation';
   priority: 'high' | 'medium' | 'low';
   recommendation: string;

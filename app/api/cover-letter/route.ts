@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as DOMPurify from 'isomorphic-dompurify';
-import { verifyIdToken } from '@/lib/firebase/admin';
+import { requireAuth } from '@/lib/auth-unified';
 import { generateCoverLetter } from '@/lib/ai/index';
 import { rateLimiter, getRateLimitHeaders } from '@/lib/middleware/rate-limit';
 
@@ -87,28 +87,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
   try {
     console.log('📝 Cover letter generation API called');
 
-    // 1. Authenticate user
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // 1. Authenticate user (supports session cookies and auth header)
+    let userId = 'anonymous';
+    try {
+      const session = await requireAuth(request);
+      userId = session.userId;
+      console.log(`✅ User authenticated: ${userId}`);
+    } catch (authError) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized - Missing or invalid authorization header' },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const idToken = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const verificationResult = await verifyIdToken(idToken);
-
-    if (!verificationResult.valid || !verificationResult.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const userId = verificationResult.user.uid;
-    console.log(`✅ User authenticated: ${userId}`);
 
     // 2. Check rate limit
     const rateLimitResult = await rateLimiter.checkLimit(userId, '/api/cover-letter');

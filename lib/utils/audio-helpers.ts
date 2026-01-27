@@ -59,7 +59,7 @@ export async function playAudioBuffer(
  * @param mimeType - MIME type of the audio (default: 'audio/wav')
  * @returns Audio blob
  */
-export function createAudioBlob(
+function createAudioBlob(
   bytes: number[] | Uint8Array,
   mimeType: string = 'audio/wav'
 ): Blob {
@@ -75,7 +75,7 @@ export function createAudioBlob(
  * @param audioBlob - Audio blob to play
  * @returns Promise that resolves when audio finishes playing
  */
-export async function playAudioBlob(audioBlob: Blob): Promise<void> {
+async function playAudioBlob(audioBlob: Blob): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -124,7 +124,7 @@ export function validateAudioBuffer(bytes: number[] | Uint8Array | null | undefi
  * @param toMimeType - Target MIME type
  * @returns Promise that resolves with converted audio buffer
  */
-export async function convertAudioBuffer(
+async function convertAudioBuffer(
   bytes: number[] | Uint8Array,
   fromMimeType: string,
   toMimeType: string
@@ -141,7 +141,7 @@ export async function convertAudioBuffer(
  * @param mimeType - MIME type of the audio
  * @returns Duration in seconds, or null if cannot be determined
  */
-export function getAudioBufferDuration(
+function getAudioBufferDuration(
   bytes: number[] | Uint8Array,
   mimeType: string = 'audio/wav'
 ): number | null {
@@ -180,7 +180,7 @@ export function getAudioBufferDuration(
  * @param mimeType - MIME type of the audio
  * @returns Audio element ready for playback
  */
-export function preloadAudioBuffer(
+function preloadAudioBuffer(
   bytes: number[] | Uint8Array,
   mimeType: string = 'audio/wav'
 ): HTMLAudioElement {
@@ -204,7 +204,7 @@ export function preloadAudioBuffer(
  * Cleanup preloaded audio element
  * @param audio - Audio element to cleanup
  */
-export function cleanupPreloadedAudio(audio: HTMLAudioElement): void {
+function cleanupPreloadedAudio(audio: HTMLAudioElement): void {
   if ((audio as any).__cleanup) {
     (audio as any).__cleanup();
     delete (audio as any).__cleanup;

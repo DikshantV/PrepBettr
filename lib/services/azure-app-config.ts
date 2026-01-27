@@ -9,7 +9,7 @@ import { AppConfigurationClient } from '@azure/app-configuration';
 import { DefaultAzureCredential } from '@azure/identity';
 import { fetchAzureSecrets } from '@/lib/azure-config-browser';
 
-export interface FeatureFlags {
+interface FeatureFlags {
   autoApplyAzure: boolean;
   portalIntegration: boolean;
 }
@@ -362,7 +362,7 @@ class AzureAppConfigService {
 export const azureAppConfigService = new AzureAppConfigService();
 
 // Export hook for React components (maintains compatibility)
-export const useFeatureFlags = () => {
+const useFeatureFlags = () => {
   return {
     getFeatureFlag: (flagName: keyof FeatureFlags) => azureAppConfigService.getFeatureFlag(flagName),
     getAllFeatureFlags: () => azureAppConfigService.getAllFeatureFlags(),
@@ -372,4 +372,4 @@ export const useFeatureFlags = () => {
 };
 
 // Export types
-export type { ConfigValue };
+;

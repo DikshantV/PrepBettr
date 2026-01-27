@@ -4,7 +4,7 @@
  */
 
 // Base document interface with common fields
-export interface IBaseDocument {
+interface IBaseDocument {
   id: string;
   createdDate: string;
   updatedDate: string;
@@ -55,7 +55,7 @@ export interface IUsageDocument extends IBaseDocument {
 }
 
 // Interview session document interface
-export interface IInterviewDocument extends IBaseDocument {
+interface IInterviewDocument extends IBaseDocument {
   userId: string;
   resumeId?: string;
   sessionId: string;
@@ -74,7 +74,7 @@ export interface IInterviewDocument extends IBaseDocument {
 }
 
 // Interview question interface
-export interface IInterviewQuestion {
+interface IInterviewQuestion {
   id: string;
   question: string;
   type: 'technical' | 'behavioral' | 'situational' | 'general';
@@ -85,7 +85,7 @@ export interface IInterviewQuestion {
 }
 
 // Interview response interface
-export interface IInterviewResponse {
+interface IInterviewResponse {
   questionId: string;
   response: string;
   responseTime?: number;
@@ -95,7 +95,7 @@ export interface IInterviewResponse {
 }
 
 // Job application document interface
-export interface IJobApplicationDocument extends IBaseDocument {
+interface IJobApplicationDocument extends IBaseDocument {
   userId: string;
   jobTitle: string;
   companyName: string;
@@ -114,7 +114,7 @@ export interface IJobApplicationDocument extends IBaseDocument {
 }
 
 // User profile document interface
-export interface IUserProfileDocument extends IBaseDocument {
+interface IUserProfileDocument extends IBaseDocument {
   userId: string;
   email: string;
   firstName?: string;
@@ -147,7 +147,7 @@ export interface IUserProfileDocument extends IBaseDocument {
 }
 
 // Migration tracking document interface
-export interface IMigrationDocument extends IBaseDocument {
+interface IMigrationDocument extends IBaseDocument {
   migrationId: string;
   type: 'firestore-to-cosmos' | 'cosmos-to-firestore' | 'sync';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -171,7 +171,7 @@ export interface IMigrationDocument extends IBaseDocument {
 }
 
 // Audit log document interface
-export interface IAuditLogDocument extends IBaseDocument {
+interface IAuditLogDocument extends IBaseDocument {
   userId?: string;
   action: string;
   resourceType: string;
@@ -190,7 +190,7 @@ export interface IAuditLogDocument extends IBaseDocument {
 }
 
 // Configuration document interface
-export interface IConfigDocument extends IBaseDocument {
+interface IConfigDocument extends IBaseDocument {
   key: string;
   value: any;
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -205,7 +205,7 @@ export interface IConfigDocument extends IBaseDocument {
 }
 
 // Union type for all document types
-export type AllDocumentTypes = 
+type AllDocumentTypes = 
   | IResumeDocument 
   | IUsageDocument 
   | IInterviewDocument 
@@ -216,34 +216,34 @@ export type AllDocumentTypes =
   | IConfigDocument;
 
 // Type guards for document types
-export function isResumeDocument(doc: any): doc is IResumeDocument {
+function isResumeDocument(doc: any): doc is IResumeDocument {
   return doc && typeof doc.userId === 'string' && typeof doc.fileName === 'string';
 }
 
-export function isUsageDocument(doc: any): doc is IUsageDocument {
+function isUsageDocument(doc: any): doc is IUsageDocument {
   return doc && typeof doc.userId === 'string' && typeof doc.feature === 'string';
 }
 
-export function isInterviewDocument(doc: any): doc is IInterviewDocument {
+function isInterviewDocument(doc: any): doc is IInterviewDocument {
   return doc && typeof doc.userId === 'string' && typeof doc.sessionId === 'string';
 }
 
-export function isJobApplicationDocument(doc: any): doc is IJobApplicationDocument {
+function isJobApplicationDocument(doc: any): doc is IJobApplicationDocument {
   return doc && typeof doc.userId === 'string' && typeof doc.jobTitle === 'string';
 }
 
-export function isUserProfileDocument(doc: any): doc is IUserProfileDocument {
+function isUserProfileDocument(doc: any): doc is IUserProfileDocument {
   return doc && typeof doc.userId === 'string' && typeof doc.email === 'string';
 }
 
-export function isMigrationDocument(doc: any): doc is IMigrationDocument {
+function isMigrationDocument(doc: any): doc is IMigrationDocument {
   return doc && typeof doc.migrationId === 'string' && typeof doc.type === 'string';
 }
 
-export function isAuditLogDocument(doc: any): doc is IAuditLogDocument {
+function isAuditLogDocument(doc: any): doc is IAuditLogDocument {
   return doc && typeof doc.action === 'string' && typeof doc.resourceType === 'string';
 }
 
-export function isConfigDocument(doc: any): doc is IConfigDocument {
+function isConfigDocument(doc: any): doc is IConfigDocument {
   return doc && typeof doc.key === 'string' && doc.value !== undefined;
 }

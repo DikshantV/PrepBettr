@@ -66,7 +66,7 @@ export function useInterview(interviewId: string) {
  * @param userId - User ID to fetch interviews for
  * @returns Mock interviews list
  */
-export function useInterviews(userId: string) {
+function useInterviews(userId: string) {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,4 +100,4 @@ export function useInterviews(userId: string) {
   };
 }
 
-export type { Interview };
+;

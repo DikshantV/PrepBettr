@@ -90,28 +90,28 @@ export function initNetworkLogger() {
 /**
  * Get all network calls
  */
-export function getNetworkCalls(): NetworkCall[] {
+function getNetworkCalls(): NetworkCall[] {
   return [...networkCalls];
 }
 
 /**
  * Get auth-related network calls
  */
-export function getAuthCalls(): NetworkCall[] {
+function getAuthCalls(): NetworkCall[] {
   return networkCalls.filter(call => call.url.includes('/api/auth/'));
 }
 
 /**
  * Get calls to specific endpoint
  */
-export function getCallsToEndpoint(endpoint: string): NetworkCall[] {
+function getCallsToEndpoint(endpoint: string): NetworkCall[] {
   return networkCalls.filter(call => call.url.includes(endpoint));
 }
 
 /**
  * Analyze call frequency for potential loops
  */
-export function analyzeLoops(windowMs: number = 5000): {
+function analyzeLoops(windowMs: number = 5000): {
   endpoint: string;
   count: number;
   frequency: number;
@@ -136,7 +136,7 @@ export function analyzeLoops(windowMs: number = 5000): {
 /**
  * Clear network call history
  */
-export function clearNetworkHistory(): void {
+function clearNetworkHistory(): void {
   networkCalls.length = 0;
   console.log('🗑️ Network call history cleared');
 }
@@ -144,7 +144,7 @@ export function clearNetworkHistory(): void {
 /**
  * Display current network statistics
  */
-export function displayNetworkStats(): void {
+function displayNetworkStats(): void {
   if (process.env.NODE_ENV !== 'development') return;
   
   const authCalls = getAuthCalls();
@@ -176,7 +176,7 @@ export function displayNetworkStats(): void {
 /**
  * Export network statistics for testing
  */
-export function getNetworkStats() {
+function getNetworkStats() {
   return {
     totalCalls: networkCalls.length,
     authCalls: getAuthCalls().length,

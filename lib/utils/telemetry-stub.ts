@@ -1,7 +1,7 @@
 // lib/utils/telemetry-stub.ts
 // Temporary telemetry stub to allow testing without server-only dependencies
 
-export interface TelemetryPageView {
+interface TelemetryPageView {
   name: string;
   uri?: string;
   isLoggedIn?: boolean;
@@ -10,13 +10,13 @@ export interface TelemetryPageView {
   measurements?: { [key: string]: number };
 }
 
-export interface TelemetryEvent {
+interface TelemetryEvent {
   name: string;
   properties?: { [key: string]: string };
   measurements?: { [key: string]: number };
 }
 
-export interface TelemetryUserAction {
+interface TelemetryUserAction {
   action: string;
   feature: string;
   location?: string;
@@ -24,13 +24,13 @@ export interface TelemetryUserAction {
   properties?: { [key: string]: string };
 }
 
-export interface TelemetryCustomMetric {
+interface TelemetryCustomMetric {
   name: string;
   value: number;
   properties?: { [key: string]: string };
 }
 
-export interface TelemetryError {
+interface TelemetryError {
   error: Error;
   userId?: string;
   context?: { [key: string]: string };
@@ -126,4 +126,3 @@ class TelemetryStubService {
 
 // Export singleton instance
 export const telemetry = new TelemetryStubService();
-export default telemetry;

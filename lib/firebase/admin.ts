@@ -451,7 +451,7 @@ export async function createCustomToken(uid: string, additionalClaims?: Record<s
 /**
  * Legacy compatibility functions
  */
-export async function getAdminRemoteConfig() {
+async function getAdminRemoteConfig() {
   if (isClient) {
     throw new Error('Firebase Admin SDK not available on client side');
   }
@@ -464,6 +464,6 @@ export async function getAdminRemoteConfig() {
   };
 }
 
-export async function getDBService() {
+async function getDBService() {
   return getAdminFirestore();
 }

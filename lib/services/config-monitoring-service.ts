@@ -11,7 +11,7 @@ import { azureCosmosService } from './azure-cosmos-service';
 
 // ===== INTERFACES =====
 
-export interface ConfigMetrics {
+interface ConfigMetrics {
   requestCount: number;
   cacheHits: number;
   cacheMisses: number;
@@ -21,7 +21,7 @@ export interface ConfigMetrics {
   syncFailures: number;
 }
 
-export interface ConfigAlert {
+interface ConfigAlert {
   id: string;
   type: 'drift' | 'sync_failure' | 'high_latency' | 'error_rate' | 'cache_performance';
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -32,7 +32,7 @@ export interface ConfigAlert {
   environment: string;
 }
 
-export interface HealthCheckResult {
+interface HealthCheckResult {
   service: string;
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: Date;
@@ -556,4 +556,3 @@ class ConfigMonitoringService {
 // ===== SINGLETON INSTANCE =====
 
 export const configMonitoringService = new ConfigMonitoringService();
-export default configMonitoringService;

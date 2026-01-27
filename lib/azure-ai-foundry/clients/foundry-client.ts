@@ -354,25 +354,25 @@ export class FoundryClientBase {
 /**
  * Type exports for external use
  */
-export type FoundryClientOptions = {
+type FoundryClientOptions = {
   endpoint?: string;
   apiKey?: string;
   projectId?: string;
   forceRefresh?: boolean;
 };
 
-export type FoundryRequestOptions = {
+type FoundryRequestOptions = {
   method?: string;
   body?: any;
   headers?: Record<string, string>;
 };
 
-export type FoundryResponse<T = any> = {
+type FoundryResponse<T = any> = {
   status: number;
   data: T | null;
   raw: string;
 };
 
 // Re-export Azure SDK types for convenience
-export type { AIProjectClient, AgentsClient };
+;
 

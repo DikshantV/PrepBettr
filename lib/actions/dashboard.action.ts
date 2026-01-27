@@ -1,5 +1,5 @@
 // Static export stubs
-export async function createInterview() {
+async function createInterview() {
   return { error: 'Static mode' };
 }
 

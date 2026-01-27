@@ -24,7 +24,7 @@ import {
 /**
  * Core authentication middleware for Express.js
  */
-export function expressAuthMiddleware(options: AuthMiddlewareOptions = {}) {
+function expressAuthMiddleware(options: AuthMiddlewareOptions = {}) {
   return async (req: ExpressRequest, res: ExpressResponse, next: ExpressNext): Promise<void> => {
     const monitor = AuthPerformanceMonitor.getInstance();
     const endTiming = monitor.startTiming('express-auth-middleware');
@@ -112,7 +112,7 @@ export function expressAuthMiddleware(options: AuthMiddlewareOptions = {}) {
 /**
  * Optional authentication middleware (allows anonymous users)
  */
-export function expressOptionalAuth() {
+function expressOptionalAuth() {
   return async (req: ExpressRequest, res: ExpressResponse, next: ExpressNext): Promise<void> => {
     try {
       const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -130,14 +130,14 @@ export function expressOptionalAuth() {
 /**
  * Role-based authentication middleware
  */
-export function expressRoleMiddleware(requiredRoles: string[]) {
+function expressRoleMiddleware(requiredRoles: string[]) {
   return expressAuthMiddleware({ requiredRoles });
 }
 
 /**
  * Admin-only middleware
  */
-export function expressAdminMiddleware() {
+function expressAdminMiddleware() {
   return expressAuthMiddleware({ requiredRoles: ['admin'] });
 }
 
@@ -146,7 +146,7 @@ export function expressAdminMiddleware() {
 /**
  * Extract user from Express request
  */
-export async function extractUserFromExpressRequest(req: ExpressRequest): Promise<AuthenticatedUser | null> {
+async function extractUserFromExpressRequest(req: ExpressRequest): Promise<AuthenticatedUser | null> {
   try {
     // Check if user is already attached (from middleware)
     if (req.user) {
@@ -167,21 +167,21 @@ export async function extractUserFromExpressRequest(req: ExpressRequest): Promis
 /**
  * Check if Express request is authenticated
  */
-export function isExpressRequestAuthenticated(req: ExpressRequest): boolean {
+function isExpressRequestAuthenticated(req: ExpressRequest): boolean {
   return !!req.user;
 }
 
 /**
  * Get user roles from Express request
  */
-export function getUserRoles(req: ExpressRequest): string[] {
+function getUserRoles(req: ExpressRequest): string[] {
   return req.user?.custom_claims?.roles || [];
 }
 
 /**
  * Check if Express request user has role
  */
-export function hasRole(req: ExpressRequest, role: string): boolean {
+function hasRole(req: ExpressRequest, role: string): boolean {
   const roles = getUserRoles(req);
   return roles.includes(role);
 }
@@ -189,7 +189,7 @@ export function hasRole(req: ExpressRequest, role: string): boolean {
 /**
  * Check if Express request user has any of the required roles
  */
-export function hasAnyRole(req: ExpressRequest, requiredRoles: string[]): boolean {
+function hasAnyRole(req: ExpressRequest, requiredRoles: string[]): boolean {
   const userRoles = getUserRoles(req);
   return requiredRoles.some(role => userRoles.includes(role));
 }
@@ -199,7 +199,7 @@ export function hasAnyRole(req: ExpressRequest, requiredRoles: string[]): boolea
 /**
  * Express error handler for authentication errors
  */
-export function expressAuthErrorHandler() {
+function expressAuthErrorHandler() {
   return (error: any, req: ExpressRequest, res: ExpressResponse, next: ExpressNext): void => {
     if (error instanceof UnifiedAuthError) {
       res.status(error.statusCode || 500).json({
@@ -220,7 +220,7 @@ export function expressAuthErrorHandler() {
 /**
  * Benchmark Express authentication performance
  */
-export async function benchmarkExpressAuth(
+async function benchmarkExpressAuth(
   req: ExpressRequest,
   iterations: number = 100
 ): Promise<Record<string, any>> {
@@ -266,20 +266,20 @@ export async function benchmarkExpressAuth(
 /**
  * Protect all routes in an Express router with authentication
  */
-export function protectExpressRouter(options: AuthMiddlewareOptions = {}) {
+function protectExpressRouter(options: AuthMiddlewareOptions = {}) {
   return expressAuthMiddleware(options);
 }
 
 /**
  * Protect specific Express routes with role-based access
  */
-export function protectExpressRouteWithRoles(requiredRoles: string[]) {
+function protectExpressRouteWithRoles(requiredRoles: string[]) {
   return expressRoleMiddleware(requiredRoles);
 }
 
 /**
  * Protect Express routes for admin-only access
  */
-export function protectExpressAdminRoutes() {
+function protectExpressAdminRoutes() {
   return expressAdminMiddleware();
 }

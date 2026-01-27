@@ -41,7 +41,7 @@ export async function initializeAzureServices(): Promise<void> {
 /**
  * Health check for Azure services
  */
-export function getAzureHealthStatus() {
+function getAzureHealthStatus() {
   const config = getAzureConfig();
   
   const requiredServices = [

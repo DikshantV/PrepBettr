@@ -7,7 +7,7 @@ import { DataLayerServiceFactory } from '../services/DataLayerServiceFactory';
 import { metricsCollector } from '../utils/integration';
 import { unifiedConfigService } from '@/lib/services/unified-config-service';
 
-export interface HealthCheckResult {
+interface HealthCheckResult {
   service: string;
   status: 'healthy' | 'degraded' | 'unhealthy';
   latency?: number;
@@ -16,7 +16,7 @@ export interface HealthCheckResult {
   timestamp: string;
 }
 
-export interface DataLayerHealthReport {
+interface DataLayerHealthReport {
   overall: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
   services: HealthCheckResult[];
@@ -29,7 +29,7 @@ export interface DataLayerHealthReport {
   alerts: Alert[];
 }
 
-export interface Alert {
+interface Alert {
   level: 'info' | 'warning' | 'critical';
   message: string;
   timestamp: string;
@@ -37,7 +37,7 @@ export interface Alert {
   metadata?: Record<string, any>;
 }
 
-export interface MigrationMetrics {
+interface MigrationMetrics {
   currentPhase: string;
   migrationProgress?: {
     totalDocuments: number;
@@ -60,7 +60,7 @@ export interface MigrationMetrics {
   };
 }
 
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   operationMetrics: Record<string, {
     count: number;
     averageLatency: number;

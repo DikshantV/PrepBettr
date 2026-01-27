@@ -11,7 +11,7 @@
  * @param text - Raw text that may contain Markdown formatting
  * @returns Cleaned text suitable for speech synthesis
  */
-export function cleanTextForTTS(text: string): string {
+function cleanTextForTTS(text: string): string {
   if (!text || typeof text !== 'string') {
     return '';
   }
@@ -153,7 +153,7 @@ export function prepareConversationForTTS(text: string): string {
  * @param text - Text to validate
  * @returns Object with validation result and cleaned text
  */
-export function validateAndCleanForTTS(text: string): { 
+function validateAndCleanForTTS(text: string): { 
   isValid: boolean; 
   cleanedText: string; 
   issues: string[]; 

@@ -19,7 +19,7 @@ interface OrchestratorSessionState {
 /**
  * Interview phase configuration
  */
-export interface InterviewPhase {
+interface InterviewPhase {
   /** Unique identifier for the phase */
   id: string;
   /** Display name for the phase */
@@ -43,7 +43,7 @@ export interface InterviewPhase {
 /**
  * Interview session configuration
  */
-export interface InterviewSessionConfig {
+interface InterviewSessionConfig {
   /** Unique session identifier */
   sessionId: string;
   /** Interview phases to execute */
@@ -61,7 +61,7 @@ export interface InterviewSessionConfig {
 /**
  * Interview session result
  */
-export interface InterviewSessionResult {
+interface InterviewSessionResult {
   /** Session identifier */
   sessionId: string;
   /** All generated questions across all phases */

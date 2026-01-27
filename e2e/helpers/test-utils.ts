@@ -175,7 +175,7 @@ export class NetworkHelper {
 }
 
 // Visual regression helper
-export class VisualHelper {
+class VisualHelper {
   constructor(private page: Page) {}
 
   async takeScreenshot(name: string) {
@@ -191,7 +191,7 @@ export class VisualHelper {
 }
 
 // Error handling helper
-export class ErrorHelper {
+class ErrorHelper {
   constructor(private page: Page) {}
 
   async captureConsoleErrors() {

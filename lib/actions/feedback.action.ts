@@ -1,5 +1,5 @@
 // Static export stubs
-export async function generateFeedback() {
+async function generateFeedback() {
   return { error: 'Static mode' };
 }
 

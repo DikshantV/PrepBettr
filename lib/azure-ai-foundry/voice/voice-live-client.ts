@@ -37,7 +37,7 @@ export interface VoiceSession {
 /**
  * Voice settings that can be updated at runtime
  */
-export interface VoiceSettings {
+interface VoiceSettings {
   voiceName?: string;
   speakingRate?: number;
   emotionalTone?: string;
@@ -46,7 +46,7 @@ export interface VoiceSettings {
 /**
  * WebSocket connection state
  */
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed';
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed';
 
 /**
  * WebSocket message types for Azure AI Foundry voice service

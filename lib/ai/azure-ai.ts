@@ -24,14 +24,14 @@ export interface AzureAIResponse<T = any> {
   confidence?: number;
 }
 
-export interface ResumeExtractionOptions {
+interface ResumeExtractionOptions {
   includeAtsAnalysis?: boolean;
   includeJobMatching?: boolean;
   jobDescription?: string;
   forceFoundryProcessing?: boolean;
 }
 
-export interface QuestionGenerationOptions {
+interface QuestionGenerationOptions {
   maxQuestions?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
   focusAreas?: string[];
@@ -427,14 +427,9 @@ class AzureAIService {
 export const azureAI = new AzureAIService();
 
 // For backward compatibility, export individual service references
-export {
-  azureOpenAIService,
-  enhancedAzureOpenAIService,
-  azureFormRecognizer,
-  foundryDocumentIntelligenceService
-};
+;
 
 // Export types with unique names to avoid conflicts
-export type UnifiedAzureAIResponse<T = any> = AzureAIResponse<T>;
-export type UnifiedResumeExtractionOptions = ResumeExtractionOptions;
-export type UnifiedQuestionGenerationOptions = QuestionGenerationOptions;
+type UnifiedAzureAIResponse<T = any> = AzureAIResponse<T>;
+type UnifiedResumeExtractionOptions = ResumeExtractionOptions;
+type UnifiedQuestionGenerationOptions = QuestionGenerationOptions;

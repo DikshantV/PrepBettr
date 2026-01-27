@@ -34,7 +34,7 @@ export interface DualWriteConfig {
   asyncWriteTimeoutMs?: number;
 }
 
-export interface DualWriteResult<T> {
+interface DualWriteResult<T> {
   success: boolean;
   data?: T;
   error?: string;
@@ -44,7 +44,7 @@ export interface DualWriteResult<T> {
   inconsistencyDetails?: string[];
 }
 
-export interface ConsistencyCheckResult {
+interface ConsistencyCheckResult {
   consistent: boolean;
   differences: string[];
   primaryData?: any;

@@ -22,7 +22,7 @@ import type {
 /**
  * Model usage tracking entry
  */
-export interface ModelUsageEntry {
+interface ModelUsageEntry {
   modelName: string;
   timestamp: string;
   promptTokens: number;
@@ -37,7 +37,7 @@ export interface ModelUsageEntry {
 /**
  * Model performance metrics
  */
-export interface ModelPerformanceMetrics {
+interface ModelPerformanceMetrics {
   averageLatency: number;
   successRate: number;
   totalCost: number;

@@ -311,9 +311,9 @@ export const techIconMap = {
 export type TechIconName = keyof typeof techIconMap;
 
 // Helper function to get an icon component by name
-export const getTechIcon = (iconName: TechIconName) => {
+const getTechIcon = (iconName: TechIconName) => {
   return techIconMap[iconName];
 };
 
 // List of all available tech icon names
-export const availableTechIcons = Object.keys(techIconMap) as TechIconName[];
+const availableTechIcons = Object.keys(techIconMap) as TechIconName[];

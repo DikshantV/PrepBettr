@@ -23,9 +23,9 @@ interface AzureSecrets {
   firebaseClientEmail: string;
   firebasePrivateKey: string;
   firebaseClientKey?: string;
-  // Additional Azure services
-  azureFormRecognizerKey?: string;
-  azureFormRecognizerEndpoint?: string;
+  // Additional Azure services (Document Intelligence replaces Form Recognizer)
+  azureDocumentIntelligenceKey?: string;
+  azureDocumentIntelligenceEndpoint?: string;
   // Storage configuration
   azureStorageAccount?: string;
   azureStorageAccountKey?: string;
@@ -51,7 +51,7 @@ function createKeyVaultClient(): SecretClient {
 /**
  * Clear cached secrets (useful when Azure keys are renewed)
  */
-export function clearAzureSecretsCache(): void {
+function clearAzureSecretsCache(): void {
   if (isClient) return;
   console.log('🔄 Clearing Azure secrets cache...');
   cachedSecrets = null;
@@ -100,7 +100,7 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
     const [
       speechKey, speechEndpoint, azureOpenAIKey, azureOpenAIEndpoint, azureOpenAIDeployment,
       firebaseServiceAccountKey, firebaseProjectId, firebaseClientEmail, firebasePrivateKey, firebaseClientKey,
-      azureFormRecognizerKey, azureFormRecognizerEndpoint, 
+      azureDocumentIntelligenceKey, azureDocumentIntelligenceEndpoint,
       azureStorageAccount, azureStorageAccountKey, azureStorageConnectionString,
       azureStorageContainer, storageProvider
     ] = await Promise.all([
@@ -114,8 +114,9 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       getOptionalSecret('firebase-client-email'),
       getOptionalSecret('firebase-private-key'),
       getOptionalSecret('NEXT-PUBLIC-FIREBASE-CLIENT-KEY'),
-      getOptionalSecret('azure-form-recognizer-key'),
-      getOptionalSecret('azure-form-recognizer-endpoint'),
+      // Try new Document Intelligence naming first, then fall back to deprecated Form Recognizer naming
+      client.getSecret('azure-document-intelligence-key').catch(() => getOptionalSecret('azure-form-recognizer-key')),
+      client.getSecret('azure-document-intelligence-endpoint').catch(() => getOptionalSecret('azure-form-recognizer-endpoint')),
       getOptionalSecret('azure-storage-account'),
       getOptionalSecret('azure-storage-account-key'),
       getOptionalSecret('azure-storage-connection-string'),
@@ -160,8 +161,8 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseClientEmail: firebaseClientEmail?.value || process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: firebasePrivateKey?.value || process.env.FIREBASE_PRIVATE_KEY || '',
       firebaseClientKey: firebaseClientKey?.value || '',
-      azureFormRecognizerKey: azureFormRecognizerKey?.value,
-      azureFormRecognizerEndpoint: azureFormRecognizerEndpoint?.value,
+      azureDocumentIntelligenceKey: azureDocumentIntelligenceKey?.value,
+      azureDocumentIntelligenceEndpoint: azureDocumentIntelligenceEndpoint?.value,
       azureStorageAccount: azureStorageAccount?.value,
       azureStorageAccountKey: azureStorageAccountKey?.value,
       azureStorageConnectionString: azureStorageConnectionString?.value,
@@ -198,9 +199,9 @@ export async function fetchAzureSecrets(forceRefresh: boolean = false): Promise<
       firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
       firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || '',
       firebaseClientKey: '',
-      // Optional fallbacks
-      azureFormRecognizerKey: process.env.AZURE_FORM_RECOGNIZER_KEY,
-      azureFormRecognizerEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
+      // Optional fallbacks (try Document Intelligence first, then Form Recognizer for backward compatibility)
+      azureDocumentIntelligenceKey: process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY,
+      azureDocumentIntelligenceEndpoint: process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
       azureStorageAccount: process.env.AZURE_STORAGE_ACCOUNT_NAME,
       azureStorageAccountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY
     };
@@ -267,12 +268,16 @@ export async function initializeAzureEnvironment(): Promise<void> {
       console.warn('⚠️ Firebase client key not found in Azure Key Vault');
     }
     
-    // Set optional Azure services if available
-    if (secrets.azureFormRecognizerKey) {
-      process.env.AZURE_FORM_RECOGNIZER_KEY = secrets.azureFormRecognizerKey;
+    // Set optional Azure Document Intelligence services if available
+    if (secrets.azureDocumentIntelligenceKey) {
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY = secrets.azureDocumentIntelligenceKey;
+      // Backward compatibility: also set deprecated Form Recognizer env var
+      process.env.AZURE_FORM_RECOGNIZER_KEY = secrets.azureDocumentIntelligenceKey;
     }
-    if (secrets.azureFormRecognizerEndpoint) {
-      process.env.AZURE_FORM_RECOGNIZER_ENDPOINT = secrets.azureFormRecognizerEndpoint;
+    if (secrets.azureDocumentIntelligenceEndpoint) {
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT = secrets.azureDocumentIntelligenceEndpoint;
+      // Backward compatibility: also set deprecated Form Recognizer env var
+      process.env.AZURE_FORM_RECOGNIZER_ENDPOINT = secrets.azureDocumentIntelligenceEndpoint;
     }
     // Set storage configuration
     if (secrets.azureStorageAccount) {
@@ -319,8 +324,11 @@ export async function getConfiguration(): Promise<Record<string, string>> {
       'AZURE_OPENAI_DEPLOYMENT': secrets.azureOpenAIDeployment,
       'AZURE_SPEECH_KEY': secrets.speechKey,
       'AZURE_SPEECH_ENDPOINT': secrets.speechEndpoint,
-      'AZURE_FORM_RECOGNIZER_KEY': secrets.azureFormRecognizerKey || '',
-      'AZURE_FORM_RECOGNIZER_ENDPOINT': secrets.azureFormRecognizerEndpoint || '',
+      'AZURE_DOCUMENT_INTELLIGENCE_KEY': secrets.azureDocumentIntelligenceKey || '',
+      'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT': secrets.azureDocumentIntelligenceEndpoint || '',
+      // Backward compatibility aliases
+      'AZURE_FORM_RECOGNIZER_KEY': secrets.azureDocumentIntelligenceKey || '',
+      'AZURE_FORM_RECOGNIZER_ENDPOINT': secrets.azureDocumentIntelligenceEndpoint || '',
       
       // Firebase configuration
       'FIREBASE_SERVICE_ACCOUNT_KEY': secrets.firebaseServiceAccountKey || '',
@@ -344,8 +352,11 @@ export async function getConfiguration(): Promise<Record<string, string>> {
       'AZURE_OPENAI_DEPLOYMENT': process.env.AZURE_OPENAI_DEPLOYMENT || '',
       'AZURE_SPEECH_KEY': process.env.AZURE_SPEECH_KEY || process.env.SPEECH_KEY || '',
       'AZURE_SPEECH_ENDPOINT': process.env.SPEECH_ENDPOINT || '',
-      'AZURE_FORM_RECOGNIZER_KEY': process.env.AZURE_FORM_RECOGNIZER_KEY || '',
-      'AZURE_FORM_RECOGNIZER_ENDPOINT': process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || '',
+      'AZURE_DOCUMENT_INTELLIGENCE_KEY': process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY || '',
+      'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT': process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || '',
+      // Backward compatibility aliases
+      'AZURE_FORM_RECOGNIZER_KEY': process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY || '',
+      'AZURE_FORM_RECOGNIZER_ENDPOINT': process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || process.env.AZURE_FORM_RECOGNIZER_ENDPOINT || '',
       'FIREBASE_SERVICE_ACCOUNT_KEY': process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '',
       'FIREBASE_PROJECT_ID': process.env.FIREBASE_PROJECT_ID || '',
       'FIREBASE_CLIENT_EMAIL': process.env.FIREBASE_CLIENT_EMAIL || '',

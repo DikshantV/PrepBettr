@@ -45,7 +45,7 @@ export interface AgentState {
 }
 
 // Action types for state updates
-export type AgentAction =
+type AgentAction =
   | { type: 'SET_INTERVIEW_STATE'; payload: InterviewState }
   | { type: 'SET_AUDIO_STATE'; payload: AudioState }
   | { type: 'ADD_MESSAGE'; payload: SavedMessage }
@@ -208,11 +208,11 @@ export const createEndInterviewAction = (): AgentAction => ({
   type: 'END_INTERVIEW' 
 });
 
-export const createStartRecordingAction = (): AgentAction => ({ 
+const createStartRecordingAction = (): AgentAction => ({ 
   type: 'START_RECORDING' 
 });
 
-export const createStopRecordingAction = (): AgentAction => ({ 
+const createStopRecordingAction = (): AgentAction => ({ 
   type: 'STOP_RECORDING' 
 });
 

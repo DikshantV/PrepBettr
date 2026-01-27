@@ -47,7 +47,7 @@ export function UsageProvider({ children }: UsageProviderProps) {
 }
 
 // Custom hook to use the usage context
-export function useUsage(): UsageContextType {
+function useUsage(): UsageContextType {
   const context = useContext(UsageContext);
   
   if (context === undefined) {
@@ -58,4 +58,4 @@ export function useUsage(): UsageContextType {
 }
 
 // Export the context for advanced use cases
-export { UsageContext };
+;

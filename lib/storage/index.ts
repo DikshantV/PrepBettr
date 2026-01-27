@@ -57,14 +57,14 @@ async function createAzureStorageService(): Promise<AzureBlobStorageService> {
  * Resets the singleton storage service instance.
  * Useful for testing or configuration changes.
  */
-export function resetStorageService(): void {
+function resetStorageService(): void {
   storageServiceInstance = null;
 }
 
 /**
  * Resume-specific utilities for backward compatibility
  */
-export class ResumeStorageService {
+class ResumeStorageService {
   private storageService: IStorageService | null = null;
 
   async getService(): Promise<IStorageService> {

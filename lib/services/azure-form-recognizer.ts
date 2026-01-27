@@ -23,7 +23,7 @@ export interface ExtractedResumeData {
   rawExtraction?: any; // Store raw extraction for GDPR export
 }
 
-export interface WorkExperience {
+interface WorkExperience {
   company: string;
   position: string;
   startDate?: string;
@@ -35,7 +35,7 @@ export interface WorkExperience {
   location?: string;
 }
 
-export interface Education {
+interface Education {
   institution: string;
   degree: string;
   field: string;
@@ -46,7 +46,7 @@ export interface Education {
   location?: string;
 }
 
-export interface Project {
+interface Project {
   name: string;
   description: string;
   technologies?: string[];
@@ -56,7 +56,7 @@ export interface Project {
   endDate?: string;
 }
 
-export interface Certification {
+interface Certification {
   name: string;
   issuer: string;
   date?: string;
@@ -65,7 +65,7 @@ export interface Certification {
   url?: string;
 }
 
-export interface Language {
+interface Language {
   name: string;
   proficiency: string;
 }

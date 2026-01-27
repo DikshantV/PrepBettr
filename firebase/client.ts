@@ -432,12 +432,6 @@ export async function signOutUser(): Promise<void> {
 }
 
 // Export default for backward compatibility
-export default {
-  auth,
-  db,
-  googleProvider,
-  app
-};
 
 // Additional exports for compatibility
-export { signInWithRedirect, getRedirectResult, signOut };
+export { signInWithRedirect,   };

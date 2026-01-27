@@ -256,19 +256,19 @@ Return questions in JSON format:
 
 // ===== UTILITY FUNCTIONS =====
 
-export function generateQuestionId(agentName: string, category: string): string {
+function generateQuestionId(agentName: string, category: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 5);
   return `${agentName.toLowerCase()}-${category}-${timestamp}-${random}`;
 }
 
-export function calculateInterviewProgress(context: InterviewContext): number {
+function calculateInterviewProgress(context: InterviewContext): number {
   const totalExpectedQuestions = 9; // 3 per agent type
   const completedQuestions = context.responses?.length || 0;
   return Math.min(100, Math.round((completedQuestions / totalExpectedQuestions) * 100));
 }
 
-export function getEstimatedRemainingTime(context: InterviewContext, currentAgent: FoundryAgent): number {
+function getEstimatedRemainingTime(context: InterviewContext, currentAgent: FoundryAgent): number {
   const completedQuestions = context.responses?.length || 0;
   const avgTimePerQuestion = currentAgent.metadata.averageDuration || 5;
   const remainingQuestions = Math.max(0, (currentAgent.metadata.maxQuestions || 5) - completedQuestions);

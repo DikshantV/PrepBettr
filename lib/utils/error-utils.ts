@@ -5,7 +5,7 @@
 
 import { logger } from './logger';
 
-export interface ErrorContext {
+interface ErrorContext {
   [key: string]: any;
 }
 
@@ -73,7 +73,7 @@ export const withRetry = async <T>(
 /**
  * Timeout wrapper for promises
  */
-export const withTimeout = <T>(
+const withTimeout = <T>(
   promise: Promise<T>,
   timeoutMs: number,
   context: string = 'Operation'
@@ -91,7 +91,7 @@ export const withTimeout = <T>(
 /**
  * Safe JSON parsing with error handling
  */
-export const safeJsonParse = <T>(
+const safeJsonParse = <T>(
   jsonString: string,
   fallback: T,
   context: string = 'JSON parse'
@@ -153,7 +153,7 @@ export const showErrorNotification = (
 /**
  * Validation error for form/input validation
  */
-export class ValidationError extends Error {
+class ValidationError extends Error {
   constructor(message: string, public field?: string) {
     super(message);
     this.name = 'ValidationError';

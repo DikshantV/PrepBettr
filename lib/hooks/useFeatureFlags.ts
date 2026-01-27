@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useUnifiedConfig } from '@/lib/hooks/useUnifiedConfig';
 
 // Define types locally to avoid importing server-only modules
-export interface FeatureFlags {
+interface FeatureFlags {
   voiceInterview: boolean;
   premiumFeatures: boolean;
   newUI: boolean;
 }
 
-export interface EnhancedFeatureFlags extends FeatureFlags {
+interface EnhancedFeatureFlags extends FeatureFlags {
   rolloutStatus: {
     voiceInterview: boolean;
     premiumFeatures: boolean;
@@ -106,7 +106,7 @@ export const useFeatureFlags = () => {
  * Simplified hook for individual feature flags using unified config directly
  * More performant for components that only need specific flags
  */
-export const useUnifiedFeatureFlag = (flagName: keyof FeatureFlags) => {
+const useUnifiedFeatureFlag = (flagName: keyof FeatureFlags) => {
   const configKey = `features.${flagName}`;
   return useUnifiedConfig<boolean>(configKey, false);
 };
@@ -114,7 +114,7 @@ export const useUnifiedFeatureFlag = (flagName: keyof FeatureFlags) => {
 /**
  * Hook for getting multiple feature flags at once
  */
-export const useUnifiedFeatureFlags = (flagNames: Array<keyof FeatureFlags>) => {
+const useUnifiedFeatureFlags = (flagNames: Array<keyof FeatureFlags>) => {
   const results = flagNames.reduce((acc, flagName) => {
     const configKey = `features.${flagName}`;
     // eslint-disable-next-line react-hooks/rules-of-hooks

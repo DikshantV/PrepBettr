@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid';
 import { documentIntelligenceService } from '@/azure/lib/services/document-intelligence-service';
 import { unifiedConfigService } from '@/lib/services/unified-config-service';
 
-export interface ResumeUploadResult {
+interface ResumeUploadResult {
   success: boolean;
   resumeId?: string;
   atsScore?: number;
@@ -22,7 +22,7 @@ export interface ResumeUploadResult {
   processingTime?: number;
 }
 
-export interface ResumeSearchFilters {
+interface ResumeSearchFilters {
   userId?: string;
   minAtsScore?: number;
   maxAtsScore?: number;
@@ -34,7 +34,7 @@ export interface ResumeSearchFilters {
   };
 }
 
-export interface ResumeStats {
+interface ResumeStats {
   totalResumes: number;
   averageAtsScore: number;
   topSkills: string[];

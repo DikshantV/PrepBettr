@@ -43,7 +43,7 @@ export enum MigrationPhase {
   COSMOS_DB_ONLY = 'cosmos_db_only'
 }
 
-export interface DataLayerConfig {
+interface DataLayerConfig {
   // Data store configuration
   dataStore: DataStoreType;
   migrationPhase: MigrationPhase;
@@ -72,13 +72,13 @@ export interface DataLayerConfig {
   defaultTimeout?: number;
 }
 
-export interface RepositoryInstances {
+interface RepositoryInstances {
   resumeRepository: IResumeRepository;
   usageRepository: IUsageRepository;
   migrationManager?: DataMigrationManager;
 }
 
-export interface DataLayerMetrics {
+interface DataLayerMetrics {
   totalOperations: number;
   successfulOperations: number;
   failedOperations: number;
@@ -551,7 +551,7 @@ export class DataLayerServiceFactory {
  * Convenience factory functions for common use cases
  */
 
-export class DataLayerFactory {
+class DataLayerFactory {
   /**
    * Create factory for development environment (Firestore only)
    */
@@ -638,8 +638,4 @@ export class DataLayerFactory {
 }
 
 // Export types and enums for external use
-export type { 
-  DataLayerConfig, 
-  RepositoryInstances, 
-  DataLayerMetrics 
-};
+;

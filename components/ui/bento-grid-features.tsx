@@ -8,7 +8,7 @@ import { IconBrandYoutubeFilled } from "@tabler/icons-react";
 import TimelineCompact from "./TimelineCompact";
 
 
-export function FeaturesSectionDemo() {
+function FeaturesSectionDemo() {
   const features = [
     {
       title: "Hack job hunting",
@@ -105,7 +105,7 @@ const FeatureDescription = ({ children }: { children?: React.ReactNode }) => {
   );
 };
 
-export const SkeletonOne = () => {
+const SkeletonOne = () => {
   return (
     <div className="relative flex py-8 px-2 gap-10 h-full">
       <div className="w-full  p-5  mx-auto bg-transparent shadow-2xl group h-full">
@@ -127,7 +127,7 @@ export const SkeletonOne = () => {
   );
 };
 
-export const SkeletonThree = () => {
+const SkeletonThree = () => {
   return (
     <a
       href="https://www.youtube.com/watch?v=RPa3_AD1_Vs"
@@ -151,7 +151,7 @@ export const SkeletonThree = () => {
   );
 };
 
-export const SkeletonTwo = () => {
+const SkeletonTwo = () => {
   return (
     <div className="relative flex flex-col items-center justify-center h-full w-full">
       <TimelineCompact />
@@ -159,7 +159,7 @@ export const SkeletonTwo = () => {
   );
 };
 
-export const SkeletonFour = () => {
+const SkeletonFour = () => {
   return (
     <div className="h-60 md:h-60  flex flex-col items-center justify-center relative bg-transparent dark:bg-transparent mt-10">
       <Globe className="absolute left-1/2 transform -translate-x-1/2 translate-y-32" />
@@ -167,7 +167,7 @@ export const SkeletonFour = () => {
   );
 };
 
-export const Globe = ({ className }: { className?: string }) => {
+const Globe = ({ className }: { className?: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

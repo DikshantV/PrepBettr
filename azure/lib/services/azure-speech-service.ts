@@ -1,13 +1,13 @@
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import { fetchAzureSecrets } from '../../../lib/azure-config-browser';
 
-export interface SpeechRecognitionResult {
+interface SpeechRecognitionResult {
   text: string;
   confidence: number;
   reason: string;
 }
 
-export interface SpeechSynthesisOptions {
+interface SpeechSynthesisOptions {
   voiceName?: string;
   rate?: string;
   pitch?: string;
@@ -15,7 +15,7 @@ export interface SpeechSynthesisOptions {
   onSynthesisStart?: () => void;
 }
 
-export class AzureSpeechService {
+class AzureSpeechService {
   private speechConfig: SpeechSDK.SpeechConfig | null = null;
   private recognizer: SpeechSDK.SpeechRecognizer | null = null;
   private synthesizer: SpeechSDK.SpeechSynthesizer | null = null;

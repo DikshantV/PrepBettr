@@ -12,7 +12,7 @@
 /**
  * Base Foundry resource identifier
  */
-export interface FoundryResourceId {
+interface FoundryResourceId {
   subscriptionId: string;
   resourceGroupName: string;
   hubName: string;
@@ -22,7 +22,7 @@ export interface FoundryResourceId {
 /**
  * Foundry project metadata
  */
-export interface FoundryProject {
+interface FoundryProject {
   id: string;
   name: string;
   description?: string;
@@ -62,7 +62,7 @@ export interface ModelDeployment {
 /**
  * Text completion request parameters
  */
-export interface CompletionRequest {
+interface CompletionRequest {
   model: string;
   prompt: string;
   max_tokens?: number;
@@ -79,7 +79,7 @@ export interface CompletionRequest {
 /**
  * Text completion response
  */
-export interface CompletionResponse {
+interface CompletionResponse {
   id: string;
   object: 'text_completion';
   created: number;
@@ -91,7 +91,7 @@ export interface CompletionResponse {
 /**
  * Individual completion choice
  */
-export interface CompletionChoice {
+interface CompletionChoice {
   text: string;
   index: number;
   logprobs?: {
@@ -106,7 +106,7 @@ export interface CompletionChoice {
 /**
  * Chat completion request (OpenAI format)
  */
-export interface ChatCompletionRequest {
+interface ChatCompletionRequest {
   model: string;
   messages: ChatMessage[];
   temperature?: number;
@@ -125,7 +125,7 @@ export interface ChatCompletionRequest {
 /**
  * Chat message structure
  */
-export interface ChatMessage {
+interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'function';
   content: string;
   name?: string;
@@ -138,7 +138,7 @@ export interface ChatMessage {
 /**
  * Chat function definition
  */
-export interface ChatFunction {
+interface ChatFunction {
   name: string;
   description?: string;
   parameters: {
@@ -151,7 +151,7 @@ export interface ChatFunction {
 /**
  * Chat completion response
  */
-export interface ChatCompletionResponse {
+interface ChatCompletionResponse {
   id: string;
   object: 'chat.completion';
   created: number;
@@ -163,7 +163,7 @@ export interface ChatCompletionResponse {
 /**
  * Chat completion choice
  */
-export interface ChatCompletionChoice {
+interface ChatCompletionChoice {
   index: number;
   message: ChatMessage;
   finish_reason: 'stop' | 'length' | 'function_call' | 'content_filter' | null;
@@ -185,7 +185,7 @@ export interface TokenUsage {
 /**
  * Foundry agent definition
  */
-export interface FoundryAgent {
+interface FoundryAgent {
   id: string;
   name: string;
   description?: string;
@@ -204,7 +204,7 @@ export interface FoundryAgent {
 /**
  * Agent capabilities
  */
-export type AgentCapability = 
+type AgentCapability = 
   | 'text-generation'
   | 'code-generation' 
   | 'reasoning'
@@ -216,7 +216,7 @@ export type AgentCapability =
 /**
  * Agent tool definition
  */
-export interface AgentTool {
+interface AgentTool {
   type: 'function' | 'retrieval' | 'code_interpreter';
   function?: {
     name: string;
@@ -228,7 +228,7 @@ export interface AgentTool {
 /**
  * Agent configuration settings
  */
-export interface AgentConfiguration {
+interface AgentConfiguration {
   maxTokens: number;
   temperature: number;
   topP: number;
@@ -244,7 +244,7 @@ export interface AgentConfiguration {
 /**
  * Agent conversation session
  */
-export interface AgentSession {
+interface AgentSession {
   id: string;
   agentId: string;
   userId?: string;
@@ -258,7 +258,7 @@ export interface AgentSession {
 /**
  * Agent message in a conversation
  */
-export interface AgentMessage {
+interface AgentMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -274,7 +274,7 @@ export interface AgentMessage {
 /**
  * Tool call within agent message
  */
-export interface ToolCall {
+interface ToolCall {
   id: string;
   type: 'function';
   function: {
@@ -291,7 +291,7 @@ export interface ToolCall {
 /**
  * Model evaluation metrics
  */
-export interface EvaluationMetrics {
+interface EvaluationMetrics {
   accuracy?: number;
   precision?: number;
   recall?: number;
@@ -314,7 +314,7 @@ export interface EvaluationMetrics {
 /**
  * Evaluation run configuration
  */
-export interface EvaluationRun {
+interface EvaluationRun {
   id: string;
   name: string;
   modelName: string;
@@ -334,7 +334,7 @@ export interface EvaluationRun {
 /**
  * Individual evaluation result
  */
-export interface EvaluationResult {
+interface EvaluationResult {
   input: string;
   expectedOutput: string;
   actualOutput: string;
@@ -364,7 +364,7 @@ export interface FoundryError {
 /**
  * Rate limiting information
  */
-export interface RateLimitInfo {
+interface RateLimitInfo {
   remainingRequests: number;
   remainingTokens: number;
   resetTimeRequests?: string;
@@ -399,7 +399,7 @@ export interface UsageStatistics {
 /**
  * Health check status
  */
-export interface HealthStatus {
+interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   checks: {
     [service: string]: {
@@ -418,7 +418,7 @@ export interface HealthStatus {
 /**
  * Server-sent event for streaming responses
  */
-export interface StreamEvent {
+interface StreamEvent {
   id?: string;
   event?: string;
   data: string;
@@ -428,7 +428,7 @@ export interface StreamEvent {
 /**
  * Streaming completion chunk
  */
-export interface StreamingCompletionChunk {
+interface StreamingCompletionChunk {
   id: string;
   object: 'text_completion.chunk' | 'chat.completion.chunk';
   created: number;
@@ -454,7 +454,7 @@ export interface StreamingCompletionChunk {
 /**
  * Paginated response wrapper
  */
-export interface PaginatedResponse<T> {
+interface PaginatedResponse<T> {
   data: T[];
   nextLink?: string;
   count?: number;
@@ -463,7 +463,7 @@ export interface PaginatedResponse<T> {
 /**
  * Foundry operation status
  */
-export interface OperationStatus {
+interface OperationStatus {
   id: string;
   status: 'NotStarted' | 'Running' | 'Succeeded' | 'Failed' | 'Cancelled';
   createdDateTime: string;
@@ -476,7 +476,7 @@ export interface OperationStatus {
 /**
  * API version information
  */
-export interface ApiVersionInfo {
+interface ApiVersionInfo {
   version: string;
   preview?: boolean;
   deprecated?: boolean;
@@ -490,7 +490,7 @@ export interface ApiVersionInfo {
 /**
  * Foundry SDK configuration options
  */
-export interface FoundryClientOptions {
+interface FoundryClientOptions {
   endpoint: string;
   apiKey: string;
   projectId?: string;
@@ -504,7 +504,7 @@ export interface FoundryClientOptions {
 /**
  * Request options for API calls
  */
-export interface RequestOptions {
+interface RequestOptions {
   timeout?: number;
   retries?: number;
   headers?: Record<string, string>;

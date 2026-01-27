@@ -38,10 +38,10 @@ export async function verifyFirebaseToken(token: string): Promise<AuthResult> {
  * @param token - Auth token
  * @returns Promise<AuthenticatedUser | null>
  */
-export async function extractUserFromToken(token: string): Promise<AuthenticatedUser | null> {
+async function extractUserFromToken(token: string): Promise<AuthenticatedUser | null> {
   const result = await verifyFirebaseToken(token);
   return result.success ? result.user : null;
 }
 
 // Re-export types
-export type { AuthResult, AuthenticatedUser };
+;

@@ -11,7 +11,7 @@ export interface CommunityInterviewData {
     timestamp: number;
 }
 
-export const COMMUNITY_INTERVIEW_STORAGE_KEY = 'communityMockInterviewSelection';
+const COMMUNITY_INTERVIEW_STORAGE_KEY = 'communityMockInterviewSelection';
 
 /**
  * Safely get community interview data from localStorage
@@ -60,7 +60,7 @@ export const setCommunityInterviewInStorage = (data: Omit<CommunityInterviewData
 /**
  * Clear community interview data from localStorage
  */
-export const clearCommunityInterviewFromStorage = (): void => {
+const clearCommunityInterviewFromStorage = (): void => {
     if (typeof window === 'undefined') return;
     
     try {
@@ -74,7 +74,7 @@ export const clearCommunityInterviewFromStorage = (): void => {
 /**
  * Check if stored data matches given interview ID
  */
-export const isStoredInterviewId = (interviewId: string): boolean => {
+const isStoredInterviewId = (interviewId: string): boolean => {
     const stored = getCommunityInterviewFromStorage();
     return stored?.id === interviewId;
 };

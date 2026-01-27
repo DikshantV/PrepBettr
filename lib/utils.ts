@@ -262,7 +262,7 @@ const normalizeTechName = (tech: string) => {
  * @param maxIcons - Maximum number of icons to return (default: 6)
  * @returns Array of tech icon configurations
  */
-export const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => {
+const getTechIcons = (techArray: string[] = [], maxIcons: number = 6) => {
   if (!techArray || techArray.length === 0) return [];
   
   // Filter and map technologies to their icon configurations

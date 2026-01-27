@@ -481,45 +481,45 @@ class DataStoreFactory {
 // =============================================================================
 
 // Export singleton instance
-export const dataStoreFactory = DataStoreFactory.getInstance();
+const dataStoreFactory = DataStoreFactory.getInstance();
 
 // Convenience function to get the default provider
-export const getDataStoreProvider = async (): Promise<IDataStoreProvider> => {
+const getDataStoreProvider = async (): Promise<IDataStoreProvider> => {
   return await dataStoreFactory.getDataStoreProvider();
 };
 
 // Convenience functions for specific repositories
-export const getResumeRepository = async () => {
+const getResumeRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getResumeRepository();
 };
 
-export const getInterviewRepository = async () => {
+const getInterviewRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getInterviewRepository();
 };
 
-export const getUsageRepository = async () => {
+const getUsageRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getUsageRepository();
 };
 
-export const getUserConsentRepository = async () => {
+const getUserConsentRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getUserConsentRepository();
 };
 
-export const getAuditLogRepository = async () => {
+const getAuditLogRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getAuditLogRepository();
 };
 
-export const getNotificationRepository = async () => {
+const getNotificationRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getNotificationRepository();
 };
 
-export const getPaymentRepository = async () => {
+const getPaymentRepository = async () => {
   const provider = await getDataStoreProvider();
   return provider.getPaymentRepository();
 };

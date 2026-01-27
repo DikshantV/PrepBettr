@@ -101,7 +101,7 @@ export async function getEnv(forceRefresh: boolean = false): Promise<VoiceEnviro
 /**
  * Clear cached configuration (useful for testing)
  */
-export function clearVoiceConfigCache(): void {
+function clearVoiceConfigCache(): void {
   cachedVoiceConfig = null;
 }
 

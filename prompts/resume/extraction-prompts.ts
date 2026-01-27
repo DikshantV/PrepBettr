@@ -6,7 +6,7 @@
  * different processing methods.
  */
 
-export interface PromptContext {
+interface PromptContext {
   candidateName?: string;
   targetRole?: string;
   companyName?: string;
@@ -17,7 +17,7 @@ export interface PromptContext {
 /**
  * Main resume data extraction prompt for structured information extraction
  */
-export const RESUME_EXTRACTION_PROMPT = `
+const RESUME_EXTRACTION_PROMPT = `
 Extract the following information from this resume text and return as valid JSON.
 
 Required JSON Structure:
@@ -386,7 +386,7 @@ Normalization Guidelines:
 /**
  * Interview question generation prompt
  */
-export const INTERVIEW_QUESTIONS_PROMPT = `
+const INTERVIEW_QUESTIONS_PROMPT = `
 Generate targeted interview questions based on this resume analysis and job context.
 
 Resume Data: {{RESUME_DATA}}
@@ -476,7 +476,7 @@ Question Generation Guidelines:
 /**
  * Resume improvement recommendations prompt
  */
-export const RESUME_IMPROVEMENT_PROMPT = `
+const RESUME_IMPROVEMENT_PROMPT = `
 Analyze this resume and provide specific, actionable improvement recommendations.
 
 Resume Data: {{RESUME_DATA}}
@@ -567,7 +567,7 @@ Improvement Guidelines:
 /**
  * Helper function to format prompts with context variables
  */
-export function formatPrompt(template: string, context: Record<string, any>): string {
+function formatPrompt(template: string, context: Record<string, any>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
     return context[key] || match;
   });
@@ -591,7 +591,7 @@ export function formatConditionalPrompt(template: string, context: Record<string
 /**
  * Prompt template configurations for different use cases
  */
-export const PROMPT_CONFIGS = {
+const PROMPT_CONFIGS = {
   basic_extraction: {
     template: RESUME_EXTRACTION_PROMPT,
     requiredContext: ['resumeText'],
@@ -624,4 +624,4 @@ export const PROMPT_CONFIGS = {
   }
 } as const;
 
-export type PromptConfigKey = keyof typeof PROMPT_CONFIGS;
+type PromptConfigKey = keyof typeof PROMPT_CONFIGS;

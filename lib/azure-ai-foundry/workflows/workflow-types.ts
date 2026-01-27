@@ -14,12 +14,12 @@ export type InterviewStage = 'technical' | 'behavioral' | 'industry' | 'wrap-up'
 /**
  * Interview stage status
  */
-export type StageStatus = 'pending' | 'in-progress' | 'completed' | 'skipped' | 'failed';
+type StageStatus = 'pending' | 'in-progress' | 'completed' | 'skipped' | 'failed';
 
 /**
  * Overall workflow status
  */
-export type WorkflowState = 'initializing' | 'in-progress' | 'completed' | 'failed' | 'cancelled';
+type WorkflowState = 'initializing' | 'in-progress' | 'completed' | 'failed' | 'cancelled';
 
 /**
  * Experience level mapping for interview customization
@@ -29,7 +29,7 @@ export type ExperienceLevel = 'entry' | 'mid' | 'senior' | 'executive';
 /**
  * Role type for interview customization
  */
-export type RoleType = 'individual-contributor' | 'team-lead' | 'manager' | 'director' | 'executive';
+type RoleType = 'individual-contributor' | 'team-lead' | 'manager' | 'director' | 'executive';
 
 /**
  * Configuration for starting a multi-agent interview
@@ -454,7 +454,7 @@ export interface AgentHandoff {
 /**
  * Error types for workflow operations
  */
-export interface WorkflowError extends Error {
+interface WorkflowError extends Error {
   code: 'SESSION_NOT_FOUND' | 'INVALID_STATE' | 'AGENT_ERROR' | 'TIMEOUT' | 'CONFIGURATION_ERROR';
   sessionId: SessionId;
   stage?: InterviewStage;

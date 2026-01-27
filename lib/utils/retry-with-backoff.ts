@@ -9,7 +9,7 @@ export interface RetryOptions {
   onRetry?: (error: any, attempt: number) => void; // Callback on retry
 }
 
-export interface RetryMetrics {
+interface RetryMetrics {
   attempt: number;
   totalAttempts: number;
   delay: number;
